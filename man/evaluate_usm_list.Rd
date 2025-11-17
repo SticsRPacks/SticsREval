@@ -5,6 +5,7 @@
 \title{Running evaluation over a USM list}
 \usage{
 evaluate_usm_list(
+  species,
   usm_list,
   workspace,
   verbose,

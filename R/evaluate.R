@@ -10,6 +10,7 @@
 #'
 #' @returns a list containing
 evaluate_usm_list <- function(
+  species,
   usm_list,
   workspace,
   verbose,
@@ -38,6 +39,7 @@ evaluate_usm_list <- function(
   if (!is.null(reference_file)) {
     ref_stats <- read_csv(reference_file)
     comparisons <- compare_rmse(
+      species,
       ref_stats,
       stats
     )
@@ -89,6 +91,7 @@ evaluate <- function(
       }
       if (length(usms$situation) > 0) {
         spec_comp <- evaluate_usm_list(
+          spec,
           usms$situation,
           workspace,
           verbose,
@@ -106,7 +109,7 @@ evaluate <- function(
     for (c in comparisons) {
       total_critical <- total_critical + length(c$critical)
       total_warning <- total_warning + length(c$warning)
-      print_comparison_summary(c)
+      show(c)
     }
     if (total_critical > 0) {
       stop("Found deteriorated variables.")

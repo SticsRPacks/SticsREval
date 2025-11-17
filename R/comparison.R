@@ -1,3 +1,38 @@
+setClass(
+  "Comparison",
+  slots = list(
+    species = "character",
+    critical = "character",
+    warning = "character",
+    improved = "character"
+  )
+)
+setMethod(
+  "show",
+  "Comparison",
+  function(object) {
+    message("-----------------------------------------------------------------")
+    message("Species: ", object@species)
+    message(
+      "Total number of variables: ",
+      length(object@critical) + length(object@warning) + length(object@improved)
+    )
+    message(length(object@critical), " deteriorated variables (>5%): ")
+    if (length(object@critical) > 0) {
+      message(paste(object@critical, collapse = ", "))
+    }
+    message(length(object@warning), " deteriorated variables (>0%, <=5%): ")
+    if (length(object@warning) > 0) {
+      message(paste(object@warning, collapse = ", "))
+    }
+    message(length(object@improved), " improved variables (<0%): ")
+    if (length(object@improved) > 0) {
+      message(paste(object@improved, collapse = ", "))
+    }
+    message("-----------------------------------------------------------------")
+  }
+)
+
 #' Comparing relative RMSE of two STICS versions
 #'
 #' @param ref_stats the reference statistical criterion
@@ -6,6 +41,7 @@
 #' @returns a list containing the critically deteriorated variables, the
 #'  moderately deteriorated variables and the improved variables
 compare_rmse <- function(
+    species,
     ref_stats,
     new_stats
 ) {
@@ -28,34 +64,11 @@ compare_rmse <- function(
   critical_rows <- filter(result, rmse_new > rmse_ref * 1.05)
   warning_rows <- filter(result, rmse_new > rmse_ref & rmse_new <= rmse_ref * 1.05)
   improved_rows <- filter(result, rmse_new <= rmse_ref)
-  list(
+  new(
+    "Comparison",
+    species = species,
     critical = critical_rows$variable,
     warning = warning_rows$variable,
     improved = improved_rows$variable
   )
-}
-
-#' Displaying information about deteriorated and improved variables
-#'
-#' @param summary the summary of deteriorated and improved variables
-print_comparison_summary <- function(summary) {
-  message("-----------------------------------------------------------------")
-  message("Species: ", summary$species)
-  message(
-    "Total number of variables: ",
-    length(summary$critical) + length(summary$warning) + length(summary$improved)
-  )
-  message(length(summary$critical), " deteriorated variables (>5%): ")
-  if (length(summary$critical) > 0) {
-    message(paste(summary$critical, collapse = ", "))
-  }
-  message(length(summary$warning), " deteriorated variables (>0%, <=5%): ")
-  if (length(summary$warning) > 0) {
-    message(paste(summary$warning, collapse = ", "))
-  }
-  message(length(summary$improved), " improved variables (<0%): ")
-  if (length(summary$improved) > 0) {
-    message(paste(summary$improved, collapse = ", "))
-  }
-  message("-----------------------------------------------------------------")
 }

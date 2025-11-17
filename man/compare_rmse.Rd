@@ -4,7 +4,7 @@
 \alias{compare_rmse}
 \title{Comparing relative RMSE of two STICS versions}
 \usage{
-compare_rmse(ref_stats, new_stats)
+compare_rmse(species, ref_stats, new_stats)
 }
 \arguments{
 \item{ref_stats}{the reference statistical criterion}
