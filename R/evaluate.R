@@ -79,15 +79,21 @@ evaluate <- function(
     species <- unique(usm_list$species)
     comparisons <- list()
     for (spec in species) {
+
       usms <- dplyr::filter(usm_list, species == spec)
-      filename <- paste0("Criteres_stats_", species, ".csv")
+      filename <- paste0("Criteres_stats_", spec, ".csv")
+      reference_file <- NULL
+      test_file <- file.path(reference_data_dir, filename)
+      if (!is.null(reference_data_dir) && file.exists(test_file)) {
+        reference_file <- test_file
+      }
       if (length(usms$situation) > 0) {
         spec_comp <- evaluate_usm_list(
           usms$situation,
           workspace,
           verbose,
-          output_dir = file.path(output_dir, filename),
-          reference_data_dir = file.path(reference_data_dir, filename)
+          output_file = if (!is.null(output_dir)) file.path(output_dir, filename) else NULL,
+          reference_file = reference_file
         )
         if (!is.null(spec_comp)) {
           spec_comp <- c(spec_comp, species=spec)

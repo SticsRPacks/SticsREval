@@ -9,6 +9,7 @@
 #' @examples
 #'   get_usms_list("/path/to/workspace")
 get_usms_list <- function(workspace) {
+  library(dplyr)
   filter_file_path <- file.path(workspace, "typo_usms.csv")
   filter_file <- try(read.csv2(
     filter_file_path,

@@ -53,8 +53,7 @@ print_comparison_summary <- function(summary) {
   if (length(summary$warning) > 0) {
     message(paste(summary$warning, collapse = ", "))
   }
-  message(length(summary$warning), " improved variables (<0%): ")
-  message("Number of improved (<0%): ", length(summary$improved))
+  message(length(summary$improved), " improved variables (<0%): ")
   if (length(summary$improved) > 0) {
     message(paste(summary$improved, collapse = ", "))
   }

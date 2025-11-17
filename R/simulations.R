@@ -22,6 +22,6 @@ run_simulations <- function(stics_exe, workspace, usm_names, verbose) {
     verbose = verbose,
     time_display = verbose
   )
-  res <- SticsOnR::stics_wrapper(options, situation = usm_list)
+  res <- SticsOnR::stics_wrapper(options, situation = usm_names)
   res$sim_list
 }
