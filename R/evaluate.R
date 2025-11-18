@@ -61,13 +61,23 @@ evaluate_usm_list <- function(
 evaluate <- function(
   stics_exe,
   workspace,
+  data_source = "local",
+  sms_path = NULL,
+  stics_path = NULL,
   reference_data_dir = NULL,
   output_dir = NULL,
   run_simulations = TRUE,
   do_evaluation = TRUE,
   verbose = FALSE
 ) {
-  usm_list <- get_usms_list(workspace)
+  usm_list <- list()
+  if (data_source == "SMS") {
+    usm_list <- gen_workspace(
+      sms_path,
+      stics_path,
+      workspace
+    )
+  }
   if (run_simulations) {
     if (verbose) {
       message("Starting running simulations...")

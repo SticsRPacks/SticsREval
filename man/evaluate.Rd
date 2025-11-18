@@ -7,6 +7,9 @@
 evaluate(
   stics_exe,
   workspace,
+  data_source = "local",
+  sms_path = NULL,
+  stics_path = NULL,
   reference_data_dir = NULL,
   output_dir = NULL,
   run_simulations = TRUE,

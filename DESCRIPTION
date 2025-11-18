@@ -11,7 +11,8 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
 Imports:
     dplyr,
-    SticsRFiles
+    SticsRFiles,
+    XML
 Remotes:
     github::SticsRPacks/CroPlotR@*release
     github::SticsRPacks/SticsOnR@*release
