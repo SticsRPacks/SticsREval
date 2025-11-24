@@ -64,11 +64,11 @@ compare_rmse <- function(
   critical_rows <- filter(result, rmse_new > rmse_ref * 1.05)
   warning_rows <- filter(result, rmse_new > rmse_ref & rmse_new <= rmse_ref * 1.05)
   improved_rows <- filter(result, rmse_new <= rmse_ref)
-  new(
+  invisible(new(
     "Comparison",
     species = species,
     critical = critical_rows$variable,
     warning = warning_rows$variable,
     improved = improved_rows$variable
-  )
+  ))
 }

@@ -70,59 +70,59 @@ evaluate <- function(
   do_evaluation = TRUE,
   verbose = FALSE
 ) {
-  usm_list <- list()
-  if (data_source == "SMS") {
-    usm_list <- gen_workspace(
-      sms_path,
-      stics_path,
-      workspace
-    )
-  }
+  start.time <- Sys.time()
+  ds <- validate_configuration(
+    workspace = workspace,
+    data_source = data_source,
+    stics_exe = stics_exe,
+    stics_path = stics_path,
+    sms_path = sms_path,
+    run_simulations = run_simulations
+  )
+  usms <- usms(ds)
   if (run_simulations) {
     if (verbose) {
       message("Starting running simulations...")
     }
-    run_simulations(stics_exe, workspace, usm_list$situation, verbose)
+    run_simulations(stics_exe, workspace, usms, verbose)
+  }
+  if (!is.null(output_dir) && !file.exists(output_dir)) {
+    dir.create(output_dir, recursive = TRUE)
   }
   if (do_evaluation) {
     if (verbose) {
       message("Starting evaluation...")
     }
-    species <- unique(usm_list$species)
+    sorted_usms <- sort_usm_by_species(workspace, usms)
+    species <- unique(sorted_usms$species)
     comparisons <- list()
     for (spec in species) {
-
-      usms <- dplyr::filter(usm_list, species == spec)
+      selected_usms <- dplyr::filter(sorted_usms, species == spec)$usm
       filename <- paste0("Criteres_stats_", spec, ".csv")
       reference_file <- NULL
       test_file <- file.path(reference_data_dir, filename)
       if (!is.null(reference_data_dir) && file.exists(test_file)) {
         reference_file <- test_file
       }
-      if (length(usms$situation) > 0) {
+      if (length(selected_usms) > 0) {
         spec_comp <- evaluate_usm_list(
           spec,
-          usms$situation,
+          selected_usms,
           workspace,
           verbose,
           output_file = if (!is.null(output_dir)) file.path(output_dir, filename) else NULL,
           reference_file = reference_file
         )
         if (!is.null(spec_comp)) {
-          spec_comp <- c(spec_comp, species=spec)
           comparisons <- append(comparisons, list(spec_comp))
         }
       }
     }
-    total_critical <- 0
-    total_warning <- 0
     for (c in comparisons) {
-      total_critical <- total_critical + length(c$critical)
-      total_warning <- total_warning + length(c$warning)
       show(c)
     }
-    if (total_critical > 0) {
-      stop("Found deteriorated variables.")
-    }
+    end.time <- Sys.time()
+    time.taken <- round(end.time - start.time, 2)
+    print(time.taken)
   }
 }

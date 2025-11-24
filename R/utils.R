@@ -21,3 +21,15 @@ read_csv <- function(filepath) {
     stringsAsFactors = FALSE
   )
 }
+
+sort_usm_by_species <- function(workspace, usms) {
+  library(dplyr)
+  result <- lapply(usms, function(usm) {
+    species <- SticsRFiles::get_plant_txt(workspace = file.path(workspace, usm))
+    list(
+      species = species$codeplante,
+      usm = usm
+    )
+  })
+  dplyr::bind_rows(result)
+}
