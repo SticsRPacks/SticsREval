@@ -14,5 +14,5 @@ Imports:
     SticsRFiles,
     XML
 Remotes:
-    github::SticsRPacks/CroPlotR@*release
+    github::SticsRPacks/CroPlotR@*release,
     github::SticsRPacks/SticsOnR@*release
