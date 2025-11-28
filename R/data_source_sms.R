@@ -1,3 +1,15 @@
+validate_sms_configuration <- function(sms_path, stics_path, run_simulations) {
+  if (is.null(sms_path) || !dir.exists(sms_path)) {
+    stop("SMS path must be a valid path when data source is sms")
+  }
+  if (is.null(stics_path) || !dir.exists(stics_path)) {
+    stop("Stics path must be a valid path when data source is sms")
+  }
+  if (!run_simulations) stop(
+    "run_simulations flag must be True when data source is sms"
+  )
+}
+
 #' Getting the filtered USM list using the typo file.
 #'
 #' @description
