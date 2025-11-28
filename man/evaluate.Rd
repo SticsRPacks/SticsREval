@@ -14,7 +14,9 @@ evaluate(
   output_dir = NULL,
   run_simulations = TRUE,
   do_evaluation = TRUE,
-  verbose = FALSE
+  verbose = FALSE,
+  parallel = FALSE,
+  cores = NA
 )
 }
 \arguments{

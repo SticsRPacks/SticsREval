@@ -4,6 +4,8 @@
 #' @param workspace path to the simulation and observation data
 #' @param usm_names a list of USM name
 #' @param verbose a boolean used to run simulation in verbose mode
+#' @param parallel Boolean. Is the computation to be done in parallel ?
+#' @param cores Number of cores to use for parallel computation.
 #'
 #' @returns a list of crop simulation
 #'
@@ -14,11 +16,19 @@
 #'     c("usm1", "usm2", "usm3"),
 #'     TRUE
 #'   )
-run_simulations <- function(stics_exe, workspace, usm_names, verbose) {
+run_simulations <- function(
+    stics_exe,
+    workspace,
+    usm_names,
+    verbose,
+    parallel = FALSE,
+    cores = NA
+) {
   options <- SticsOnR::stics_wrapper_options(
     stics_exe = stics_exe,
     workspace = workspace,
-    parallel = TRUE,
+    parallel = parallel,
+    cores = cores,
     verbose = verbose,
     time_display = verbose
   )

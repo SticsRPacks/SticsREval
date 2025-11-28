@@ -4,7 +4,14 @@
 \alias{run_simulations}
 \title{Running simulations of STICS using a STICS executable}
 \usage{
-run_simulations(stics_exe, workspace, usm_names, verbose)
+run_simulations(
+  stics_exe,
+  workspace,
+  usm_names,
+  verbose,
+  parallel = FALSE,
+  cores = NA
+)
 }
 \arguments{
 \item{stics_exe}{path to the STICS executable}
@@ -14,6 +21,10 @@ run_simulations(stics_exe, workspace, usm_names, verbose)
 \item{usm_names}{a list of USM name}
 
 \item{verbose}{a boolean used to run simulation in verbose mode}
+
+\item{parallel}{Boolean. Is the computation to be done in parallel ?}
+
+\item{cores}{Number of cores to use for parallel computation.}
 }
 \value{
 a list of crop simulation

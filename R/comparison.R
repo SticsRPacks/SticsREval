@@ -1,3 +1,4 @@
+setGeneric("critical_nb", function(object) standardGeneric("critical_nb"))
 setClass(
   "Comparison",
   slots = list(
@@ -6,6 +7,11 @@ setClass(
     warning = "character",
     improved = "character"
   )
+)
+setMethod(
+  "critical_nb",
+  "Comparison",
+  function(object) length(object@critical)
 )
 setMethod(
   "show",
@@ -35,6 +41,7 @@ setMethod(
 
 #' Comparing relative RMSE of two STICS versions
 #'
+#' @param species the species corresponding to the statistical criteria
 #' @param ref_stats the reference statistical criterion
 #' @param new_stats the new version statistical criterion
 #'

@@ -10,10 +10,11 @@ get_sms_usms_list(sms_path)
 \item{sms_path}{path to the SMS repository}
 }
 \value{
-a list of usm with their associated species
+a list of usm names
 }
 \description{
-This function is specific to SMS data source
+This function is specific to SMS data source.
+The selected USMs have the "sms" source and are not used for calibration.
 }
 \examples{
   get_sms_usms_list("/path/to/sms")

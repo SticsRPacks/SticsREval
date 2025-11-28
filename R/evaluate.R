@@ -1,6 +1,14 @@
 #' Running evaluation over a USM list
 #'
-#' @param usm_list a list of USM names
+#' @description
+#' At first, statistical criteria are computed using the CroPlotR package.
+#' Then, if a reference data directory is specified, the reference RMSE is
+#' compared to the computed RMSE.
+#'
+#'
+#' @param species the species corresponding to the simulations and observations
+#' @param sim a list of simulations
+#' @param obs a list of observations
 #' @param workspace path to the simulation and observation data
 #' @param verbose Logical value for displaying or not information while running
 #' @param reference_file Path to the file containing the statistical criterion
@@ -8,25 +16,16 @@
 #' @param output_file Path where the statistical criterion of the evaluated
 #'  version will be saved
 #'
-#' @returns a list containing
-evaluate_usm_list <- function(
+#' @returns a list containing the Comparison objects for the species
+evaluate_species <- function(
   species,
-  usm_list,
+  sim,
+  obs,
   workspace,
   verbose,
   reference_file = NULL,
   output_file = NULL
 ) {
-  sim <- SticsRFiles::get_sim(
-    workspace = workspace,
-    usm = usm_list,
-    verbose = verbose
-  )
-  obs <- SticsRFiles::get_obs(
-    workspace = workspace,
-    usm = usm_list,
-    verbose = verbose
-  )
   if (length(sim) == 0 || length(obs) == 0) {
     return(NULL)
   }
@@ -56,6 +55,8 @@ evaluate_usm_list <- function(
 #' @param run_simulations Logical value for running simulation or not
 #' @param do_evaluation Logical value for running evaluation or not
 #' @param verbose Logical value for displaying or not information while running
+#' @param parallel Boolean. Is the computation to be done in parallel ?
+#' @param cores Number of cores to use for parallel computation.
 #'
 #' @export
 evaluate <- function(
@@ -68,7 +69,9 @@ evaluate <- function(
   output_dir = NULL,
   run_simulations = TRUE,
   do_evaluation = TRUE,
-  verbose = FALSE
+  verbose = FALSE,
+  parallel = FALSE,
+  cores = NA
 ) {
   start.time <- Sys.time()
   ds <- validate_configuration(
@@ -80,11 +83,19 @@ evaluate <- function(
     run_simulations = run_simulations
   )
   usms <- usms(ds)
+  sim <- NULL
   if (run_simulations) {
     if (verbose) {
       message("Starting running simulations...")
     }
-    run_simulations(stics_exe, workspace, usms, verbose)
+    sim <- run_simulations(
+      stics_exe,
+      workspace,
+      usms,
+      verbose,
+      parallel = parallel,
+      cores = cores
+    )
   }
   if (!is.null(output_dir) && !file.exists(output_dir)) {
     dir.create(output_dir, recursive = TRUE)
@@ -93,11 +104,34 @@ evaluate <- function(
     if (verbose) {
       message("Starting evaluation...")
     }
-    sorted_usms <- sort_usm_by_species(workspace, usms)
+    if (is.null(sim)) {
+      sim <- SticsRFiles::get_sim(
+        workspace = workspace,
+        usm = usms,
+        verbose = verbose,
+        parallel = parallel,
+        cores = cores
+      )
+    }
+    obs <- SticsRFiles::get_obs(
+      workspace = workspace,
+      usm = usms,
+      verbose = verbose,
+      parallel = parallel,
+      cores = cores
+    )
+    sorted_usms <- sort_usm_by_species(
+      workspace,
+      usms,
+      parallel = parallel,
+      cores = cores
+    )
     species <- unique(sorted_usms$species)
     comparisons <- list()
     for (spec in species) {
       selected_usms <- dplyr::filter(sorted_usms, species == spec)$usm
+      selected_sim <- sim[selected_usms]
+      selected_obs <- obs[selected_usms]
       filename <- paste0("Criteres_stats_", spec, ".csv")
       reference_file <- NULL
       test_file <- file.path(reference_data_dir, filename)
@@ -105,9 +139,10 @@ evaluate <- function(
         reference_file <- test_file
       }
       if (length(selected_usms) > 0) {
-        spec_comp <- evaluate_usm_list(
+        spec_comp <- evaluate_species(
           spec,
-          selected_usms,
+          selected_sim,
+          selected_obs,
           workspace,
           verbose,
           output_file = if (!is.null(output_dir)) file.path(output_dir, filename) else NULL,
@@ -118,11 +153,16 @@ evaluate <- function(
         }
       }
     }
+    total_critical <- 0
     for (c in comparisons) {
       show(c)
+      total_critical <- total_critical + critical_nb(c)
     }
     end.time <- Sys.time()
     time.taken <- round(end.time - start.time, 2)
     print(time.taken)
+    if (total_critical > 0) {
+      stop("Found at least one critical deteriorated variable")
+    }
   }
 }
