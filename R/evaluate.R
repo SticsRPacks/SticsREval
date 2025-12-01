@@ -19,15 +19,15 @@ evaluate_species <- function(
   species,
   sim,
   obs,
-  workspace,
+  output_dir,
   reference_data_dir,
   verbose
 ) {
   library(CroPlotR)
   stats <- summary(sim, obs = obs)
   filename <- paste0("Criteres_stats_", species, ".csv")
-  if (!is.null(workspace)) {
-    safe_write_csv(stats, file.path(workspace, filename))
+  if (!is.null(output_dir)) {
+    safe_write_csv(stats, file.path(output_dir, filename))
   }
   reference_file <- file.path(reference_data_dir, filename)
   if (!length(reference_file) || !file.exists(reference_file)) {

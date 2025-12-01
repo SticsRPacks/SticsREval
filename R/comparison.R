@@ -68,9 +68,9 @@ compare_rmse <- function(
       !is.na(rmse_ref)
     )
 
-  critical_rows <- filter(result, rmse_new > rmse_ref * 1.05)
-  warning_rows <- filter(result, rmse_new > rmse_ref & rmse_new <= rmse_ref * 1.05)
-  improved_rows <- filter(result, rmse_new <= rmse_ref)
+  critical_rows <- dplyr::filter(result, rmse_new > rmse_ref * 1.05)
+  warning_rows <- dplyr::filter(result, rmse_new > rmse_ref & rmse_new <= rmse_ref * 1.05)
+  improved_rows <- dplyr::filter(result, rmse_new <= rmse_ref)
   invisible(new(
     "Comparison",
     species = species,
