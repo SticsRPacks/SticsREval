@@ -30,7 +30,7 @@ evaluate_species <- function(
     safe_write_csv(stats, file.path(workspace, filename))
   }
   reference_file <- file.path(reference_data_dir, filename)
-  if (!file.exists(reference_file)) {
+  if (!length(reference_file) || !file.exists(reference_file)) {
     return(NULL)
   }
   ref_stats <- read_csv(reference_file)
@@ -136,7 +136,7 @@ evaluate <- function(
         spec,
         selected_sim,
         selected_obs,
-        workspace,
+        output_dir,
         reference_data_dir,
         verbose
       )
