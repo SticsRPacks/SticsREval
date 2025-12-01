@@ -33,6 +33,10 @@ evaluate(
 \item{do_evaluation}{Logical value for running evaluation or not}
 
 \item{verbose}{Logical value for displaying or not information while running}
+
+\item{parallel}{Boolean. Is the computation to be done in parallel ?}
+
+\item{cores}{Number of cores to use for parallel computation.}
 }
 \description{
 Running a complete evaluation process of STICS model

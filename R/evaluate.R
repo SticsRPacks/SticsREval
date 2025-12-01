@@ -10,11 +10,9 @@
 #' @param sim a list of simulations
 #' @param obs a list of observations
 #' @param workspace path to the simulation and observation data
+#' @param reference_data_dir Path to the directory which contains the reference
+#' data to use for comparison
 #' @param verbose Logical value for displaying or not information while running
-#' @param reference_file Path to the file containing the statistical criterion
-#'  to use in comparison
-#' @param output_file Path where the statistical criterion of the evaluated
-#'  version will be saved
 #'
 #' @returns a list containing the Comparison objects for the species
 evaluate_species <- function(
@@ -22,28 +20,25 @@ evaluate_species <- function(
   sim,
   obs,
   workspace,
-  verbose,
-  reference_file = NULL,
-  output_file = NULL
+  reference_data_dir,
+  verbose
 ) {
-  if (length(sim) == 0 || length(obs) == 0) {
-    return(NULL)
-  }
   library(CroPlotR)
   stats <- summary(sim, obs = obs)
-  if (!is.null(output_file)) {
-    safe_write_csv(stats, output_file)
+  filename <- paste0("Criteres_stats_", species, ".csv")
+  if (!is.null(workspace)) {
+    safe_write_csv(stats, file.path(workspace, filename))
   }
-  comparisons <- NULL
-  if (!is.null(reference_file)) {
-    ref_stats <- read_csv(reference_file)
-    comparisons <- compare_rmse(
-      species,
-      ref_stats,
-      stats
-    )
+  reference_file <- file.path(reference_data_dir, filename)
+  if (!file.exists(reference_file)) {
+    return(NULL)
   }
-  comparisons
+  ref_stats <- read_csv(reference_file)
+  compare_rmse(
+    species,
+    ref_stats,
+    stats
+  )
 }
 
 #' Running a complete evaluation process of STICS model
@@ -127,36 +122,31 @@ evaluate <- function(
       cores = cores
     )
     species <- unique(sorted_usms$species)
-    comparisons <- list()
-    for (spec in species) {
+    comparisons <- lapply(species, function(spec) {
       selected_usms <- dplyr::filter(sorted_usms, species == spec)$usm
+      if (!length(selected_usms)) {
+        return(NULL)
+      }
       selected_sim <- sim[selected_usms]
       selected_obs <- obs[selected_usms]
-      filename <- paste0("Criteres_stats_", spec, ".csv")
-      reference_file <- NULL
-      test_file <- file.path(reference_data_dir, filename)
-      if (!is.null(reference_data_dir) && file.exists(test_file)) {
-        reference_file <- test_file
+      if (length(selected_sim) == 0 || length(selected_obs) == 0) {
+        return(NULL)
       }
-      if (length(selected_usms) > 0) {
-        spec_comp <- evaluate_species(
-          spec,
-          selected_sim,
-          selected_obs,
-          workspace,
-          verbose,
-          output_file = if (!is.null(output_dir)) file.path(output_dir, filename) else NULL,
-          reference_file = reference_file
-        )
-        if (!is.null(spec_comp)) {
-          comparisons <- append(comparisons, list(spec_comp))
-        }
-      }
-    }
+      evaluate_species(
+        spec,
+        selected_sim,
+        selected_obs,
+        workspace,
+        reference_data_dir,
+        verbose
+      )
+    })
     total_critical <- 0
     for (c in comparisons) {
-      show(c)
-      total_critical <- total_critical + critical_nb(c)
+      if (!is.null(c)) {
+        show(c)
+        total_critical <- total_critical + critical_nb(c)
+      }
     }
     end.time <- Sys.time()
     time.taken <- round(end.time - start.time, 2)

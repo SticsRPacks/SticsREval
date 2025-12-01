@@ -4,15 +4,7 @@
 \alias{evaluate_species}
 \title{Running evaluation over a USM list}
 \usage{
-evaluate_species(
-  species,
-  sim,
-  obs,
-  workspace,
-  verbose,
-  reference_file = NULL,
-  output_file = NULL
-)
+evaluate_species(species, sim, obs, workspace, reference_data_dir, verbose)
 }
 \arguments{
 \item{species}{the species corresponding to the simulations and observations}
@@ -23,13 +15,10 @@ evaluate_species(
 
 \item{workspace}{path to the simulation and observation data}
 
+\item{reference_data_dir}{Path to the directory which contains the reference
+data to use for comparison}
+
 \item{verbose}{Logical value for displaying or not information while running}
-
-\item{reference_file}{Path to the file containing the statistical criterion
-to use in comparison}
-
-\item{output_file}{Path where the statistical criterion of the evaluated
-version will be saved}
 }
 \value{
 a list containing the Comparison objects for the species
