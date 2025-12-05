@@ -66,9 +66,6 @@ evaluate <- function(config) {
       cores = config$cores
     )
   }
-  if (!is.null(config$output_dir) && !file.exists(config$output_dir)) {
-    dir.create(config$output_dir, recursive = TRUE)
-  }
   if (config$do_evaluation) {
     if (config$verbose) {
       message("Starting evaluation...")

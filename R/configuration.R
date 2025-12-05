@@ -81,6 +81,7 @@ set_config_default_values <- function(config) {
 #' @description
 #' The configuration must follow these rules to be considered as valid:
 #'  - `stics_exe`, `workspace` must be defined
+#'  - if `reference_data_dir` is defined, it must be a valid path
 #'  - `data_source` must be either `sms` or `local`
 #'  - if `data_source` is `local`:
 #'    - `rotation_file` must be defined
@@ -90,6 +91,15 @@ set_config_default_values <- function(config) {
 validate_configuration <- function(config) {
   if (is.null(config$stics_exe)) stop("Stics executable path must be defined")
   if (is.null(config$workspace)) stop("Workspace path must be defined")
+  if (
+    !is.null(config$reference_data_dir) &&
+    !dir.exists(config$reference_data_dir)
+  ) {
+    stop("Reference data directory must be a valid path if defined")
+  }
+  if (!is.null(config$output_dir) && !file.exists(config$output_dir)) {
+    dir.create(config$output_dir, recursive = TRUE)
+  }
   if (config$data_source == "sms") {
     if (is.null(config$sms_path) || !dir.exists(config$sms_path)) {
       stop("SMS path must be a valid path when data source is sms")
