@@ -6,7 +6,6 @@
 #' @param reference_data_dir path to the reference data to use for comparison
 #' @param output_dir path where output files will be saved
 #' @param run_simulations Logical value for running simulation or not
-#' @param do_evaluation Logical value for running evaluation or not
 #' @param verbose Logical value for displaying or not information while running
 #' @param parallel Boolean. Is the computation to be done in parallel ?
 #' @param cores Number of cores to use for parallel computation.
@@ -22,7 +21,7 @@
 #'
 #' @seealso [set_config_default_values()] to get default values
 #' @seealso [validate_configuration()] to get more information about valid
-#'  configurations
+#'  configuration
 #'
 #' @export
 make_config <- function(...) {
@@ -34,7 +33,6 @@ make_config <- function(...) {
     workspace = config$workspace,
     data_source = config$data_source,
     run_simulations = config$run_simulations,
-    do_evaluation = config$do_evaluation,
     verbose = config$verbose,
     parallel = config$parallel,
     cores = config$cores,
@@ -51,28 +49,16 @@ make_config <- function(...) {
 #' @details
 #'  Default values:
 #'   - run_simulations -> TRUE
-#'   - do_evaluation -> TRUE
 #'   - verbose -> FALSE
 #'   - parallel -> FALSE
 #'   - cores -> NA
 #'
 #' @returns A configuration list with default values
 set_config_default_values <- function(config) {
-  if (is.null(config$run_simulations)) {
-    config$run_simulations <- TRUE
-  }
-  if (is.null(config$do_evaluation)) {
-    config$do_evaluation <- TRUE
-  }
-  if (is.null(config$verbose)) {
-    config$verbose <- FALSE
-  }
-  if (is.null(config$parallel)) {
-    config$parallel <- FALSE
-  }
-  if (is.null(config$cores)) {
-    config$cores <- NA
-  }
+  config$run_simulations <- config$run_simulations %||% TRUE
+  config$verbose <- config$verbose %||% FALSE
+  config$parallel <- config$parallel %||% FALSE
+  config$cores <- config$cores %||% NA
   config
 }
 

@@ -41,6 +41,72 @@ evaluate_species <- function(
   )
 }
 
+load_simulations <- function(config, usms, rotations) {
+  if (config$run_simulations) {
+    if (config$verbose) {
+      message("Starting running simulations...")
+    }
+    return(
+      run_simulations(
+        stics_exe = config$stics_exe,
+        workspace = config$workspace,
+        usm_names = usms,
+        successive = rotations,
+        verbose = config$verbose,
+        parallel = config$parallel,
+        cores = config$cores
+      )
+    )
+  }
+  SticsRFiles::get_sim(
+    workspace = config$workspace,
+    usm = usms,
+    verbose = config$verbose,
+    parallel = config$parallel,
+    cores = config$cores
+  )
+}
+
+load_observations <- function(config, usms) {
+  SticsRFiles::get_obs(
+    workspace = config$workspace,
+    usm = usms,
+    verbose = config$verbose,
+    parallel = config$parallel,
+    cores = config$cores
+  )
+}
+
+evaluate_all_species <- function(species, sorted_usms, sim, obs, config) {
+  backend <- setup_parallel_backend(config, length(species))
+  on.exit(backend$cleanup(), add = TRUE)
+  `%do_par_or_not%` <- backend$do
+  comparisons <- foreach::foreach(
+    i = seq_along(species),
+    .packages = c("dplyr", "CroPlotR")
+  ) %do_par_or_not% {
+    spec <- species[i]
+    selected_usms <- dplyr::filter(sorted_usms, species == spec)$usm
+    if (!length(selected_usms)) {
+      return(NULL)
+    }
+    selected_sim <- sim[selected_usms]
+    selected_obs <- obs[selected_usms]
+    if (length(selected_sim) == 0 || length(selected_obs) == 0) {
+      return(NULL)
+    }
+    evaluate_species(
+      spec,
+      selected_sim,
+      selected_obs,
+      config$output_dir,
+      config$reference_data_dir,
+      config$verbose
+    )
+  }
+  comparisons
+}
+
 #' @title Running a complete evaluation process of STICS model
 #'
 #' @param config List containing any information needed for the evaluation
@@ -51,91 +117,19 @@ evaluate <- function(config) {
   start.time <- Sys.time()
   ds <- get_data_source_from_config(config)
   usms <- usms(ds)
-  sim <- NULL
-  if (config$run_simulations) {
-    if (config$verbose) {
-      message("Starting running simulations...")
-    }
-    sim <- run_simulations(
-      stics_exe = config$stics_exe,
-      workspace = config$workspace,
-      usm_names = usms,
-      successive = rotations(ds),
-      verbose = config$verbose,
-      parallel = config$parallel,
-      cores = config$cores
-    )
-  }
-  if (config$do_evaluation) {
-    if (config$verbose) {
-      message("Starting evaluation...")
-    }
-    if (is.null(sim)) {
-      sim <- SticsRFiles::get_sim(
-        workspace = config$workspace,
-        usm = usms,
-        verbose = config$verbose,
-        parallel = config$parallel,
-        cores = config$cores
-      )
-    }
-    obs <- SticsRFiles::get_obs(
-      workspace = config$workspace,
-      usm = usms,
-      verbose = config$verbose,
-      parallel = config$parallel,
-      cores = config$cores
-    )
-    sorted_usms <- sort_usm_by_species(
-      config$workspace,
-      usms,
-      parallel = config$parallel,
-      cores = config$cores
-    )
-    species <- unique(sorted_usms$species)
-    if (config$parallel) {
-      cl <- setup_parallelism(length(species), cores = config$cores)
-      on.exit(stopCluster(cl))
-      `%do_par_or_not%` <- foreach::`%dopar%`
-    } else {
-      `%do_par_or_not%` <- foreach::`%do%`
-    }
-
-    comparisons <- foreach::foreach(
-      i = seq_along(species),
-      .packages = c("dplyr", "CroPlotR")
-    ) %do_par_or_not% {
-      spec <- species[i]
-      selected_usms <- dplyr::filter(sorted_usms, species == spec)$usm
-      if (!length(selected_usms)) {
-        return(NULL)
-      }
-      selected_sim <- sim[selected_usms]
-      selected_obs <- obs[selected_usms]
-      if (length(selected_sim) == 0 || length(selected_obs) == 0) {
-        return(NULL)
-      }
-      evaluate_species(
-        spec,
-        selected_sim,
-        selected_obs,
-        config$output_dir,
-        config$reference_data_dir,
-        config$verbose
-      )
-    }
-    total_critical <- 0
-    for (c in comparisons) {
-      if (!is.null(c)) {
-        show(c)
-        total_critical <- total_critical + critical_nb(c)
-      }
-    }
-    end.time <- Sys.time()
-    time.taken <- round(end.time - start.time, 2)
-    print(time.taken)
-    if (total_critical > 0) {
-      stop("Found at least one critical deteriorated variable")
-    }
+  sim <- load_simulations(config, usms, rotations(ds))
+  obs <- load_observations(config, usms)
+  sorted_usms <- sort_usm_by_species(config, usms)
+  species <- unique(sorted_usms$species)
+  comparisons <- evaluate_all_species(species, sorted_usms, sim, obs, config)
+  criticals <- sapply(comparisons, function(c) {
+    show(c)
+    critical_nb(c)
+  })
+  end.time <- Sys.time()
+  time.taken <- round(end.time - start.time, 2)
+  print(time.taken)
+  if (sum(criticals) > 0) {
+    stop("Found at least one critical deteriorated variable")
   }
 }

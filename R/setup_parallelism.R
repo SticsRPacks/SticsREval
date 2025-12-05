@@ -7,7 +7,6 @@
 #' @param inputs_number      Number of inputs
 #' @param cores              Number of cores to use for parallel computation.
 #'
-#' @importFrom foreach %dopar% %do%
 #' @importFrom parallel clusterCall makeCluster
 #' @importFrom doParallel registerDoParallel
 #'
@@ -30,4 +29,19 @@ setup_parallelism <- function(inputs_number, cores = NA) {
   registerDoParallel(cl)
   clusterCall(cl, function(x) .libPaths(x), .libPaths())
   cl
+}
+
+#' @importFrom foreach %dopar% %do%
+#' @importFrom parallel stopCluster
+#'
+#' @keywords internal
+#'
+#' @noRd
+#'
+setup_parallel_backend <- function(config, n_tasks) {
+  if (!config$parallel) {
+    return(list(do = foreach::`%do%`, cleanup = function(){}))
+  }
+  cl <- setup_parallelism(n_tasks, config$cores)
+  return(list(do = foreach::`%dopar%`, cleanup = function() stopCluster(cl)))
 }

@@ -16,7 +16,6 @@ Setting default values for null parameters in a configuration list
 Default values:
 \itemize{
 \item run_simulations -> TRUE
-\item do_evaluation -> TRUE
 \item verbose -> FALSE
 \item parallel -> FALSE
 \item cores -> NA

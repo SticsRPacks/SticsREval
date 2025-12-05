@@ -20,13 +20,13 @@
 #'     TRUE
 #'   )
 run_simulations <- function(
-    stics_exe,
-    workspace,
-    usm_names,
-    successive,
-    verbose,
-    parallel = FALSE,
-    cores = NA
+  stics_exe,
+  workspace,
+  usm_names,
+  successive,
+  verbose,
+  parallel = FALSE,
+  cores = NA
 ) {
   options <- SticsOnR::stics_wrapper_options(
     stics_exe = stics_exe,

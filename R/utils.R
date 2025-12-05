@@ -23,23 +23,19 @@ read_csv <- function(filepath) {
   )
 }
 
-#' @importFrom parallel stopCluster
-#' @importFrom foreach %dopar% %do%
-sort_usm_by_species <- function(workspace, usms, parallel = FALSE, cores = NA) {
-  library(dplyr)
-  if (parallel) {
-    cl <- setup_parallelism(length(usms), cores = cores)
-    on.exit(stopCluster(cl))
-    `%do_par_or_not%` <- foreach::`%dopar%`
-  } else {
-    `%do_par_or_not%` <- foreach::`%do%`
-  }
+sort_usm_by_species <- function(config, usms) {
+  backend <- setup_parallel_backend(config, length(usms))
+  on.exit(backend$cleanup(), add = TRUE)
+  `%do_par_or_not%` <- backend$do
 
+  library(dplyr)
   result <- foreach::foreach(
     i = seq_along(usms)
   ) %do_par_or_not% {
     usm <- usms[i]
-    species <- SticsRFiles::get_plant_txt(workspace = file.path(workspace, usm))
+    species <- SticsRFiles::get_plant_txt(
+      workspace = file.path(config$workspace, usm)
+    )
     list(
       species = species$codeplante,
       usm = usm

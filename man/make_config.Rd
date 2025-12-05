@@ -18,8 +18,6 @@ make_config(...)
 
 \item{run_simulations}{Logical value for running simulation or not}
 
-\item{do_evaluation}{Logical value for running evaluation or not}
-
 \item{verbose}{Logical value for displaying or not information while running}
 
 \item{parallel}{Boolean. Is the computation to be done in parallel ?}
@@ -48,5 +46,5 @@ evaluation
 \code{\link[=set_config_default_values]{set_config_default_values()}} to get default values
 
 \code{\link[=validate_configuration]{validate_configuration()}} to get more information about valid
-configurations
+configuration
 }
