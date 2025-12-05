@@ -100,3 +100,43 @@ test_that("compare_rmse returns an invisible value", {
 
   expect_s4_class(res, "Comparison")
 })
+
+test_that("compare_rmse handles negative RMSE values correctly", {
+  species <- "NegativeCase"
+
+  ref_stats <- data.frame(
+    variable = c("A", "B", "C"),
+    rRMSE = c("-10,0", "-20,0", "-30,0")
+  )
+  new_stats <- data.frame(
+    variable = c("A", "B", "C"),
+    rRMSE = c("-9,0",  "-25,0", "-28,0")
+  )
+
+  result <- compare_rmse(species, ref_stats, new_stats)
+
+  expect_equal(result@critical, "A")
+  expect_equal(result@warning, "C")
+  expect_equal(result@improved, "B")
+})
+
+
+test_that("compare_rmse treats negative values symmetrically for improvements", {
+  species <- "NegativeImprove"
+
+  ref_stats <- data.frame(
+    variable = c("X", "Y"),
+    rRMSE = c("-50,0", "-40,0")
+  )
+  new_stats <- data.frame(
+    variable = c("X", "Y"),
+    rRMSE = c("-55,0", "-42,0")
+  )
+
+  result <- compare_rmse(species, ref_stats, new_stats)
+
+  expect_equal(result@critical, character(0))
+  expect_equal(result@warning, character(0))
+  expect_equal(result@improved, c("X", "Y"))
+})
+

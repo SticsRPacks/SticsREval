@@ -4,40 +4,11 @@
 \alias{evaluate}
 \title{Running a complete evaluation process of STICS model}
 \usage{
-evaluate(
-  stics_exe,
-  workspace,
-  data_source = "local",
-  sms_path = NULL,
-  stics_path = NULL,
-  reference_data_dir = NULL,
-  output_dir = NULL,
-  run_simulations = TRUE,
-  do_evaluation = TRUE,
-  rotation_file = NULL,
-  verbose = FALSE,
-  parallel = FALSE,
-  cores = NA
-)
+evaluate(config)
 }
 \arguments{
-\item{stics_exe}{path to the STICS executable}
-
-\item{workspace}{path to the simulation and observation data}
-
-\item{reference_data_dir}{path to the reference data to use for comparison}
-
-\item{output_dir}{path where output files will be saved}
-
-\item{run_simulations}{Logical value for running simulation or not}
-
-\item{do_evaluation}{Logical value for running evaluation or not}
-
-\item{verbose}{Logical value for displaying or not information while running}
-
-\item{parallel}{Boolean. Is the computation to be done in parallel ?}
-
-\item{cores}{Number of cores to use for parallel computation.}
+\item{config}{List containing any information needed for the evaluation
+process. See \code{\link[=make_config]{make_config()}} for the complete list of parameters.}
 }
 \description{
 Running a complete evaluation process of STICS model

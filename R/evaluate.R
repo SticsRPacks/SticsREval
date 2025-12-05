@@ -41,92 +41,63 @@ evaluate_species <- function(
   )
 }
 
-#' Running a complete evaluation process of STICS model
+#' @title Running a complete evaluation process of STICS model
 #'
-#' @param stics_exe path to the STICS executable
-#' @param workspace path to the simulation and observation data
-#' @param reference_data_dir path to the reference data to use for comparison
-#' @param output_dir path where output files will be saved
-#' @param run_simulations Logical value for running simulation or not
-#' @param do_evaluation Logical value for running evaluation or not
-#' @param verbose Logical value for displaying or not information while running
-#' @param parallel Boolean. Is the computation to be done in parallel ?
-#' @param cores Number of cores to use for parallel computation.
+#' @param config List containing any information needed for the evaluation
+#'  process. See [make_config()] for the complete list of parameters.
 #'
 #' @export
-evaluate <- function(
-  stics_exe,
-  workspace,
-  data_source = "local",
-  sms_path = NULL,
-  stics_path = NULL,
-  reference_data_dir = NULL,
-  output_dir = NULL,
-  run_simulations = TRUE,
-  do_evaluation = TRUE,
-  rotation_file = NULL,
-  verbose = FALSE,
-  parallel = FALSE,
-  cores = NA
-) {
+evaluate <- function(config) {
   start.time <- Sys.time()
-  ds <- validate_configuration(
-    workspace = workspace,
-    data_source = data_source,
-    stics_exe = stics_exe,
-    stics_path = stics_path,
-    sms_path = sms_path,
-    run_simulations = run_simulations,
-    rotation_file = rotation_file
-  )
+  ds <- get_data_source_from_config(config)
   usms <- usms(ds)
   sim <- NULL
-  if (run_simulations) {
-    if (verbose) {
+  if (config$run_simulations) {
+    if (config$verbose) {
       message("Starting running simulations...")
     }
     sim <- run_simulations(
-      stics_exe = stics_exe,
-      workspace = workspace,
+      stics_exe = config$stics_exe,
+      workspace = config$workspace,
       usm_names = usms,
       successive = rotations(ds),
-      verbose = verbose,
-      parallel = parallel,
-      cores = cores
+      verbose = config$verbose,
+      parallel = config$parallel,
+      cores = config$cores
     )
   }
-  if (!is.null(output_dir) && !file.exists(output_dir)) {
-    dir.create(output_dir, recursive = TRUE)
+  if (!is.null(config$output_dir) && !file.exists(config$output_dir)) {
+    dir.create(config$output_dir, recursive = TRUE)
   }
-  if (do_evaluation) {
-    if (verbose) {
+  if (config$do_evaluation) {
+    if (config$verbose) {
       message("Starting evaluation...")
     }
     if (is.null(sim)) {
       sim <- SticsRFiles::get_sim(
-        workspace = workspace,
+        workspace = config$workspace,
         usm = usms,
-        verbose = verbose,
-        parallel = parallel,
-        cores = cores
+        verbose = config$verbose,
+        parallel = config$parallel,
+        cores = config$cores
       )
     }
     obs <- SticsRFiles::get_obs(
-      workspace = workspace,
+      workspace = config$workspace,
       usm = usms,
-      verbose = verbose,
-      parallel = parallel,
-      cores = cores
+      verbose = config$verbose,
+      parallel = config$parallel,
+      cores = config$cores
     )
     sorted_usms <- sort_usm_by_species(
-      workspace,
+      config$workspace,
       usms,
-      parallel = parallel,
-      cores = cores
+      parallel = config$parallel,
+      cores = config$cores
     )
     species <- unique(sorted_usms$species)
-    if (parallel) {
-      cl <- setup_parallelism(length(species), cores = cores)
+    if (config$parallel) {
+      cl <- setup_parallelism(length(species), cores = config$cores)
       on.exit(stopCluster(cl))
       `%do_par_or_not%` <- foreach::`%dopar%`
     } else {
@@ -151,9 +122,9 @@ evaluate <- function(
         spec,
         selected_sim,
         selected_obs,
-        output_dir,
-        reference_data_dir,
-        verbose
+        config$output_dir,
+        config$reference_data_dir,
+        config$verbose
       )
     }
     total_critical <- 0
