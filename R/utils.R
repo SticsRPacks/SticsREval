@@ -14,10 +14,11 @@ safe_write_csv <- function(data, path) {
 }
 
 read_csv <- function(filepath) {
-  read.table(
-    file = filepath,
-    sep = ";",
+  read.csv2(
+    filepath,
     header = TRUE,
+    na.strings = c(NA, "NaN", "OK", "rejection M=0"),
+    sep = ";",
     stringsAsFactors = FALSE
   )
 }
@@ -45,4 +46,14 @@ sort_usm_by_species <- function(workspace, usms, parallel = FALSE, cores = NA) {
     )
   }
   dplyr::bind_rows(result)
+}
+
+get_rotation_list <- function(rotation_data) {
+  library(dplyr)
+  rotation_data %>%
+    dplyr::filter(rotation != 0) %>%
+    dplyr::arrange(rotation, rotation_order) %>%
+    dplyr::group_by(rotation) %>%
+    dplyr::summarise(usm_vec = list(usm)) %>%
+    dplyr::pull(usm_vec)
 }

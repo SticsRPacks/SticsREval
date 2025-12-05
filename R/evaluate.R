@@ -64,6 +64,7 @@ evaluate <- function(
   output_dir = NULL,
   run_simulations = TRUE,
   do_evaluation = TRUE,
+  rotation_file = NULL,
   verbose = FALSE,
   parallel = FALSE,
   cores = NA
@@ -75,7 +76,8 @@ evaluate <- function(
     stics_exe = stics_exe,
     stics_path = stics_path,
     sms_path = sms_path,
-    run_simulations = run_simulations
+    run_simulations = run_simulations,
+    rotation_file = rotation_file
   )
   usms <- usms(ds)
   sim <- NULL
@@ -84,10 +86,11 @@ evaluate <- function(
       message("Starting running simulations...")
     }
     sim <- run_simulations(
-      stics_exe,
-      workspace,
-      usms,
-      verbose,
+      stics_exe = stics_exe,
+      workspace = workspace,
+      usm_names = usms,
+      successive = rotations(ds),
+      verbose = verbose,
       parallel = parallel,
       cores = cores
     )
@@ -122,7 +125,19 @@ evaluate <- function(
       cores = cores
     )
     species <- unique(sorted_usms$species)
-    comparisons <- lapply(species, function(spec) {
+    if (parallel) {
+      cl <- setup_parallelism(length(species), cores = cores)
+      on.exit(stopCluster(cl))
+      `%do_par_or_not%` <- foreach::`%dopar%`
+    } else {
+      `%do_par_or_not%` <- foreach::`%do%`
+    }
+
+    comparisons <- foreach::foreach(
+      i = seq_along(species),
+      .packages = c("dplyr", "CroPlotR")
+    ) %do_par_or_not% {
+      spec <- species[i]
       selected_usms <- dplyr::filter(sorted_usms, species == spec)$usm
       if (!length(selected_usms)) {
         return(NULL)
@@ -140,7 +155,7 @@ evaluate <- function(
         reference_data_dir,
         verbose
       )
-    })
+    }
     total_critical <- 0
     for (c in comparisons) {
       if (!is.null(c)) {

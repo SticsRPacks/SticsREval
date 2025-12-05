@@ -14,6 +14,7 @@ evaluate(
   output_dir = NULL,
   run_simulations = TRUE,
   do_evaluation = TRUE,
+  rotation_file = NULL,
   verbose = FALSE,
   parallel = FALSE,
   cores = NA

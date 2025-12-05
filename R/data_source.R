@@ -1,8 +1,11 @@
 setGeneric("usms", function(object) standardGeneric("usms"))
+setGeneric("rotations", function(object) standardGeneric("rotations"))
+
 setClass(
   "DataSource",
   slots = list(
-    usms = "character"
+    usms = "character",
+    rotations = "list"
   )
 )
 setMethod(
@@ -10,5 +13,12 @@ setMethod(
   "DataSource",
   function(object) {
     object@usms
+  }
+)
+setMethod(
+  "rotations",
+  "DataSource",
+  function(object) {
+    object@rotations
   }
 )

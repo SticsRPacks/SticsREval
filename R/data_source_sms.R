@@ -10,6 +10,16 @@ validate_sms_configuration <- function(sms_path, stics_path, run_simulations) {
   )
 }
 
+get_sms_usms_list <- function(sms_path) {
+  filter_file_path <- file.path(sms_path, "typo_usms.csv")
+  filter_file <- try(read_csv(filter_file_path), TRUE)
+  if (is(filter_file, "try-error")) {
+    stop(paste0("Filter file could not be loaded: ", filter_file_path))
+  }
+  filter_file %>%
+    dplyr::filter(source == "sms", UsedForCalibration == 0)
+}
+
 #' Getting the filtered USM list using the typo file.
 #'
 #' @description
@@ -22,22 +32,14 @@ validate_sms_configuration <- function(sms_path, stics_path, run_simulations) {
 #'
 #' @examples
 #'   get_sms_usms_list("/path/to/sms")
-get_sms_usms_list <- function(sms_path) {
-  library(dplyr)
-  filter_file_path <- file.path(sms_path, "typo_usms.csv")
-  filter_file <- try(read.csv2(
-    filter_file_path,
-    header = TRUE,
-    na.strings = c(NA, "NaN", "OK", "rejection M=0"),
-    sep = ";",
-    stringsAsFactors = FALSE
-  ), TRUE)
-  if (is(filter_file, "try-error")) {
-    stop(paste0("Filter file could not be loaded: ", filter_file_path))
-  }
-  usm_list <- filter_file %>%
-    dplyr::filter(source == "sms", UsedForCalibration == 0)
+get_sms_usms_names <- function(sms_path) {
+  usm_list <- get_sms_usms_list(sms_path)
   usm_list$usm
+}
+
+get_sms_rotations <- function(sms_path) {
+  filter_file <- get_sms_usms_list(sms_path)
+  get_rotation_list(filter_file)
 }
 
 #' Extract all necessary files from SMS and copy it to a destination directory.
@@ -69,7 +71,7 @@ extract_sms_data <- function(sms_path, stics_path, destination_dir) {
     clim_path,
     model_path
   )
-  cp_status <- file.copy(from = files_path, to = destination_dir)
+  file.copy(from = files_path, to = destination_dir)
   plant_path <- list.files(
     file.path(stics_input_files_path, "plant"),
     full.names = TRUE
@@ -92,7 +94,8 @@ gen_sms_workspace <- function(
   stics_path,
   workspace
 ) {
-  usms <- get_sms_usms_list(sms_path)
+  usms <- get_sms_usms_names(sms_path)
+  rotations <- get_sms_rotations(sms_path)
   workspace_tmp <- tempfile()
   dir.create(workspace_tmp)
   extract_sms_data(sms_path, stics_path, workspace_tmp)
@@ -107,6 +110,7 @@ gen_sms_workspace <- function(
 
   new(
     "DataSource",
-    usms = usms
+    usms = usms,
+    rotations = rotations
   )
 }

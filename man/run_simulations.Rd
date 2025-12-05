@@ -8,6 +8,7 @@ run_simulations(
   stics_exe,
   workspace,
   usm_names,
+  successive,
   verbose,
   parallel = FALSE,
   cores = NA
@@ -19,6 +20,10 @@ run_simulations(
 \item{workspace}{path to the simulation and observation data}
 
 \item{usm_names}{a list of USM name}
+
+\item{successive}{a list of vectors containing the names of the UMSs to
+consider as successive (e.g. list(c("usm1.1","usm1.2"),c("usm2.1","usm2.2"))
+defines 2 successions usm1.1->usm1.2 and usm2.1->usm2.2)}
 
 \item{verbose}{a boolean used to run simulation in verbose mode}
 
