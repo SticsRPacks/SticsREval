@@ -8,7 +8,7 @@ test_that("compare_rmse classifies variables correctly", {
   )
   new_stats <- data.frame(
     variable = c("A", "B", "C"),
-    rRMSE = c("11,0", "21,0", "25,0")
+    rRMSE = c("11,0", "20,5", "25,0")
   )
 
   result <- compare_rmse(species, ref_stats, new_stats)
@@ -110,14 +110,14 @@ test_that("compare_rmse handles negative RMSE values correctly", {
   )
   new_stats <- data.frame(
     variable = c("A", "B", "C"),
-    rRMSE = c("-9,0",  "-25,0", "-28,0")
+    rRMSE = c("-9,0",  "-25,0", "-31,0")
   )
 
   result <- compare_rmse(species, ref_stats, new_stats)
 
-  expect_equal(result@critical, "A")
+  expect_equal(result@critical, "B")
   expect_equal(result@warning, "C")
-  expect_equal(result@improved, "B")
+  expect_equal(result@improved, "A")
 })
 
 
@@ -126,11 +126,11 @@ test_that("compare_rmse treats negative values symmetrically for improvements", 
 
   ref_stats <- data.frame(
     variable = c("X", "Y"),
-    rRMSE = c("-50,0", "-40,0")
+    rRMSE = c("-55,0", "-42,0")
   )
   new_stats <- data.frame(
     variable = c("X", "Y"),
-    rRMSE = c("-55,0", "-42,0")
+    rRMSE = c("-50,0", "-40,0")
   )
 
   result <- compare_rmse(species, ref_stats, new_stats)

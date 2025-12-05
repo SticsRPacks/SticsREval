@@ -47,35 +47,31 @@ setMethod(
 #'
 #' @returns a list containing the critically deteriorated variables, the
 #'  moderately deteriorated variables and the improved variables
-compare_rmse <- function(
-    species,
-    ref_stats,
-    new_stats
-) {
-  result <- dplyr::left_join(
-    new_stats,
-    ref_stats,
-    by = c("variable")
-  ) %>%
+compare_rmse <- function(species, ref_stats, new_stats) {
+  result <- dplyr::left_join(new_stats, ref_stats, by = "variable") %>%
     dplyr::mutate(
       rmse_new = as.numeric(sub(",", ".", rRMSE.x, fixed = TRUE)),
       rmse_ref = as.numeric(sub(",", ".", rRMSE.y, fixed = TRUE))
     ) %>%
     dplyr::filter(
-      is.numeric(rmse_new),
-      is.numeric(rmse_ref),
       !is.na(rmse_new),
       !is.na(rmse_ref)
+    ) %>%
+    dplyr::mutate(
+      abs_ref = abs(rmse_ref),
+      abs_new = abs(rmse_new),
+      ratio = abs_new / abs_ref
     )
 
-  critical_rows <- dplyr::filter(result, rmse_new > rmse_ref * 1.05)
-  warning_rows <- dplyr::filter(result, rmse_new > rmse_ref & rmse_new <= rmse_ref * 1.05)
-  improved_rows <- dplyr::filter(result, rmse_new <= rmse_ref)
+  critical_rows <- dplyr::filter(result, ratio > 1.05)
+  warning_rows  <- dplyr::filter(result, ratio > 1 & ratio <= 1.05)
+  improved_rows <- dplyr::filter(result, ratio <= 1)
+
   invisible(new(
     "Comparison",
-    species = species,
+    species  = species,
     critical = critical_rows$variable,
-    warning = warning_rows$variable,
+    warning  = warning_rows$variable,
     improved = improved_rows$variable
   ))
 }
