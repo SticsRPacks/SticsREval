@@ -1,3 +1,33 @@
+gen_scatter_plot <- function(sim, obs, vars, output_dir, species) {
+
+  library(CroPlotR)
+  library(ggplot2)
+  library(plotly)
+  library(patchwork)
+  library(dplyr)
+  library(htmltools)
+
+  plot_list <- list()
+  for (var in vars) {
+    plots <- plot(
+      sim,
+      obs = obs,
+      type = "scatter",
+      select_scat = "sim",
+      var = var
+    )
+    plot_list[[length(plot_list) + 1]] <- ggplotly(plots[[1]])
+  }
+  page <- tagList(plot_list)
+  htmltools::save_html(
+    page,
+    file = file.path(
+      output_dir,
+      paste0(species, "_scatter_interactive.html")
+    )
+  )
+}
+
 #' Running evaluation over a USM list
 #'
 #' @description
@@ -26,19 +56,29 @@ evaluate_species <- function(
   library(CroPlotR)
   stats <- summary(sim, obs = obs)
   filename <- paste0("Criteres_stats_", species, ".csv")
-  if (!is.null(output_dir)) {
-    safe_write_csv(stats, file.path(output_dir, filename))
-  }
   reference_file <- file.path(reference_data_dir, filename)
   if (!length(reference_file) || !file.exists(reference_file)) {
     return(NULL)
   }
   ref_stats <- read_csv(reference_file)
-  compare_rmse(
+  comparison <- compare_rmse(
     species,
     ref_stats,
     stats
   )
+  if (critical_nb(comparison) > 0) {
+    species_output_dir <- file.path(output_dir, species)
+    dir.create(file.path(species_output_dir))
+    #gen_comparison_plot(species, stats, ref_stats, species_output_dir)
+    deteriorated <- c(comparison@critical, comparison@warning)
+    gen_scatter_plot(sim, obs, deteriorated, species_output_dir, species)
+    safe_write_csv(stats, file.path(species_output_dir, filename))
+    file.copy(
+      reference_file,
+      file.path(species_output_dir, paste0("Ref_", filename))
+    )
+  }
+  comparison
 }
 
 load_simulations <- function(config, usms, rotations) {
