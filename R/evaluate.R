@@ -1,14 +1,10 @@
+library(CroPlotR)
+library(plotly)
+library(dplyr)
+library(htmltools)
+
 gen_scatter_plot <- function(sim, obs, vars, output_dir, species) {
-
-  library(CroPlotR)
-  library(ggplot2)
-  library(plotly)
-  library(patchwork)
-  library(dplyr)
-  library(htmltools)
-
-  plot_list <- list()
-  for (var in vars) {
+  plot_list <- lapply(vars, function(var) {
     plots <- plot(
       sim,
       obs = obs,
@@ -16,9 +12,9 @@ gen_scatter_plot <- function(sim, obs, vars, output_dir, species) {
       select_scat = "sim",
       var = var
     )
-    plot_list[[length(plot_list) + 1]] <- ggplotly(plots[[1]])
-  }
-  page <- tagList(plot_list)
+    plotly::ggplotly(plots[[1]])
+  })
+  page <- htmltools::tagList(plot_list)
   htmltools::save_html(
     page,
     file = file.path(
@@ -53,7 +49,6 @@ evaluate_species <- function(
   reference_data_dir,
   verbose
 ) {
-  library(CroPlotR)
   stats <- summary(sim, obs = obs)
   filename <- paste0("Criteres_stats_", species, ".csv")
   reference_file <- file.path(reference_data_dir, filename)
@@ -69,7 +64,7 @@ evaluate_species <- function(
   if (critical_nb(comparison) > 0) {
     species_output_dir <- file.path(output_dir, species)
     dir.create(file.path(species_output_dir))
-    #gen_comparison_plot(species, stats, ref_stats, species_output_dir)
+    gen_comparison_plot(species, stats, ref_stats, species_output_dir)
     deteriorated <- c(comparison@critical, comparison@warning)
     gen_scatter_plot(sim, obs, deteriorated, species_output_dir, species)
     safe_write_csv(stats, file.path(species_output_dir, filename))
