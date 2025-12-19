@@ -8,7 +8,8 @@
 #' @param reference_data_dir path to the reference data to use for comparison
 #' @param output_dir path where output files will be saved
 #' @param run_simulations Logical value for running simulation or not
-#' @param verbose Logical value for displaying or not information while running
+#' @param verbose Number value for displaying information.
+#'  2 = DEBUG, 1 = INFO, 0 = WARNING
 #' @param parallel Boolean. Is the computation to be done in parallel ?
 #' @param cores Number of cores to use for parallel computation.
 #' @param data_source the source of the data to use for the evaluation. The
@@ -54,14 +55,14 @@ make_config <- function(...) {
 #' @details
 #'  Default values:
 #'   - run_simulations -> TRUE
-#'   - verbose -> FALSE
+#'   - verbose -> 1
 #'   - parallel -> FALSE
 #'   - cores -> NA
 #'
 #' @returns A configuration list with default values
 set_config_default_values <- function(config) {
   config$run_simulations <- config$run_simulations %||% TRUE
-  config$verbose <- config$verbose %||% FALSE
+  config$verbose <- config$verbose %||% 1
   config$parallel <- config$parallel %||% FALSE
   config$cores <- config$cores %||% NA
   config

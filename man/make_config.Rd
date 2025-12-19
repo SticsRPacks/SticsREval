@@ -18,7 +18,8 @@ make_config(...)
 
 \item{run_simulations}{Logical value for running simulation or not}
 
-\item{verbose}{Logical value for displaying or not information while running}
+\item{verbose}{Number value for displaying information.
+2 = DEBUG, 1 = INFO, 0 = WARNING}
 
 \item{parallel}{Boolean. Is the computation to be done in parallel ?}
 

@@ -36,15 +36,18 @@ get_data_source_from_config <- function(config) {
   if (config$data_source == "local") {
     return(get_local_data_source(config$workspace, config$rotation_file))
   }
-  stop("Invalid data source: source must be 'sms' or 'local'")
+  logger::error("Invalid data source: source must be 'sms' or 'local'")
+  stop()
 }
 
 #' @importFrom dplyr %>%
 get_rotation_list <- function(rotation_data) {
-  rotation_data %>%
+  rotations <- rotation_data %>%
     dplyr::filter(rotation != 0) %>%
     dplyr::arrange(rotation, rotation_order) %>%
     dplyr::group_by(rotation) %>%
     dplyr::summarise(usm_vec = list(usm)) %>%
     dplyr::pull(usm_vec)
+  logger::log_debug("Found ", length(rotations), " rotations")
+  rotations
 }

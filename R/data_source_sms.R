@@ -22,6 +22,7 @@ get_sms_usms_list <- function(sms_path) {
 #'   get_sms_usms_list("/path/to/sms")
 get_sms_usms_names <- function(sms_path) {
   usm_list <- get_sms_usms_list(sms_path)
+  logger::log_debug("Found ", usm_list$usm, " USMs in ", sms_path)
   usm_list$usm
 }
 
@@ -37,6 +38,7 @@ get_sms_rotations <- function(sms_path) {
 #' @param destination_dir path where the files must be copied
 #'
 extract_sms_data <- function(sms_path, stics_path, destination_dir) {
+  logger::debug("Copying XML files from SMS workspace to ", destination_dir)
   obs_path <- list.files(file.path(sms_path, "Obs"), full.names = TRUE)
   soil_path <- file.path(sms_path, "Soil","sols.xml")
   tec_path <- list.files(file.path(sms_path, "Tec"), full.names = TRUE)
@@ -82,15 +84,17 @@ gen_sms_workspace <- function(
   stics_path,
   workspace
 ) {
+  logger::log_info("Generating SMS workspace...")
   usms <- get_sms_usms_names(sms_path)
   rotations <- get_sms_rotations(sms_path)
   workspace_tmp <- tempfile()
   dir.create(workspace_tmp)
   extract_sms_data(sms_path, stics_path, workspace_tmp)
+  logger::debug("Generating text workspace using ", workspace_tmp, " files")
   SticsRFiles::gen_usms_xml2txt(
     workspace = workspace_tmp,
     out_dir = workspace,
-    verbose = FALSE,
+    verbose = is_debug(),
     usm = usms,
     parallel = TRUE
   )

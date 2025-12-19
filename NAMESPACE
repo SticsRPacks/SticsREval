@@ -2,11 +2,5 @@
 
 export(evaluate)
 export(make_config)
-importFrom(doParallel,registerDoParallel)
 importFrom(dplyr,"%>%")
-importFrom(foreach,"%do%")
-importFrom(foreach,"%dopar%")
-importFrom(parallel,clusterCall)
 importFrom(parallel,detectCores)
-importFrom(parallel,makeCluster)
-importFrom(parallel,stopCluster)

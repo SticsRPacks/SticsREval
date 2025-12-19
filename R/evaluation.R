@@ -37,6 +37,7 @@ evaluate_species <- function(
   eval_res$stats <- summary(sim, obs = obs)
   eval_res$ref_stats <- read_ref_stats(config, species)
   if (!is.null(eval_res$ref_stats)) {
+    logger::log_debug("Comparing RMSE for species ", species)
     eval_res$comparison <- compare_rmse(
       species,
       eval_res$ref_stats,
@@ -55,17 +56,23 @@ evaluate_all_species <- function(species, sorted_usms, sim, obs, config) {
     .packages = c("dplyr", "CroPlotR")
   ) %do_par_or_not% {
     spec <- species[i]
+    logger::log_info("Starting evaluation of species ", spec)
     selected_usms <- dplyr::filter(sorted_usms, species == spec)$usm
     common_usms <- selected_usms[
       selected_usms %in% names(sim) &
-      selected_usms %in% names(obs)
+        selected_usms %in% names(obs)
     ]
     if (!length(common_usms)) {
+      logger::warning("No common USM for species ", spec, ".")
       return(NULL)
     }
     selected_sim <- sim[common_usms]
     selected_obs <- obs[common_usms]
     if (length(selected_sim) == 0 || length(selected_obs) == 0) {
+      logger::warning(
+        "No simulation or observation data found for species ",
+        spec
+      )
       return(NULL)
     }
     evaluate_species(
@@ -79,40 +86,54 @@ evaluate_all_species <- function(species, sorted_usms, sim, obs, config) {
 }
 
 display_comparison <- function(species, comparison) {
-  message("-----------------------------------------------------------------")
-  message("Species: ", species)
+  logger::log_info(
+    "-----------------------------------------------------------------"
+  )
+  logger::log_info("Species: ", species)
   total <- length(comparison$critical) +
     length(comparison$warning) +
     length(comparison$improved)
-  message( "Total number of variables: ", total)
-  message(length(comparison$critical), " deteriorated variables (>5%): ")
+  logger::log_info("Total number of variables: ", total)
+  logger::log_info(
+    length(comparison$critical),
+    " deteriorated variables (>5%): "
+  )
   if (length(comparison$critical) > 0) {
-    message(paste(comparison$critical, collapse = ", "))
+    logger::log_info(paste(comparison$critical, collapse = ", "))
   }
-  message(length(comparison$warning), " deteriorated variables (>0%, <=5%): ")
+  logger::log_info(
+    length(comparison$warning),
+    " deteriorated variables (>0%, <=5%): "
+  )
   if (length(comparison$warning) > 0) {
-    message(paste(comparison$warning, collapse = ", "))
+    logger::log_info(paste(comparison$warning, collapse = ", "))
   }
-  message(length(comparison$improved), " improved variables (<0%): ")
+  logger::log_info(length(comparison$improved), " improved variables (<0%): ")
   if (length(comparison$improved) > 0) {
-    message(paste(comparison$improved, collapse = ", "))
+    logger::log_info(paste(comparison$improved, collapse = ", "))
   }
-  message("-----------------------------------------------------------------")
+  logger::log_info(
+    "-----------------------------------------------------------------"
+  )
 }
 
 export_evaluation_result <- function(config, eval_result) {
   species_output_dir <- file.path(config$output_dir, eval_result$species)
   if (!is.null(config$exports) && !file.exists(species_output_dir)) {
+    logger::log_info("Exporting ", eval_result$species, " evaluation results")
     dir.create(species_output_dir)
   }
   if ("sim" %in% config$exports) {
+    logger::log_debug("Exporting ", eval_result$species, " simulation data")
     save_sim(config, eval_result$species, eval_result$sim)
   }
   if ("stats" %in% config$exports) {
+    logger::log_debug("Exporting ", eval_result$species, " statistics")
     save_stats(config, eval_result$species, eval_result$stats)
   }
   comparison <- eval_result$comparison
   if ("plots" %in% config$exports && !is.null(comparison)) {
+    logger::log_debug("Generating ", eval_result$species, " scatter plots")
     ref_sim <- read_ref_sim(config, eval_result$species)
     deteriorated <- c(comparison$critical, comparison$warning)
     gen_scatter_plot(
@@ -123,6 +144,7 @@ export_evaluation_result <- function(config, eval_result) {
       species_output_dir
     )
     if (!is.null(eval_result$ref_stats)) {
+      logger::log_debug("Generating ", eval_result$species, " comparison plot")
       gen_comparison_plot(
         eval_result$stats,
         eval_result$ref_stats,
@@ -136,6 +158,7 @@ export_evaluation_result <- function(config, eval_result) {
 }
 
 sort_usm_by_species <- function(config, usms) {
+  logger::log_debug("Sorting USMs by species...")
   backend <- setup_parallel_backend(config, length(usms))
   on.exit(backend$cleanup(), add = TRUE)
   `%do_par_or_not%` <- backend$do
@@ -152,7 +175,9 @@ sort_usm_by_species <- function(config, usms) {
       usm = usm
     )
   }
-  dplyr::bind_rows(result)
+  sorted <- dplyr::bind_rows(result)
+  logger::log_debug("Found ", length(unique(sorted$species)), " species")
+  sorted
 }
 
 #' @title Running a complete evaluation process of STICS model
@@ -162,7 +187,9 @@ sort_usm_by_species <- function(config, usms) {
 #'
 #' @export
 evaluate <- function(config) {
+  init_logger(config$verbose)
   start_time <- Sys.time()
+  logger::log_info("Starting evaluation...")
   ds <- get_data_source_from_config(config)
   usms <- usms(ds)
   sim <- load_workspace_sim(config, usms, rotations(ds))
@@ -179,8 +206,9 @@ evaluate <- function(config) {
   }, integer(1))
   end_time <- Sys.time()
   time_taken <- round(end_time - start_time, 2)
-  message("Evaluation time: ", time_taken, " s")
+  logger::log_info("Evaluation time: ", time_taken, " s")
   if (sum(criticals) > 0) {
-    stop("Found at least one critical deteriorated variable")
+    logger::log_error("Found at least one critical deteriorated variable")
+    stop()
   }
 }

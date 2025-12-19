@@ -87,9 +87,6 @@ get_cores <- function(...) {
 #' @param inputs_number      Number of inputs
 #' @param cores              Number of cores to use for parallel computation.
 #'
-#' @importFrom parallel clusterCall makeCluster
-#' @importFrom doParallel registerDoParallel
-#'
 #' @keywords internal
 #'
 #' @noRd
@@ -103,25 +100,44 @@ setup_parallelism <- function(inputs_number, cores = NA) {
   cores_nb <- min(cores_nb, inputs_number)
 
   # Launching the cluster
-  cl <- makeCluster(cores_nb)
+  cl <- parallel::makeCluster(cores_nb, outfile = NULL)
 
   # Registering cluster
-  registerDoParallel(cl)
-  clusterCall(cl, function(x) .libPaths(x), .libPaths())
+  doParallel::registerDoParallel(cl)
+  parallel::clusterCall(cl, function(x) .libPaths(x), .libPaths())
   cl
 }
 
-#' @importFrom foreach %dopar% %do%
-#' @importFrom parallel stopCluster
-#'
 #' @keywords internal
 #'
 #' @noRd
 #'
 setup_parallel_backend <- function(config, n_tasks) {
   if (!config$parallel) {
-    return(list(do = foreach::`%do%`, cleanup = function(){}))
+    return(
+      list(
+        do = foreach::`%do%`,
+        cleanup = function() { }
+      )
+    )
   }
   cl <- setup_parallelism(n_tasks, config$cores)
-  return(list(do = foreach::`%dopar%`, cleanup = function() stopCluster(cl)))
+  parallel::clusterExport(
+    cl,
+    varlist = c("init_logger", "is_debug", "config"),
+    envir = environment()
+  )
+  parallel::clusterEvalQ(cl, {
+    sink(stdout(), type = "output")
+  })
+  parallel::clusterEvalQ(cl, {
+    library(logger)
+    init_logger(verbose = config$verbose)
+  })
+  invisible(
+    list(
+      do = foreach::`%dopar%`,
+      cleanup = function() parallel::stopCluster(cl)
+    )
+  )
 }

@@ -21,9 +21,10 @@ read_csv <- function(filepath) {
     delim = ";",
     col_names = TRUE,
     na = c("NA", "NaN", "OK", "rejection M=0"),
+    show_col_types = is_debug(),
     locale = vroom::locale(
       decimal_mark = ",",
-      date_format="%Y-%m-%d"
+      date_format = "%Y-%m-%d"
     )
   )
 }
@@ -48,16 +49,14 @@ save_sim <- function(config, species, sim) {
 
 load_workspace_sim <- function(config, usms, rotations) {
   if (config$run_simulations) {
-    if (config$verbose) {
-      message("Starting running simulations...")
-    }
+    logger::log_info("Running simulations...")
     return(
       run_simulations(
         stics_exe = config$stics_exe,
         workspace = config$workspace,
         usm_names = usms,
         successive = rotations,
-        verbose = config$verbose,
+        verbose = is_debug(),
         parallel = config$parallel,
         cores = config$cores
       )
@@ -66,7 +65,7 @@ load_workspace_sim <- function(config, usms, rotations) {
   SticsRFiles::get_sim(
     workspace = config$workspace,
     usm = usms,
-    verbose = config$verbose,
+    verbose = is_debug(),
     parallel = config$parallel,
     cores = config$cores
   )
@@ -76,7 +75,7 @@ load_workspace_obs <- function(config, usms) {
   SticsRFiles::get_obs(
     workspace = config$workspace,
     usm = usms,
-    verbose = config$verbose,
+    verbose = is_debug(),
     parallel = config$parallel,
     cores = config$cores
   )
