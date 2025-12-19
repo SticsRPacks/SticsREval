@@ -1,0 +1,53 @@
+read_ref_sim <- function(config, species) {
+  reference_dir <- file.path(config$reference_data_dir, species)
+  reference_file <- file.path(reference_dir, "Simulations.csv")
+  if (!length(reference_file) || !file.exists(reference_file)) {
+    return(NULL)
+  }
+  df <- read_csv(reference_file)
+  CroPlotR::split_df2sim(df)
+}
+
+save_sim <- function(config, species, sim) {
+  output_dir <- file.path(config$output_dir, species)
+  safe_write_csv(
+    CroPlotR::bind_rows(sim),
+    file.path(output_dir, "Simulations.csv")
+  )
+}
+
+load_workspace_sim <- function(config, usms, rotations) {
+  if (config$run_simulations) {
+    if (config$verbose) {
+      message("Starting running simulations...")
+    }
+    return(
+      run_simulations(
+        stics_exe = config$stics_exe,
+        workspace = config$workspace,
+        usm_names = usms,
+        successive = rotations,
+        verbose = config$verbose,
+        parallel = config$parallel,
+        cores = config$cores
+      )
+    )
+  }
+  SticsRFiles::get_sim(
+    workspace = config$workspace,
+    usm = usms,
+    verbose = config$verbose,
+    parallel = config$parallel,
+    cores = config$cores
+  )
+}
+
+load_workspace_obs <- function(config, usms) {
+  SticsRFiles::get_obs(
+    workspace = config$workspace,
+    usm = usms,
+    verbose = config$verbose,
+    parallel = config$parallel,
+    cores = config$cores
+  )
+}

@@ -1,3 +1,5 @@
+library(vroom)
+
 safe_write_csv <- function(data, path) {
   tryCatch({
     write.csv2(
@@ -14,12 +16,15 @@ safe_write_csv <- function(data, path) {
 }
 
 read_csv <- function(filepath) {
-  read.csv2(
+  vroom::vroom(
     filepath,
-    header = TRUE,
-    na.strings = c(NA, "NaN", "OK", "rejection M=0"),
-    sep = ";",
-    stringsAsFactors = FALSE
+    delim = ";",
+    col_names = TRUE,
+    na = c("NA", "NaN", "OK", "rejection M=0"),
+    locale = vroom::locale(
+      decimal_mark = ",",
+      date_format="%Y-%m-%d"
+    )
   )
 }
 
