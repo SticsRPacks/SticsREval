@@ -3,4 +3,3 @@
 export(evaluate)
 export(make_config)
 importFrom(dplyr,"%>%")
-importFrom(parallel,detectCores)

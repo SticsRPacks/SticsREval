@@ -34,7 +34,10 @@ evaluate_species <- function(
     sim = sim,
     obs = obs
   )
-  eval_res$stats <- summary(sim, obs = obs)
+  eval_res$stats <- run_with_log_control(
+    # Calling summary() directly does not work in a future context
+    CroPlotR:::summary.cropr_simulation(sim, obs = obs)
+  )
   eval_res$ref_stats <- read_ref_stats(config, species)
   if (!is.null(eval_res$ref_stats)) {
     logger::log_debug("Comparing RMSE for species ", species)
@@ -50,11 +53,8 @@ evaluate_species <- function(
 evaluate_all_species <- function(species, sorted_usms, sim, obs, config) {
   backend <- setup_parallel_backend(config, length(species))
   on.exit(backend$cleanup(), add = TRUE)
-  `%do_par_or_not%` <- backend$do
-  eval_results <- foreach::foreach(
-    i = seq_along(species),
-    .packages = c("dplyr", "CroPlotR")
-  ) %do_par_or_not% {
+  eval_results <- backend$map(seq_along(species), function(i) {
+    logger::log_appender(logger::appender_stdout)
     spec <- species[i]
     logger::log_info("Starting evaluation of species ", spec)
     selected_usms <- dplyr::filter(sorted_usms, species == spec)$usm
@@ -81,7 +81,7 @@ evaluate_all_species <- function(species, sorted_usms, sim, obs, config) {
       selected_obs,
       config
     )
-  }
+  })
   eval_results
 }
 
@@ -161,11 +161,8 @@ sort_usm_by_species <- function(config, usms) {
   logger::log_debug("Sorting USMs by species...")
   backend <- setup_parallel_backend(config, length(usms))
   on.exit(backend$cleanup(), add = TRUE)
-  `%do_par_or_not%` <- backend$do
-
-  result <- foreach::foreach(
-    i = seq_along(usms)
-  ) %do_par_or_not% {
+  result <- backend$map(seq_along(usms), function(i) {
+    logger::log_appender(logger::appender_stdout)
     usm <- usms[i]
     species <- SticsRFiles::get_plant_txt(
       workspace = file.path(config$workspace, usm)
@@ -174,7 +171,7 @@ sort_usm_by_species <- function(config, usms) {
       species = species$codeplante,
       usm = usm
     )
-  }
+  })
   sorted <- dplyr::bind_rows(result)
   logger::log_debug("Found ", length(unique(sorted$species)), " species")
   sorted
