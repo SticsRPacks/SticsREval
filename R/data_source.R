@@ -38,3 +38,13 @@ get_data_source_from_config <- function(config) {
   }
   stop("Invalid data source: source must be 'sms' or 'local'")
 }
+
+#' @importFrom dplyr %>%
+get_rotation_list <- function(rotation_data) {
+  rotation_data %>%
+    dplyr::filter(rotation != 0) %>%
+    dplyr::arrange(rotation, rotation_order) %>%
+    dplyr::group_by(rotation) %>%
+    dplyr::summarise(usm_vec = list(usm)) %>%
+    dplyr::pull(usm_vec)
+}

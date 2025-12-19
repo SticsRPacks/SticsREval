@@ -135,6 +135,26 @@ export_evaluation_result <- function(config, eval_result) {
   }
 }
 
+sort_usm_by_species <- function(config, usms) {
+  backend <- setup_parallel_backend(config, length(usms))
+  on.exit(backend$cleanup(), add = TRUE)
+  `%do_par_or_not%` <- backend$do
+
+  result <- foreach::foreach(
+    i = seq_along(usms)
+  ) %do_par_or_not% {
+    usm <- usms[i]
+    species <- SticsRFiles::get_plant_txt(
+      workspace = file.path(config$workspace, usm)
+    )
+    list(
+      species = species$codeplante,
+      usm = usm
+    )
+  }
+  dplyr::bind_rows(result)
+}
+
 #' @title Running a complete evaluation process of STICS model
 #'
 #' @param config List containing any information needed for the evaluation

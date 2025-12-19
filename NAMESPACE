@@ -3,6 +3,7 @@
 export(evaluate)
 export(make_config)
 importFrom(doParallel,registerDoParallel)
+importFrom(dplyr,"%>%")
 importFrom(foreach,"%do%")
 importFrom(foreach,"%dopar%")
 importFrom(parallel,clusterCall)
