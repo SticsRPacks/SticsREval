@@ -33,6 +33,9 @@ rotations}
 \item{sms_path}{path to the directory which contains the SMS repository}
 
 \item{stics_path}{path to the STICS repository}
+
+\item{exports}{a list of strings to use to define what to export. Values can
+be "plots", "sim", "stats".}
 }
 \value{
 A list containing parameters that can be used in \code{evaluate()}

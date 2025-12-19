@@ -15,6 +15,8 @@
 #'  rotations
 #' @param sms_path path to the directory which contains the SMS repository
 #' @param stics_path path to the STICS repository
+#' @param exports a list of strings to use to define what to export. Values can
+#' be "plots", "sim", "stats".
 #'
 #' @returns A list containing parameters that can be used in `evaluate()`
 #'  function.
@@ -40,7 +42,8 @@ make_config <- function(...) {
     reference_data_dir = config$reference_data_dir,
     rotation_file = config$rotation_file,
     sms_path = config$sms_path,
-    stics_path = config$stics_path
+    stics_path = config$stics_path,
+    exports = config$exports
   )
 }
 
@@ -83,6 +86,9 @@ validate_configuration <- function(config) {
   ) {
     stop("Reference data directory must be a valid path if defined")
   }
+  if (!is.null(config$exports) && is.null(config$output_dir)) {
+    stop("Output dir must be defined when exports is defined")
+  }
   if (!is.null(config$output_dir) && !file.exists(config$output_dir)) {
     dir.create(config$output_dir, recursive = TRUE)
   }
@@ -103,6 +109,10 @@ validate_configuration <- function(config) {
       stop("Rotation file must be a valid path when data source is local")
     }
   } else {
-    stop("Invalid data source (", config$data_source, "): source must be 'sms' or 'local'")
+    stop(
+      "Invalid data source (",
+      config$data_source,
+      "): source must be 'sms' or 'local'"
+    )
   }
 }
