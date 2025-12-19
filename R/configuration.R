@@ -1,3 +1,5 @@
+`%||%` <- function(a, b) if (!is.null(a)) a else b
+
 #' @title Getting/setting a list of parameters with initialized fields for
 #'  evaluation
 #'
@@ -82,14 +84,14 @@ validate_configuration <- function(config) {
   if (is.null(config$workspace)) stop("Workspace path must be defined")
   if (
     !is.null(config$reference_data_dir) &&
-    !dir.exists(config$reference_data_dir)
+      !dir.exists(config$reference_data_dir)
   ) {
     stop("Reference data directory must be a valid path if defined")
   }
   if (!is.null(config$exports) && is.null(config$output_dir)) {
     stop("Output dir must be defined when exports is defined")
   }
-  if (!is.null(config$output_dir) && !file.exists(config$output_dir)) {
+  if (!is.null(config$output_dir) && !dir.exists(config$output_dir)) {
     dir.create(config$output_dir, recursive = TRUE)
   }
   if (config$data_source == "sms") {
