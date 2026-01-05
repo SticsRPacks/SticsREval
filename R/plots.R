@@ -1,6 +1,6 @@
 gen_scatter_plot <- function(sim, ref_sim, obs, vars, output_dir) {
   plot_list <- lapply(vars, function(var) {
-    plots <- plot(
+    plots <- CroPlotR:::plot.cropr_simulation(
       sim,
       ref_sim,
       obs = obs,
@@ -21,10 +21,10 @@ gen_scatter_plot <- function(sim, ref_sim, obs, vars, output_dir) {
 }
 
 gen_comparison_plot <- function(
-    new_stats,
-    ref_stats,
-    output_dir,
-    pct = 0.05
+  new_stats,
+  ref_stats,
+  output_dir,
+  pct = 0.05
 ) {
   ref <- ref_stats %>%
     dplyr::select(variable, rRMSE) %>%
@@ -61,11 +61,18 @@ gen_comparison_plot <- function(
         TRUE ~ "grey50"
       )
     )
-  p <- ggplot2::ggplot(tmp, ggplot2::aes(x = `Ref Version`, y = `New Version`, color = colours)) +
+  p <- ggplot2::ggplot(
+    tmp,
+    ggplot2::aes(x = `Ref Version`, y = `New Version`, color = colours)
+  ) +
     ggplot2::geom_point() +
     ggplot2::geom_abline(intercept = 0, slope = 1) +
     ggplot2::geom_abline(intercept = 0, slope = 1 + pct, linetype = "dashed") +
-    ggrepel::geom_text_repel(ggplot2::aes(label = .data$variable), na.rm = TRUE, show.legend = FALSE) +
+    ggrepel::geom_text_repel(
+      ggplot2::aes(label = .data$variable),
+      na.rm = TRUE,
+      show.legend = FALSE
+    ) +
     ggplot2::scale_color_manual(
       breaks = c("red", "orange", "green", "grey50"),
       values = c("red", "orange", "green", "grey50"),
@@ -73,5 +80,7 @@ gen_comparison_plot <- function(
     ) +
     ggplot2::theme(legend.position = "none") +
     ggplot2::ggtitle("rRMSE New Version vs Ref Version")
-  ggplot2::ggsave(filename = file.path(output_dir, "variables.png"), plot = p)
+  run_with_log_control(
+    ggplot2::ggsave(filename = file.path(output_dir, "variables.png"), plot = p)
+  )
 }

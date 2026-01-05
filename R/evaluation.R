@@ -143,6 +143,7 @@ export_evaluation_result <- function(config, eval_result) {
       deteriorated,
       species_output_dir
     )
+    logger::log_debug(eval_result$species, " scatter plots generated")
     if (!is.null(eval_result$ref_stats)) {
       logger::log_debug("Generating ", eval_result$species, " comparison plot")
       gen_comparison_plot(
@@ -150,6 +151,7 @@ export_evaluation_result <- function(config, eval_result) {
         eval_result$ref_stats,
         species_output_dir
       )
+      logger::log_debug(eval_result$species, " comparison plot generated")
     }
   }
   if (!is.null(comparison)) {

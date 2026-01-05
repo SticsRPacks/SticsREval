@@ -21,5 +21,5 @@ init_logger <- function(verbose = 1) {
   logger::log_layout(logger::layout_glue_colors)
   logger::log_threshold(log_level)
 
-  logger::log_info("Logger initialisé (niveau = {log_level})")
+  logger::log_info("Logger initialized (level = {log_level})")
 }
