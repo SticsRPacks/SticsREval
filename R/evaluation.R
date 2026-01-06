@@ -196,6 +196,8 @@ evaluate <- function(config) {
   sorted_usms <- sort_usm_by_species(config, usms)
   species <- unique(sorted_usms$species)
   eval_results <- evaluate_all_species(species, sorted_usms, sim, obs, config)
+  # Sorting eval results by species
+  eval_results <- eval_results[order(sapply(eval_results, `[[`, "species"))]
   invisible(lapply(eval_results, function(res) {
     if (!is.null(res)) export_evaluation_result(config, res)
   }))
