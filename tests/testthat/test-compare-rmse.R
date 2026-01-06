@@ -1,7 +1,6 @@
 library(testthat)
 
 test_that("compare_rmse classifies variables correctly", {
-  species <- "Wheat"
   ref_stats <- data.frame(
     variable = c("A", "B", "C"),
     rRMSE = c("10,0", "20,0", "30,0")
@@ -11,7 +10,7 @@ test_that("compare_rmse classifies variables correctly", {
     rRMSE = c("11,0", "20,5", "25,0")
   )
 
-  result <- compare_rmse(species, ref_stats, new_stats)
+  result <- compare_rmse(ref_stats, new_stats)
 
   expect_s4_class(result, "Comparison")
 
@@ -21,7 +20,6 @@ test_that("compare_rmse classifies variables correctly", {
 })
 
 test_that("compare_rmse returns only improved when all new RMSE are smaller", {
-  species <- "Corn"
   ref_stats <- data.frame(
     variable = c("X", "Y"),
     rRMSE = c("50,0", "40,0")
@@ -31,7 +29,7 @@ test_that("compare_rmse returns only improved when all new RMSE are smaller", {
     rRMSE = c("45,0", "35,0")
   )
 
-  result <- compare_rmse(species, ref_stats, new_stats)
+  result <- compare_rmse(ref_stats, new_stats)
 
   expect_equal(result@critical, character(0))
   expect_equal(result@warning, character(0))
@@ -39,7 +37,6 @@ test_that("compare_rmse returns only improved when all new RMSE are smaller", {
 })
 
 test_that("compare_rmse returns empty slots when nothing passes numeric filters", {
-  species <- "Barley"
   ref_stats <- data.frame(
     variable = c("A", "B"),
     rRMSE = c("NA", "abc")
@@ -49,7 +46,7 @@ test_that("compare_rmse returns empty slots when nothing passes numeric filters"
     rRMSE = c("NA", "xyz")
   )
 
-  result <- compare_rmse(species, ref_stats, new_stats)
+  result <- compare_rmse(ref_stats, new_stats)
 
   expect_equal(result@critical, character(0))
   expect_equal(result@warning, character(0))
@@ -57,8 +54,6 @@ test_that("compare_rmse returns empty slots when nothing passes numeric filters"
 })
 
 test_that("compare_rmse handles no join matches properly", {
-
-  species <- "Rice"
   ref_stats <- data.frame(
     variable = c("A", "B"),
     rRMSE = c("10,0", "20,0")
@@ -68,7 +63,7 @@ test_that("compare_rmse handles no join matches properly", {
     rRMSE = c("15,0", "25,0")
   )
 
-  result <- compare_rmse(species, ref_stats, new_stats)
+  result <- compare_rmse(ref_stats, new_stats)
 
   expect_equal(result@critical, character(0))
   expect_equal(result@warning, character(0))
@@ -76,7 +71,6 @@ test_that("compare_rmse handles no join matches properly", {
 })
 
 test_that("compare_rmse converts comma decimal to numeric", {
-  species <- "Millet"
   ref_stats <- data.frame(
     variable = "Z",
     rRMSE = "10,5"
@@ -86,24 +80,21 @@ test_that("compare_rmse converts comma decimal to numeric", {
     rRMSE = "11,0"
   )
 
-  result <- compare_rmse(species, ref_stats, new_stats)
+  result <- compare_rmse(ref_stats, new_stats)
 
   expect_equal(result@warning, "Z")
 })
 
 test_that("compare_rmse returns an invisible value", {
-  species <- "Test"
   ref_stats <- data.frame(variable = "A", rRMSE = "10,0")
   new_stats <- data.frame(variable = "A", rRMSE = "9,0")
 
-  res <- expect_invisible(compare_rmse(species, ref_stats, new_stats))
+  res <- expect_invisible(compare_rmse(ref_stats, new_stats))
 
   expect_s4_class(res, "Comparison")
 })
 
 test_that("compare_rmse handles negative RMSE values correctly", {
-  species <- "NegativeCase"
-
   ref_stats <- data.frame(
     variable = c("A", "B", "C"),
     rRMSE = c("-10,0", "-20,0", "-30,0")
@@ -113,7 +104,7 @@ test_that("compare_rmse handles negative RMSE values correctly", {
     rRMSE = c("-9,0",  "-25,0", "-31,0")
   )
 
-  result <- compare_rmse(species, ref_stats, new_stats)
+  result <- compare_rmse(ref_stats, new_stats)
 
   expect_equal(result@critical, "B")
   expect_equal(result@warning, "C")
@@ -133,7 +124,7 @@ test_that("compare_rmse treats negative values symmetrically for improvements", 
     rRMSE = c("-50,0", "-40,0")
   )
 
-  result <- compare_rmse(species, ref_stats, new_stats)
+  result <- compare_rmse(ref_stats, new_stats)
 
   expect_equal(result@critical, character(0))
   expect_equal(result@warning, character(0))

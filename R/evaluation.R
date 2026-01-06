@@ -42,7 +42,6 @@ evaluate_species <- function(
   if (!is.null(eval_res$ref_stats)) {
     logger::log_debug("Comparing RMSE for species ", species)
     eval_res$comparison <- compare_rmse(
-      species,
       eval_res$ref_stats,
       eval_res$stats
     )

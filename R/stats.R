@@ -24,13 +24,12 @@ copy_ref_stats <- function(config, species) {
 
 #' Comparing relative RMSE of two STICS versions
 #'
-#' @param species the species corresponding to the statistical criteria
 #' @param ref_stats the reference statistical criterion
 #' @param new_stats the new version statistical criterion
 #'
 #' @returns a list containing the critically deteriorated variables, the
 #'  moderately deteriorated variables and the improved variables
-compare_rmse <- function(species, ref_stats, new_stats) {
+compare_rmse <- function(ref_stats, new_stats) {
   result <- dplyr::left_join(new_stats, ref_stats, by = "variable") %>%
     dplyr::mutate(
       rmse_new = as.numeric(sub(",", ".", rRMSE.x, fixed = TRUE)),
