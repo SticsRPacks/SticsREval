@@ -4,7 +4,12 @@
 \alias{evaluate_species}
 \title{Running evaluation over a USM list}
 \usage{
-evaluate_species(species, sim, obs, config)
+evaluate_species(
+  species,
+  sim,
+  obs,
+  reference_data_dir = get_config_env()$reference_data_dir
+)
 }
 \arguments{
 \item{species}{the species corresponding to the simulations and observations}
@@ -12,13 +17,6 @@ evaluate_species(species, sim, obs, config)
 \item{sim}{a list of simulations}
 
 \item{obs}{a list of observations}
-
-\item{workspace}{path to the simulation and observation data}
-
-\item{reference_data_dir}{Path to the directory which contains the reference
-data to use for comparison}
-
-\item{verbose}{Logical value for displaying or not information while running}
 }
 \value{
 a list containing the Comparison objects for the species

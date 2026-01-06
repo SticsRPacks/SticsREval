@@ -29,7 +29,7 @@ read_csv <- function(filepath) {
   )
 }
 
-read_ref_sim <- function(config, species) {
+read_ref_sim <- function(species, config = get_config_env()) {
   reference_dir <- file.path(config$reference_data_dir, species)
   reference_file <- file.path(reference_dir, "Simulations.csv")
   if (!length(reference_file) || !file.exists(reference_file)) {
@@ -39,7 +39,7 @@ read_ref_sim <- function(config, species) {
   CroPlotR::split_df2sim(df)
 }
 
-save_sim <- function(config, species, sim) {
+save_sim <- function(species, sim, config = get_config_env()) {
   output_dir <- file.path(config$output_dir, species)
   safe_write_csv(
     CroPlotR::bind_rows(sim),
@@ -47,7 +47,7 @@ save_sim <- function(config, species, sim) {
   )
 }
 
-load_workspace_sim <- function(config, usms, rotations) {
+load_workspace_sim <- function(usms, rotations, config = get_config_env()) {
   if (config$run_simulations) {
     logger::log_info("Running simulations...")
     return(
@@ -71,7 +71,7 @@ load_workspace_sim <- function(config, usms, rotations) {
   )
 }
 
-load_workspace_obs <- function(config, usms) {
+load_workspace_obs <- function(usms, config = get_config_env()) {
   SticsRFiles::get_obs(
     workspace = config$workspace,
     usm = usms,

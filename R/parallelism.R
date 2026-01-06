@@ -76,7 +76,7 @@ get_cores <- function(...) {
   dot_args$cores_nb
 }
 
-setup_parallel_backend <- function(config, n_tasks) {
+setup_parallel_backend <- function(n_tasks, config = get_config_env()) {
   if (!config$parallel) {
     return(
       list(

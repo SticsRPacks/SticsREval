@@ -119,3 +119,11 @@ validate_configuration <- function(config) {
     )
   }
 }
+
+.eval_config_env <- new.env()
+
+init_config_env <- function(new_config) {
+  list2env(new_config, envir = .eval_config_env)
+}
+
+get_config_env <- function() .eval_config_env

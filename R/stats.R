@@ -1,5 +1,8 @@
-read_ref_stats <- function(config, species) {
-  reference_dir <- file.path(config$reference_data_dir, species)
+read_ref_stats <- function(
+  species,
+  reference_data_dir = get_config_env()$reference_data_dir
+) {
+  reference_dir <- file.path(reference_data_dir, species)
   reference_file <- file.path(reference_dir, "Criteres_stats.csv")
   if (!length(reference_file) || !file.exists(reference_file)) {
     return(NULL)
@@ -7,19 +10,13 @@ read_ref_stats <- function(config, species) {
   read_csv(reference_file)
 }
 
-save_stats <- function(config, species, stats) {
-  output_dir <- file.path(config$output_dir, species)
+save_stats <- function(
+  species,
+  stats,
+  output_dir = get_config_env()$output_dir
+) {
+  output_dir <- file.path(output_dir, species)
   safe_write_csv(stats, file.path(output_dir, "Criteres_stats.csv"))
-}
-
-copy_ref_stats <- function(config, species) {
-  src_file <- file.path(
-    config$reference_data_dir, species, "Criteres_stats.csv"
-  )
-  dest_dir <- file.path(
-    config$output_dir, species
-  )
-  file.copy(src_file, dest_dir)
 }
 
 #' Comparing relative RMSE of two STICS versions

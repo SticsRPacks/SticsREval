@@ -14,17 +14,13 @@ library(htmltools)
 #' @param species the species corresponding to the simulations and observations
 #' @param sim a list of simulations
 #' @param obs a list of observations
-#' @param workspace path to the simulation and observation data
-#' @param reference_data_dir Path to the directory which contains the reference
-#' data to use for comparison
-#' @param verbose Logical value for displaying or not information while running
 #'
 #' @returns a list containing the Comparison objects for the species
 evaluate_species <- function(
   species,
   sim,
   obs,
-  config
+  reference_data_dir = get_config_env()$reference_data_dir
 ) {
   eval_res <- list(
     species = species,
@@ -38,7 +34,7 @@ evaluate_species <- function(
     # Calling summary() directly does not work in a future context
     CroPlotR:::summary.cropr_simulation(sim, obs = obs)
   )
-  eval_res$ref_stats <- read_ref_stats(config, species)
+  eval_res$ref_stats <- read_ref_stats(species, reference_data_dir)
   if (!is.null(eval_res$ref_stats)) {
     logger::log_debug("Comparing RMSE for species ", species)
     eval_res$comparison <- compare_rmse(
@@ -49,8 +45,9 @@ evaluate_species <- function(
   eval_res
 }
 
-evaluate_all_species <- function(species, sorted_usms, sim, obs, config) {
-  backend <- setup_parallel_backend(config, length(species))
+evaluate_all_species <- function(species, sorted_usms, sim, obs) {
+  config <- get_config_env()
+  backend <- setup_parallel_backend(length(species))
   on.exit(backend$cleanup(), add = TRUE)
   eval_results <- backend$map(seq_along(species), function(i) {
     logger::log_appender(logger::appender_stdout)
@@ -78,7 +75,7 @@ evaluate_all_species <- function(species, sorted_usms, sim, obs, config) {
       spec,
       selected_sim,
       selected_obs,
-      config
+      config$reference_data_dir
     )
   })
   eval_results
@@ -116,7 +113,7 @@ log_comparison <- function(species, comparison) {
   )
 }
 
-export_evaluation_result <- function(config, eval_result) {
+export_evaluation_result <- function(eval_result, config = get_config_env()) {
   species_output_dir <- file.path(config$output_dir, eval_result$species)
   if (!is.null(config$exports) && !file.exists(species_output_dir)) {
     logger::log_info("Exporting ", eval_result$species, " evaluation results")
@@ -124,16 +121,16 @@ export_evaluation_result <- function(config, eval_result) {
   }
   if ("sim" %in% config$exports) {
     logger::log_debug("Exporting ", eval_result$species, " simulation data")
-    save_sim(config, eval_result$species, eval_result$sim)
+    save_sim(eval_result$species, eval_result$sim)
   }
   if ("stats" %in% config$exports) {
     logger::log_debug("Exporting ", eval_result$species, " statistics")
-    save_stats(config, eval_result$species, eval_result$stats)
+    save_stats(eval_result$species, eval_result$stats)
   }
   comparison <- eval_result$comparison
   if ("plots" %in% config$exports && !is.null(comparison)) {
     logger::log_debug("Generating ", eval_result$species, " scatter plots")
-    ref_sim <- read_ref_sim(config, eval_result$species)
+    ref_sim <- read_ref_sim(eval_result$species)
     deteriorated <- c(comparison$critical, comparison$warning)
     gen_scatter_plot(
       eval_result$sim,
@@ -158,9 +155,9 @@ export_evaluation_result <- function(config, eval_result) {
   }
 }
 
-sort_usm_by_species <- function(config, usms) {
+sort_usm_by_species <- function(usms, config = get_config_env()) {
   logger::log_debug("Sorting USMs by species...")
-  backend <- setup_parallel_backend(config, length(usms))
+  backend <- setup_parallel_backend(length(usms))
   on.exit(backend$cleanup(), add = TRUE)
   result <- backend$map(seq_along(usms), function(i) {
     logger::log_appender(logger::appender_stdout)
@@ -185,20 +182,21 @@ sort_usm_by_species <- function(config, usms) {
 #'
 #' @export
 evaluate <- function(config) {
+  init_config_env(config)
   init_logger(config$verbose)
   start_time <- Sys.time()
   logger::log_info("Starting evaluation...")
-  ds <- get_data_source_from_config(config)
+  ds <- get_data_source_from_config()
   usms <- usms(ds)
-  sim <- load_workspace_sim(config, usms, rotations(ds))
-  obs <- load_workspace_obs(config, usms)
-  sorted_usms <- sort_usm_by_species(config, usms)
+  sim <- load_workspace_sim(usms, rotations(ds))
+  obs <- load_workspace_obs(usms)
+  sorted_usms <- sort_usm_by_species(usms)
   species <- unique(sorted_usms$species)
-  eval_results <- evaluate_all_species(species, sorted_usms, sim, obs, config)
+  eval_results <- evaluate_all_species(species, sorted_usms, sim, obs)
   # Sorting eval results by species
   eval_results <- eval_results[order(sapply(eval_results, `[[`, "species"))]
   invisible(lapply(eval_results, function(res) {
-    if (!is.null(res)) export_evaluation_result(config, res)
+    if (!is.null(res)) export_evaluation_result(res)
   }))
   log_comparison_table(eval_results)
   criticals <- vapply(eval_results, function(res) {
