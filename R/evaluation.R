@@ -206,9 +206,16 @@ evaluate <- function(config) {
     if (is.null(res) || is.null(res$comparison)) return(0L)
     length(res$comparison$critical)
   }, integer(1))
+  warnings <- vapply(eval_results, function(res) {
+    if (is.null(res) || is.null(res$comparison)) return(0L)
+    length(res$comparison$warning)
+  }, integer(1))
   end_time <- Sys.time()
   time_taken <- round(end_time - start_time, 2)
   logger::log_info("Evaluation time: ", time_taken, " s")
+  if (sum(warnings) > 0) {
+    logger::log_warn("Found at least one deteriorated variable")
+  }
   if (sum(criticals) > 0) {
     logger::log_error("Found at least one critical deteriorated variable")
     stop()
