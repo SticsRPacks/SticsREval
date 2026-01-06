@@ -4,11 +4,9 @@
 \alias{compare_rmse}
 \title{Comparing relative RMSE of two STICS versions}
 \usage{
-compare_rmse(species, ref_stats, new_stats)
+compare_rmse(ref_stats, new_stats)
 }
 \arguments{
-\item{species}{the species corresponding to the statistical criteria}
-
 \item{ref_stats}{the reference statistical criterion}
 
 \item{new_stats}{the new version statistical criterion}

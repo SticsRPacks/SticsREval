@@ -113,8 +113,6 @@ test_that("compare_rmse handles negative RMSE values correctly", {
 
 
 test_that("compare_rmse treats negative values symmetrically for improvements", {
-  species <- "NegativeImprove"
-
   ref_stats <- data.frame(
     variable = c("X", "Y"),
     rRMSE = c("-55,0", "-42,0")
@@ -130,4 +128,3 @@ test_that("compare_rmse treats negative values symmetrically for improvements", 
   expect_equal(result@warning, character(0))
   expect_equal(result@improved, c("X", "Y"))
 })
-
