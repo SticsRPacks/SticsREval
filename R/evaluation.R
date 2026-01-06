@@ -85,7 +85,7 @@ evaluate_all_species <- function(species, sorted_usms, sim, obs, config) {
   eval_results
 }
 
-display_comparison <- function(species, comparison) {
+log_comparison <- function(species, comparison) {
   logger::log_info(
     "-----------------------------------------------------------------"
   )
@@ -155,7 +155,7 @@ export_evaluation_result <- function(config, eval_result) {
     }
   }
   if (!is.null(comparison)) {
-    display_comparison(eval_result$species, comparison)
+    log_comparison(eval_result$species, comparison)
   }
 }
 
@@ -201,6 +201,7 @@ evaluate <- function(config) {
   invisible(lapply(eval_results, function(res) {
     if (!is.null(res)) export_evaluation_result(config, res)
   }))
+  log_comparison_table(eval_results)
   criticals <- vapply(eval_results, function(res) {
     if (is.null(res) || is.null(res$comparison)) return(0L)
     length(res$comparison$critical)
@@ -211,5 +212,43 @@ evaluate <- function(config) {
   if (sum(criticals) > 0) {
     logger::log_error("Found at least one critical deteriorated variable")
     stop()
+  }
+}
+
+get_vars <- function(comp, key) {
+  if (is.null(comp[[key]])) character() else unlist(comp[[key]])
+}
+
+log_comparison_table <- function(eval_results) {
+  df <- do.call(rbind, lapply(eval_results, function(x) {
+
+    comp <- x$comparison
+
+    critical <- get_vars(comp, "critical")
+    warning  <- get_vars(comp, "warning")
+    improved <- get_vars(comp, "improved")
+
+    vars <- unique(c(critical, warning, improved))
+
+    status <- rep(NA_character_, length(vars))
+    status[vars %in% improved] <- "improved"
+    status[vars %in% warning]  <- "warning"
+    status[vars %in% critical] <- "critical"
+
+    data.frame(
+      species  = x$species,
+      variable = vars,
+      status   = status,
+      stringsAsFactors = FALSE
+    )
+  }))
+  df$status <- factor(
+    df$status,
+    levels = c("improved", "warning", "critical"),
+    ordered = TRUE
+  )
+  df <- df[order(df$status, df$species, df$variable), ]
+  for (line in capture.output(print(df, row.names = FALSE))) {
+    logger::log_info(line)
   }
 }
