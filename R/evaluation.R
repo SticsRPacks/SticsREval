@@ -101,26 +101,14 @@ export_evaluation_result <- function(eval_result, config = get_config_env()) {
   if (!is.null(comparison)) {
     log_comparison(comparison)
     if ("plots" %in% config$exports) {
-      logger::log_debug("Generating ", comparison$species, " scatter plots")
-      ref_sim <- read_ref_sim(comparison$species)
-      deteriorated <- c(comparison$critical, comparison$warning)
-      gen_scatter_plot(
+      gen_plots_file(
+        eval_result$species,
+        species_output_dir,
+        eval_result$comparison,
         eval_result$sim,
-        ref_sim,
-        eval_result$obs,
-        deteriorated,
-        species_output_dir
+        eval_result$obs
       )
-      logger::log_debug(comparison$species, " scatter plots generated")
-      if (!is.null(eval_result$ref_stats)) {
-        logger::log_debug("Generating ", comparison$species, " comparison plot")
-        gen_comparison_plot(
-          eval_result$stats,
-          eval_result$ref_stats,
-          species_output_dir
-        )
-        logger::log_debug(comparison$species, " comparison plot generated")
-      }
+      logger::log_debug(eval_result$species, " plots file generated")
     }
   }
 }

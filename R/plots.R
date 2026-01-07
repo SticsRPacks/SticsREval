@@ -1,8 +1,8 @@
-gen_scatter_plot <- function(sim, ref_sim, obs, vars, output_dir) {
-  plot_list <- lapply(vars, function(var) {
+gen_scatter_plot <- function(sim, ref_sim, obs, vars) {
+  lapply(vars, function(var) {
     plots <- CroPlotR:::plot.cropr_simulation(
-      sim,
-      ref_sim,
+      "New version" = sim,
+      "Ref version" = ref_sim,
       obs = obs,
       type = "scatter",
       select_scat = "sim",
@@ -10,77 +10,82 @@ gen_scatter_plot <- function(sim, ref_sim, obs, vars, output_dir) {
     )
     plotly::ggplotly(plots[[1]])
   })
-  page <- htmltools::tagList(plot_list)
+}
+
+gen_comparison_plot <- function(
+  comparison,
+  pct = get_config_env()$percentage
+) {
+  stats_all <- dplyr::bind_rows(comparison) %>%
+    dplyr::mutate(
+      status = dplyr::case_when(
+        is_critical(ratio) ~ "Critical",
+        is_warning(ratio) ~ "Warning",
+        is_improved(ratio) ~ "Improved",
+        TRUE ~ "Other"
+      ),
+    )
+  plot <- ggplot2::ggplot(
+    stats_all,
+    ggplot2::aes(
+      x = ref_rmse,
+      y = new_rmse,
+      color = status,
+      text = variable
+    ),
+    ggplot2::labs(
+      x = "Ref RMSE",
+      y = "New RMSE",
+      status = "Status",
+      variable = "Variable"
+    )
+  ) +
+    ggplot2::geom_point() +
+    ggplot2::scale_color_manual(values = c(
+      "Critical" = "red",
+      "Warning"  = "orange",
+      "Improved" = "green",
+      "Other"    = "grey50"
+    )) +
+    ggplot2::geom_abline(intercept = 0, slope = 1) +
+    ggplot2::geom_abline(intercept = 0, slope = 1 + pct, linetype = "dashed") +
+    ggrepel::geom_text_repel(
+      ggplot2::aes(label = variable),
+      na.rm = TRUE,
+      show.legend = FALSE
+    ) +
+    ggplot2::theme(legend.position = "none") +
+    ggplot2::ggtitle("rRMSE New Version vs Ref Version")
+  plotly::ggplotly(plot)
+}
+
+gen_plots_file <- function(
+  species,
+  output_dir,
+  comparison,
+  sim,
+  obs
+) {
+  logger::log_debug("Generating ", species, " comparison plot")
+  plots <- list(gen_comparison_plot(comparison))
+  logger::log_debug(species, " comparison plot generated")
+  logger::log_debug("Generating ", species, " scatter plots")
+  ref_sim <- read_ref_sim(species)
+  deteriorated <- c(get_crit_vars(comparison), get_warn_vars(comparison))
+  scat_plots <- gen_scatter_plot(
+    sim,
+    ref_sim,
+    obs,
+    deteriorated
+  )
+  plots <- append(plots, scat_plots)
+  logger::log_debug(species, " scatter plots generated")
+  page <- htmltools::tagList(plots)
   htmltools::save_html(
     page,
     file = file.path(
       output_dir,
-      "scatter_interactive.html"
+      "plots.html"
     )
-  )
-}
-
-gen_comparison_plot <- function(
-  new_stats,
-  ref_stats,
-  output_dir,
-  pct = get_config_env()$percentage
-) {
-  ref <- ref_stats %>%
-    dplyr::select(variable, rRMSE) %>%
-    dplyr::mutate(
-      rRMSE = suppressWarnings(as.numeric(sub(",", ".", rRMSE, fixed = TRUE))),
-      group = "Ref Version"
-    )
-  new <- new_stats %>%
-    dplyr::select(variable, rRMSE) %>%
-    dplyr::mutate(
-      rRMSE = suppressWarnings(as.numeric(sub(",", ".", rRMSE, fixed = TRUE))),
-      group = "New Version"
-    )
-  stats_all <- dplyr::bind_rows(ref, new)
-  tmp <- tidyr::pivot_wider(
-    stats_all[, c("group", "variable", "rRMSE")],
-    names_from = group,
-    values_from = rRMSE
-  )
-  tmp <- tmp %>%
-    dplyr::mutate(
-      abs_ref = abs(`Ref Version`),
-      abs_new = abs(`New Version`),
-      ratio = dplyr::case_when(
-        is.na(abs_ref) | is.na(abs_new) ~ NA_real_,
-        abs_ref == 0 ~ NA_real_,
-        TRUE ~ abs_new / abs_ref
-      ),
-      colours = dplyr::case_when(
-        is.na(ratio) ~ "grey50",
-        is_critical(ratio) ~ "red",
-        is_warning(ratio) ~ "orange",
-        is_improved(ratio) ~ "green",
-        TRUE ~ "grey50"
-      )
-    )
-  p <- ggplot2::ggplot(
-    tmp,
-    ggplot2::aes(x = `Ref Version`, y = `New Version`, color = colours)
-  ) +
-    ggplot2::geom_point() +
-    ggplot2::geom_abline(intercept = 0, slope = 1) +
-    ggplot2::geom_abline(intercept = 0, slope = 1 + pct, linetype = "dashed") +
-    ggrepel::geom_text_repel(
-      ggplot2::aes(label = .data$variable),
-      na.rm = TRUE,
-      show.legend = FALSE
-    ) +
-    ggplot2::scale_color_manual(
-      breaks = c("red", "orange", "green", "grey50"),
-      values = c("red", "orange", "green", "grey50"),
-      na.value = "grey50"
-    ) +
-    ggplot2::theme(legend.position = "none") +
-    ggplot2::ggtitle("rRMSE New Version vs Ref Version")
-  run_with_log_control(
-    ggplot2::ggsave(filename = file.path(output_dir, "variables.png"), plot = p)
   )
 }

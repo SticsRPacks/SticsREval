@@ -25,22 +25,30 @@ compare_rmse <- function(species, ref_stats, new_stats) {
       list(
         species = species,
         variable = result$variable[i],
-        ratio = result$ratio[i]
+        ratio = result$ratio[i],
+        new_rmse = result$rmse_new[i],
+        ref_rmse = result$rmse_ref[i]
       )
     })
   )
 }
 
 is_critical <- function(ratio, percentage = get_config_env()$percentage) {
-  ratio >= 1 + percentage
+  out <- ratio >= 1 + percentage
+  out[is.na(out)] <- FALSE
+  out
 }
 
 is_warning <- function(ratio, percentage = get_config_env()$percentage) {
-  ratio < 1 + percentage && ratio > 1
+  out <- ratio < 1 + percentage & ratio > 1
+  out[is.na(out)] <- FALSE
+  out
 }
 
 is_improved <- function(ratio) {
-  ratio <= 1
+  out <- ratio <= 1
+  out[is.na(out)] <- FALSE
+  out
 }
 
 get_crit_vars <- function(comparison) {
