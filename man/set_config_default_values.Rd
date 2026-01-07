@@ -19,5 +19,6 @@ Default values:
 \item verbose -> 1
 \item parallel -> FALSE
 \item cores -> NA
+\item percentage -> 0.05
 }
 }

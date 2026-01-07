@@ -37,6 +37,9 @@ rotations}
 
 \item{exports}{a list of strings to use to define what to export. Values can
 be "plots", "sim", "stats".}
+
+\item{percentage}{the percentage threshold used to detect critical
+deteriorated variables}
 }
 \value{
 A list containing parameters that can be used in \code{evaluate()}

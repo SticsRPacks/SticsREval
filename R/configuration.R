@@ -20,6 +20,8 @@
 #' @param stics_path path to the STICS repository
 #' @param exports a list of strings to use to define what to export. Values can
 #' be "plots", "sim", "stats".
+#' @param percentage the percentage threshold used to detect critical
+#' deteriorated variables
 #'
 #' @returns A list containing parameters that can be used in `evaluate()`
 #'  function.
@@ -46,7 +48,8 @@ make_config <- function(...) {
     rotation_file = config$rotation_file,
     sms_path = config$sms_path,
     stics_path = config$stics_path,
-    exports = config$exports
+    exports = config$exports,
+    percentage = config$percentage
   )
 }
 
@@ -58,6 +61,7 @@ make_config <- function(...) {
 #'   - verbose -> 1
 #'   - parallel -> FALSE
 #'   - cores -> NA
+#'   - percentage -> 0.05
 #'
 #' @returns A configuration list with default values
 set_config_default_values <- function(config) {
@@ -65,6 +69,7 @@ set_config_default_values <- function(config) {
   config$verbose <- config$verbose %||% 1
   config$parallel <- config$parallel %||% FALSE
   config$cores <- config$cores %||% NA
+  config$percentage <- config$percentage %||% 0.05
   config
 }
 

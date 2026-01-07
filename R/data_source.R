@@ -23,7 +23,13 @@ setMethod(
   }
 )
 
-get_data_source_from_config <- function(config = get_config_env()) {
+get_data_source_from_config <- function(
+  data_source = get_config_env()$data_source,
+  workspace = get_config_env()$workspace,
+  sms_path = get_config_env()$sms_path,
+  stics_path = get_config_env()$stics_path,
+  rotation_file = get_config_env()$rotation_file,
+  config = get_config_env()) {
   if (config$data_source == "sms") {
     return(
       gen_sms_workspace(

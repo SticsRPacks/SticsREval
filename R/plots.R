@@ -24,7 +24,7 @@ gen_comparison_plot <- function(
   new_stats,
   ref_stats,
   output_dir,
-  pct = 0.05
+  pct = get_config_env()$percentage
 ) {
   ref <- ref_stats %>%
     dplyr::select(variable, rRMSE) %>%
@@ -55,9 +55,9 @@ gen_comparison_plot <- function(
       ),
       colours = dplyr::case_when(
         is.na(ratio) ~ "grey50",
-        ratio > (1 + pct) ~ "red",
-        ratio > 1 & ratio <= (1 + pct) ~ "orange",
-        ratio <= 1 ~ "green",
+        is_critical(ratio) ~ "red",
+        is_warning(ratio) ~ "orange",
+        is_improved(ratio) ~ "green",
         TRUE ~ "grey50"
       )
     )

@@ -38,6 +38,7 @@ evaluate_species <- function(
   if (!is.null(eval_res$ref_stats)) {
     logger::log_debug("Comparing RMSE for species ", species)
     eval_res$comparison <- compare_rmse(
+      species,
       eval_res$ref_stats,
       eval_res$stats
     )
@@ -78,39 +79,8 @@ evaluate_all_species <- function(species, sorted_usms, sim, obs) {
       config$reference_data_dir
     )
   })
-  eval_results
-}
-
-log_comparison <- function(species, comparison) {
-  logger::log_info(
-    "-----------------------------------------------------------------"
-  )
-  logger::log_info("Species: ", species)
-  total <- length(comparison$critical) +
-    length(comparison$warning) +
-    length(comparison$improved)
-  logger::log_info("Total number of variables: ", total)
-  logger::log_info(
-    length(comparison$critical),
-    " deteriorated variables (>5%): "
-  )
-  if (length(comparison$critical) > 0) {
-    logger::log_info(paste(comparison$critical, collapse = ", "))
-  }
-  logger::log_info(
-    length(comparison$warning),
-    " deteriorated variables (>0%, <=5%): "
-  )
-  if (length(comparison$warning) > 0) {
-    logger::log_info(paste(comparison$warning, collapse = ", "))
-  }
-  logger::log_info(length(comparison$improved), " improved variables (<0%): ")
-  if (length(comparison$improved) > 0) {
-    logger::log_info(paste(comparison$improved, collapse = ", "))
-  }
-  logger::log_info(
-    "-----------------------------------------------------------------"
-  )
+  # Remove NULL values
+  eval_results[!vapply(eval_results, is.null, logical(1))]
 }
 
 export_evaluation_result <- function(eval_result, config = get_config_env()) {
@@ -128,30 +98,30 @@ export_evaluation_result <- function(eval_result, config = get_config_env()) {
     save_stats(eval_result$species, eval_result$stats)
   }
   comparison <- eval_result$comparison
-  if ("plots" %in% config$exports && !is.null(comparison)) {
-    logger::log_debug("Generating ", eval_result$species, " scatter plots")
-    ref_sim <- read_ref_sim(eval_result$species)
-    deteriorated <- c(comparison$critical, comparison$warning)
-    gen_scatter_plot(
-      eval_result$sim,
-      ref_sim,
-      eval_result$obs,
-      deteriorated,
-      species_output_dir
-    )
-    logger::log_debug(eval_result$species, " scatter plots generated")
-    if (!is.null(eval_result$ref_stats)) {
-      logger::log_debug("Generating ", eval_result$species, " comparison plot")
-      gen_comparison_plot(
-        eval_result$stats,
-        eval_result$ref_stats,
+  if (!is.null(comparison)) {
+    log_comparison(comparison)
+    if ("plots" %in% config$exports) {
+      logger::log_debug("Generating ", comparison$species, " scatter plots")
+      ref_sim <- read_ref_sim(comparison$species)
+      deteriorated <- c(comparison$critical, comparison$warning)
+      gen_scatter_plot(
+        eval_result$sim,
+        ref_sim,
+        eval_result$obs,
+        deteriorated,
         species_output_dir
       )
-      logger::log_debug(eval_result$species, " comparison plot generated")
+      logger::log_debug(comparison$species, " scatter plots generated")
+      if (!is.null(eval_result$ref_stats)) {
+        logger::log_debug("Generating ", comparison$species, " comparison plot")
+        gen_comparison_plot(
+          eval_result$stats,
+          eval_result$ref_stats,
+          species_output_dir
+        )
+        logger::log_debug(comparison$species, " comparison plot generated")
+      }
     }
-  }
-  if (!is.null(comparison)) {
-    log_comparison(eval_result$species, comparison)
   }
 }
 
@@ -195,17 +165,18 @@ evaluate <- function(config) {
   eval_results <- evaluate_all_species(species, sorted_usms, sim, obs)
   # Sorting eval results by species
   eval_results <- eval_results[order(sapply(eval_results, `[[`, "species"))]
-  invisible(lapply(eval_results, function(res) {
-    if (!is.null(res)) export_evaluation_result(res)
-  }))
-  log_comparison_table(eval_results)
-  criticals <- vapply(eval_results, function(res) {
-    if (is.null(res) || is.null(res$comparison)) return(0L)
-    length(res$comparison$critical)
+  comparisons <- lapply(eval_results, function(res) {
+    export_evaluation_result(res)
+    res$comparison
+  })
+  log_comparison_table(comparisons)
+  criticals <- vapply(comparisons, function(res) {
+    if (is.null(res)) return(0L)
+    length(get_crit_vars(res))
   }, integer(1))
-  warnings <- vapply(eval_results, function(res) {
-    if (is.null(res) || is.null(res$comparison)) return(0L)
-    length(res$comparison$warning)
+  warnings <- vapply(comparisons, function(res) {
+    if (is.null(res)) return(0L)
+    length(get_warn_vars(res))
   }, integer(1))
   end_time <- Sys.time()
   time_taken <- round(end_time - start_time, 2)
@@ -216,43 +187,5 @@ evaluate <- function(config) {
   if (sum(criticals) > 0) {
     logger::log_error("Found at least one critical deteriorated variable")
     stop()
-  }
-}
-
-get_vars <- function(comp, key) {
-  if (is.null(comp[[key]])) character() else unlist(comp[[key]])
-}
-
-log_comparison_table <- function(eval_results) {
-  df <- do.call(rbind, lapply(eval_results, function(x) {
-
-    comp <- x$comparison
-
-    critical <- get_vars(comp, "critical")
-    warning  <- get_vars(comp, "warning")
-    improved <- get_vars(comp, "improved")
-
-    vars <- unique(c(critical, warning, improved))
-
-    status <- rep(NA_character_, length(vars))
-    status[vars %in% improved] <- "improved"
-    status[vars %in% warning]  <- "warning"
-    status[vars %in% critical] <- "critical"
-
-    data.frame(
-      species  = x$species,
-      variable = vars,
-      status   = status,
-      stringsAsFactors = FALSE
-    )
-  }))
-  df$status <- factor(
-    df$status,
-    levels = c("improved", "warning", "critical"),
-    ordered = TRUE
-  )
-  df <- df[order(df$status, df$species, df$variable), ]
-  for (line in capture.output(print(df, row.names = FALSE))) {
-    logger::log_info(line)
   }
 }
