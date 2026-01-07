@@ -16,7 +16,7 @@ gen_comparison_plot <- function(
   comparison,
   pct = get_config_env()$percentage
 ) {
-  stats_all <- dplyr::bind_rows(comparison) %>%
+  stats_all <- comparison %>%
     dplyr::mutate(
       status = dplyr::case_when(
         is_critical(ratio) ~ "Critical",
@@ -28,8 +28,8 @@ gen_comparison_plot <- function(
   plot <- ggplot2::ggplot(
     stats_all,
     ggplot2::aes(
-      x = ref_rmse,
-      y = new_rmse,
+      x = rmse_ref,
+      y = rmse_new,
       color = status,
       text = variable
     ),

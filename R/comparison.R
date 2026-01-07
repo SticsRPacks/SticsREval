@@ -7,30 +7,24 @@
 #' @returns a list containing the variable for a species associated
 #' to its RMSEs ratio
 compare_rmse <- function(species, ref_stats, new_stats) {
-  result <- dplyr::left_join(new_stats, ref_stats, by = "variable") %>%
+  dplyr::left_join(new_stats, ref_stats, by = "variable") %>%
     dplyr::mutate(
       rmse_new = as.numeric(sub(",", ".", rRMSE.x, fixed = TRUE)),
       rmse_ref = as.numeric(sub(",", ".", rRMSE.y, fixed = TRUE))
     ) %>%
     dplyr::filter(
       !is.na(rmse_new),
-      !is.na(rmse_ref)
+      !is.na(rmse_ref),
+      !is.na(variable)
     ) %>%
     dplyr::mutate(
+      species = species,
       ratio = abs(rmse_new) / abs(rmse_ref)
-    )
-  result <- result[!is.na(result$variable) & !is.na(result$ratio), ]
-  invisible(
-    lapply(seq_len(nrow(result)), function(i) {
-      list(
-        species = species,
-        variable = result$variable[i],
-        ratio = result$ratio[i],
-        new_rmse = result$rmse_new[i],
-        ref_rmse = result$rmse_ref[i]
-      )
-    })
-  )
+    ) %>%
+    dplyr::filter(
+      !is.na(ratio)
+    ) %>%
+    dplyr::select(species, variable, rmse_new, rmse_ref, ratio)
 }
 
 is_critical <- function(ratio, percentage = get_config_env()$percentage) {
@@ -52,32 +46,35 @@ is_improved <- function(ratio) {
 }
 
 get_crit_vars <- function(comparison) {
-  crit_comp <- comparison[sapply(comparison, function(x) is_critical(x$ratio))]
-  vapply(crit_comp, `[[`, "", "variable")
+  comparison %>%
+    dplyr::filter(is_critical(ratio)) %>%
+    dplyr::pull(variable)
 }
 
 get_warn_vars <- function(comparison) {
-  warn_comp <- comparison[sapply(comparison, function(x) is_warning(x$ratio))]
-  vapply(warn_comp, `[[`, "", "variable")
+  comparison %>%
+    dplyr::filter(is_warning(ratio)) %>%
+    dplyr::pull(variable)
 }
 
 get_improved_vars <- function(comparison) {
-  imp_comp <- comparison[sapply(comparison, function(x) is_improved(x$ratio))]
-  vapply(imp_comp, `[[`, "", "variable")
+  comparison %>%
+    dplyr::filter(is_improved(ratio)) %>%
+    dplyr::pull(variable)
 }
 
 log_comparison <- function(
   comparison,
   percentage = get_config_env()$percentage
 ) {
-  if (length(comparison) == 0) {
+  if (nrow(comparison) == 0) {
     return()
   }
   logger::log_info(
     "-----------------------------------------------------------------"
   )
-  logger::log_info("Species: ", comparison[[1]]$species)
-  total <- length(comparison)
+  logger::log_info("Species: ", comparison$species[1])
+  total <- nrow(comparison)
   logger::log_info("Total number of variables: ", total)
   crit_vars <- get_crit_vars(comparison)
   logger::log_info(
@@ -106,13 +103,8 @@ log_comparison <- function(
 }
 
 log_comparison_table <- function(comparisons) {
-  df <- do.call(rbind, lapply(comparisons, function(comp) {
-    do.call(
-      rbind,
-      lapply(comp, function(x) as.data.frame(x, stringsAsFactors = FALSE))
-    )
-  }))
-  df <- df[order(df$ratio, df$species, df$variable), ]
+  df <- dplyr::bind_rows(comparisons) %>%
+    dplyr::arrange(ratio, species, species)
   for (line in capture.output(print(df, row.names = FALSE))) {
     logger::log_info(line)
   }
