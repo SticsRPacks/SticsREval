@@ -29,8 +29,11 @@ read_csv <- function(filepath) {
   )
 }
 
-read_ref_sim <- function(species, config = get_config_env()) {
-  reference_dir <- file.path(config$reference_data_dir, species)
+read_ref_sim <- function(
+  species,
+  reference_data_dir = get_config_env()$reference_data_dir
+) {
+  reference_dir <- file.path(reference_data_dir, species)
   reference_file <- file.path(reference_dir, "Simulations.csv")
   if (!length(reference_file) || !file.exists(reference_file)) {
     return(NULL)
@@ -39,44 +42,57 @@ read_ref_sim <- function(species, config = get_config_env()) {
   CroPlotR::split_df2sim(df)
 }
 
-save_sim <- function(species, sim, config = get_config_env()) {
-  output_dir <- file.path(config$output_dir, species)
+save_sim <- function(species, sim, output_dir = get_config_env()$output_dir) {
+  output_dir <- file.path(output_dir, species)
   safe_write_csv(
     CroPlotR::bind_rows(sim),
     file.path(output_dir, "Simulations.csv")
   )
 }
 
-load_workspace_sim <- function(usms, rotations, config = get_config_env()) {
-  if (config$run_simulations) {
+load_workspace_sim <- function(
+  usms,
+  rotations,
+  workspace = get_config_env()$workspace,
+  run_simulations = get_config_env()$run_simulations,
+  stics_exe = get_config_env()$stics_exe,
+  parallel = get_config_env()$parallel,
+  cores = get_config_env()$cores
+) {
+  if (run_simulations) {
     logger::log_info("Running simulations...")
     return(
       run_simulations(
-        stics_exe = config$stics_exe,
-        workspace = config$workspace,
+        stics_exe = stics_exe,
+        workspace = workspace,
         usm_names = usms,
         successive = rotations,
         verbose = is_debug(),
-        parallel = config$parallel,
-        cores = config$cores
+        parallel = parallel,
+        cores = cores
       )
     )
   }
   SticsRFiles::get_sim(
-    workspace = config$workspace,
+    workspace = workspace,
     usm = usms,
     verbose = is_debug(),
-    parallel = config$parallel,
-    cores = config$cores
+    parallel = parallel,
+    cores = cores
   )
 }
 
-load_workspace_obs <- function(usms, config = get_config_env()) {
+load_workspace_obs <- function(
+  usms,
+  workspace = get_config_env()$workspace,
+  parallel = get_config_env()$parallel,
+  cores = get_config_env()$cores
+) {
   SticsRFiles::get_obs(
-    workspace = config$workspace,
+    workspace = workspace,
     usm = usms,
     verbose = is_debug(),
-    parallel = config$parallel,
-    cores = config$cores
+    parallel = parallel,
+    cores = cores
   )
 }

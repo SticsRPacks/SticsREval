@@ -28,19 +28,19 @@ get_data_source_from_config <- function(
   workspace = get_config_env()$workspace,
   sms_path = get_config_env()$sms_path,
   stics_path = get_config_env()$stics_path,
-  rotation_file = get_config_env()$rotation_file,
-  config = get_config_env()) {
-  if (config$data_source == "sms") {
+  rotation_file = get_config_env()$rotation_file
+) {
+  if (data_source == "sms") {
     return(
       gen_sms_workspace(
-        config$sms_path,
-        config$stics_path,
-        config$workspace
+        sms_path,
+        stics_path,
+        workspace
       )
     )
   }
-  if (config$data_source == "local") {
-    return(get_local_data_source(config$workspace, config$rotation_file))
+  if (data_source == "local") {
+    return(get_local_data_source(workspace, rotation_file))
   }
   logger::error("Invalid data source: source must be 'sms' or 'local'")
   stop()

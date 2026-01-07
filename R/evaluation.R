@@ -46,7 +46,7 @@ evaluate_species <- function(
 }
 
 evaluate_all_species <- function(species, sorted_usms, sim, obs) {
-  config <- get_config_env()
+  reference_data_dir <- get_config_env()$reference_data_dir
   backend <- setup_parallel_backend(length(species))
   on.exit(backend$cleanup(), add = TRUE)
   eval_results <- backend$map(seq_along(species), function(i) {
@@ -75,31 +75,35 @@ evaluate_all_species <- function(species, sorted_usms, sim, obs) {
       spec,
       selected_sim,
       selected_obs,
-      config$reference_data_dir
+      reference_data_dir
     )
   })
   # Remove NULL values
   eval_results[!vapply(eval_results, is.null, logical(1))]
 }
 
-export_evaluation_result <- function(eval_result, config = get_config_env()) {
-  species_output_dir <- file.path(config$output_dir, eval_result$species)
-  if (!is.null(config$exports) && !file.exists(species_output_dir)) {
+export_evaluation_result <- function(
+  eval_result,
+  exports = get_config_env()$exports,
+  output_dir = get_config_env()$output_dir
+) {
+  species_output_dir <- file.path(output_dir, eval_result$species)
+  if (!is.null(exports) && !file.exists(species_output_dir)) {
     logger::log_info("Exporting ", eval_result$species, " evaluation results")
     dir.create(species_output_dir)
   }
-  if ("sim" %in% config$exports) {
+  if ("sim" %in% exports) {
     logger::log_debug("Exporting ", eval_result$species, " simulation data")
     save_sim(eval_result$species, eval_result$sim)
   }
-  if ("stats" %in% config$exports) {
+  if ("stats" %in% exports) {
     logger::log_debug("Exporting ", eval_result$species, " statistics")
     save_stats(eval_result$species, eval_result$stats)
   }
   comparison <- eval_result$comparison
   if (!is.null(comparison)) {
     log_comparison(comparison)
-    if ("plots" %in% config$exports) {
+    if ("plots" %in% exports) {
       gen_plots_file(
         eval_result$species,
         species_output_dir,
@@ -112,7 +116,7 @@ export_evaluation_result <- function(eval_result, config = get_config_env()) {
   }
 }
 
-sort_usm_by_species <- function(usms, config = get_config_env()) {
+sort_usm_by_species <- function(usms, workspace = get_config_env()$workspace) {
   logger::log_debug("Sorting USMs by species...")
   backend <- setup_parallel_backend(length(usms))
   on.exit(backend$cleanup(), add = TRUE)
@@ -120,7 +124,7 @@ sort_usm_by_species <- function(usms, config = get_config_env()) {
     logger::log_appender(logger::appender_stdout)
     usm <- usms[i]
     species <- SticsRFiles::get_plant_txt(
-      workspace = file.path(config$workspace, usm)
+      workspace = file.path(workspace, usm)
     )
     list(
       species = species$codeplante,

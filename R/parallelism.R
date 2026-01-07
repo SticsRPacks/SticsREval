@@ -76,8 +76,12 @@ get_cores <- function(...) {
   dot_args$cores_nb
 }
 
-setup_parallel_backend <- function(n_tasks, config = get_config_env()) {
-  if (!config$parallel) {
+setup_parallel_backend <- function(
+  n_tasks,
+  parallel = get_config_env()$parallel,
+  cores = get_config_env()$cores
+) {
+  if (!parallel) {
     return(
       list(
         map = base::lapply,
@@ -86,7 +90,7 @@ setup_parallel_backend <- function(n_tasks, config = get_config_env()) {
     )
   }
   options(future.globals.maxSize = 2 * 1024 ^ 3)
-  workers <- get_cores_nb(parallel = TRUE, required_nb = config$cores)
+  workers <- get_cores_nb(parallel = TRUE, required_nb = cores)
   workers <- min(workers, n_tasks)
   future::plan(
     future::multisession,
