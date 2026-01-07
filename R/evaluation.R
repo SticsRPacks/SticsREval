@@ -26,7 +26,6 @@ evaluate_species <- function(
     species = species,
     comparison = NULL,
     stats = NULL,
-    ref_stats = NULL,
     sim = sim,
     obs = obs
   )
@@ -34,12 +33,12 @@ evaluate_species <- function(
     # Calling summary() directly does not work in a future context
     CroPlotR:::summary.cropr_simulation(sim, obs = obs)
   )
-  eval_res$ref_stats <- read_ref_stats(species, reference_data_dir)
-  if (!is.null(eval_res$ref_stats)) {
+  ref_stats <- read_ref_stats(species, reference_data_dir)
+  if (!is.null(ref_stats)) {
     logger::log_debug("Comparing RMSE for species ", species)
     eval_res$comparison <- compare_rmse(
       species,
-      eval_res$ref_stats,
+      ref_stats,
       eval_res$stats
     )
   }
