@@ -12,12 +12,8 @@
 #'  2 = DEBUG, 1 = INFO, 0 = WARNING
 #' @param parallel Boolean. Is the computation to be done in parallel ?
 #' @param cores Number of cores to use for parallel computation.
-#' @param data_source the source of the data to use for the evaluation. The
-#'  source can be "sms" or "local".
 #' @param rotation_file path to the CSV which contains the information about
 #'  rotations
-#' @param sms_path path to the directory which contains the SMS repository
-#' @param stics_path path to the STICS repository
 #' @param exports a list of strings to use to define what to export. Values can
 #' be "plots", "sim", "stats".
 #' @param percentage the percentage threshold used to detect critical
@@ -38,7 +34,6 @@ make_config <- function(...) {
   list(
     stics_exe = config$stics_exe,
     workspace = config$workspace,
-    data_source = config$data_source,
     run_simulations = config$run_simulations,
     verbose = config$verbose,
     parallel = config$parallel,
@@ -46,8 +41,6 @@ make_config <- function(...) {
     output_dir = config$output_dir,
     reference_data_dir = config$reference_data_dir,
     rotation_file = config$rotation_file,
-    sms_path = config$sms_path,
-    stics_path = config$stics_path,
     exports = config$exports,
     percentage = config$percentage
   )
@@ -100,28 +93,8 @@ validate_configuration <- function(config) {
   if (!is.null(config$output_dir) && !dir.exists(config$output_dir)) {
     dir.create(config$output_dir, recursive = TRUE)
   }
-  if (config$data_source == "sms") {
-    if (is.null(config$sms_path) || !dir.exists(config$sms_path)) {
-      stop("SMS path must be a valid path when data source is sms")
-    }
-    if (is.null(config$stics_path) || !dir.exists(config$stics_path)) {
-      stop("Stics path must be a valid path when data source is sms")
-    }
-    if (!config$run_simulations) {
-      stop(
-        "run_simulations flag must be True when data source is sms"
-      )
-    }
-  } else if (config$data_source == "local") {
-    if (is.null(config$rotation_file) || !file.exists(config$rotation_file)) {
-      stop("Rotation file must be a valid path when data source is local")
-    }
-  } else {
-    stop(
-      "Invalid data source (",
-      config$data_source,
-      "): source must be 'sms' or 'local'"
-    )
+  if (is.null(config$rotation_file) || !file.exists(config$rotation_file)) {
+    stop("Rotation file must be a valid path")
   }
 }
 

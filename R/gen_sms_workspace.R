@@ -79,6 +79,8 @@ extract_sms_data <- function(sms_path, stics_path, destination_dir) {
 #' @param workspace path to the Stics workspace
 #'
 #' @returns a DataSource object containing the USM names list
+#'
+#' @export
 gen_sms_workspace <- function(
   sms_path,
   stics_path,
@@ -86,7 +88,6 @@ gen_sms_workspace <- function(
 ) {
   logger::log_info("Generating SMS workspace...")
   usms <- get_sms_usms_names(sms_path)
-  rotations <- get_sms_rotations(sms_path)
   workspace_tmp <- tempfile()
   dir.create(workspace_tmp)
   extract_sms_data(sms_path, stics_path, workspace_tmp)
@@ -99,10 +100,4 @@ gen_sms_workspace <- function(
     parallel = TRUE
   )
   unlink(workspace_tmp, recursive = TRUE)
-
-  new(
-    "DataSource",
-    usms = usms,
-    rotations = rotations
-  )
 }
