@@ -1,3 +1,4 @@
+#' @importFrom rlang .data
 get_sms_usms_list <- function(sms_path) {
   filter_file_path <- file.path(sms_path, "typo_usms.csv")
   filter_file <- try(read_csv(filter_file_path), TRUE)
@@ -5,7 +6,7 @@ get_sms_usms_list <- function(sms_path) {
     stop(paste0("Filter file could not be loaded: ", filter_file_path))
   }
   filter_file %>%
-    dplyr::filter(source == "sms", UsedForCalibration == 0)
+    dplyr::filter(.data$source == "sms", .data$UsedForCalibration == 0)
 }
 
 #' Getting the filtered USM list using the typo file.
@@ -40,10 +41,10 @@ get_sms_rotations <- function(sms_path) {
 extract_sms_data <- function(sms_path, stics_path, destination_dir) {
   logger::log_debug("Copying XML files from SMS workspace to ", destination_dir)
   obs_path <- list.files(file.path(sms_path, "Obs"), full.names = TRUE)
-  soil_path <- file.path(sms_path, "Soil","sols.xml")
+  soil_path <- file.path(sms_path, "Soil", "sols.xml")
   tec_path <- list.files(file.path(sms_path, "Tec"), full.names = TRUE)
   ini_path <- list.files(file.path(sms_path, "USMs"), full.names = TRUE)
-  usms_path <- file.path(sms_path, "USMs","usms.xml")
+  usms_path <- file.path(sms_path, "USMs", "usms.xml")
   clim_path <- list.files(file.path(sms_path, "Climate"), full.names = TRUE)
 
   stics_input_files_path <- file.path(stics_path, "input_files")
@@ -67,7 +68,7 @@ extract_sms_data <- function(sms_path, stics_path, destination_dir) {
     full.names = TRUE
   )
   if (!dir.exists(file.path(destination_dir, "plant"))) {
-    dir.create(file.path(destination_dir,"plant"))
+    dir.create(file.path(destination_dir, "plant"))
   }
   file.copy(from = plant_path, to = file.path(destination_dir, "plant"))
 }
@@ -77,6 +78,8 @@ extract_sms_data <- function(sms_path, stics_path, destination_dir) {
 #' @param sms_path path to the SMS repository
 #' @param stics_path path to Stics repository
 #' @param workspace path to the Stics workspace
+#' @param parallel Boolean. Is the computation to be done in parallel ?
+#' @param cores Number of cores to use for parallel computation
 #'
 #' @returns a DataSource object containing the USM names list
 #'
@@ -84,7 +87,9 @@ extract_sms_data <- function(sms_path, stics_path, destination_dir) {
 gen_sms_workspace <- function(
   sms_path,
   stics_path,
-  workspace
+  workspace,
+  parallel = FALSE,
+  cores = NA
 ) {
   logger::log_info("Generating SMS workspace...")
   usms <- get_sms_usms_names(sms_path)
@@ -97,7 +102,8 @@ gen_sms_workspace <- function(
     out_dir = workspace,
     verbose = is_debug(),
     usm = usms,
-    parallel = TRUE
+    parallel = parallel,
+    cores = cores
   )
   unlink(workspace_tmp, recursive = TRUE)
 }

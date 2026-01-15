@@ -6,25 +6,32 @@
 #'
 #' @returns a list containing the variable for a species associated
 #' to its RMSEs ratio
+#' @importFrom rlang .data
 compare_rmse <- function(species, ref_stats, new_stats) {
   dplyr::left_join(new_stats, ref_stats, by = "variable") %>%
     dplyr::mutate(
-      rmse_new = as.numeric(sub(",", ".", rRMSE.x, fixed = TRUE)),
-      rmse_ref = as.numeric(sub(",", ".", rRMSE.y, fixed = TRUE))
+      rmse_new = as.numeric(sub(",", ".", .data$rRMSE.x, fixed = TRUE)),
+      rmse_ref = as.numeric(sub(",", ".", .data$rRMSE.y, fixed = TRUE))
     ) %>%
     dplyr::filter(
-      !is.na(rmse_new),
-      !is.na(rmse_ref),
-      !is.na(variable)
+      !is.na(.data$rmse_new),
+      !is.na(.data$rmse_ref),
+      !is.na(.data$variable)
     ) %>%
     dplyr::mutate(
       species = species,
-      ratio = abs(rmse_new) / abs(rmse_ref)
+      ratio = abs(.data$rmse_new) / abs(.data$rmse_ref)
     ) %>%
     dplyr::filter(
-      !is.na(ratio)
+      !is.na(.data$ratio)
     ) %>%
-    dplyr::select(species, variable, rmse_new, rmse_ref, ratio)
+    dplyr::select(
+      .data$species,
+      .data$variable,
+      .data$rmse_new,
+      .data$rmse_ref,
+      .data$ratio
+    )
 }
 
 is_critical <- function(ratio, percentage) {
@@ -45,18 +52,21 @@ is_improved <- function(ratio) {
   out
 }
 
+#' @importFrom rlang .data
 get_crit_vars <- function(comparison, percentage) {
   comparison %>%
     dplyr::filter(is_critical(.data$ratio, percentage)) %>%
     dplyr::pull(.data$variable)
 }
 
+#' @importFrom rlang .data
 get_warn_vars <- function(comparison, percentage) {
   comparison %>%
     dplyr::filter(is_warning(.data$ratio, percentage)) %>%
     dplyr::pull(.data$variable)
 }
 
+#' @importFrom rlang .data
 get_improved_vars <- function(comparison) {
   comparison %>%
     dplyr::filter(is_improved(.data$ratio)) %>%
@@ -102,9 +112,10 @@ log_comparison <- function(
   )
 }
 
+#' @importFrom rlang .data
 log_comparison_table <- function(comparisons) {
   df <- dplyr::bind_rows(comparisons) %>%
-    dplyr::arrange(ratio, species, species)
+    dplyr::arrange(.data$ratio, .data$species)
   for (line in capture.output(print(df, row.names = FALSE))) {
     logger::log_info(line)
   }

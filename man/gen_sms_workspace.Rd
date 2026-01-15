@@ -4,7 +4,13 @@
 \alias{gen_sms_workspace}
 \title{Generate a Stics workspace from SMS data.}
 \usage{
-gen_sms_workspace(sms_path, stics_path, workspace)
+gen_sms_workspace(
+  sms_path,
+  stics_path,
+  workspace,
+  parallel = FALSE,
+  cores = NA
+)
 }
 \arguments{
 \item{sms_path}{path to the SMS repository}
@@ -12,6 +18,10 @@ gen_sms_workspace(sms_path, stics_path, workspace)
 \item{stics_path}{path to Stics repository}
 
 \item{workspace}{path to the Stics workspace}
+
+\item{parallel}{Boolean. Is the computation to be done in parallel ?}
+
+\item{cores}{Number of cores to use for parallel computation}
 }
 \value{
 a DataSource object containing the USM names list

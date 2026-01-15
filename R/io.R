@@ -98,14 +98,15 @@ load_workspace_obs <- function(
 }
 
 #' @importFrom dplyr %>%
+#' @importFrom rlang .data
 get_rotation_list <- function(rotation_file) {
   rotations_data <- read_csv(rotation_file)
   rotations <- rotations_data %>%
-    dplyr::filter(rotation != 0) %>%
-    dplyr::arrange(rotation, rotation_order) %>%
-    dplyr::group_by(rotation) %>%
-    dplyr::summarise(usm_vec = list(usm)) %>%
-    dplyr::pull(usm_vec)
+    dplyr::filter(.data$rotation != 0) %>%
+    dplyr::arrange(.data$rotation, .data$rotation_order) %>%
+    dplyr::group_by(.data$rotation) %>%
+    dplyr::summarise(usm_vec = list(.data$usm)) %>%
+    dplyr::pull(.data$usm_vec)
   logger::log_debug("Found ", length(rotations), " rotations")
   rotations
 }

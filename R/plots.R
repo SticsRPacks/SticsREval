@@ -12,6 +12,7 @@ gen_scatter_plot <- function(sim, ref_sim, obs, vars) {
   })
 }
 
+#' @importFrom rlang .data
 gen_comparison_plot <- function(
   comparison,
   percentage
@@ -28,10 +29,10 @@ gen_comparison_plot <- function(
   plot <- ggplot2::ggplot(
     stats_all,
     ggplot2::aes(
-      x = rmse_ref,
-      y = rmse_new,
-      color = status,
-      text = variable
+      x = .data$rmse_ref,
+      y = .data$rmse_new,
+      color = .data$status,
+      text = .data$variable
     ),
     ggplot2::labs(
       x = "Ref RMSE",
@@ -54,7 +55,7 @@ gen_comparison_plot <- function(
       linetype = "dashed"
     ) +
     ggrepel::geom_text_repel(
-      ggplot2::aes(label = variable),
+      ggplot2::aes(label = .data$variable),
       na.rm = TRUE,
       show.legend = FALSE
     ) +
