@@ -4,12 +4,7 @@
 \alias{evaluate_species}
 \title{Running evaluation over a USM list}
 \usage{
-evaluate_species(
-  species,
-  sim,
-  obs,
-  reference_data_dir = get_config_env()$reference_data_dir
-)
+evaluate_species(species, sim, obs, reference_data_dir)
 }
 \arguments{
 \item{species}{the species corresponding to the simulations and observations}

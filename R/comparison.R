@@ -27,13 +27,13 @@ compare_rmse <- function(species, ref_stats, new_stats) {
     dplyr::select(species, variable, rmse_new, rmse_ref, ratio)
 }
 
-is_critical <- function(ratio, percentage = get_config_env()$percentage) {
+is_critical <- function(ratio, percentage) {
   out <- ratio >= 1 + percentage
   out[is.na(out)] <- FALSE
   out
 }
 
-is_warning <- function(ratio, percentage = get_config_env()$percentage) {
+is_warning <- function(ratio, percentage) {
   out <- ratio < 1 + percentage & ratio > 1
   out[is.na(out)] <- FALSE
   out
@@ -45,27 +45,27 @@ is_improved <- function(ratio) {
   out
 }
 
-get_crit_vars <- function(comparison) {
+get_crit_vars <- function(comparison, percentage) {
   comparison %>%
-    dplyr::filter(is_critical(ratio)) %>%
-    dplyr::pull(variable)
+    dplyr::filter(is_critical(.data$ratio, percentage)) %>%
+    dplyr::pull(.data$variable)
 }
 
-get_warn_vars <- function(comparison) {
+get_warn_vars <- function(comparison, percentage) {
   comparison %>%
-    dplyr::filter(is_warning(ratio)) %>%
-    dplyr::pull(variable)
+    dplyr::filter(is_warning(.data$ratio, percentage)) %>%
+    dplyr::pull(.data$variable)
 }
 
 get_improved_vars <- function(comparison) {
   comparison %>%
-    dplyr::filter(is_improved(ratio)) %>%
-    dplyr::pull(variable)
+    dplyr::filter(is_improved(.data$ratio)) %>%
+    dplyr::pull(.data$variable)
 }
 
 log_comparison <- function(
   comparison,
-  percentage = get_config_env()$percentage
+  percentage
 ) {
   if (nrow(comparison) == 0) {
     return()
@@ -76,7 +76,7 @@ log_comparison <- function(
   logger::log_info("Species: ", comparison$species[1])
   total <- nrow(comparison)
   logger::log_info("Total number of variables: ", total)
-  crit_vars <- get_crit_vars(comparison)
+  crit_vars <- get_crit_vars(comparison, percentage)
   logger::log_info(
     length(crit_vars),
     " deteriorated variables (>={percentage * 100}%): "
@@ -84,7 +84,7 @@ log_comparison <- function(
   if (length(crit_vars) > 0) {
     logger::log_info(paste(crit_vars, collapse = ", "))
   }
-  warn_vars <- get_warn_vars(comparison)
+  warn_vars <- get_warn_vars(comparison, percentage)
   logger::log_info(
     length(warn_vars),
     " deteriorated variables (>0%, <{percentage * 100}%): "

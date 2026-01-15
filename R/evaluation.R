@@ -20,7 +20,7 @@ evaluate_species <- function(
   species,
   sim,
   obs,
-  reference_data_dir = get_config_env()$reference_data_dir
+  reference_data_dir
 ) {
   eval_res <- list(
     species = species,
@@ -45,9 +45,16 @@ evaluate_species <- function(
   eval_res
 }
 
-evaluate_all_species <- function(species, sorted_usms, sim, obs) {
-  reference_data_dir <- get_config_env()$reference_data_dir
-  backend <- setup_parallel_backend(length(species))
+evaluate_all_species <- function(
+  species,
+  sorted_usms,
+  sim,
+  obs,
+  reference_data_dir,
+  parallel,
+  cores
+) {
+  backend <- setup_parallel_backend(length(species), parallel, cores)
   on.exit(backend$cleanup(), add = TRUE)
   eval_results <- backend$map(seq_along(species), function(i) {
     logger::log_appender(logger::appender_stdout)
@@ -84,8 +91,10 @@ evaluate_all_species <- function(species, sorted_usms, sim, obs) {
 
 export_evaluation_result <- function(
   eval_result,
-  exports = get_config_env()$exports,
-  output_dir = get_config_env()$output_dir
+  exports,
+  output_dir,
+  reference_data_dir,
+  percentage
 ) {
   species_output_dir <- file.path(output_dir, eval_result$species)
   if (!is.null(exports) && !file.exists(species_output_dir)) {
@@ -94,31 +103,33 @@ export_evaluation_result <- function(
   }
   if ("sim" %in% exports) {
     logger::log_debug("Exporting ", eval_result$species, " simulation data")
-    save_sim(eval_result$species, eval_result$sim)
+    save_sim(eval_result$species, eval_result$sim, output_dir)
   }
   if ("stats" %in% exports) {
     logger::log_debug("Exporting ", eval_result$species, " statistics")
-    save_stats(eval_result$species, eval_result$stats)
+    save_stats(eval_result$species, eval_result$stats, output_dir)
   }
   comparison <- eval_result$comparison
   if (!is.null(comparison)) {
-    log_comparison(comparison)
+    log_comparison(comparison, percentage)
     if ("plots" %in% exports) {
       gen_plots_file(
         eval_result$species,
         species_output_dir,
         eval_result$comparison,
         eval_result$sim,
-        eval_result$obs
+        eval_result$obs,
+        reference_data_dir,
+        percentage
       )
       logger::log_debug(eval_result$species, " plots file generated")
     }
   }
 }
 
-sort_usm_by_species <- function(usms, workspace = get_config_env()$workspace) {
+sort_usm_by_species <- function(usms, workspace, parallel, cores) {
   logger::log_debug("Sorting USMs by species...")
-  backend <- setup_parallel_backend(length(usms))
+  backend <- setup_parallel_backend(length(usms), parallel, cores)
   on.exit(backend$cleanup(), add = TRUE)
   result <- backend$map(seq_along(usms), function(i) {
     logger::log_appender(logger::appender_stdout)
@@ -143,31 +154,62 @@ sort_usm_by_species <- function(usms, workspace = get_config_env()$workspace) {
 #'
 #' @export
 evaluate <- function(config) {
-  init_config_env(config)
   init_logger(config$verbose)
   start_time <- Sys.time()
   logger::log_info("Starting evaluation...")
   usms <- list.dirs(config$workspace, full.names = FALSE, recursive = FALSE)
   rotations <- get_rotation_list(config$rotation_file)
-  sim <- load_workspace_sim(usms, rotations)
-  obs <- load_workspace_obs(usms)
-  sorted_usms <- sort_usm_by_species(usms)
+  sim <- load_workspace_sim(
+    usms,
+    rotations,
+    config$workspace,
+    config$run_simulations,
+    config$stics_exe,
+    config$parallel,
+    config$cores
+  )
+  obs <- load_workspace_obs(
+    usms,
+    config$workspace,
+    config$parallel,
+    config$cores
+  )
+  sorted_usms <- sort_usm_by_species(
+    usms,
+    config$workspace,
+    config$parallel,
+    config$cores
+  )
   species <- unique(sorted_usms$species)
-  eval_results <- evaluate_all_species(species, sorted_usms, sim, obs)
+  eval_results <- evaluate_all_species(
+    species,
+    sorted_usms,
+    sim,
+    obs,
+    config$reference_data_dir,
+    config$parallel,
+    config$cores
+  )
   # Sorting eval results by species
   eval_results <- eval_results[order(sapply(eval_results, `[[`, "species"))]
   comparisons <- lapply(eval_results, function(res) {
-    export_evaluation_result(res)
+    export_evaluation_result(
+      res,
+      config$exports,
+      config$output_dir,
+      config$reference_data_dir,
+      config$percentage
+    )
     res$comparison
   })
   log_comparison_table(comparisons)
   criticals <- vapply(comparisons, function(res) {
     if (is.null(res)) return(0L)
-    length(get_crit_vars(res))
+    length(get_crit_vars(res, config$percentage))
   }, integer(1))
   warnings <- vapply(comparisons, function(res) {
     if (is.null(res)) return(0L)
-    length(get_warn_vars(res))
+    length(get_warn_vars(res, config$percentage))
   }, integer(1))
   end_time <- Sys.time()
   time_taken <- round(end_time - start_time, 2)

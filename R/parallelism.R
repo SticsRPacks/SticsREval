@@ -78,8 +78,8 @@ get_cores <- function(...) {
 
 setup_parallel_backend <- function(
   n_tasks,
-  parallel = get_config_env()$parallel,
-  cores = get_config_env()$cores
+  parallel,
+  cores
 ) {
   if (!parallel) {
     return(

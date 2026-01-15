@@ -31,7 +31,7 @@ read_csv <- function(filepath) {
 
 read_ref_sim <- function(
   species,
-  reference_data_dir = get_config_env()$reference_data_dir
+  reference_data_dir
 ) {
   reference_dir <- file.path(reference_data_dir, species)
   reference_file <- file.path(reference_dir, "Simulations.csv")
@@ -42,7 +42,7 @@ read_ref_sim <- function(
   CroPlotR::split_df2sim(df)
 }
 
-save_sim <- function(species, sim, output_dir = get_config_env()$output_dir) {
+save_sim <- function(species, sim, output_dir) {
   output_dir <- file.path(output_dir, species)
   safe_write_csv(
     CroPlotR::bind_rows(sim),
@@ -53,11 +53,11 @@ save_sim <- function(species, sim, output_dir = get_config_env()$output_dir) {
 load_workspace_sim <- function(
   usms,
   rotations,
-  workspace = get_config_env()$workspace,
-  run_simulations = get_config_env()$run_simulations,
-  stics_exe = get_config_env()$stics_exe,
-  parallel = get_config_env()$parallel,
-  cores = get_config_env()$cores
+  workspace,
+  run_simulations,
+  stics_exe,
+  parallel,
+  cores
 ) {
   if (run_simulations) {
     logger::log_info("Running simulations...")
@@ -84,9 +84,9 @@ load_workspace_sim <- function(
 
 load_workspace_obs <- function(
   usms,
-  workspace = get_config_env()$workspace,
-  parallel = get_config_env()$parallel,
-  cores = get_config_env()$cores
+  workspace,
+  parallel,
+  cores
 ) {
   SticsRFiles::get_obs(
     workspace = workspace,

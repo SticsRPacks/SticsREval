@@ -14,14 +14,14 @@ gen_scatter_plot <- function(sim, ref_sim, obs, vars) {
 
 gen_comparison_plot <- function(
   comparison,
-  pct = get_config_env()$percentage
+  percentage
 ) {
   stats_all <- comparison %>%
     dplyr::mutate(
       status = dplyr::case_when(
-        is_critical(ratio) ~ "Critical",
-        is_warning(ratio) ~ "Warning",
-        is_improved(ratio) ~ "Improved",
+        is_critical(.data$ratio, percentage) ~ "Critical",
+        is_warning(.data$ratio, percentage) ~ "Warning",
+        is_improved(.data$ratio) ~ "Improved",
         TRUE ~ "Other"
       ),
     )
@@ -48,7 +48,11 @@ gen_comparison_plot <- function(
       "Other"    = "grey50"
     )) +
     ggplot2::geom_abline(intercept = 0, slope = 1) +
-    ggplot2::geom_abline(intercept = 0, slope = 1 + pct, linetype = "dashed") +
+    ggplot2::geom_abline(
+      intercept = 0,
+      slope = 1 + percentage,
+      linetype = "dashed"
+    ) +
     ggrepel::geom_text_repel(
       ggplot2::aes(label = variable),
       na.rm = TRUE,
@@ -64,14 +68,19 @@ gen_plots_file <- function(
   output_dir,
   comparison,
   sim,
-  obs
+  obs,
+  reference_data_dir,
+  percentage
 ) {
   logger::log_debug("Generating ", species, " comparison plot")
-  plots <- list(gen_comparison_plot(comparison))
+  plots <- list(gen_comparison_plot(comparison, percentage))
   logger::log_debug(species, " comparison plot generated")
   logger::log_debug("Generating ", species, " scatter plots")
-  ref_sim <- read_ref_sim(species)
-  deteriorated <- c(get_crit_vars(comparison), get_warn_vars(comparison))
+  ref_sim <- read_ref_sim(species, reference_data_dir)
+  deteriorated <- c(
+    get_crit_vars(comparison, percentage),
+    get_warn_vars(comparison, percentage)
+  )
   scat_plots <- gen_scatter_plot(
     sim,
     ref_sim,

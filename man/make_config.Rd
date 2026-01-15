@@ -25,15 +25,8 @@ make_config(...)
 
 \item{cores}{Number of cores to use for parallel computation.}
 
-\item{data_source}{the source of the data to use for the evaluation. The
-source can be "sms" or "local".}
-
 \item{rotation_file}{path to the CSV which contains the information about
 rotations}
-
-\item{sms_path}{path to the directory which contains the SMS repository}
-
-\item{stics_path}{path to the STICS repository}
 
 \item{exports}{a list of strings to use to define what to export. Values can
 be "plots", "sim", "stats".}
