@@ -79,7 +79,7 @@ extract_sms_data <- function(sms_path, stics_path, destination_dir) {
 #' @returns a DataSource object containing the USM names list
 #'
 #' @export
-gen_sms_workspace <- function(
+gen_workspace_from_sms <- function(
   sms_path,
   stics_path,
   workspace,
