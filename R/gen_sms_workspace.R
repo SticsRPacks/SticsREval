@@ -23,13 +23,8 @@ get_sms_usms_list <- function(sms_path) {
 #'   get_sms_usms_list("/path/to/sms")
 get_sms_usms_names <- function(sms_path) {
   usm_list <- get_sms_usms_list(sms_path)
-  logger::log_debug("Found ", usm_list$usm, " USMs in ", sms_path)
+  logger::log_info("Found ", length(usm_list$usm), " USMs in ", sms_path)
   usm_list$usm
-}
-
-get_sms_rotations <- function(sms_path) {
-  filter_file <- get_sms_usms_list(sms_path)
-  get_rotation_list(filter_file)
 }
 
 #' Extract all necessary files from SMS and copy it to a destination directory.
@@ -39,7 +34,7 @@ get_sms_rotations <- function(sms_path) {
 #' @param destination_dir path where the files must be copied
 #'
 extract_sms_data <- function(sms_path, stics_path, destination_dir) {
-  logger::log_debug("Copying XML files from SMS workspace to ", destination_dir)
+  logger::log_info("Copying XML files from SMS workspace to ", destination_dir)
   obs_path <- list.files(file.path(sms_path, "Obs"), full.names = TRUE)
   soil_path <- file.path(sms_path, "Soil", "sols.xml")
   tec_path <- list.files(file.path(sms_path, "Tec"), full.names = TRUE)
@@ -95,8 +90,12 @@ gen_sms_workspace <- function(
   usms <- get_sms_usms_names(sms_path)
   workspace_tmp <- tempfile()
   dir.create(workspace_tmp)
+  on.exit({
+    unlink(workspace_tmp, recursive = TRUE)
+    logger::log_info("Temporary workspace ", workspace_tmp, " deleted.")
+  }, add = TRUE)
   extract_sms_data(sms_path, stics_path, workspace_tmp)
-  logger::log_debug("Generating text workspace using ", workspace_tmp, " files")
+  logger::log_info("Generating text workspace using ", workspace_tmp, " files")
   SticsRFiles::gen_usms_xml2txt(
     workspace = workspace_tmp,
     out_dir = workspace,
@@ -105,5 +104,4 @@ gen_sms_workspace <- function(
     parallel = parallel,
     cores = cores
   )
-  unlink(workspace_tmp, recursive = TRUE)
 }
