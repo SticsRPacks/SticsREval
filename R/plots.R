@@ -1,4 +1,4 @@
-gen_scatter_plot <- function(sim, ref_sim, obs, vars) {
+gen_scatter_plot <- function(sim, obs, ref_sim, vars) {
   lapply(vars, function(var) {
     plots <- CroPlotR:::plot.cropr_simulation(
       "New version" = sim,
@@ -70,22 +70,21 @@ gen_plots_file <- function(
   comparison,
   sim,
   obs,
-  reference_data_dir,
+  ref_sim,
   percentage
 ) {
   logger::log_debug("Generating ", species, " comparison plot")
   plots <- list(gen_comparison_plot(comparison, percentage))
   logger::log_debug(species, " comparison plot generated")
   logger::log_debug("Generating ", species, " scatter plots")
-  ref_sim <- read_ref_sim(species, reference_data_dir)
   deteriorated <- c(
     get_crit_vars(comparison, percentage),
     get_warn_vars(comparison, percentage)
   )
   scat_plots <- gen_scatter_plot(
     sim,
-    ref_sim,
     obs,
+    ref_sim,
     deteriorated
   )
   plots <- append(plots, scat_plots)

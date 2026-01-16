@@ -84,12 +84,16 @@ setup_parallel_backend <- function(
   if (!parallel) {
     return(
       list(
-        map = base::lapply,
+        map = function(x, fun, data_dir) {
+          base::lapply(
+            x,
+            function(i) fun(i, data_dir = data_dir)
+          )
+        },
         cleanup = function() {}
       )
     )
   }
-  options(future.globals.maxSize = 2 * 1024 ^ 3)
   workers <- get_cores_nb(parallel = TRUE, required_nb = cores)
   workers <- min(workers, n_tasks)
   future::plan(
@@ -98,10 +102,29 @@ setup_parallel_backend <- function(
   )
   invisible(
     list(
-      map = function(x, fun) {
-        future.apply::future_lapply(x, fun)
+      map = function(x, fun, data_dir) {
+        future.apply::future_lapply(
+          x,
+          function(i) fun(i, data_dir = data_dir)
+        )
       },
       cleanup = function() future::plan(future::sequential)
     )
+  )
+}
+
+parallelizable_loop <- function(n_tasks, parallel, cores, fun) {
+  backend <- setup_parallel_backend(n_tasks, parallel, cores)
+  on.exit(backend$cleanup(), add = TRUE)
+  data_dir <- .local_eval_env$data_dir
+  backend$map(
+    seq_len(n_tasks),
+    function(i, data_dir) {
+      logger::log_appender(logger::appender_stdout)
+      worker_env <- new.env(parent = emptyenv())
+      worker_env$data_dir <- data_dir
+      fun(i, worker_env)
+    },
+    data_dir = data_dir
   )
 }

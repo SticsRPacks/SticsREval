@@ -1,4 +1,5 @@
 library(vroom)
+library(arrow)
 
 safe_write_csv <- function(data, path) {
   tryCatch({
@@ -42,14 +43,6 @@ read_ref_sim <- function(
   CroPlotR::split_df2sim(df)
 }
 
-save_sim <- function(species, sim, output_dir) {
-  output_dir <- file.path(output_dir, species)
-  safe_write_csv(
-    CroPlotR::bind_rows(sim),
-    file.path(output_dir, "Simulations.csv")
-  )
-}
-
 load_workspace_sim <- function(
   usms,
   rotations,
@@ -61,17 +54,15 @@ load_workspace_sim <- function(
 ) {
   if (run_simulations) {
     logger::log_info("Running simulations...")
-    return(
-      run_simulations(
-        stics_exe = stics_exe,
-        workspace = workspace,
-        usm_names = usms,
-        successive = rotations,
-        verbose = is_debug(),
-        parallel = parallel,
-        cores = cores
-      )
-    )
+    return(run_simulations(
+      stics_exe = stics_exe,
+      workspace = workspace,
+      usm_names = usms,
+      successive = rotations,
+      verbose = is_debug(),
+      parallel = parallel,
+      cores = cores
+    ))
   }
   SticsRFiles::get_sim(
     workspace = workspace,
