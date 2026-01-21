@@ -1,0 +1,1 @@
+remove_null_values <- function(l) l[!vapply(l, is.null, logical(1))]

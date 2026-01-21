@@ -97,8 +97,7 @@ evaluate_all_species <- function(
       )
     }
   )
-  # Remove NULL values
-  eval_results[!vapply(eval_results, is.null, logical(1))]
+  remove_null_values(eval_results)
 }
 
 export_evaluation_results <- function(
@@ -244,6 +243,11 @@ evaluate <- function(config) {
   comparisons <- lapply(eval_results, function(res) {
     res$comparison
   })
+  comparisons <- remove_null_values(comparisons)
+  if (length(comparisons) == 0) {
+    logger::log_info("No comparison done.")
+    return()
+  }
   log_comparison_table(comparisons)
   counts <- vapply(
     comparisons,
