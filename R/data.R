@@ -112,7 +112,6 @@ export_species_sim_ds_to_csv <- function(data_dir, species, destination) {
   arrow::write_csv_arrow(
     ds,
     file.path(destination, "Simulations.csv"),
-    delimiter = ";",
     na = "NA"
   )
 }

@@ -19,7 +19,7 @@ safe_write_csv <- function(data, path) {
 read_csv <- function(filepath) {
   data <- vroom::vroom(
     filepath,
-    delim = ";",
+    delim = ",",
     col_names = TRUE,
     na = c("NA", "NaN", "OK", "rejection M=0"),
     show_col_types = is_debug(),
