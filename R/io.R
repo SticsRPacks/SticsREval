@@ -16,10 +16,10 @@ safe_write_csv <- function(data, path) {
   })
 }
 
-read_csv <- function(filepath) {
+read_csv <- function(filepath, delimiter = ";") {
   data <- vroom::vroom(
     filepath,
-    delim = ",",
+    delim = delimiter,
     col_names = TRUE,
     na = c("NA", "NaN", "OK", "rejection M=0"),
     show_col_types = is_debug(),
@@ -41,7 +41,7 @@ read_ref_sim <- function(
   if (!length(reference_file) || !file.exists(reference_file)) {
     return(NULL)
   }
-  df <- read_csv(reference_file)
+  df <- read_csv(reference_file, delimiter = ",")
   CroPlotR::split_df2sim(df)
 }
 
