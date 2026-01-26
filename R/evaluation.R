@@ -195,7 +195,6 @@ evaluate <- function(config) {
     logger::log_info("Evaluation time: ", time_taken, " s")
   }, add = TRUE)
   start_time <- Sys.time()
-  logger::log_info("Starting evaluation...")
   usms <- list.dirs(config$workspace, full.names = FALSE, recursive = FALSE)
   rotations <- get_rotation_list(config$rotation_file)
   sim <- load_workspace_sim(
@@ -222,6 +221,7 @@ evaluate <- function(config) {
     config$cores
   )
   species <- unique(sorted_usms$species)
+  logger::log_info("Starting evaluation...")
   eval_results <- evaluate_all_species(
     species,
     sorted_usms,

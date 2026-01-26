@@ -108,8 +108,11 @@ get_species_obs <- function(data_dir, species) {
 
 export_species_sim_ds_to_csv <- function(data_dir, species, destination) {
   ds <- get_species_sim_ds(data_dir, species)
+
   arrow::write_csv_arrow(
     ds,
-    file.path(destination, "Simulations.csv")
+    file.path(destination, "Simulations.csv"),
+    delimiter = ";",
+    na = "NA"
   )
 }

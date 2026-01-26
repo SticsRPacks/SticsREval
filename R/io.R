@@ -17,17 +17,19 @@ safe_write_csv <- function(data, path) {
 }
 
 read_csv <- function(filepath) {
-  vroom::vroom(
+  data <- vroom::vroom(
     filepath,
     delim = ";",
     col_names = TRUE,
     na = c("NA", "NaN", "OK", "rejection M=0"),
     show_col_types = is_debug(),
     locale = vroom::locale(
-      decimal_mark = ",",
+      decimal_mark = ".",
       date_format = "%Y-%m-%d"
     )
   )
+  names(data) <- trimws(names(data))
+  data
 }
 
 read_ref_sim <- function(
