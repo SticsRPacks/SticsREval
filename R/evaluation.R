@@ -151,6 +151,10 @@ export_evaluation_results <- function(
             percentage
           )
           logger::log_debug(eval_result$species, " plots file generated")
+          rm(ref_sim)
+          rm(sim)
+          rm(obs)
+          gc()
         }
       }
     }
@@ -207,6 +211,7 @@ evaluate <- function(config) {
     config$cores
   )
   save_sim(data_dir, sim)
+  rm(sim)
   obs <- load_workspace_obs(
     usms,
     config$workspace,
@@ -214,6 +219,8 @@ evaluate <- function(config) {
     config$cores
   )
   save_obs(data_dir, obs)
+  rm(obs)
+  gc()
   sorted_usms <- sort_usm_by_species(
     usms,
     config$workspace,

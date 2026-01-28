@@ -51,31 +51,33 @@ save_species_obs <- function(
 }
 
 get_all_sim_situations <- function(data_dir) {
-  res <- get_sim_ds(data_dir) %>%
-    dplyr::distinct(.data$situation) %>%
-    dplyr::collect()
-  res$situation
+  (get_sim_ds(data_dir) %>%
+      dplyr::distinct(.data$situation) %>%
+      dplyr::collect()
+  )$situation
 }
 
 get_all_obs_situations <- function(data_dir) {
-  res <- get_obs_ds(data_dir) %>%
-    dplyr::distinct(.data$situation) %>%
-    dplyr::collect()
-  res$situation
+  (get_obs_ds(data_dir) %>%
+      dplyr::distinct(.data$situation) %>%
+      dplyr::collect()
+  )$situation
 }
 
 get_sim_by_situations <- function(data_dir, situations) {
-  selected_sim <- get_sim_ds(data_dir) %>%
-    dplyr::filter(.data$situation %in% situations) %>%
-    dplyr::collect()
-  selected_sim <- CroPlotR::split_df2sim(selected_sim)
+  CroPlotR::split_df2sim(
+    get_sim_ds(data_dir) %>%
+      dplyr::filter(.data$situation %in% situations) %>%
+      dplyr::collect()
+  )
 }
 
 get_obs_by_situations <- function(data_dir, situations) {
-  selected_obs <- get_obs_ds(data_dir) %>%
-    dplyr::filter(.data$situation %in% situations) %>%
-    dplyr::collect()
-  selected_obs <- CroPlotR::split_df2sim(selected_obs)
+  CroPlotR::split_df2sim(
+    get_obs_ds(data_dir) %>%
+      dplyr::filter(.data$situation %in% situations) %>%
+      dplyr::collect()
+  )
 }
 
 get_species_sim_ds <- function(data_dir, species) {
