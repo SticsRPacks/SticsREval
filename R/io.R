@@ -46,6 +46,7 @@ read_ref_sim <- function(
 }
 
 load_workspace_sim <- function(
+  data_dir,
   usms,
   rotations,
   workspace,
@@ -56,7 +57,7 @@ load_workspace_sim <- function(
 ) {
   if (run_simulations) {
     logger::log_info("Running simulations...")
-    return(run_simulations(
+    sim <- run_simulations(
       stics_exe = stics_exe,
       workspace = workspace,
       usm_names = usms,
@@ -64,32 +65,40 @@ load_workspace_sim <- function(
       verbose = is_debug(),
       parallel = parallel,
       cores = cores
-    ))
+    )
+  } else {
+    logger::log_info("Loading simulations data...")
+    sim <- SticsRFiles::get_sim(
+      workspace = workspace,
+      usm = usms,
+      verbose = is_debug(),
+      parallel = parallel,
+      cores = cores
+    )
   }
-  logger::log_info("Loading simulations data...")
-  SticsRFiles::get_sim(
-    workspace = workspace,
-    usm = usms,
-    verbose = is_debug(),
-    parallel = parallel,
-    cores = cores
-  )
+  save_sim(data_dir, sim)
+  rm(sim)
+  gc()
 }
 
 load_workspace_obs <- function(
+  data_dir,
   usms,
   workspace,
   parallel,
   cores
 ) {
   logger::log_info("Loading observations data...")
-  SticsRFiles::get_obs(
+  obs <- SticsRFiles::get_obs(
     workspace = workspace,
     usm = usms,
     verbose = is_debug(),
     parallel = parallel,
     cores = cores
   )
+  save_obs(data_dir, obs)
+  rm(obs)
+  gc()
 }
 
 #' @importFrom dplyr %>%

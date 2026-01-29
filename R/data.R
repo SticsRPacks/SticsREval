@@ -22,34 +22,6 @@ save_obs <- function(data_dir, obs) {
   )
 }
 
-save_species_sim <- function(
-  data_dir,
-  sim,
-  species
-) {
-  arrow::write_parquet(
-    x = CroPlotR::bind_rows(sim),
-    sink = file.path(
-      data_dir,
-      paste("sim_", species, ".parquet", collapse = "")
-    )
-  )
-}
-
-save_species_obs <- function(
-  data_dir,
-  obs,
-  species
-) {
-  arrow::write_parquet(
-    x = CroPlotR::bind_rows(obs),
-    sink = file.path(
-      data_dir,
-      paste("obs_", species, ".parquet", collapse = "")
-    )
-  )
-}
-
 get_all_sim_situations <- function(data_dir) {
   (get_sim_ds(data_dir) %>%
       dplyr::distinct(.data$situation) %>%
@@ -80,40 +52,10 @@ get_obs_by_situations <- function(data_dir, situations) {
   )
 }
 
-get_species_sim_ds <- function(data_dir, species) {
-  arrow::open_dataset(file.path(
-    data_dir,
-    paste("sim_", species, ".parquet")
-  ))
-}
-
 get_sim_ds <- function(data_dir) {
   arrow::open_dataset(file.path(data_dir, "sim.parquet"))
 }
 
 get_obs_ds <- function(data_dir) {
   arrow::open_dataset(file.path(data_dir, "obs.parquet"))
-}
-
-get_species_sim <- function(data_dir, species) {
-  ds <- get_species_sim_ds(data_dir, species)
-  CroPlotR::split_df2sim(ds %>% dplyr::collect())
-}
-
-get_species_obs <- function(data_dir, species) {
-  ds <- arrow::open_dataset(file.path(
-    data_dir,
-    paste("obs_", species, ".parquet")
-  ))
-  CroPlotR::split_df2sim(ds %>% dplyr::collect())
-}
-
-export_species_sim_ds_to_csv <- function(data_dir, species, destination) {
-  ds <- get_species_sim_ds(data_dir, species)
-
-  arrow::write_csv_arrow(
-    ds,
-    file.path(destination, "Simulations.csv"),
-    na = "NA"
-  )
 }

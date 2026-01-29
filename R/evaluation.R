@@ -5,54 +5,42 @@ library(htmltools)
 
 .local_eval_env <- new.env(parent = emptyenv())
 
-#' Running evaluation over a USM list
-#'
-#' @description
-#' At first, statistical criteria are computed using the CroPlotR package.
-#' Then, if a reference data directory is specified, the reference RMSE is
-#' compared to the computed RMSE.
-#'
-#'
-#' @param species the species corresponding to the simulations and observations
-#' @param sim a list of simulations
-#' @param obs a list of observations
-#'
-#' @returns a list containing the Comparison objects for the species
-evaluate_species <- function(
-  species,
-  sim,
-  obs,
-  reference_data_dir
-) {
-  eval_res <- list(
-    species = species,
-    comparison = NULL,
-    stats = NULL
-  )
-  eval_res$stats <- run_with_log_control(
+gen_species_stats <- function(species, sim, obs, save_stats, output_dir) {
+  logger::log_info("Generating statistics for ", species)
+  stats <- run_with_log_control(
     # Calling summary() directly does not work in a future context
     CroPlotR:::summary.cropr_simulation(sim, obs = obs)
   )
-  ref_stats <- read_ref_stats(species, reference_data_dir)
-  if (!is.null(ref_stats)) {
-    logger::log_debug("Comparing RMSE for species ", species)
-    eval_res$comparison <- compare_rmse(
-      species,
-      ref_stats,
-      eval_res$stats
-    )
+  if (save_stats) {
+    safe_write_csv(stats, file.path(output_dir, "Criteres_Stats.csv"))
   }
-  eval_res
+  stats
+}
+
+gen_species_comparison <- function(species, stats, reference_data_dir) {
+  ref_stats <- read_ref_stats(species, reference_data_dir)
+  if (is.null(ref_stats)) {
+    return(NULL)
+  }
+  logger::log_info("Comparing RMSE for species ", species)
+  compare_rmse(
+    species,
+    ref_stats,
+    stats
+  )
 }
 
 evaluate_all_species <- function(
   species,
   sorted_usms,
   reference_data_dir,
+  output_dir,
+  exports,
+  percentage,
   parallel,
   cores
 ) {
-  eval_results <- parallelizable_loop(
+  comparisons <- parallelizable_loop(
     length(species),
     parallel,
     cores,
@@ -70,95 +58,61 @@ evaluate_all_species <- function(
         logger::warning("No common USM for species ", spec, ".")
         return(NULL)
       }
+      species_output_dir <- file.path(output_dir, spec)
+      if (!is.null(exports)) {
+        if (!dir.exists(species_output_dir) &&
+            !dir.create(species_output_dir, recursive = TRUE)
+        ) {
+          stop("Error while creating ", spec, " output directory")
+        }
+        logger::log_info(
+          "Exporting ", spec, " evaluation results in ", species_output_dir
+        )
+      }
       selected_sim <- get_sim_by_situations(env$data_dir, common_usms)
-      save_species_sim(
-        env$data_dir,
-        selected_sim,
-        spec
-      )
       selected_obs <- get_obs_by_situations(env$data_dir, common_usms)
-      save_species_obs(
-        env$data_dir,
-        selected_obs,
-        spec
-      )
       if (length(selected_sim) == 0 || length(selected_obs) == 0) {
         logger::warning(
           "No simulation or observation data found for species ",
           spec
         )
-        return(NULL)
-      }
-      evaluate_species(
-        spec,
-        selected_sim,
-        selected_obs,
-        reference_data_dir
-      )
-    }
-  )
-  remove_null_values(eval_results)
-}
-
-export_evaluation_results <- function(
-  eval_results,
-  exports,
-  output_dir,
-  reference_data_dir,
-  percentage,
-  parallel,
-  cores
-) {
-  parallelizable_loop(
-    length(eval_results),
-    parallel,
-    cores,
-    function(i, env) {
-      eval_result <- eval_results[[i]]
-      species_output_dir <- file.path(output_dir, eval_result$species)
-      if (!is.null(exports) && !file.exists(species_output_dir)) {
-        logger::log_info(
-          "Exporting ", eval_result$species, " evaluation results"
-        )
-        dir.create(species_output_dir)
+        return()
       }
       if ("sim" %in% exports) {
-        logger::log_debug("Exporting ", eval_result$species, " simulation data")
-        export_species_sim_ds_to_csv(
-          env$data_dir,
-          eval_result$species,
-          species_output_dir
+        safe_write_csv(
+          CroPlotR::bind_rows(selected_sim),
+          file.path(species_output_dir, "Simulations.csv")
         )
       }
-      if ("stats" %in% exports) {
-        logger::log_debug("Exporting ", eval_result$species, " statistics")
-        save_stats(eval_result$species, eval_result$stats, output_dir)
-      }
-      comparison <- eval_result$comparison
-      if (!is.null(comparison)) {
-        log_comparison(comparison, percentage)
-        if ("plots" %in% exports) {
-          sim <- get_species_sim(env$data_dir, eval_result$species)
-          obs <- get_species_obs(env$data_dir, eval_result$species)
-          ref_sim <- read_ref_sim(eval_result$species, reference_data_dir)
-          gen_plots_file(
-            eval_result$species,
-            species_output_dir,
-            eval_result$comparison,
-            sim,
-            obs,
-            ref_sim,
-            percentage
+      stats <- gen_species_stats(
+        spec, selected_sim, selected_obs,
+        "stats" %in% exports, species_output_dir
+      )
+      comparison <- gen_species_comparison(spec, stats, reference_data_dir)
+      if ("plots" %in% exports && !is.null(comparison)) {
+        logger::log_info("Generating comparison plot for species ", spec)
+        gen_comparison_plot(species_output_dir, comparison, percentage)
+        ref_sim <- read_ref_sim(spec, reference_data_dir)
+        if (!is.null(ref_sim)) {
+          logger::log_info("Generating scatter plots for species ", spec)
+          deteriorated <- c(
+            get_crit_vars(comparison, percentage),
+            get_warn_vars(comparison, percentage)
           )
-          logger::log_debug(eval_result$species, " plots file generated")
-          rm(ref_sim)
-          rm(sim)
-          rm(obs)
-          gc()
+          gen_scatter_plot(
+            species_output_dir,
+            selected_sim,
+            selected_obs,
+            ref_sim,
+            deteriorated
+          )
         }
       }
+      log_comparison(comparison, percentage)
+      comparison
     }
   )
+  remove_null_values(comparisons)
 }
 
 sort_usm_by_species <- function(usms, workspace, parallel, cores) {
@@ -183,74 +137,7 @@ sort_usm_by_species <- function(usms, workspace, parallel, cores) {
   sorted
 }
 
-#' @title Running a complete evaluation process of STICS model
-#'
-#' @param config List containing any information needed for the evaluation
-#'  process. See [make_config()] for the complete list of parameters.
-#'
-#' @export
-evaluate <- function(config) {
-  init_logger(config$verbose)
-  data_dir <- init_tmp_data_dir()
-  on.exit({
-    clean_tmp_data_dir()
-    end_time <- Sys.time()
-    time_taken <- round(end_time - start_time, 2)
-    logger::log_info("Evaluation time: ", time_taken, " s")
-  }, add = TRUE)
-  start_time <- Sys.time()
-  usms <- list.dirs(config$workspace, full.names = FALSE, recursive = FALSE)
-  rotations <- get_rotation_list(config$rotation_file)
-  sim <- load_workspace_sim(
-    usms,
-    rotations,
-    config$workspace,
-    config$run_simulations,
-    config$stics_exe,
-    config$parallel,
-    config$cores
-  )
-  save_sim(data_dir, sim)
-  rm(sim)
-  obs <- load_workspace_obs(
-    usms,
-    config$workspace,
-    config$parallel,
-    config$cores
-  )
-  save_obs(data_dir, obs)
-  rm(obs)
-  gc()
-  sorted_usms <- sort_usm_by_species(
-    usms,
-    config$workspace,
-    config$parallel,
-    config$cores
-  )
-  species <- unique(sorted_usms$species)
-  logger::log_info("Starting evaluation...")
-  eval_results <- evaluate_all_species(
-    species,
-    sorted_usms,
-    config$reference_data_dir,
-    config$parallel,
-    config$cores
-  )
-  # Sorting eval results by species
-  eval_results <- eval_results[order(sapply(eval_results, `[[`, "species"))]
-  export_evaluation_results(
-    eval_results,
-    config$exports,
-    config$output_dir,
-    config$reference_data_dir,
-    config$percentage,
-    config$parallel,
-    config$cores
-  )
-  comparisons <- lapply(eval_results, function(res) {
-    res$comparison
-  })
-  comparisons <- remove_null_values(comparisons)
+display_comparisons_info <- function(comparisons) {
   if (length(comparisons) == 0) {
     logger::log_info("No comparison done.")
     return()
@@ -274,4 +161,61 @@ evaluate <- function(config) {
     logger::log_error("Found at least one critical deteriorated variable")
     stop()
   }
+}
+
+#' @title Running a complete evaluation process of STICS model
+#'
+#' @param config List containing any information needed for the evaluation
+#'  process. See [make_config()] for the complete list of parameters.
+#'
+#' @export
+evaluate <- function(config) {
+  init_logger(config$verbose)
+  data_dir <- init_tmp_data_dir()
+  on.exit({
+    clean_tmp_data_dir()
+    end_time <- Sys.time()
+    time_taken <- round(end_time - start_time, 2)
+    logger::log_info("Evaluation time: ", time_taken, " s")
+  }, add = TRUE)
+  start_time <- Sys.time()
+  usms <- list.dirs(config$workspace, full.names = FALSE, recursive = FALSE)
+  rotations <- get_rotation_list(config$rotation_file)
+  load_workspace_sim(
+    data_dir,
+    usms,
+    rotations,
+    config$workspace,
+    config$run_simulations,
+    config$stics_exe,
+    config$parallel,
+    config$cores
+  )
+  load_workspace_obs(
+    data_dir,
+    usms,
+    config$workspace,
+    config$parallel,
+    config$cores
+  )
+  sorted_usms <- sort_usm_by_species(
+    usms,
+    config$workspace,
+    config$parallel,
+    config$cores
+  )
+  species <- sort(unique(sorted_usms$species))
+  logger::log_info("Starting evaluation...")
+  comparisons <- evaluate_all_species(
+    species,
+    sorted_usms,
+    config$reference_data_dir,
+    config$output_dir,
+    config$exports,
+    config$percentage,
+    config$parallel,
+    config$cores
+  )
+  comparisons <- remove_null_values(comparisons)
+  display_comparisons_info(comparisons)
 }
