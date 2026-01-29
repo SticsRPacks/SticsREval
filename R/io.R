@@ -66,6 +66,7 @@ load_workspace_sim <- function(
       cores = cores
     ))
   }
+  logger::log_info("Loading simulations data...")
   SticsRFiles::get_sim(
     workspace = workspace,
     usm = usms,
@@ -81,6 +82,7 @@ load_workspace_obs <- function(
   parallel,
   cores
 ) {
+  logger::log_info("Loading observations data...")
   SticsRFiles::get_obs(
     workspace = workspace,
     usm = usms,
