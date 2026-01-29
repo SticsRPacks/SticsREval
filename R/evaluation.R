@@ -175,8 +175,7 @@ evaluate <- function(config) {
   on.exit({
     clean_tmp_data_dir()
     end_time <- Sys.time()
-    time_taken <- round(end_time - start_time, 2)
-    logger::log_info("Evaluation time: ", time_taken, " s")
+    logger::log_info("Evaluation time: ", format_duration(start_time, end_time))
   }, add = TRUE)
   start_time <- Sys.time()
   usms <- list.dirs(config$workspace, full.names = FALSE, recursive = FALSE)
