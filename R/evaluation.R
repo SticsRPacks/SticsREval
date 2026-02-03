@@ -55,7 +55,7 @@ evaluate_all_species <- function(
           selected_usms %in% obs_situations
       ]
       if (!length(common_usms)) {
-        logger::warning("No common USM for species ", spec, ".")
+        logger::log_warn("No common USM for species ", spec, ".")
         return(NULL)
       }
       species_output_dir <- file.path(output_dir, spec)
@@ -69,25 +69,43 @@ evaluate_all_species <- function(
           "Exporting ", spec, " evaluation results in ", species_output_dir
         )
       }
-      selected_sim <- get_sim_by_situations(env$data_dir, common_usms)
-      selected_obs <- get_obs_by_situations(env$data_dir, common_usms)
-      if (length(selected_sim) == 0 || length(selected_obs) == 0) {
-        logger::warning(
+      selected_sim <- get_sim_ds(env$data_dir) %>%
+        dplyr::filter(.data$situation %in% common_usms)
+      sim_count <- selected_sim %>%
+        dplyr::summarise(n = dplyr::n()) %>%
+        dplyr::collect() %>%
+        dplyr::pull(n)
+      selected_obs <- get_obs_ds(env$data_dir) %>%
+        dplyr::filter(.data$situation %in% common_usms)
+      obs_count <- selected_obs %>%
+        dplyr::summarise(n = dplyr::n()) %>%
+        dplyr::collect() %>%
+        dplyr::pull(n)
+      if (sim_count == 0 || obs_count == 0) {
+        logger::log_warn(
           "No simulation or observation data found for species ",
           spec
         )
         return()
       }
       if ("sim" %in% exports) {
-        safe_write_csv(
-          CroPlotR::bind_rows(selected_sim),
-          file.path(species_output_dir, "Simulations.csv")
+        arrow::write_csv_arrow(
+          selected_sim,
+          sink = file.path(species_output_dir, "Simulations.csv"),
         )
       }
+      collected_sim <- selected_sim %>%
+        dplyr::collect() %>%
+        CroPlotR::split_df2sim()
+      collected_obs <- selected_obs %>%
+        dplyr::collect() %>%
+        CroPlotR::split_df2sim()
       stats <- gen_species_stats(
-        spec, selected_sim, selected_obs,
+        spec, collected_sim, collected_obs,
         "stats" %in% exports, species_output_dir
       )
+      rm(collected_sim, collected_obs)
+      gc()
       comparison <- gen_species_comparison(spec, stats, reference_data_dir)
       if ("plots" %in% exports && !is.null(comparison)) {
         logger::log_info("Generating comparison plot for species ", spec)
@@ -99,16 +117,24 @@ evaluate_all_species <- function(
             get_crit_vars(comparison, percentage),
             get_warn_vars(comparison, percentage)
           )
+          collected_sim <- selected_sim %>%
+            dplyr::collect() %>%
+            CroPlotR::split_df2sim()
+          collected_obs <- selected_obs %>%
+            dplyr::collect() %>%
+            CroPlotR::split_df2sim()
           gen_scatter_plot(
             species_output_dir,
-            selected_sim,
-            selected_obs,
+            collected_sim,
+            collected_obs,
             ref_sim,
             deteriorated
           )
+          rm(collected_sim, collected_obs)
+          gc()
         }
+        log_comparison(comparison, percentage)
       }
-      log_comparison(comparison, percentage)
       comparison
     }
   )
