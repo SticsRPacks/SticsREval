@@ -133,6 +133,8 @@ evaluate_all_species <- function(
           rm(collected_sim, collected_obs)
           gc()
         }
+      }
+      if (!is.null(comparison)) {
         log_comparison(comparison, percentage)
       }
       comparison
