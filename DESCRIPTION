@@ -23,8 +23,8 @@ Imports:
     vroom,
     XML
 Remotes:
-    github::SticsRPacks/CroPlotR@*release,
-    github::SticsRPacks/SticsOnR@*release,
+    github::SticsRPacks/CroPlotR@,
+    github::SticsRPacks/SticsOnR@,
     github::SticsRPacks/SticsRFiles
 Suggests: 
     testthat (>= 3.0.0)
