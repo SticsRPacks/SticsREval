@@ -24,7 +24,8 @@ Imports:
     XML
 Remotes:
     github::SticsRPacks/CroPlotR@*release,
-    github::SticsRPacks/SticsOnR@*release
+    github::SticsRPacks/SticsOnR@*release,
+    github::SticsRPacks/SticsRFiles
 Suggests: 
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
