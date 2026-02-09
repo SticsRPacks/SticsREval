@@ -1,6 +1,3 @@
-library(vroom)
-library(arrow)
-
 safe_write_csv <- function(data, path) {
   tryCatch({
     write.csv2(

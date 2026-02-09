@@ -11,12 +11,14 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
 Imports:
     arrow,
+    CroPlotR,
     dplyr,
     future,
     future.apply,
     htmltools,
     logger,
     plotly,
+    SticsOnR,
     SticsRFiles,
     vroom,
     XML

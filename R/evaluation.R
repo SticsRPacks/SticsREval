@@ -1,8 +1,3 @@
-library(CroPlotR)
-library(plotly)
-library(dplyr)
-library(htmltools)
-
 .local_eval_env <- new.env(parent = emptyenv())
 
 gen_species_stats <- function(species, sim, obs, save_stats, output_dir) {
