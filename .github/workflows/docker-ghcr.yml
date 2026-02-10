@@ -22,4 +22,4 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ghcr.io/${{ github.repository_owner | toLowerCase }}/stics-r-eval:latest
+          tags: ghcr.io/sticsrpacks/stics-r-eval:latest
