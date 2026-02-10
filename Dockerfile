@@ -10,4 +10,4 @@ RUN R -e "install.packages('remotes', repos='https://cloud.r-project.org')"
 
 RUN R -e "remotes::install_local('.', dependencies = TRUE)"
 
-CMD ["R"]
+CMD ["/bin/bash"]
