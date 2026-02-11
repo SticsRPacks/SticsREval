@@ -23,3 +23,5 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: ghcr.io/sticsrpacks/stics-r-eval:latest
+          secrets: |
+            "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}"

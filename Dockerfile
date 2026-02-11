@@ -1,13 +1,28 @@
+# syntax=docker/dockerfile:1.4
 FROM rocker/r-ver:4
 
-COPY . /usr/local/src/SticsREval
-WORKDIR /usr/local/src/SticsREval
+RUN apt update -y && \
+    apt install -y \
+      libcurl4-openssl-dev \
+      libssl-dev \
+      libxml2-dev \
+      libxslt1-dev
 
-RUN apt update -y
-RUN apt install -y libcurl4-openssl-dev libssl-dev libxslt1.1 libxslt1-dev libxml2-dev
+WORKDIR /stics-r-eval
 
-RUN R -e "install.packages('remotes', repos='https://cloud.r-project.org')"
+COPY renv.lock renv.lock
+COPY renv/ renv/
 
-RUN R -e "remotes::install_local('.', dependencies = TRUE)"
+RUN R -e "install.packages('renv', repos='https://cloud.r-project.org')"
+
+RUN --mount=type=secret,id=GITHUB_TOKEN,required=false \
+    if [ -f /run/secrets/GITHUB_TOKEN ]; then \
+      export GITHUB_PAT=$(cat /run/secrets/GITHUB_TOKEN); \
+    fi && \
+    R -e "renv::restore(prompt = FALSE)"
+
+COPY . .
+
+RUN R CMD INSTALL .
 
 CMD ["/bin/bash"]
