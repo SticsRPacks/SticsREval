@@ -1,10 +1,10 @@
 safe_write_csv <- function(data, path) {
   tryCatch({
-    write.csv2(
+    readr::write_delim(
       data,
       path,
-      quote = FALSE,
-      row.names = FALSE
+      delim = ";",
+      na = "NA"
     )
   },
   error = function(e) {
@@ -16,20 +16,20 @@ safe_write_csv <- function(data, path) {
 }
 
 read_csv <- function(filepath, delimiter = ";") {
-  data <- vroom::vroom(
+  data <- readr::read_delim(
     filepath,
     delim = delimiter,
-    col_names = TRUE,
-    na = c("NA", "NaN", "OK", "rejection M=0"),
-    show_col_types = is_debug(),
-    locale = vroom::locale(
+    na = c("NA", "NaN"),
+    locale = readr::locale(
       decimal_mark = ".",
       date_format = "%Y-%m-%d"
-    )
+    ),
+    show_col_types = is_debug()
   )
   names(data) <- trimws(names(data))
   data
 }
+
 
 read_ref_sim <- function(
   species,

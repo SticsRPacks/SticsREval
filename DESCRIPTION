@@ -20,7 +20,7 @@ Imports:
     plotly,
     SticsOnR,
     SticsRFiles,
-    vroom,
+    readr,
     XML
 Remotes:
     github::SticsRPacks/CroPlotR,
