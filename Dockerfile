@@ -33,10 +33,8 @@ FROM rocker/r-ver:4
 
 RUN apt update -y && \
     apt install -y \
-      libcurl4-openssl-dev \
-      libssl-dev \
-      libxml2-dev \
-      libxslt1-dev
+      libcurl4-openssl-dev libssl-dev libxml2-dev \
+      libxslt1-dev cmake libx11-dev pandoc
 
 WORKDIR /stics-r-eval
 
