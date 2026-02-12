@@ -11,10 +11,8 @@ read_ref_stats <- function(
 }
 
 save_stats <- function(
-  species,
   stats,
   output_dir
 ) {
-  output_dir <- file.path(output_dir, species)
   safe_write_csv(stats, file.path(output_dir, "Criteres_stats.csv"))
 }

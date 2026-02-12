@@ -1,13 +1,13 @@
 .local_eval_env <- new.env(parent = emptyenv())
 
-gen_species_stats <- function(species, sim, obs, save_stats, output_dir) {
+gen_species_stats <- function(species, sim, obs, save, output_dir) {
   logger::log_info("Generating statistics for ", species)
   stats <- run_with_log_control(
     # Calling summary() directly does not work in a future context
     CroPlotR:::summary.cropr_simulation(sim, obs = obs)
   )
-  if (save_stats) {
-    safe_write_csv(stats, file.path(output_dir, "Criteres_Stats.csv"))
+  if (save) {
+    save_stats(stats, output_dir)
   }
   stats
 }
@@ -64,18 +64,10 @@ evaluate_all_species <- function(
           "Exporting ", spec, " evaluation results in ", species_output_dir
         )
       }
-      selected_sim <- get_sim_ds(env$data_dir) %>%
-        dplyr::filter(.data$situation %in% common_usms)
-      sim_count <- selected_sim %>%
-        dplyr::summarise(n = dplyr::n()) %>%
-        dplyr::collect() %>%
-        dplyr::pull(n)
-      selected_obs <- get_obs_ds(env$data_dir) %>%
-        dplyr::filter(.data$situation %in% common_usms)
-      obs_count <- selected_obs %>%
-        dplyr::summarise(n = dplyr::n()) %>%
-        dplyr::collect() %>%
-        dplyr::pull(n)
+      selected_sim <- get_sim_by_situations(env$data_dir, common_usms)
+      sim_count <- get_count(selected_sim)
+      selected_obs <- get_obs_by_situations(env$data_dir, common_usms)
+      obs_count <- get_count(selected_obs)
       if (sim_count == 0 || obs_count == 0) {
         logger::log_warn(
           "No simulation or observation data found for species ",
@@ -160,7 +152,7 @@ sort_usm_by_species <- function(usms, workspace, parallel, cores) {
   sorted
 }
 
-display_comparisons_info <- function(comparisons) {
+display_comparisons_info <- function(comparisons, config) {
   if (length(comparisons) == 0) {
     logger::log_info("No comparison done.")
     return()
@@ -239,5 +231,5 @@ evaluate <- function(config) {
     config$cores
   )
   comparisons <- remove_null_values(comparisons)
-  display_comparisons_info(comparisons)
+  display_comparisons_info(comparisons, config)
 }

@@ -55,11 +55,11 @@
       "Author": "Remi Vezy [aut, cre] (ORCID: <https://orcid.org/0000-0002-0808-1461>), Samuel Buis [aut] (ORCID: <https://orcid.org/0000-0002-8676-5447>), Cyrille Midingoyi [aut] (ORCID: <https://orcid.org/0009-0000-4411-7989>), Patrice Lecharpentier [aut] (ORCID: <https://orcid.org/0000-0002-4044-4322>), Michel Giner [aut] (ORCID: <https://orcid.org/0000-0002-9310-2377>), Valentine Rahier [ctb], Amine Barkaoui [ctb], Patrick Lutz [ctb]",
       "Maintainer": "Remi Vezy <remi.vezy@cirad.fr>",
       "RemoteType": "github",
-      "RemoteHost": "api.github.com",
       "RemoteUsername": "SticsRPacks",
       "RemoteRepo": "CroPlotR",
       "RemoteRef": "main",
-      "RemoteSha": "479b10fe24b2c191463f236242054b99e447a6dc"
+      "RemoteSha": "3c4aed9ce70aa69206e93abb4f9404581b11ad43",
+      "RemoteHost": "api.github.com"
     },
     "R6": {
       "Package": "R6",

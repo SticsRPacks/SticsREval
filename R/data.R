@@ -8,6 +8,14 @@ clean_tmp_data_dir <- function() {
   unlink(.local_eval_env$data_dir, recursive = TRUE)
 }
 
+get_sim_ds <- function(data_dir) {
+  arrow::open_dataset(file.path(data_dir, "sim.parquet"))
+}
+
+get_obs_ds <- function(data_dir) {
+  arrow::open_dataset(file.path(data_dir, "obs.parquet"))
+}
+
 save_sim <- function(data_dir, sim) {
   arrow::write_parquet(
     x = CroPlotR::bind_rows(sim),
@@ -36,26 +44,19 @@ get_all_obs_situations <- function(data_dir) {
   )$situation
 }
 
-get_sim_by_situations <- function(data_dir, situations) {
-  CroPlotR::split_df2sim(
-    get_sim_ds(data_dir) %>%
-      dplyr::filter(.data$situation %in% situations) %>%
-      dplyr::collect()
-  )
+get_sim_by_situations <- function(data_dir, situation_list) {
+  get_sim_ds(data_dir) %>%
+    dplyr::filter(.data$situation %in% situation_list)
 }
 
-get_obs_by_situations <- function(data_dir, situations) {
-  CroPlotR::split_df2sim(
-    get_obs_ds(data_dir) %>%
-      dplyr::filter(.data$situation %in% situations) %>%
-      dplyr::collect()
-  )
+get_obs_by_situations <- function(data_dir, situation_list) {
+  get_obs_ds(data_dir) %>%
+    dplyr::filter(.data$situation %in% situation_list)
 }
 
-get_sim_ds <- function(data_dir) {
-  arrow::open_dataset(file.path(data_dir, "sim.parquet"))
-}
-
-get_obs_ds <- function(data_dir) {
-  arrow::open_dataset(file.path(data_dir, "obs.parquet"))
+get_count <- function(situations) {
+  situations %>%
+    dplyr::summarise(n = dplyr::n()) %>%
+    dplyr::collect() %>%
+    dplyr::pull(n)
 }
