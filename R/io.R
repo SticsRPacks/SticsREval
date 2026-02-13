@@ -19,7 +19,7 @@ read_csv <- function(filepath, delimiter = ";") {
   data <- readr::read_delim(
     filepath,
     delim = delimiter,
-    na = c("NA", "NaN"),
+    na = c("NA", "NaN", ""),
     locale = readr::locale(
       decimal_mark = ".",
       date_format = "%Y-%m-%d"

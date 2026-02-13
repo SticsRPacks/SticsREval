@@ -105,7 +105,8 @@ setup_parallel_backend <- function(
       map = function(x, fun, data_dir) {
         future.apply::future_lapply(
           x,
-          function(i) fun(i, data_dir = data_dir)
+          function(i) fun(i, data_dir = data_dir),
+          future.seed = TRUE
         )
       },
       cleanup = function() future::plan(future::sequential)

@@ -9,7 +9,11 @@ gen_scatter_plot <- function(output_dir, sim, obs, ref_sim, vars) {
   )
   page <- htmltools::tagList(
     lapply(vars, function(var) {
-      plotly::ggplotly(CroPlotR::extract_plot(plots, var = var)[[1]])
+      suppressWarnings(
+        plotly::ggplotly(
+          CroPlotR::extract_plot(plots, var = var)[[1]]
+        )
+      )
     })
   )
   htmltools::save_html(
@@ -65,7 +69,8 @@ gen_comparison_plot <- function(
     ggrepel::geom_text_repel(
       ggplot2::aes(label = .data$variable),
       na.rm = TRUE,
-      show.legend = FALSE
+      show.legend = FALSE,
+      max.overlaps = 100
     ) +
     ggplot2::theme(legend.position = "none") +
     ggplot2::ggtitle("rRMSE New Version vs Ref Version")

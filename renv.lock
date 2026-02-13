@@ -288,7 +288,7 @@
       "RemoteUsername": "SticsRPacks",
       "RemoteRepo": "SticsRFiles",
       "RemoteRef": "main",
-      "RemoteSha": "cda742982c501990c465a177c34581ff4207546d"
+      "RemoteSha": "c1df5fb4151a3240770eaa2c2e2d9ae243505f98"
     },
     "XML": {
       "Package": "XML",
