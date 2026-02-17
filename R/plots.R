@@ -63,7 +63,7 @@ gen_comparison_plot <- function(
     ggplot2::geom_abline(intercept = 0, slope = 1) +
     ggplot2::geom_abline(
       intercept = 0,
-      slope = 1 + percentage,
+      slope = 1 + percentage / 100,
       linetype = "dashed"
     ) +
     ggrepel::geom_text_repel(

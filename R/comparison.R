@@ -20,10 +20,10 @@ compare_rmse <- function(species, ref_stats, new_stats) {
     ) %>%
     dplyr::mutate(
       species = species,
-      ratio = abs(.data$rmse_new) / abs(.data$rmse_ref)
+      ratio = (abs(.data$rmse_new) - abs(.data$rmse_ref)) / abs(.data$rmse_ref) * 100
     ) %>%
     dplyr::filter(
-      !is.na(.data$ratio)
+      is.finite(.data$ratio)
     ) %>%
     dplyr::select(
       .data$species,
@@ -35,19 +35,19 @@ compare_rmse <- function(species, ref_stats, new_stats) {
 }
 
 is_critical <- function(ratio, percentage) {
-  out <- ratio >= 1 + percentage
+  out <- ratio >= percentage
   out[is.na(out)] <- FALSE
   out
 }
 
 is_warning <- function(ratio, percentage) {
-  out <- ratio < 1 + percentage & ratio > 1
+  out <- ratio < percentage & ratio > 0
   out[is.na(out)] <- FALSE
   out
 }
 
 is_improved <- function(ratio) {
-  out <- ratio <= 1
+  out <- ratio <= 0
   out[is.na(out)] <- FALSE
   out
 }
@@ -89,7 +89,7 @@ log_comparison <- function(
   crit_vars <- get_crit_vars(comparison, percentage)
   logger::log_info(
     length(crit_vars),
-    " deteriorated variables (>={percentage * 100}%): "
+    " deteriorated variables (>={percentage}%): "
   )
   if (length(crit_vars) > 0) {
     logger::log_info(paste(crit_vars, collapse = ", "))
@@ -97,7 +97,7 @@ log_comparison <- function(
   warn_vars <- get_warn_vars(comparison, percentage)
   logger::log_info(
     length(warn_vars),
-    " deteriorated variables (>0%, <{percentage * 100}%): "
+    " deteriorated variables (>0%, <{percentage}%): "
   )
   if (length(warn_vars) > 0) {
     logger::log_info(paste(warn_vars, collapse = ", "))

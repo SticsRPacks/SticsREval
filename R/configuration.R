@@ -54,7 +54,7 @@ make_config <- function(...) {
 #'   - verbose -> 1
 #'   - parallel -> FALSE
 #'   - cores -> NA
-#'   - percentage -> 0.05
+#'   - percentage -> 5
 #'
 #' @returns A configuration list with default values
 set_config_default_values <- function(config) {
@@ -62,7 +62,7 @@ set_config_default_values <- function(config) {
   config$verbose <- config$verbose %||% 1
   config$parallel <- config$parallel %||% FALSE
   config$cores <- config$cores %||% NA
-  config$percentage <- config$percentage %||% 0.05
+  config$percentage <- config$percentage %||% 5
   config
 }
 
