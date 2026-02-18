@@ -202,21 +202,58 @@ display_comparisons_info <- function(comparisons, config) {
     logger::log_info("No comparison done.")
     return()
   }
-  counts <- vapply(
+  results <- lapply(
     comparisons,
     function(res) {
-      if (is.null(res)) return(c(criticals = 0L, warnings = 0L))
-      c(
-        criticals = length(get_crit_vars(res, config$percentage)),
-        warnings  = length(get_warn_vars(res, config$percentage))
+      if (is.null(res)) {
+        return(list(
+          criticals = character(0),
+          warnings  = character(0),
+          ok        = character(0)
+        ))
+      }
+
+      crit_vars <- get_crit_vars(res, config$percentage)
+      warn_vars <- get_warn_vars(res, config$percentage)
+
+      crit_species <- unique(res$species[res$variable %in% crit_vars])
+      warn_species <- unique(res$species[res$variable %in% warn_vars])
+
+      all_species <- unique(res$species)
+
+      ok_species <- setdiff(all_species, union(crit_species, warn_species))
+
+      list(
+        criticals = crit_species,
+        warnings  = warn_species,
+        ok        = ok_species
       )
-    },
-    integer(2)
+    }
   )
-  if (sum(counts["warnings", ]) > 0) {
+  all_crit <- unique(unlist(lapply(results, `[[`, "criticals")))
+  all_warn <- unique(unlist(lapply(results, `[[`, "warnings")))
+  all_ok   <- unique(unlist(lapply(results, `[[`, "ok")))
+  logger::log_info("Summary:")
+  logger::log_info("The following species show at least one variable with:")
+  logger::log_info(
+    paste0("Major degradation (> ",
+      config$percentage, "% rRMSE increase): ", format_species(all_crit)
+    )
+  )
+  logger::log_info(
+    paste0("Minor degradation (≤ ",
+      config$percentage, "% rRMSE increase): ", format_species(all_warn)
+    )
+  )
+  logger::log_info(
+    paste0(
+      "No degradation (rRMSE stable or improved): ", format_species(all_ok)
+    )
+  )
+  if (length(all_warn) > 0) {
     logger::log_warn("Found at least one deteriorated variable")
   }
-  if (sum(counts["criticals", ]) > 0) {
+  if (length(all_crit) > 0) {
     logger::log_error("Found at least one critical deteriorated variable")
     stop()
   }
