@@ -60,3 +60,28 @@ get_count <- function(situations) {
     dplyr::collect() %>%
     dplyr::pull(n)
 }
+
+export_species_sim <- function(sim, output_dir) {
+  arrow::write_parquet(
+    sim,
+    file.path(output_dir, "Simulations.parquet")
+  )
+}
+
+read_ref_sim <- function(
+  species,
+  reference_data_dir
+) {
+  reference_dir <- file.path(reference_data_dir, species)
+  reference_file <- file.path(reference_dir, "Simulations.parquet")
+  if (!length(reference_file) || !file.exists(reference_file)) {
+    return(NULL)
+  }
+  arrow::open_dataset(reference_file)
+}
+
+collect_list_of_df <- function(df) {
+  df %>%
+    dplyr::collect() %>%
+    CroPlotR::split_df2sim()
+}

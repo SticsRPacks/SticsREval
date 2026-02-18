@@ -30,20 +30,6 @@ read_csv <- function(filepath, delimiter = ",") {
   data
 }
 
-
-read_ref_sim <- function(
-  species,
-  reference_data_dir
-) {
-  reference_dir <- file.path(reference_data_dir, species)
-  reference_file <- file.path(reference_dir, "Simulations.csv")
-  if (!length(reference_file) || !file.exists(reference_file)) {
-    return(NULL)
-  }
-  df <- read_csv(reference_file)
-  CroPlotR::split_df2sim(df)
-}
-
 load_workspace_sim <- function(
   data_dir,
   usms,

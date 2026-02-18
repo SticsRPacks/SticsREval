@@ -107,17 +107,10 @@ evaluate_all_species <- function(
         return()
       }
       if ("sim" %in% exports) {
-        arrow::write_csv_arrow(
-          selected_sim,
-          sink = file.path(species_output_dir, "Simulations.csv"),
-        )
+        export_species_sim(selected_sim, species_output_dir)
       }
-      collected_sim <- selected_sim %>%
-        dplyr::collect() %>%
-        CroPlotR::split_df2sim()
-      collected_obs <- selected_obs %>%
-        dplyr::collect() %>%
-        CroPlotR::split_df2sim()
+      collected_sim <- collect_list_of_df(selected_sim)
+      collected_obs <- collect_list_of_df(selected_obs)
       stats <- gen_species_stats(
         spec, collected_sim, collected_obs,
         "stats" %in% exports, species_output_dir
@@ -152,20 +145,17 @@ evaluate_all_species <- function(
             get_crit_vars(comparison, percentage),
             get_warn_vars(comparison, percentage)
           )
-          collected_sim <- selected_sim %>%
-            dplyr::collect() %>%
-            CroPlotR::split_df2sim()
-          collected_obs <- selected_obs %>%
-            dplyr::collect() %>%
-            CroPlotR::split_df2sim()
+          collected_sim <- collect_list_of_df(selected_sim)
+          collected_obs <- collect_list_of_df(selected_obs)
+          collected_ref_sim <- collect_list_of_df(ref_sim)
           gen_scatter_plot(
             species_output_dir,
             collected_sim,
             collected_obs,
-            ref_sim,
+            collected_ref_sim,
             deteriorated
           )
-          rm(collected_sim, collected_obs)
+          rm(collected_sim, collected_obs, collected_ref_sim)
           gc()
         }
       }
