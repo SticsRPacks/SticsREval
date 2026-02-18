@@ -8,15 +8,16 @@
 #' to its RMSEs ratio
 #' @importFrom rlang .data
 compare_rmse <- function(species, ref_stats, new_stats) {
-  dplyr::left_join(new_stats, ref_stats, by = "variable") %>%
+  dplyr::left_join(new_stats, ref_stats, by = c("situation", "variable")) %>%
     dplyr::mutate(
       rmse_new = as.numeric(sub(",", ".", .data$rRMSE.x, fixed = TRUE)),
       rmse_ref = as.numeric(sub(",", ".", .data$rRMSE.y, fixed = TRUE))
     ) %>%
     dplyr::filter(
-      !is.na(.data$rmse_new),
-      !is.na(.data$rmse_ref),
-      !is.na(.data$variable)
+      is.finite(.data$rmse_new),
+      is.finite(.data$rmse_ref),
+      !is.na(.data$variable),
+      !is.na(.data$situation)
     ) %>%
     dplyr::mutate(
       species = species,
@@ -25,13 +26,30 @@ compare_rmse <- function(species, ref_stats, new_stats) {
     dplyr::filter(
       is.finite(.data$ratio)
     ) %>%
+    dplyr::mutate(
+      ratio = round(.data$ratio, 2)
+    ) %>%
     dplyr::select(
       .data$species,
+      .data$situation,
       .data$variable,
       .data$rmse_new,
       .data$rmse_ref,
       .data$ratio
     )
+}
+
+get_deteriorated_rmse_per_usm <- function(
+  species,
+  ref_stats,
+  new_stats,
+  percentage
+) {
+  compare_rmse(species, ref_stats, new_stats) %>%
+    dplyr::filter(is_warning(.data$ratio, percentage) |
+        is_critical(.data$ratio, percentage)
+    ) %>%
+    dplyr::arrange(dplyr::desc(.data$ratio))
 }
 
 is_critical <- function(ratio, percentage) {

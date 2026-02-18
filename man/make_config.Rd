@@ -29,7 +29,7 @@ make_config(...)
 rotations}
 
 \item{exports}{a list of strings to use to define what to export. Values can
-be "plots", "sim", "stats".}
+be "plots", "sim", "stats", "rmse_per_usm".}
 
 \item{percentage}{the percentage threshold used to detect critical
 deteriorated variables}

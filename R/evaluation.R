@@ -12,6 +12,23 @@ gen_species_stats <- function(species, sim, obs, save, output_dir) {
   stats
 }
 
+gen_species_rmse_per_usm <- function(species, sim, obs, save, output_dir) {
+  logger::log_info("Generating RMSE per USM for species ", species)
+  rmse_per_usm <- run_with_log_control(
+    # Calling summary() directly does not work in a future context
+    CroPlotR:::summary.cropr_simulation(
+      sim,
+      obs = obs,
+      all_situations = FALSE,
+      stats = "rRMSE"
+    )
+  )
+  if (save) {
+    save_rmse_per_usm(rmse_per_usm, output_dir)
+  }
+  rmse_per_usm
+}
+
 gen_species_comparison <- function(species, stats, reference_data_dir) {
   ref_stats <- read_ref_stats(species, reference_data_dir)
   if (is.null(ref_stats)) {
@@ -22,6 +39,22 @@ gen_species_comparison <- function(species, stats, reference_data_dir) {
     species,
     ref_stats,
     stats
+  )
+}
+
+gen_deteriorated_usm_comparison <- function(
+  species, rmse_per_usm, reference_data_dir, percentage
+) {
+  ref_stats <- read_ref_rmse_per_usm(species, reference_data_dir)
+  if (is.null(ref_stats)) {
+    return(NULL)
+  }
+  logger::log_info("Comparing RMSE per usm for species ", species)
+  get_deteriorated_rmse_per_usm(
+    species,
+    ref_stats,
+    rmse_per_usm,
+    percentage
   )
 }
 
@@ -54,16 +87,14 @@ evaluate_all_species <- function(
         return(NULL)
       }
       species_output_dir <- file.path(output_dir, spec)
-      if (!is.null(exports)) {
-        if (!dir.exists(species_output_dir) &&
-            !dir.create(species_output_dir, recursive = TRUE)
-        ) {
-          stop("Error while creating ", spec, " output directory")
-        }
-        logger::log_info(
-          "Exporting ", spec, " evaluation results in ", species_output_dir
-        )
+      if (!dir.exists(species_output_dir) &&
+          !dir.create(species_output_dir, recursive = TRUE)
+      ) {
+        stop("Error while creating ", spec, " output directory")
       }
+      logger::log_info(
+        "Exporting ", spec, " evaluation results in ", species_output_dir
+      )
       selected_sim <- get_sim_by_situations(env$data_dir, common_usms)
       sim_count <- get_count(selected_sim)
       selected_obs <- get_obs_by_situations(env$data_dir, common_usms)
@@ -91,12 +122,29 @@ evaluate_all_species <- function(
         spec, collected_sim, collected_obs,
         "stats" %in% exports, species_output_dir
       )
+      rmse_per_usm <- gen_species_rmse_per_usm(
+        spec,
+        collected_sim,
+        collected_obs,
+        "rmse_per_usm" %in% exports, species_output_dir
+      )
       rm(collected_sim, collected_obs)
       gc()
+      deteriorated_usm <- gen_deteriorated_usm_comparison(
+        spec, rmse_per_usm, reference_data_dir, percentage
+      )
+      if (!is.null(deteriorated_usm) && nrow(deteriorated_usm) > 0) {
+        save_deteriorated_usm(deteriorated_usm, species_output_dir)
+      }
       comparison <- gen_species_comparison(spec, stats, reference_data_dir)
+      if (!is.null(comparison)) {
+        log_comparison(comparison, percentage)
+      }
       if ("plots" %in% exports && !is.null(comparison)) {
-        logger::log_info("Generating comparison plot for species ", spec)
-        gen_comparison_plot(species_output_dir, comparison, percentage)
+        if (!is.null(comparison)) {
+          logger::log_info("Generating comparison plot for species ", spec)
+          gen_comparison_plot(species_output_dir, comparison, percentage)
+        }
         ref_sim <- read_ref_sim(spec, reference_data_dir)
         if (!is.null(ref_sim)) {
           logger::log_info("Generating scatter plots for species ", spec)
@@ -120,9 +168,6 @@ evaluate_all_species <- function(
           rm(collected_sim, collected_obs)
           gc()
         }
-      }
-      if (!is.null(comparison)) {
-        log_comparison(comparison, percentage)
       }
       comparison
     }

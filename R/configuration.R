@@ -15,7 +15,7 @@
 #' @param rotation_file path to the CSV which contains the information about
 #'  rotations
 #' @param exports a list of strings to use to define what to export. Values can
-#' be "plots", "sim", "stats".
+#' be "plots", "sim", "stats", "rmse_per_usm".
 #' @param percentage the percentage threshold used to detect critical
 #' deteriorated variables
 #'

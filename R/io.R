@@ -3,7 +3,7 @@ safe_write_csv <- function(data, path) {
     readr::write_delim(
       data,
       path,
-      delim = ";",
+      delim = ",",
       na = "NA"
     )
   },
@@ -15,7 +15,7 @@ safe_write_csv <- function(data, path) {
   })
 }
 
-read_csv <- function(filepath, delimiter = ";") {
+read_csv <- function(filepath, delimiter = ",") {
   data <- readr::read_delim(
     filepath,
     delim = delimiter,
@@ -40,7 +40,7 @@ read_ref_sim <- function(
   if (!length(reference_file) || !file.exists(reference_file)) {
     return(NULL)
   }
-  df <- read_csv(reference_file, delimiter = ",")
+  df <- read_csv(reference_file)
   CroPlotR::split_df2sim(df)
 }
 
@@ -103,7 +103,7 @@ load_workspace_obs <- function(
 #' @importFrom dplyr %>%
 #' @importFrom rlang .data
 get_rotation_list <- function(rotation_file) {
-  rotations_data <- read_csv(rotation_file)
+  rotations_data <- read_csv(rotation_file, delimiter = ";")
   rotations <- rotations_data %>%
     dplyr::filter(.data$rotation != 0) %>%
     dplyr::arrange(.data$rotation, .data$rotation_order) %>%
