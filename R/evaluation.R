@@ -101,20 +101,20 @@ evaluate_species <- function(
   if (!is.null(deteriorated_usm) && nrow(deteriorated_usm) > 0) {
     save_deteriorated_usm(deteriorated_usm, output_dir)
   }
-  comparison <- gen_species_comparison(species, stats, reference_data_dir)
-  if (!is.null(comparison)) {
-    log_comparison(comparison, percentage)
+  spec_comparison <- gen_species_comparison(species, stats, reference_data_dir)
+  if (!is.null(spec_comparison)) {
+    log_comparison(spec_comparison, percentage)
   }
-  if ("plots" %in% exports && !is.null(comparison)) {
+  if ("plots" %in% exports && !is.null(spec_comparison)) {
     logger::log_info("Generating comparison plot for species ", species)
-    gen_comparison_plot(output_dir, comparison, percentage)
+    gen_comparison_plot(output_dir, spec_comparison, percentage)
     ref_sim <- read_ref_sim(species, reference_data_dir)
-    if (!is.null(ref_sim)) {
-      logger::log_info("Generating scatter plots for species ", species)
-      deteriorated <- c(
-        get_crit_vars(comparison, percentage),
-        get_warn_vars(comparison, percentage)
-      )
+    deteriorated <- c(
+      get_crit_vars(spec_comparison, percentage),
+      get_warn_vars(spec_comparison, percentage)
+    )
+    if (!is.null(ref_sim) && length(deteriorated) > 0) {
+      logger::log_info("Generating scatter plots for species {species}")
       collected_sim <- collect_list_of_df(selected_sim)
       collected_obs <- collect_list_of_df(selected_obs)
       collected_ref_sim <- collect_list_of_df(ref_sim)
@@ -129,7 +129,7 @@ evaluate_species <- function(
       gc()
     }
   }
-  comparison
+  spec_comparison
 }
 
 evaluate_all_species <- function(
@@ -148,7 +148,7 @@ evaluate_all_species <- function(
     cores,
     function(i, env) {
       spec <- species[i]
-      logger::log_info("Starting evaluation of species ", spec)
+      logger::log_info("Starting evaluation of species {spec}")
       selected_usms <- dplyr::filter(sorted_usms, species == spec)$usm
       sim_situations <- get_all_sim_situations(env$data_dir)
       obs_situations <- get_all_obs_situations(env$data_dir)
@@ -157,17 +157,17 @@ evaluate_all_species <- function(
           selected_usms %in% obs_situations
       ]
       if (!length(common_usms)) {
-        logger::log_warn("No common USM for species ", spec, ".")
+        logger::log_warn("No common USM for species {spec}.")
         return(NULL)
       }
-      species_output_dir <- file.path(output_dir, species)
+      species_output_dir <- file.path(output_dir, spec)
       if (!dir.exists(species_output_dir) &&
           !dir.create(species_output_dir, recursive = TRUE)
       ) {
-        stop("Error while creating ", species, " output directory")
+        stop("Error while creating {spec} output directory")
       }
       logger::log_info(
-        "Exporting ", species, " evaluation results in ", species_output_dir
+        "Exporting {spec} evaluation results in {species_output_dir}"
       )
       evaluate_species(
         spec, species_output_dir, env$data_dir, common_usms, exports,
