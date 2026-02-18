@@ -58,6 +58,80 @@ gen_deteriorated_usm_comparison <- function(
   )
 }
 
+evaluate_species <- function(
+  species,
+  output_dir,
+  data_dir,
+  usms,
+  exports,
+  reference_data_dir,
+  percentage
+) {
+  selected_sim <- get_sim_by_situations(data_dir, usms)
+  sim_count <- get_count(selected_sim)
+  selected_obs <- get_obs_by_situations(data_dir, usms)
+  obs_count <- get_count(selected_obs)
+  if (sim_count == 0 || obs_count == 0) {
+    logger::log_warn(
+      "No simulation or observation data found for species ",
+      species
+    )
+    return()
+  }
+  if ("sim" %in% exports) {
+    export_species_sim(selected_sim, output_dir)
+  }
+  collected_sim <- collect_list_of_df(selected_sim)
+  collected_obs <- collect_list_of_df(selected_obs)
+  stats <- gen_species_stats(
+    species, collected_sim, collected_obs,
+    "stats" %in% exports, output_dir
+  )
+  rmse_per_usm <- gen_species_rmse_per_usm(
+    species,
+    collected_sim,
+    collected_obs,
+    "rmse_per_usm" %in% exports, output_dir
+  )
+  rm(collected_sim, collected_obs)
+  gc()
+  deteriorated_usm <- gen_deteriorated_usm_comparison(
+    species, rmse_per_usm, reference_data_dir, percentage
+  )
+  if (!is.null(deteriorated_usm) && nrow(deteriorated_usm) > 0) {
+    save_deteriorated_usm(deteriorated_usm, output_dir)
+  }
+  comparison <- gen_species_comparison(species, stats, reference_data_dir)
+  if (!is.null(comparison)) {
+    log_comparison(comparison, percentage)
+  }
+  if ("plots" %in% exports && !is.null(comparison)) {
+    logger::log_info("Generating comparison plot for species ", species)
+    gen_comparison_plot(output_dir, comparison, percentage)
+    ref_sim <- read_ref_sim(species, reference_data_dir)
+    if (!is.null(ref_sim)) {
+      logger::log_info("Generating scatter plots for species ", species)
+      deteriorated <- c(
+        get_crit_vars(comparison, percentage),
+        get_warn_vars(comparison, percentage)
+      )
+      collected_sim <- collect_list_of_df(selected_sim)
+      collected_obs <- collect_list_of_df(selected_obs)
+      collected_ref_sim <- collect_list_of_df(ref_sim)
+      gen_scatter_plot(
+        output_dir,
+        collected_sim,
+        collected_obs,
+        collected_ref_sim,
+        deteriorated
+      )
+      rm(collected_sim, collected_obs, collected_ref_sim)
+      gc()
+    }
+  }
+  comparison
+}
+
 evaluate_all_species <- function(
   species,
   sorted_usms,
@@ -86,80 +160,19 @@ evaluate_all_species <- function(
         logger::log_warn("No common USM for species ", spec, ".")
         return(NULL)
       }
-      species_output_dir <- file.path(output_dir, spec)
+      species_output_dir <- file.path(output_dir, species)
       if (!dir.exists(species_output_dir) &&
           !dir.create(species_output_dir, recursive = TRUE)
       ) {
-        stop("Error while creating ", spec, " output directory")
+        stop("Error while creating ", species, " output directory")
       }
       logger::log_info(
-        "Exporting ", spec, " evaluation results in ", species_output_dir
+        "Exporting ", species, " evaluation results in ", species_output_dir
       )
-      selected_sim <- get_sim_by_situations(env$data_dir, common_usms)
-      sim_count <- get_count(selected_sim)
-      selected_obs <- get_obs_by_situations(env$data_dir, common_usms)
-      obs_count <- get_count(selected_obs)
-      if (sim_count == 0 || obs_count == 0) {
-        logger::log_warn(
-          "No simulation or observation data found for species ",
-          spec
-        )
-        return()
-      }
-      if ("sim" %in% exports) {
-        export_species_sim(selected_sim, species_output_dir)
-      }
-      collected_sim <- collect_list_of_df(selected_sim)
-      collected_obs <- collect_list_of_df(selected_obs)
-      stats <- gen_species_stats(
-        spec, collected_sim, collected_obs,
-        "stats" %in% exports, species_output_dir
+      evaluate_species(
+        spec, species_output_dir, env$data_dir, common_usms, exports,
+        reference_data_dir, percentage
       )
-      rmse_per_usm <- gen_species_rmse_per_usm(
-        spec,
-        collected_sim,
-        collected_obs,
-        "rmse_per_usm" %in% exports, species_output_dir
-      )
-      rm(collected_sim, collected_obs)
-      gc()
-      deteriorated_usm <- gen_deteriorated_usm_comparison(
-        spec, rmse_per_usm, reference_data_dir, percentage
-      )
-      if (!is.null(deteriorated_usm) && nrow(deteriorated_usm) > 0) {
-        save_deteriorated_usm(deteriorated_usm, species_output_dir)
-      }
-      comparison <- gen_species_comparison(spec, stats, reference_data_dir)
-      if (!is.null(comparison)) {
-        log_comparison(comparison, percentage)
-      }
-      if ("plots" %in% exports && !is.null(comparison)) {
-        if (!is.null(comparison)) {
-          logger::log_info("Generating comparison plot for species ", spec)
-          gen_comparison_plot(species_output_dir, comparison, percentage)
-        }
-        ref_sim <- read_ref_sim(spec, reference_data_dir)
-        if (!is.null(ref_sim)) {
-          logger::log_info("Generating scatter plots for species ", spec)
-          deteriorated <- c(
-            get_crit_vars(comparison, percentage),
-            get_warn_vars(comparison, percentage)
-          )
-          collected_sim <- collect_list_of_df(selected_sim)
-          collected_obs <- collect_list_of_df(selected_obs)
-          collected_ref_sim <- collect_list_of_df(ref_sim)
-          gen_scatter_plot(
-            species_output_dir,
-            collected_sim,
-            collected_obs,
-            collected_ref_sim,
-            deteriorated
-          )
-          rm(collected_sim, collected_obs, collected_ref_sim)
-          gc()
-        }
-      }
-      comparison
     }
   )
   remove_null_values(comparisons)
@@ -215,8 +228,8 @@ display_comparisons_info <- function(comparisons, config) {
 
       list(
         criticals = crit_species,
-        warnings  = warn_species,
-        ok        = ok_species
+        warnings = warn_species,
+        ok = ok_species
       )
     }
   )
