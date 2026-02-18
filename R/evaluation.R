@@ -202,7 +202,6 @@ display_comparisons_info <- function(comparisons, config) {
     logger::log_info("No comparison done.")
     return()
   }
-  log_comparison_table(comparisons)
   counts <- vapply(
     comparisons,
     function(res) {

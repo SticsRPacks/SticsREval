@@ -129,12 +129,3 @@ log_comparison <- function(
     "-----------------------------------------------------------------"
   )
 }
-
-#' @importFrom rlang .data
-log_comparison_table <- function(comparisons) {
-  df <- dplyr::bind_rows(comparisons) %>%
-    dplyr::arrange(.data$ratio, .data$species)
-  for (line in capture.output(print(df, row.names = FALSE))) {
-    logger::log_info(line)
-  }
-}
