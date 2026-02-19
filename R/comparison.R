@@ -129,3 +129,32 @@ log_comparison <- function(
     "-----------------------------------------------------------------"
   )
 }
+
+gen_species_comparison <- function(species, stats, reference_data_dir) {
+  ref_stats <- read_ref_stats(species, reference_data_dir)
+  if (is.null(ref_stats)) {
+    return(NULL)
+  }
+  logger::log_info("Comparing RMSE for species ", species)
+  compare_rmse(
+    species,
+    ref_stats,
+    stats
+  )
+}
+
+gen_deteriorated_usm_comparison <- function(
+  species, rmse_per_usm, reference_data_dir, percentage
+) {
+  ref_stats <- read_ref_rmse_per_usm(species, reference_data_dir)
+  if (is.null(ref_stats)) {
+    return(NULL)
+  }
+  logger::log_info("Comparing RMSE per usm for species ", species)
+  get_deteriorated_rmse_per_usm(
+    species,
+    ref_stats,
+    rmse_per_usm,
+    percentage
+  )
+}

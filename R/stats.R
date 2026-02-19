@@ -36,3 +36,32 @@ save_deteriorated_usm <- function(deteriorated, output_dir, percentage) {
     file.path(output_dir, "Deteriorated_RMSE_per_usm.csv")
   )
 }
+
+gen_species_stats <- function(species, sim, obs, save, output_dir) {
+  logger::log_info("Generating statistics for ", species)
+  stats <- run_with_log_control(
+    # Calling summary() directly does not work in a future context
+    CroPlotR:::summary.cropr_simulation(sim, obs = obs)
+  )
+  if (save) {
+    save_stats(stats, output_dir)
+  }
+  stats
+}
+
+gen_species_rmse_per_usm <- function(species, sim, obs, save, output_dir) {
+  logger::log_info("Generating RMSE per USM for species ", species)
+  rmse_per_usm <- run_with_log_control(
+    # Calling summary() directly does not work in a future context
+    CroPlotR:::summary.cropr_simulation(
+      sim,
+      obs = obs,
+      all_situations = FALSE,
+      stats = "rRMSE"
+    )
+  )
+  if (save) {
+    save_rmse_per_usm(rmse_per_usm, output_dir)
+  }
+  rmse_per_usm
+}

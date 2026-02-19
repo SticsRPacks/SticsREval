@@ -1,64 +1,6 @@
 .local_eval_env <- new.env(parent = emptyenv())
 
-gen_species_stats <- function(species, sim, obs, save, output_dir) {
-  logger::log_info("Generating statistics for ", species)
-  stats <- run_with_log_control(
-    # Calling summary() directly does not work in a future context
-    CroPlotR:::summary.cropr_simulation(sim, obs = obs)
-  )
-  if (save) {
-    save_stats(stats, output_dir)
-  }
-  stats
-}
-
-gen_species_rmse_per_usm <- function(species, sim, obs, save, output_dir) {
-  logger::log_info("Generating RMSE per USM for species ", species)
-  rmse_per_usm <- run_with_log_control(
-    # Calling summary() directly does not work in a future context
-    CroPlotR:::summary.cropr_simulation(
-      sim,
-      obs = obs,
-      all_situations = FALSE,
-      stats = "rRMSE"
-    )
-  )
-  if (save) {
-    save_rmse_per_usm(rmse_per_usm, output_dir)
-  }
-  rmse_per_usm
-}
-
-gen_species_comparison <- function(species, stats, reference_data_dir) {
-  ref_stats <- read_ref_stats(species, reference_data_dir)
-  if (is.null(ref_stats)) {
-    return(NULL)
-  }
-  logger::log_info("Comparing RMSE for species ", species)
-  compare_rmse(
-    species,
-    ref_stats,
-    stats
-  )
-}
-
-gen_deteriorated_usm_comparison <- function(
-  species, rmse_per_usm, reference_data_dir, percentage
-) {
-  ref_stats <- read_ref_rmse_per_usm(species, reference_data_dir)
-  if (is.null(ref_stats)) {
-    return(NULL)
-  }
-  logger::log_info("Comparing RMSE per usm for species ", species)
-  get_deteriorated_rmse_per_usm(
-    species,
-    ref_stats,
-    rmse_per_usm,
-    percentage
-  )
-}
-
-evaluate_species <- function(
+evaluate_one_species <- function(
   species,
   output_dir,
   data_dir,
@@ -169,7 +111,7 @@ evaluate_all_species <- function(
       logger::log_info(
         "Exporting {spec} evaluation results in {species_output_dir}"
       )
-      evaluate_species(
+      evaluate_one_species(
         spec, species_output_dir, env$data_dir, common_usms, exports,
         reference_data_dir, percentage
       )
