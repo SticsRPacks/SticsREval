@@ -120,8 +120,8 @@ evaluate_all_species <- function(
   remove_null_values(comparisons)
 }
 
-sort_usm_by_species <- function(usms, workspace, parallel, cores) {
-  logger::log_debug("Sorting USMs by species...")
+extract_species_from_usms <- function(usms, workspace, parallel, cores) {
+  logger::log_debug("Extracting species from USMs...")
   result <- parallelizable_loop(
     length(usms),
     parallel,
@@ -142,68 +142,6 @@ sort_usm_by_species <- function(usms, workspace, parallel, cores) {
   sorted
 }
 
-display_comparisons_info <- function(comparisons, config) {
-  if (length(comparisons) == 0) {
-    logger::log_info("No comparison done.")
-    return()
-  }
-  results <- lapply(
-    comparisons,
-    function(res) {
-      if (is.null(res)) {
-        return(list(
-          criticals = character(0),
-          warnings  = character(0),
-          ok        = character(0)
-        ))
-      }
-
-      crit_vars <- get_crit_vars(res, config$percentage)
-      warn_vars <- get_warn_vars(res, config$percentage)
-
-      crit_species <- unique(res$species[res$variable %in% crit_vars])
-      warn_species <- unique(res$species[res$variable %in% warn_vars])
-
-      all_species <- unique(res$species)
-
-      ok_species <- setdiff(all_species, union(crit_species, warn_species))
-
-      list(
-        criticals = crit_species,
-        warnings = warn_species,
-        ok = ok_species
-      )
-    }
-  )
-  all_crit <- unique(unlist(lapply(results, `[[`, "criticals")))
-  all_warn <- unique(unlist(lapply(results, `[[`, "warnings")))
-  all_ok   <- unique(unlist(lapply(results, `[[`, "ok")))
-  logger::log_info("Summary:")
-  logger::log_info("The following species show at least one variable with:")
-  logger::log_info(
-    paste0("Major degradation (> ",
-      config$percentage, "% rRMSE increase): ", format_species(all_crit)
-    )
-  )
-  logger::log_info(
-    paste0("Minor degradation (≤ ",
-      config$percentage, "% rRMSE increase): ", format_species(all_warn)
-    )
-  )
-  logger::log_info(
-    paste0(
-      "No degradation (rRMSE stable or improved): ", format_species(all_ok)
-    )
-  )
-  if (length(all_warn) > 0) {
-    logger::log_warn("Found at least one deteriorated variable")
-  }
-  if (length(all_crit) > 0) {
-    logger::log_error("Found at least one critical deteriorated variable")
-    stop()
-  }
-}
-
 #' @title Running a complete evaluation process of STICS model
 #'
 #' @param config List containing any information needed for the evaluation
@@ -219,7 +157,15 @@ evaluate <- function(config) {
     logger::log_info("Evaluation time: ", format_duration(start_time, end_time))
   }, add = TRUE)
   start_time <- Sys.time()
-  usms <- list.dirs(config$workspace, full.names = FALSE, recursive = FALSE)
+  all_usms <- list.dirs(config$workspace, full.names = FALSE, recursive = FALSE)
+  sorted_usms <- extract_species_from_usms(
+    all_usms,
+    config$workspace,
+    config$parallel,
+    config$cores
+  )
+  species <- sort(unique(sorted_usms$species))
+  usms <- sort(unique(sorted_usms$usm))
   rotations <- get_rotation_list(config$rotation_file)
   load_workspace_sim(
     data_dir,
@@ -238,13 +184,6 @@ evaluate <- function(config) {
     config$parallel,
     config$cores
   )
-  sorted_usms <- sort_usm_by_species(
-    usms,
-    config$workspace,
-    config$parallel,
-    config$cores
-  )
-  species <- sort(unique(sorted_usms$species))
   logger::log_info("Starting evaluation...")
   comparisons <- evaluate_all_species(
     species,
