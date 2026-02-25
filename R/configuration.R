@@ -1,68 +1,78 @@
 `%||%` <- function(a, b) if (!is.null(a)) a else b
 
-#' @title Getting/setting a list of parameters with initialized fields for
-#'  evaluation
+#' Create and validate configuration for the evaluation workflow
 #'
-#' @param stics_exe path to the STICS executable
-#' @param workspace path to the simulation and observation data
-#' @param reference_data_dir path to the reference data to use for comparison
-#' @param output_dir path where output files will be saved
-#' @param run_simulations Logical value for running simulation or not
-#' @param verbose Number value for displaying information.
-#'  2 = DEBUG, 1 = INFO, 0 = WARNING
-#' @param parallel Boolean. Is the computation to be done in parallel ?
-#' @param cores Number of cores to use for parallel computation.
-#' @param rotation_file path to the CSV which contains the information about
-#'  rotations
-#' @param exports a list of strings to use to define what to export. Values can
-#' be "plots", "sim", "stats", "rmse_per_usm".
-#' @param percentage the percentage threshold used to detect critical
-#' deteriorated variables
+#' This function builds a configuration list containing all parameters required
+#' to run simulations and evaluation workflows. The configuration is validated
+#' using `validate_configuration()` before being returned.
 #'
-#' @returns A list containing parameters that can be used in `evaluate()`
-#'  function.
+#' The resulting configuration object can be passed to downstream functions
+#' to ensure consistent parameter handling.
 #'
-#' @seealso [set_config_default_values()] to get default values
-#' @seealso [validate_configuration()] to get more information about valid
-#'  configuration
+#' @param stics_exe Character. Path to the STICS executable.
+#' @param workspace Character. Path to the working directory containing
+#' simulation inputs.
+#' @param metadata_file Character. Path to the metadata file describing
+#' simulations.
+#' @param run_simulations Logical. Whether to run simulations. Defaults to TRUE.
+#' @param verbose Integer. Verbosity level for logging. Defaults to 1.
+#' @param parallel Logical. Whether to enable parallel execution. Defaults to
+#' FALSE.
+#' @param cores Integer or NA. Number of cores to use for parallel execution.
+#'   If NA, the number of available cores may be used.
+#' @param reference_data_dir Character or NULL. Path to reference simulation
+#' data. If NULL, reference-based analyses may be skipped.
+#' @param percentage Numeric. Threshold used for evaluation metrics (e.g.,
+#' detecting deteriorated variables). Defaults to 5.
+#' @param eval_workspace Character. Path to the evaluation workspace.
+#'   Defaults to `DEFAULT_WORKSPACE`.
+#' @param init_workspace Logical. Whether to initialize the evaluation
+#' workspace. Defaults to TRUE.
 #'
-#' @export
-make_config <- function(...) {
-  config <- list(...)
-  config <- set_config_default_values(config)
-  validate_configuration(config)
-  list(
-    stics_exe = config$stics_exe,
-    workspace = config$workspace,
-    run_simulations = config$run_simulations,
-    verbose = config$verbose,
-    parallel = config$parallel,
-    cores = config$cores,
-    output_dir = config$output_dir,
-    reference_data_dir = config$reference_data_dir,
-    rotation_file = config$rotation_file,
-    exports = config$exports,
-    percentage = config$percentage
-  )
-}
-
-#' @title Setting default values for null parameters in a configuration list
+#' @return A named list containing the validated configuration parameters.
 #'
 #' @details
-#'  Default values:
-#'   - run_simulations -> TRUE
-#'   - verbose -> 1
-#'   - parallel -> FALSE
-#'   - cores -> NA
-#'   - percentage -> 5
+#' The configuration list includes all parameters required for simulation,
+#' evaluation, and plotting steps. It is validated to ensure consistency
+#' and correctness before use.
 #'
-#' @returns A configuration list with default values
-set_config_default_values <- function(config) {
-  config$run_simulations <- config$run_simulations %||% TRUE
-  config$verbose <- config$verbose %||% 1
-  config$parallel <- config$parallel %||% FALSE
-  config$cores <- config$cores %||% NA
-  config$percentage <- config$percentage %||% 5
+#' @examples
+#' \dontrun{
+#' config <- make_config(
+#'   stics_exe = "/path/to/stics",
+#'   workspace = "workspace/",
+#'   metadata_file = "metadata.csv"
+#' )
+#' }
+#'
+#' @export
+make_config <- function(
+  stics_exe,
+  workspace,
+  metadata_file,
+  run_simulations = TRUE,
+  verbose = 1,
+  parallel = FALSE,
+  cores = NA,
+  reference_data_dir = NULL,
+  percentage = 5,
+  eval_workspace = DEFAULT_WORKSPACE,
+  init_workspace = TRUE
+) {
+  config <- list(
+    stics_exe = stics_exe,
+    workspace = workspace,
+    run_simulations = run_simulations,
+    verbose = verbose,
+    parallel = parallel,
+    cores = cores,
+    reference_data_dir = reference_data_dir,
+    metadata_file = metadata_file,
+    percentage = percentage,
+    eval_workspace = eval_workspace,
+    init_workspace = init_workspace
+  )
+  validate_configuration(config)
   config
 }
 
@@ -72,12 +82,7 @@ set_config_default_values <- function(config) {
 #' The configuration must follow these rules to be considered as valid:
 #'  - `stics_exe`, `workspace` must be defined
 #'  - if `reference_data_dir` is defined, it must be a valid path
-#'  - `data_source` must be either `sms` or `local`
-#'  - if `data_source` is `local`:
-#'    - `rotation_file` must be defined
-#'  - if `data_source` is `sms`:
-#'    - `sms_path` and `stics_path` must be defined and valid paths
-#'    - `run_simulations` must be `TRUE`
+#'  - `metadata_file` must be a valid path
 validate_configuration <- function(config) {
   if (is.null(config$stics_exe)) stop("Stics executable path must be defined")
   if (is.null(config$workspace)) stop("Workspace path must be defined")
@@ -87,13 +92,7 @@ validate_configuration <- function(config) {
   ) {
     stop("Reference data directory must be a valid path if defined")
   }
-  if (!is.null(config$exports) && is.null(config$output_dir)) {
-    stop("Output dir must be defined when exports is defined")
-  }
-  if (!is.null(config$output_dir) && !dir.exists(config$output_dir)) {
-    dir.create(config$output_dir, recursive = TRUE)
-  }
-  if (is.null(config$rotation_file) || !file.exists(config$rotation_file)) {
-    stop("Rotation file must be a valid path")
+  if (is.null(config$metadata_file) || !file.exists(config$metadata_file)) {
+    stop("Metadata file must be a valid path")
   }
 }

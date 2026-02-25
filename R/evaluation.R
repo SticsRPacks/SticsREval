@@ -1,200 +1,122 @@
-.local_eval_env <- new.env(parent = emptyenv())
-
-evaluate_one_species <- function(
-  species,
-  output_dir,
-  data_dir,
-  usms,
-  exports,
-  reference_data_dir,
-  percentage
-) {
-  selected_sim <- get_sim_by_situations(data_dir, usms)
-  sim_count <- get_count(selected_sim)
-  selected_obs <- get_obs_by_situations(data_dir, usms)
-  obs_count <- get_count(selected_obs)
-  if (sim_count == 0 || obs_count == 0) {
-    logger::log_warn(
-      "No simulation or observation data found for species ",
-      species
-    )
-    return()
-  }
-  if ("sim" %in% exports) {
-    export_species_sim(selected_sim, output_dir)
-  }
-  collected_sim <- collect_list_of_df(selected_sim)
-  collected_obs <- collect_list_of_df(selected_obs)
-  stats <- gen_species_stats(
-    species, collected_sim, collected_obs,
-    "stats" %in% exports, output_dir
-  )
-  rmse_per_usm <- gen_species_rmse_per_usm(
-    species,
-    collected_sim,
-    collected_obs,
-    "rmse_per_usm" %in% exports, output_dir
-  )
-  rm(collected_sim, collected_obs)
-  gc()
-  deteriorated_usm <- gen_deteriorated_usm_comparison(
-    species, rmse_per_usm, reference_data_dir, percentage
-  )
-  if (!is.null(deteriorated_usm) && nrow(deteriorated_usm) > 0) {
-    save_deteriorated_usm(deteriorated_usm, output_dir)
-  }
-  spec_comparison <- gen_species_comparison(species, stats, reference_data_dir)
-  if (!is.null(spec_comparison)) {
-    log_comparison(spec_comparison, percentage)
-  }
-  if ("plots" %in% exports && !is.null(spec_comparison)) {
-    logger::log_info("Generating comparison plot for species ", species)
-    gen_comparison_plot(output_dir, spec_comparison, percentage)
-    ref_sim <- read_ref_sim(species, reference_data_dir)
-    deteriorated <- c(
-      get_crit_vars(spec_comparison, percentage),
-      get_warn_vars(spec_comparison, percentage)
-    )
-    if (!is.null(ref_sim) && length(deteriorated) > 0) {
-      logger::log_info("Generating scatter plots for species {species}")
-      collected_sim <- collect_list_of_df(selected_sim)
-      collected_obs <- collect_list_of_df(selected_obs)
-      collected_ref_sim <- collect_list_of_df(ref_sim)
-      gen_scatter_plot(
-        output_dir,
-        collected_sim,
-        collected_obs,
-        collected_ref_sim,
-        deteriorated
-      )
-      rm(collected_sim, collected_obs, collected_ref_sim)
-      gc()
+prepare_species_workspace <- function(eval_workspace, species) {
+  for (spec in species) {
+    logger::log_info("Starting evaluation of species {spec}")
+    species_usms <- get_species_usm(eval_workspace, spec)
+    if (!length(species_usms)) {
+      logger::log_warn("No USM for species {spec}.")
+      next
     }
+    logger::log_info("Found {length(species_usms)} USMs for species {spec}.")
+    rm(species_usms)
+    gc()
+    species_workspace <- file.path(eval_workspace, spec)
+    if (!dir.exists(species_workspace) &&
+        !dir.create(species_workspace, recursive = TRUE)
+    ) {
+      stop(paste0("Error while creating ", spec, " output directory"))
+    }
+    logger::log_debug(
+      "Exporting {spec} evaluation results in {species_workspace}"
+    )
   }
-  spec_comparison
 }
 
 evaluate_all_species <- function(
-  species,
-  sorted_usms,
+  eval_workspace,
   reference_data_dir,
-  output_dir,
-  exports,
   percentage,
   parallel,
   cores
 ) {
-  comparisons <- parallelizable_loop(
-    length(species),
-    parallel,
-    cores,
-    function(i, env) {
-      spec <- species[i]
-      logger::log_info("Starting evaluation of species {spec}")
-      selected_usms <- dplyr::filter(sorted_usms, species == spec)$usm
-      sim_situations <- get_all_sim_situations(env$data_dir)
-      obs_situations <- get_all_obs_situations(env$data_dir)
-      common_usms <- selected_usms[
-        selected_usms %in% sim_situations &
-          selected_usms %in% obs_situations
-      ]
-      if (!length(common_usms)) {
-        logger::log_warn("No common USM for species {spec}.")
-        return(NULL)
-      }
-      species_output_dir <- file.path(output_dir, spec)
-      if (!dir.exists(species_output_dir) &&
-          !dir.create(species_output_dir, recursive = TRUE)
-      ) {
-        stop("Error while creating {spec} output directory")
-      }
-      logger::log_info(
-        "Exporting {spec} evaluation results in {species_output_dir}"
-      )
-      evaluate_one_species(
-        spec, species_output_dir, env$data_dir, common_usms, exports,
-        reference_data_dir, percentage
-      )
-    }
+  species <- get_species(eval_workspace)
+  logger::log_debug(
+    "Found {length(species)} species in workspace {eval_workspace}:
+    {format_species(species)}"
   )
-  remove_null_values(comparisons)
+  logger::log_debug("Preparing species workspaces.")
+  prepare_species_workspace(eval_workspace, species)
+  logger::log_debug("Generating stats for species.")
+  gen_species_stats(eval_workspace, species, parallel, cores)
+  logger::log_debug("Computing deteriorated USM for species.")
+  gen_deteriorated_usm(
+    eval_workspace, species, reference_data_dir, percentage
+  )
+  logger::log_debug("Computing species comparison.")
+  gen_species_comparison(
+    eval_workspace, species, reference_data_dir, percentage
+  )
 }
 
-extract_species_from_usms <- function(usms, workspace, parallel, cores) {
-  logger::log_debug("Extracting species from USMs...")
-  result <- parallelizable_loop(
-    length(usms),
-    parallel,
-    cores,
-    function(i, env) {
-      usm <- usms[i]
-      species <- SticsRFiles::get_plant_txt(
-        workspace = file.path(workspace, usm)
-      )
-      list(
-        species = species$codeplante,
-        usm = usm
-      )
-    }
-  )
-  sorted <- dplyr::bind_rows(result)
-  logger::log_debug("Found ", length(unique(sorted$species)), " species")
-  sorted
-}
-
-#' @title Running a complete evaluation process of STICS model
+#' Run the evaluation workflow
 #'
-#' @param config List containing any information needed for the evaluation
-#'  process. See [make_config()] for the complete list of parameters.
+#' This function orchestrates the full evaluation workflow based on a given
+#' configuration object. It initializes logging, optionally prepares the
+#' evaluation workspace, runs the evaluation for all species, and displays
+#' summary information.
+#'
+#' The total execution time is measured and logged at the end of the process.
+#' Errors occurring during evaluation are caught and logged.
+#'
+#' @param config List. Configuration object created by `make_config()`,
+#' containing all parameters required for the evaluation workflow.
+#'
+#' @return NULL. This function is called for its side effects (running
+#' evaluation and logging results).
+#'
+#' @details
+#' The workflow includes the following steps:
+#' \itemize{
+#'   \item Initializes the logger using the specified verbosity level.
+#'   \item Optionally initializes the evaluation workspace (copying data,
+#'   preparing inputs, and running simulations if required).
+#'   \item Runs evaluation for all species using `evaluate_all_species()`.
+#'   \item Displays comparison summaries using `display_comparisons_info()`.
+#' }
+#'
+#' Errors occurring during the evaluation phase are captured and logged using
+#' `logger::log_error()`, allowing the process to fail gracefully.
+#'
+#' @examples
+#' \dontrun{
+#' config <- make_config(
+#'   stics_exe = "/path/to/stics",
+#'   workspace = "workspace/",
+#'   metadata_file = "metadata.csv"
+#' )
+#'
+#' evaluate(config)
+#' }
 #'
 #' @export
 evaluate <- function(config) {
   init_logger(config$verbose)
-  data_dir <- init_tmp_data_dir()
   on.exit({
-    clean_tmp_data_dir()
     end_time <- Sys.time()
     logger::log_info("Evaluation time: ", format_duration(start_time, end_time))
   }, add = TRUE)
   start_time <- Sys.time()
-  all_usms <- list.dirs(config$workspace, full.names = FALSE, recursive = FALSE)
-  sorted_usms <- extract_species_from_usms(
-    all_usms,
-    config$workspace,
-    config$parallel,
-    config$cores
-  )
-  species <- sort(unique(sorted_usms$species))
-  usms <- sort(unique(sorted_usms$usm))
-  rotations <- get_rotation_list(config$rotation_file)
-  load_workspace_sim(
-    data_dir,
-    usms,
-    rotations,
-    config$workspace,
-    config$run_simulations,
-    config$stics_exe,
-    config$parallel,
-    config$cores
-  )
-  load_workspace_obs(
-    data_dir,
-    usms,
-    config$workspace,
-    config$parallel,
-    config$cores
-  )
+  if (config$init_workspace) {
+    init_eval_workspace(
+      config$workspace,
+      config$eval_workspace,
+      config$metadata_file,
+      config$stics_exe,
+      config$run_simulations,
+      config$parallel,
+      config$cores
+    )
+  }
   logger::log_info("Starting evaluation...")
-  comparisons <- evaluate_all_species(
-    species,
-    sorted_usms,
-    config$reference_data_dir,
-    config$output_dir,
-    config$exports,
-    config$percentage,
-    config$parallel,
-    config$cores
-  )
-  comparisons <- remove_null_values(comparisons)
-  display_comparisons_info(comparisons, config)
+  tryCatch({
+    evaluate_all_species(
+      config$eval_workspace,
+      config$reference_data_dir,
+      config$percentage,
+      config$parallel,
+      config$cores
+    )
+    display_comparisons_info(config$eval_workspace, config$percentage)
+  }, error = function(e) {
+    logger::log_error(e$message)
+  })
 }

@@ -2,49 +2,76 @@
 % Please edit documentation in R/configuration.R
 \name{make_config}
 \alias{make_config}
-\title{Getting/setting a list of parameters with initialized fields for
-evaluation}
+\title{Create and validate configuration for the evaluation workflow}
 \usage{
-make_config(...)
+make_config(
+  stics_exe,
+  workspace,
+  metadata_file,
+  run_simulations = TRUE,
+  verbose = 1,
+  parallel = FALSE,
+  cores = NA,
+  reference_data_dir = NULL,
+  percentage = 5,
+  eval_workspace = DEFAULT_WORKSPACE,
+  init_workspace = TRUE
+)
 }
 \arguments{
-\item{stics_exe}{path to the STICS executable}
+\item{stics_exe}{Character. Path to the STICS executable.}
 
-\item{workspace}{path to the simulation and observation data}
+\item{workspace}{Character. Path to the working directory containing
+simulation inputs.}
 
-\item{reference_data_dir}{path to the reference data to use for comparison}
+\item{metadata_file}{Character. Path to the metadata file describing
+simulations.}
 
-\item{output_dir}{path where output files will be saved}
+\item{run_simulations}{Logical. Whether to run simulations. Defaults to TRUE.}
 
-\item{run_simulations}{Logical value for running simulation or not}
+\item{verbose}{Integer. Verbosity level for logging. Defaults to 1.}
 
-\item{verbose}{Number value for displaying information.
-2 = DEBUG, 1 = INFO, 0 = WARNING}
+\item{parallel}{Logical. Whether to enable parallel execution. Defaults to
+FALSE.}
 
-\item{parallel}{Boolean. Is the computation to be done in parallel ?}
+\item{cores}{Integer or NA. Number of cores to use for parallel execution.
+If NA, the number of available cores may be used.}
 
-\item{cores}{Number of cores to use for parallel computation.}
+\item{reference_data_dir}{Character or NULL. Path to reference simulation
+data. If NULL, reference-based analyses may be skipped.}
 
-\item{rotation_file}{path to the CSV which contains the information about
-rotations}
+\item{percentage}{Numeric. Threshold used for evaluation metrics (e.g.,
+detecting deteriorated variables). Defaults to 5.}
 
-\item{exports}{a list of strings to use to define what to export. Values can
-be "plots", "sim", "stats", "rmse_per_usm".}
+\item{eval_workspace}{Character. Path to the evaluation workspace.
+Defaults to \code{DEFAULT_WORKSPACE}.}
 
-\item{percentage}{the percentage threshold used to detect critical
-deteriorated variables}
+\item{init_workspace}{Logical. Whether to initialize the evaluation
+workspace. Defaults to TRUE.}
 }
 \value{
-A list containing parameters that can be used in \code{evaluate()}
-function.
+A named list containing the validated configuration parameters.
 }
 \description{
-Getting/setting a list of parameters with initialized fields for
-evaluation
+This function builds a configuration list containing all parameters required
+to run simulations and evaluation workflows. The configuration is validated
+using \code{validate_configuration()} before being returned.
 }
-\seealso{
-\code{\link[=set_config_default_values]{set_config_default_values()}} to get default values
+\details{
+The resulting configuration object can be passed to downstream functions
+to ensure consistent parameter handling.
 
-\code{\link[=validate_configuration]{validate_configuration()}} to get more information about valid
-configuration
+The configuration list includes all parameters required for simulation,
+evaluation, and plotting steps. It is validated to ensure consistency
+and correctness before use.
+}
+\examples{
+\dontrun{
+config <- make_config(
+  stics_exe = "/path/to/stics",
+  workspace = "workspace/",
+  metadata_file = "metadata.csv"
+)
+}
+
 }

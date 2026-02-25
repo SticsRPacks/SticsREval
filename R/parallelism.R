@@ -43,7 +43,7 @@ get_cores_nb <- function(parallel = FALSE, required_nb = NA, ...) {
   }
 
   # Getting the right required cores number
-  return(required_nb)
+  required_nb
 }
 
 
@@ -84,10 +84,10 @@ setup_parallel_backend <- function(
   if (!parallel) {
     return(
       list(
-        map = function(x, fun, data_dir) {
+        map = function(x, fun) {
           base::lapply(
             x,
-            function(i) fun(i, data_dir = data_dir)
+            function(i) fun(i)
           )
         },
         cleanup = function() {}
@@ -102,10 +102,10 @@ setup_parallel_backend <- function(
   )
   invisible(
     list(
-      map = function(x, fun, data_dir) {
+      map = function(x, fun) {
         future.apply::future_lapply(
           x,
-          function(i) fun(i, data_dir = data_dir),
+          function(i) fun(i),
           future.seed = TRUE
         )
       },
@@ -117,15 +117,11 @@ setup_parallel_backend <- function(
 parallelizable_loop <- function(n_tasks, parallel, cores, fun) {
   backend <- setup_parallel_backend(n_tasks, parallel, cores)
   on.exit(backend$cleanup(), add = TRUE)
-  data_dir <- .local_eval_env$data_dir
   backend$map(
     seq_len(n_tasks),
-    function(i, data_dir) {
+    function(i) {
       logger::log_appender(logger::appender_stdout)
-      worker_env <- new.env(parent = emptyenv())
-      worker_env$data_dir <- data_dir
-      fun(i, worker_env)
-    },
-    data_dir = data_dir
+      fun(i)
+    }
   )
 }

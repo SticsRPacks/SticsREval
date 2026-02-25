@@ -11,15 +11,6 @@ The configuration must follow these rules to be considered as valid:
 \itemize{
 \item \code{stics_exe}, \code{workspace} must be defined
 \item if \code{reference_data_dir} is defined, it must be a valid path
-\item \code{data_source} must be either \code{sms} or \code{local}
-\item if \code{data_source} is \code{local}:
-\itemize{
-\item \code{rotation_file} must be defined
-}
-\item if \code{data_source} is \code{sms}:
-\itemize{
-\item \code{sms_path} and \code{stics_path} must be defined and valid paths
-\item \code{run_simulations} must be \code{TRUE}
-}
+\item \code{metadata_file} must be a valid path
 }
 }
