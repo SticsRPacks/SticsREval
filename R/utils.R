@@ -24,3 +24,35 @@ format_species <- function(x) {
   }
   paste(x, collapse = ", ")
 }
+
+safe_write_csv <- function(data, path) {
+  tryCatch({
+    readr::write_delim(
+      data,
+      path,
+      delim = ",",
+      na = "NA"
+    )
+  },
+  error = function(e) {
+    logger::log_error(
+      sprintf("❌ Unable to create '%s': %s", path, e$message)
+    )
+    stop(sprintf("Error: unable to create %s", path), call. = FALSE)
+  })
+}
+
+read_csv <- function(filepath, delimiter = ",") {
+  data <- readr::read_delim(
+    filepath,
+    delim = delimiter,
+    na = c("NA", "NaN", ""),
+    locale = readr::locale(
+      decimal_mark = ".",
+      date_format = "%Y-%m-%d"
+    ),
+    show_col_types = is_debug()
+  )
+  names(data) <- trimws(names(data))
+  data
+}

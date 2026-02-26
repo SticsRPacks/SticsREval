@@ -40,3 +40,23 @@ run_simulations <- function(
   res <- SticsOnR::stics_wrapper(options, situation = usm_names)
   res$sim_list
 }
+
+read_ref_sim <- function(
+  reference_data_dir,
+  species,
+  collect = FALSE
+) {
+  reference_dir <- file.path(reference_data_dir, species)
+  if (is.null(reference_data_dir) || !dir.exists(reference_dir)) {
+    return(NULL)
+  }
+  reference_file <- file.path(reference_dir, "Simulations.parquet")
+  if (!file.exists(reference_file)) {
+    return(NULL)
+  }
+  ds <- arrow::open_dataset(reference_file)
+  if (collect) {
+    return(ds |> dplyr::collect())
+  }
+  ds
+}

@@ -8,27 +8,29 @@
 #' to its RMSEs ratio
 #' @importFrom rlang .data
 compare_rmse <- function(species, ref_stats, new_stats) {
-  dplyr::left_join(new_stats, ref_stats, by = c("situation", "variable")) %>%
+  new_stats |>
+    dplyr::left_join(ref_stats, by = c("situation", "variable")) |>
     dplyr::mutate(
-      rmse_new = as.numeric(sub(",", ".", .data$rRMSE.x, fixed = TRUE)),
-      rmse_ref = as.numeric(sub(",", ".", .data$rRMSE.y, fixed = TRUE))
-    ) %>%
+      rmse_new = as.numeric(.data$rRMSE.x),
+      rmse_ref = as.numeric(.data$rRMSE.y)
+    ) |>
     dplyr::filter(
       is.finite(.data$rmse_new),
       is.finite(.data$rmse_ref),
       !is.na(.data$variable),
       !is.na(.data$situation)
-    ) %>%
+    ) |>
     dplyr::mutate(
       species = species,
-      ratio = (abs(.data$rmse_new) - abs(.data$rmse_ref)) / abs(.data$rmse_ref) * 100
-    ) %>%
+      ratio = (abs(.data$rmse_new) - abs(.data$rmse_ref)) /
+        abs(.data$rmse_ref) * 100
+    ) |>
     dplyr::filter(
       is.finite(.data$ratio)
-    ) %>%
+    ) |>
     dplyr::mutate(
       ratio = round(.data$ratio, 2)
-    ) %>%
+    ) |>
     dplyr::select(
       .data$species,
       .data$situation,
@@ -40,15 +42,22 @@ compare_rmse <- function(species, ref_stats, new_stats) {
 }
 
 get_deteriorated_rmse_per_usm <- function(
+  eval_workspace,
   species,
   ref_stats,
-  new_stats,
   percentage
 ) {
-  compare_rmse(species, ref_stats, new_stats) %>%
+  logger::log_debug("Reading RMSE per USM parquet file for species {species}")
+  new_stats <- get_rmse_per_usm(eval_workspace, species)
+  if (is.null(new_stats)) {
+    return()
+  }
+  logger::log_debug("Generating RMSE per USM comparison for species {species}")
+  compare_rmse(species, ref_stats, new_stats) |>
+    dplyr::collect() |>
     dplyr::filter(is_warning(.data$ratio, percentage) |
         is_critical(.data$ratio, percentage)
-    ) %>%
+    ) |>
     dplyr::arrange(dplyr::desc(.data$ratio))
 }
 
@@ -72,22 +81,22 @@ is_improved <- function(ratio) {
 
 #' @importFrom rlang .data
 get_crit_vars <- function(comparison, percentage) {
-  comparison %>%
-    dplyr::filter(is_critical(.data$ratio, percentage)) %>%
+  comparison |>
+    dplyr::filter(is_critical(.data$ratio, percentage)) |>
     dplyr::pull(.data$variable)
 }
 
 #' @importFrom rlang .data
 get_warn_vars <- function(comparison, percentage) {
-  comparison %>%
-    dplyr::filter(is_warning(.data$ratio, percentage)) %>%
+  comparison |>
+    dplyr::filter(is_warning(.data$ratio, percentage)) |>
     dplyr::pull(.data$variable)
 }
 
 #' @importFrom rlang .data
 get_improved_vars <- function(comparison) {
-  comparison %>%
-    dplyr::filter(is_improved(.data$ratio)) %>%
+  comparison |>
+    dplyr::filter(is_improved(.data$ratio)) |>
     dplyr::pull(.data$variable)
 }
 
@@ -130,38 +139,63 @@ log_comparison <- function(
   )
 }
 
-gen_species_comparison <- function(species, stats, reference_data_dir) {
-  ref_stats <- read_ref_stats(species, reference_data_dir)
-  if (is.null(ref_stats)) {
-    return(NULL)
-  }
-  logger::log_info("Comparing RMSE for species ", species)
-  compare_rmse(
-    species,
-    ref_stats,
-    stats
-  )
-}
-
-gen_deteriorated_usm_comparison <- function(
-  species, rmse_per_usm, reference_data_dir, percentage
+gen_species_comparison <- function(
+  eval_workspace, species, reference_data_dir, percentage
 ) {
-  ref_stats <- read_ref_rmse_per_usm(species, reference_data_dir)
-  if (is.null(ref_stats)) {
-    return(NULL)
+  for (spec in species) {
+    ref_stats <- read_ref_stats(spec, reference_data_dir)
+    if (is.null(ref_stats)) {
+      next
+    }
+    logger::log_debug("Reading stats file for species {spec}")
+    stats <- get_stats(eval_workspace, spec)
+    if (is.null(stats)) {
+      next
+    }
+    logger::log_info("Comparing RMSE for species {spec}")
+    comp <- compare_rmse(
+      spec,
+      ref_stats,
+      stats
+    )
+    logger::log_debug("Saving RMSE comparison for species {spec}")
+    save_species_comparison(eval_workspace, spec, comp)
+    logger::log_debug("Species comparison saved for species {spec}")
+    log_comparison(comp |> dplyr::collect(), percentage)
   }
-  logger::log_info("Comparing RMSE per usm for species ", species)
-  get_deteriorated_rmse_per_usm(
-    species,
-    ref_stats,
-    rmse_per_usm,
-    percentage
-  )
+
 }
 
-display_comparisons_info <- function(comparisons, config) {
+gen_deteriorated_usm <- function(
+  eval_workspace, species, reference_data_dir, percentage
+) {
+  for (spec in species) {
+    logger::log_debug("Reading reference RMSE per USM for species {spec}")
+    ref_stats <- read_ref_rmse_per_usm(spec, reference_data_dir)
+    if (is.null(ref_stats)) {
+      next
+    }
+    logger::log_info("Comparing RMSE per usm for species {spec}")
+    deteriorated_usm <- get_deteriorated_rmse_per_usm(
+      eval_workspace,
+      spec,
+      ref_stats,
+      percentage
+    )
+    logger::log_debug("Saving deteriorated USM for species {spec}")
+    save_deteriorated_usm(eval_workspace, spec, deteriorated_usm)
+    logger::log_debug("Deteriorated USM saved for species {spec}")
+  }
+}
+
+display_comparisons_info <- function(data_dir, percentage) {
+  species <- get_species(data_dir)
+  comparisons <- lapply(species, function(s) {
+    get_species_comparison(data_dir, s, TRUE)
+  })
+  comparisons <- remove_null_values(comparisons)
   if (length(comparisons) == 0) {
-    logger::log_info("No comparison done.")
+    logger::log_warn("No comparison done.")
     return()
   }
   results <- lapply(
@@ -175,8 +209,8 @@ display_comparisons_info <- function(comparisons, config) {
         ))
       }
 
-      crit_vars <- get_crit_vars(res, config$percentage)
-      warn_vars <- get_warn_vars(res, config$percentage)
+      crit_vars <- get_crit_vars(res, percentage)
+      warn_vars <- get_warn_vars(res, percentage)
 
       crit_species <- unique(res$species[res$variable %in% crit_vars])
       warn_species <- unique(res$species[res$variable %in% warn_vars])
@@ -195,16 +229,18 @@ display_comparisons_info <- function(comparisons, config) {
   all_crit <- unique(unlist(lapply(results, `[[`, "criticals")))
   all_warn <- unique(unlist(lapply(results, `[[`, "warnings")))
   all_ok   <- unique(unlist(lapply(results, `[[`, "ok")))
+  logger::log_info("==========================================================")
   logger::log_info("Summary:")
+  logger::log_info("==========================================================")
   logger::log_info("The following species show at least one variable with:")
   logger::log_info(
     paste0("Major degradation (> ",
-      config$percentage, "% rRMSE increase): ", format_species(all_crit)
+      percentage, "% rRMSE increase): ", format_species(all_crit)
     )
   )
   logger::log_info(
     paste0("Minor degradation (≤ ",
-      config$percentage, "% rRMSE increase): ", format_species(all_warn)
+      percentage, "% rRMSE increase): ", format_species(all_warn)
     )
   )
   logger::log_info(
@@ -212,6 +248,7 @@ display_comparisons_info <- function(comparisons, config) {
       "No degradation (rRMSE stable or improved): ", format_species(all_ok)
     )
   )
+  logger::log_info("==========================================================")
   if (length(all_warn) > 0) {
     logger::log_warn("Found at least one deteriorated variable")
   }
