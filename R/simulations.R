@@ -19,6 +19,7 @@
 #'     c("usm1", "usm2", "usm3"),
 #'     TRUE
 #'   )
+#' @keywords internal
 run_simulations <- function(
   stics_exe,
   workspace,

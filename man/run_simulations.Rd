@@ -45,3 +45,4 @@ Running simulations of STICS using a STICS executable
     TRUE
   )
 }
+\keyword{internal}

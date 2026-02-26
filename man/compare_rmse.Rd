@@ -20,3 +20,4 @@ to its RMSEs ratio
 \description{
 Comparing relative RMSE of two STICS versions for a species
 }
+\keyword{internal}

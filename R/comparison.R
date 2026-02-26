@@ -7,6 +7,7 @@
 #' @returns a list containing the variable for a species associated
 #' to its RMSEs ratio
 #' @importFrom rlang .data
+#' @keywords internal
 compare_rmse <- function(species, ref_stats, new_stats) {
   new_stats |>
     dplyr::left_join(ref_stats, by = c("situation", "variable")) |>
