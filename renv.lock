@@ -11,11 +11,11 @@
   "Packages": {
     "CroPlotR": {
       "Package": "CroPlotR",
-      "Version": "1.0.0",
+      "Version": "1.0.1",
       "Source": "GitHub",
       "Type": "Package",
       "Title": "A Package to Analyze Crop Model Simulations Outputs with Plots and Statistics",
-      "Date": "2026-01-23",
+      "Date": "2026-02-26",
       "Authors@R": "c( person(\"Remi\", \"Vezy\", , \"remi.vezy@cirad.fr\", role = c(\"aut\", \"cre\"), comment = c(ORCID = \"0000-0002-0808-1461\")), person(\"Samuel\", \"Buis\", , \"samuel.buis@inrae.fr\", role = \"aut\", comment = c(ORCID = \"0000-0002-8676-5447\")), person(\"Cyrille\", \"Midingoyi\", , \"cyrille_ahmed.midingoyi@cirad.fr\", role = \"aut\", comment = c(ORCID = \"0009-0000-4411-7989\")), person(\"Patrice\", \"Lecharpentier\", , \"patrice.lecharpentier@inrae.fr\", role = \"aut\", comment = c(ORCID = \"0000-0002-4044-4322\")), person(\"Michel\", \"Giner\", , \"michel.giner@cirad.fr\", role = \"aut\", comment = c(ORCID = \"0000-0002-9310-2377\")), person(\"Valentine\", \"Rahier\", role = \"ctb\"), person(\"Amine\", \"Barkaoui\", role = \"ctb\"), person(\"Patrick\", \"Lutz\", role = \"ctb\") )",
       "Description": "CroplotR aims at the standardization of the process of analyzing the outputs of crop models using plots and statistics. Users can generate plots presented in dynamic mode with time on the x axis and any simulated and/or observed variable(s) on the y axis or in scatter mode with simulation on the y axis and observations on the x axis. Users can differentiate simulations and observations depending on the situation, model version, or any grouping variable. Thirty two corresponding statistics can be computed in the same manner to assess the quality of the predictions of a model.",
       "License": "file LICENSE",
@@ -58,7 +58,7 @@
       "RemoteUsername": "SticsRPacks",
       "RemoteRepo": "CroPlotR",
       "RemoteRef": "main",
-      "RemoteSha": "901cf3d04d0f739853e05666126785cfb45d7a45",
+      "RemoteSha": "96c4206cdadeb037f773bd70cf5135e77cbd2646",
       "RemoteHost": "api.github.com"
     },
     "R6": {
@@ -2303,7 +2303,7 @@
     },
     "openssl": {
       "Package": "openssl",
-      "Version": "2.3.4",
+      "Version": "2.3.5",
       "Source": "Repository",
       "Type": "Package",
       "Title": "Toolkit for Encryption, Signatures and Certificates Based on OpenSSL",

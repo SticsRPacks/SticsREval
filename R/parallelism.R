@@ -8,8 +8,6 @@
 #'
 #' @keywords internal
 #'
-#' @noRd
-#'
 #' @examples
 #'
 #' n_cores <- get_cores_nb()
@@ -54,8 +52,6 @@ get_cores_nb <- function(parallel = FALSE, required_nb = NA, ...) {
 #' @return Total cores number
 #'
 #' @keywords internal
-#'
-#' @noRd
 #'
 #' @examples
 #'

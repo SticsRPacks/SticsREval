@@ -83,6 +83,8 @@ make_config <- function(
 #'  - `stics_exe`, `workspace` must be defined
 #'  - if `reference_data_dir` is defined, it must be a valid path
 #'  - `metadata_file` must be a valid path
+#'
+#' @keywords internal
 validate_configuration <- function(config) {
   if (is.null(config$stics_exe)) stop("Stics executable path must be defined")
   if (is.null(config$workspace)) stop("Workspace path must be defined")
