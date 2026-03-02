@@ -95,6 +95,7 @@ evaluate <- function(config) {
     logger::log_info("Evaluation time: ", format_duration(start_time, end_time))
   }, add = TRUE)
   start_time <- Sys.time()
+  validate_eval_configuration(config)
   if (config$init_workspace) {
     init_eval_workspace(
       config$workspace,

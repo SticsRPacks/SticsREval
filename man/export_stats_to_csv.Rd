@@ -4,14 +4,11 @@
 \alias{export_stats_to_csv}
 \title{Export evaluation statistics to CSV files}
 \usage{
-export_stats_to_csv(output_dir, eval_workspace = DEFAULT_WORKSPACE)
+export_stats_to_csv(config)
 }
 \arguments{
-\item{output_dir}{Character. Path to the directory where output files will be
-saved.}
-
-\item{eval_workspace}{Character. Path to the evaluation workspace containing
-simulation and observation data. Defaults to \code{DEFAULT_WORKSPACE}.}
+\item{config}{List. Configuration object created by \code{make_config()},
+containing all parameters required for the export.}
 }
 \value{
 NULL. This function is called for its side effects (writing files).

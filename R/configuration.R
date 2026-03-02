@@ -47,9 +47,9 @@
 #'
 #' @export
 make_config <- function(
-  stics_exe,
-  workspace,
-  metadata_file,
+  stics_exe = NULL,
+  workspace  = NULL,
+  metadata_file  = NULL,
   run_simulations = TRUE,
   verbose = 1,
   parallel = FALSE,
@@ -57,7 +57,8 @@ make_config <- function(
   reference_data_dir = NULL,
   percentage = 5,
   eval_workspace = DEFAULT_WORKSPACE,
-  init_workspace = TRUE
+  init_workspace = TRUE,
+  output_dir = NULL
 ) {
   config <- list(
     stics_exe = stics_exe,
@@ -70,9 +71,9 @@ make_config <- function(
     metadata_file = metadata_file,
     percentage = percentage,
     eval_workspace = eval_workspace,
-    init_workspace = init_workspace
+    init_workspace = init_workspace,
+    output_dir = output_dir
   )
-  validate_configuration(config)
   config
 }
 
@@ -85,7 +86,7 @@ make_config <- function(
 #'  - `metadata_file` must be a valid path
 #'
 #' @keywords internal
-validate_configuration <- function(config) {
+validate_eval_configuration <- function(config) {
   if (is.null(config$stics_exe)) stop("Stics executable path must be defined")
   if (is.null(config$workspace)) stop("Workspace path must be defined")
   if (
@@ -96,5 +97,28 @@ validate_configuration <- function(config) {
   }
   if (is.null(config$metadata_file) || !file.exists(config$metadata_file)) {
     stop("Metadata file must be a valid path")
+  }
+  if (is.null(config$eval_workspace)) {
+    stop("Eval workspace path must be defined")
+  }
+}
+
+validate_export_config <- function(config) {
+  if (is.null(config$output_dir)) stop("Output dir path must be defined")
+  if (!dir.exists(config$output_dir) &&
+        !dir.create(config$output_dir)) {
+    stop(paste0("Can't create ", config$output_dir, " directory"))
+  }
+  if (is.null(config$eval_workspace)) {
+    stop("Eval workspace path must be defined")
+  }
+}
+
+valide_plots_config <- function(config) {
+  if (
+    !is.null(config$reference_data_dir) &&
+      !dir.exists(config$reference_data_dir)
+  ) {
+    stop("Reference data directory must be a valid path if defined")
   }
 }

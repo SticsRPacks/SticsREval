@@ -15,7 +15,8 @@ make_config(
   reference_data_dir = NULL,
   percentage = 5,
   eval_workspace = DEFAULT_WORKSPACE,
-  init_workspace = TRUE
+  init_workspace = TRUE,
+  output_dir = NULL
 )
 }
 \arguments{

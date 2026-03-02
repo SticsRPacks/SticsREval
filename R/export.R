@@ -22,10 +22,8 @@ prepare_species_output_dir <- function(output_dir, species) {
 #' The data are retrieved from the evaluation workspace using dedicated helper
 #' functions. Files are written safely using `safe_write_csv()`.
 #'
-#' @param output_dir Character. Path to the directory where output files will be
-#' saved.
-#' @param eval_workspace Character. Path to the evaluation workspace containing
-#'   simulation and observation data. Defaults to `DEFAULT_WORKSPACE`.
+#' @param config List. Configuration object created by `make_config()`,
+#'    containing all parameters required for the export.
 #'
 #' @return NULL. This function is called for its side effects (writing files).
 #'
@@ -44,24 +42,23 @@ prepare_species_output_dir <- function(output_dir, species) {
 #' }
 #'
 #' @export
-export_stats_to_csv <- function(
-  output_dir, eval_workspace = DEFAULT_WORKSPACE
-) {
-  species <- get_species(eval_workspace)
+export_stats_to_csv <- function(config) {
+  validate_export_config(config)
+  species <- get_species(config$eval_workspace)
   for (spec in species) {
     logger::log_info("Exporting stats data for species {spec}")
-    o_dir <- prepare_species_output_dir(output_dir, spec)
-    stats <- get_stats(eval_workspace, spec, TRUE)
+    o_dir <- prepare_species_output_dir(config$output_dir, spec)
+    stats <- get_stats(config$eval_workspace, spec, TRUE)
     if (!is.null(stats)) {
       safe_write_csv(stats, file.path(o_dir, "Criteres_stats.csv"))
     }
-    rmse_per_usm <- get_rmse_per_usm(eval_workspace, spec, TRUE)
+    rmse_per_usm <- get_rmse_per_usm(config$eval_workspace, spec, TRUE)
     if (!is.null(rmse_per_usm)) {
       safe_write_csv(
         rmse_per_usm, file.path(o_dir, "RMSE_per_usm.csv")
       )
     }
-    deteriorated_usm <- get_deteriorated_usm(eval_workspace, spec, TRUE)
+    deteriorated_usm <- get_deteriorated_usm(config$eval_workspace, spec, TRUE)
     if (!is.null(deteriorated_usm)) {
       safe_write_csv(
         deteriorated_usm, file.path(o_dir, "Deteriorated_USM.csv")
@@ -80,10 +77,8 @@ export_stats_to_csv <- function(
 #' Simulation data are retrieved using `get_by_species()` and written using
 #' `arrow::write_parquet()`.
 #'
-#' @param output_dir Character. Path to the directory where output files will
-#' be saved.
-#' @param eval_workspace Character. Path to the evaluation workspace containing
-#'   simulation data. Defaults to `DEFAULT_WORKSPACE`.
+#' @param config List. Configuration object created by `make_config()`,
+#'    containing all parameters required for the export.
 #'
 #' @return NULL. This function is called for its side effects (writing files).
 #'
@@ -102,12 +97,13 @@ export_stats_to_csv <- function(
 #'
 #' @export
 
-export_species_sim <- function(output_dir, eval_workspace = DEFAULT_WORKSPACE) {
-  species <- get_species(eval_workspace)
+export_species_sim <- function(config) {
+  validate_export_config(config)
+  species <- get_species(config$eval_workspace)
   for (spec in species) {
     logger::log_info("Exporting simulations data for species {spec}")
-    o_dir <- prepare_species_output_dir(output_dir, spec)
-    sim <- get_by_species(eval_workspace, spec, "sim")
+    o_dir <- prepare_species_output_dir(config$output_dir, spec)
+    sim <- get_by_species(config$eval_workspace, spec, "sim")
     arrow::write_parquet(
       x = sim,
       sink = file.path(o_dir, "Simulations.parquet")

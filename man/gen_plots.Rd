@@ -4,24 +4,11 @@
 \alias{gen_plots}
 \title{Generate comparison and scatter plots for each species}
 \usage{
-gen_plots(
-  output_dir,
-  percentage,
-  eval_workspace = DEFAULT_WORKSPACE,
-  reference_data_dir = NULL
-)
+gen_plots(config)
 }
 \arguments{
-\item{output_dir}{Character. Path to the directory where output files will
-be saved.}
-
-\item{percentage}{Numeric. Threshold used to identify deteriorated variables.}
-
-\item{eval_workspace}{Character. Path to the evaluation workspace containing
-simulation and observation data. Defaults to \code{DEFAULT_WORKSPACE}.}
-
-\item{reference_data_dir}{Character or NULL. Path to the directory containing
-reference simulation data. If NULL, scatter plots will not be generated.}
+\item{config}{List. Configuration object created by \code{make_config()},
+containing all parameters required for the plots generation}
 }
 \value{
 NULL. This function is called for its side effects (writing plot

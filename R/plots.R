@@ -95,13 +95,8 @@ gen_comparison_plot <- function(
 #' Scatter plots are only generated when both reference simulation data and
 #' deteriorated variables are available.
 #'
-#' @param output_dir Character. Path to the directory where output files will
-#' be saved.
-#' @param percentage Numeric. Threshold used to identify deteriorated variables.
-#' @param eval_workspace Character. Path to the evaluation workspace containing
-#'   simulation and observation data. Defaults to `DEFAULT_WORKSPACE`.
-#' @param reference_data_dir Character or NULL. Path to the directory containing
-#'   reference simulation data. If NULL, scatter plots will not be generated.
+#' @param config List. Configuration object created by `make_config()`,
+#'    containing all parameters required for the plots generation
 #'
 #' @return NULL. This function is called for its side effects (writing plot
 #' files).
@@ -122,31 +117,28 @@ gen_comparison_plot <- function(
 #' }
 #'
 #' @export
-gen_plots <- function(
-  output_dir,
-  percentage,
-  eval_workspace = DEFAULT_WORKSPACE,
-  reference_data_dir = NULL
-) {
-  species <- get_species(eval_workspace)
+gen_plots <- function(config) {
+  validate_export_config(config)
+  valide_plots_config(config)
+  species <- get_species(config$eval_workspace)
   for (spec in species) {
-    o_dir <- prepare_species_output_dir(output_dir, spec)
-    spec_comparison <- get_species_comparison(eval_workspace, spec, TRUE)
+    o_dir <- prepare_species_output_dir(config$output_dir, spec)
+    spec_comparison <- get_species_comparison(config$eval_workspace, spec, TRUE)
     if (is.null(spec_comparison)) {
       logger::log_info("Skipping plot generation for species {spec}")
       next
     }
     logger::log_info("Generating variable comparison plot for species {spec}")
-    gen_comparison_plot(o_dir, spec_comparison, percentage)
-    ref_sim <- read_ref_sim(reference_data_dir, spec, TRUE)
+    gen_comparison_plot(o_dir, spec_comparison, config$percentage)
+    ref_sim <- read_ref_sim(config$reference_data_dir, spec, TRUE)
     deteriorated <- c(
-      get_crit_vars(spec_comparison, percentage),
-      get_warn_vars(spec_comparison, percentage)
+      get_crit_vars(spec_comparison, config$percentage),
+      get_warn_vars(spec_comparison, config$percentage)
     )
     if (!is.null(ref_sim) && length(deteriorated) > 0) {
       logger::log_info("Generating scatter plots for species {spec}")
-      sim <- get_by_species(eval_workspace, spec, "sim", TRUE)
-      obs <- get_by_species(eval_workspace, spec, "obs", TRUE)
+      sim <- get_by_species(config$eval_workspace, spec, "sim", TRUE)
+      obs <- get_by_species(config$eval_workspace, spec, "obs", TRUE)
       gen_scatter_plot(
         o_dir,
         CroPlotR::split_df2sim(sim),
