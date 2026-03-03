@@ -43,6 +43,7 @@ prepare_species_output_dir <- function(output_dir, species) {
 #'
 #' @export
 export_stats_to_csv <- function(config) {
+  start_time <- Sys.time()
   validate_export_config(config)
   species <- get_species(config$eval_workspace)
   for (spec in species) {
@@ -65,6 +66,7 @@ export_stats_to_csv <- function(config) {
       )
     }
   }
+  logger::log_info(paste0("Stats export time: ", format_duration(start_time)))
 }
 
 #' Export simulation data per species to Parquet files
@@ -98,6 +100,7 @@ export_stats_to_csv <- function(config) {
 #' @export
 
 export_species_sim <- function(config) {
+  start_time <- Sys.time()
   validate_export_config(config)
   species <- get_species(config$eval_workspace)
   for (spec in species) {
@@ -109,4 +112,7 @@ export_species_sim <- function(config) {
       sink = file.path(o_dir, "Simulations.parquet")
     )
   }
+  logger::log_info(paste0(
+    "Simulation export time: ", format_duration(start_time)
+  ))
 }

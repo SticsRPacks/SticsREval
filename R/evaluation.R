@@ -89,7 +89,6 @@ evaluate_all_species <- function(
 #'
 #' @export
 evaluate <- function(config) {
-  init_logger(config$verbose)
   on.exit({
     end_time <- Sys.time()
     logger::log_info("Evaluation time: ", format_duration(start_time, end_time))

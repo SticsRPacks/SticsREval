@@ -23,6 +23,7 @@ gen_scatter_plot <- function(output_dir, sim, obs, ref_sim, vars) {
       "scatter_plots.html"
     )
   )
+  invisible(NULL)
 }
 
 #' @importFrom rlang .data
@@ -118,36 +119,62 @@ gen_comparison_plot <- function(
 #'
 #' @export
 gen_plots <- function(config) {
+  start_time <- Sys.time()
   validate_export_config(config)
   valide_plots_config(config)
   species <- get_species(config$eval_workspace)
-  for (spec in species) {
-    o_dir <- prepare_species_output_dir(config$output_dir, spec)
-    spec_comparison <- get_species_comparison(config$eval_workspace, spec, TRUE)
-    if (is.null(spec_comparison)) {
-      logger::log_info("Skipping plot generation for species {spec}")
-      next
-    }
-    logger::log_info("Generating variable comparison plot for species {spec}")
-    gen_comparison_plot(o_dir, spec_comparison, config$percentage)
-    ref_sim <- read_ref_sim(config$reference_data_dir, spec, TRUE)
-    deteriorated <- c(
-      get_crit_vars(spec_comparison, config$percentage),
-      get_warn_vars(spec_comparison, config$percentage)
-    )
-    if (!is.null(ref_sim) && length(deteriorated) > 0) {
-      logger::log_info("Generating scatter plots for species {spec}")
-      sim <- get_by_species(config$eval_workspace, spec, "sim", TRUE)
-      obs <- get_by_species(config$eval_workspace, spec, "obs", TRUE)
-      gen_scatter_plot(
-        o_dir,
-        CroPlotR::split_df2sim(sim),
-        CroPlotR::split_df2sim(obs),
-        CroPlotR::split_df2sim(ref_sim),
-        deteriorated
+  parallelizable_loop(
+    length(species),
+    config$parallel,
+    config$cores,
+    function(i) {
+      spec <- species[i]
+      o_dir <- prepare_species_output_dir(config$output_dir, spec)
+      spec_comparison <- get_species_comparison(
+        config$eval_workspace, spec, TRUE
       )
-      rm(sim, obs, ref_sim)
-      gc()
+
+      if (is.null(spec_comparison)) {
+        logger::log_info("Skipping plot generation for species {spec}")
+        return()
+      }
+
+      logger::log_info("Generating variable comparison plot for species {spec}")
+      gen_comparison_plot(o_dir, spec_comparison, config$percentage)
+
+      deteriorated <- c(
+        get_crit_vars(spec_comparison, config$percentage),
+        get_warn_vars(spec_comparison, config$percentage)
+      )
+
+      rm(spec_comparison)
+
+      if (length(deteriorated) > 0) {
+        ref_sim <- read_ref_sim(config$reference_data_dir, spec, TRUE)
+        print(lobstr::obj_size(ref_sim))
+
+        if (!is.null(ref_sim)) {
+          logger::log_info("Generating scatter plots for species {spec}")
+          sim <- get_by_species(config$eval_workspace, spec, "sim", TRUE)
+          print(lobstr::obj_size(sim))
+          obs <- get_by_species(config$eval_workspace, spec, "obs", TRUE)
+          print(lobstr::obj_size(obs))
+
+          gen_scatter_plot(
+            o_dir,
+            CroPlotR::split_df2sim(sim),
+            CroPlotR::split_df2sim(obs),
+            CroPlotR::split_df2sim(ref_sim),
+            deteriorated
+          )
+          rm(sim, obs, ref_sim)
+          gc()
+          invisible(NULL)
+        }
+      }
     }
-  }
+  )
+  logger::log_info(paste0(
+    "Plots generation time: ", format_duration(start_time)
+  ))
 }

@@ -5,9 +5,9 @@
 \title{Create and validate configuration for the evaluation workflow}
 \usage{
 make_config(
-  stics_exe,
-  workspace,
-  metadata_file,
+  stics_exe = NULL,
+  workspace = NULL,
+  metadata_file = NULL,
   run_simulations = TRUE,
   verbose = 1,
   parallel = FALSE,

@@ -74,6 +74,7 @@ make_config <- function(
     init_workspace = init_workspace,
     output_dir = output_dir
   )
+  init_logger(config$verbose)
   config
 }
 
