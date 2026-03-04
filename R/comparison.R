@@ -33,12 +33,12 @@ compare_rmse <- function(species, ref_stats, new_stats) {
       ratio = round(.data$ratio, 2)
     ) |>
     dplyr::select(
-      .data$species,
-      .data$situation,
-      .data$variable,
-      .data$rmse_new,
-      .data$rmse_ref,
-      .data$ratio
+      "species",
+      "situation",
+      "variable",
+      "rmse_new",
+      "rmse_ref",
+      "ratio"
     )
 }
 
@@ -51,7 +51,7 @@ get_deteriorated_rmse_per_usm <- function(
   logger::log_debug("Reading RMSE per USM parquet file for species {species}")
   new_stats <- get_rmse_per_usm(eval_workspace, species)
   if (is.null(new_stats)) {
-    return()
+    return(NULL)
   }
   logger::log_debug("Generating RMSE per USM comparison for species {species}")
   compare_rmse(species, ref_stats, new_stats) |>
@@ -84,21 +84,21 @@ is_improved <- function(ratio) {
 get_crit_vars <- function(comparison, percentage) {
   comparison |>
     dplyr::filter(is_critical(.data$ratio, percentage)) |>
-    dplyr::pull(.data$variable)
+    dplyr::pull("variable")
 }
 
 #' @importFrom rlang .data
 get_warn_vars <- function(comparison, percentage) {
   comparison |>
     dplyr::filter(is_warning(.data$ratio, percentage)) |>
-    dplyr::pull(.data$variable)
+    dplyr::pull("variable")
 }
 
 #' @importFrom rlang .data
 get_improved_vars <- function(comparison) {
   comparison |>
     dplyr::filter(is_improved(.data$ratio)) |>
-    dplyr::pull(.data$variable)
+    dplyr::pull("variable")
 }
 
 log_comparison <- function(
@@ -183,9 +183,11 @@ gen_deteriorated_usm <- function(
       ref_stats,
       percentage
     )
-    logger::log_debug("Saving deteriorated USM for species {spec}")
-    save_deteriorated_usm(eval_workspace, spec, deteriorated_usm)
-    logger::log_debug("Deteriorated USM saved for species {spec}")
+    if (!is.null(deteriorated_usm)) {
+      logger::log_debug("Saving deteriorated USM for species {spec}")
+      save_deteriorated_usm(eval_workspace, spec, deteriorated_usm)
+      logger::log_debug("Deteriorated USM saved for species {spec}")
+    }
   }
 }
 
@@ -255,6 +257,6 @@ display_comparisons_info <- function(data_dir, percentage) {
   }
   if (length(all_crit) > 0) {
     logger::log_error("Found at least one critical deteriorated variable")
-    stop()
+    stop("Found at least one critical deteriorated variable")
   }
 }

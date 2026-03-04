@@ -103,7 +103,8 @@ evaluate <- function(config) {
       config$stics_exe,
       config$run_simulations,
       config$parallel,
-      config$cores
+      config$cores,
+      config$force
     )
   }
   logger::log_info("Starting evaluation...")

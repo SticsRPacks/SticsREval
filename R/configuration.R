@@ -1,40 +1,39 @@
 `%||%` <- function(a, b) if (!is.null(a)) a else b
 
-#' Create and validate configuration for the evaluation workflow
+#' Create configuration for the evaluation workflow
 #'
-#' This function builds a configuration list containing all parameters required
-#' to run simulations and evaluation workflows. The configuration is validated
-#' using `validate_configuration()` before being returned.
+#' This function builds a configuration list containing all parameters
+#' required to run simulations and evaluation workflows.
 #'
 #' The resulting configuration object can be passed to downstream functions
 #' to ensure consistent parameter handling.
 #'
 #' @param stics_exe Character. Path to the STICS executable.
 #' @param workspace Character. Path to the working directory containing
-#' simulation inputs.
+#'   simulation inputs.
 #' @param metadata_file Character. Path to the metadata file describing
-#' simulations.
-#' @param run_simulations Logical. Whether to run simulations. Defaults to TRUE.
+#'   simulations.
+#' @param run_simulations Logical. Whether to run simulations.
+#'   Defaults to TRUE.
 #' @param verbose Integer. Verbosity level for logging. Defaults to 1.
-#' @param parallel Logical. Whether to enable parallel execution. Defaults to
-#' FALSE.
-#' @param cores Integer or NA. Number of cores to use for parallel execution.
-#'   If NA, the number of available cores may be used.
-#' @param reference_data_dir Character or NULL. Path to reference simulation
-#' data. If NULL, reference-based analyses may be skipped.
-#' @param percentage Numeric. Threshold used for evaluation metrics (e.g.,
-#' detecting deteriorated variables). Defaults to 5.
+#' @param parallel Logical. Whether to enable parallel execution.
+#'   Defaults to FALSE.
+#' @param cores Integer or NA. Number of cores to use for parallel
+#'   execution. If NA, the number of available cores may be used.
+#' @param reference_data_dir Character or NULL. Path to reference
+#'   simulation data. If NULL, reference-based analyses may be skipped.
+#' @param percentage Numeric. Threshold used for evaluation metrics
+#'   (e.g., detecting deteriorated variables). Defaults to 5.
 #' @param eval_workspace Character. Path to the evaluation workspace.
 #'   Defaults to `DEFAULT_WORKSPACE`.
 #' @param init_workspace Logical. Whether to initialize the evaluation
-#' workspace. Defaults to TRUE.
+#'   workspace. Defaults to TRUE.
+#' @param output_dir Character or NULL. Path to the output directory
+#'   for exported files. Defaults to NULL.
+#' @param force Logical. Whether to overwrite an existing non-empty
+#'   evaluation workspace without prompting. Defaults to FALSE.
 #'
-#' @return A named list containing the validated configuration parameters.
-#'
-#' @details
-#' The configuration list includes all parameters required for simulation,
-#' evaluation, and plotting steps. It is validated to ensure consistency
-#' and correctness before use.
+#' @return A named list containing the configuration parameters.
 #'
 #' @examples
 #' \dontrun{
@@ -58,7 +57,8 @@ make_config <- function(
   percentage = 5,
   eval_workspace = DEFAULT_WORKSPACE,
   init_workspace = TRUE,
-  output_dir = NULL
+  output_dir = NULL,
+  force = FALSE
 ) {
   config <- list(
     stics_exe = stics_exe,
@@ -72,7 +72,8 @@ make_config <- function(
     percentage = percentage,
     eval_workspace = eval_workspace,
     init_workspace = init_workspace,
-    output_dir = output_dir
+    output_dir = output_dir,
+    force = force
   )
   init_logger(config$verbose)
   config
@@ -115,7 +116,7 @@ validate_export_config <- function(config) {
   }
 }
 
-valide_plots_config <- function(config) {
+validate_plots_config <- function(config) {
   if (
     !is.null(config$reference_data_dir) &&
       !dir.exists(config$reference_data_dir)
