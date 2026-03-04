@@ -33,12 +33,12 @@ compare_rmse <- function(species, ref_stats, new_stats) {
       ratio = round(.data$ratio, 2)
     ) |>
     dplyr::select(
-      .data$species,
-      .data$situation,
-      .data$variable,
-      .data$rmse_new,
-      .data$rmse_ref,
-      .data$ratio
+      "species",
+      "situation",
+      "variable",
+      "rmse_new",
+      "rmse_ref",
+      "ratio"
     )
 }
 
@@ -84,21 +84,21 @@ is_improved <- function(ratio) {
 get_crit_vars <- function(comparison, percentage) {
   comparison |>
     dplyr::filter(is_critical(.data$ratio, percentage)) |>
-    dplyr::pull(.data$variable)
+    dplyr::pull("variable")
 }
 
 #' @importFrom rlang .data
 get_warn_vars <- function(comparison, percentage) {
   comparison |>
     dplyr::filter(is_warning(.data$ratio, percentage)) |>
-    dplyr::pull(.data$variable)
+    dplyr::pull("variable")
 }
 
 #' @importFrom rlang .data
 get_improved_vars <- function(comparison) {
   comparison |>
     dplyr::filter(is_improved(.data$ratio)) |>
-    dplyr::pull(.data$variable)
+    dplyr::pull("variable")
 }
 
 log_comparison <- function(

@@ -2,7 +2,7 @@
 % Please edit documentation in R/configuration.R
 \name{make_config}
 \alias{make_config}
-\title{Create and validate configuration for the evaluation workflow}
+\title{Create configuration for the evaluation workflow}
 \usage{
 make_config(
   stics_exe = NULL,
@@ -28,43 +28,42 @@ simulation inputs.}
 \item{metadata_file}{Character. Path to the metadata file describing
 simulations.}
 
-\item{run_simulations}{Logical. Whether to run simulations. Defaults to TRUE.}
+\item{run_simulations}{Logical. Whether to run simulations.
+Defaults to TRUE.}
 
 \item{verbose}{Integer. Verbosity level for logging. Defaults to 1.}
 
-\item{parallel}{Logical. Whether to enable parallel execution. Defaults to
-FALSE.}
+\item{parallel}{Logical. Whether to enable parallel execution.
+Defaults to FALSE.}
 
-\item{cores}{Integer or NA. Number of cores to use for parallel execution.
-If NA, the number of available cores may be used.}
+\item{cores}{Integer or NA. Number of cores to use for parallel
+execution. If NA, the number of available cores may be used.}
 
-\item{reference_data_dir}{Character or NULL. Path to reference simulation
-data. If NULL, reference-based analyses may be skipped.}
+\item{reference_data_dir}{Character or NULL. Path to reference
+simulation data. If NULL, reference-based analyses may be skipped.}
 
-\item{percentage}{Numeric. Threshold used for evaluation metrics (e.g.,
-detecting deteriorated variables). Defaults to 5.}
+\item{percentage}{Numeric. Threshold used for evaluation metrics
+(e.g., detecting deteriorated variables). Defaults to 5.}
 
 \item{eval_workspace}{Character. Path to the evaluation workspace.
 Defaults to \code{DEFAULT_WORKSPACE}.}
 
 \item{init_workspace}{Logical. Whether to initialize the evaluation
 workspace. Defaults to TRUE.}
+
+\item{output_dir}{Character or NULL. Path to the output directory
+for exported files. Defaults to NULL.}
 }
 \value{
-A named list containing the validated configuration parameters.
+A named list containing the configuration parameters.
 }
 \description{
-This function builds a configuration list containing all parameters required
-to run simulations and evaluation workflows. The configuration is validated
-using \code{validate_configuration()} before being returned.
+This function builds a configuration list containing all parameters
+required to run simulations and evaluation workflows.
 }
 \details{
 The resulting configuration object can be passed to downstream functions
 to ensure consistent parameter handling.
-
-The configuration list includes all parameters required for simulation,
-evaluation, and plotting steps. It is validated to ensure consistency
-and correctness before use.
 }
 \examples{
 \dontrun{

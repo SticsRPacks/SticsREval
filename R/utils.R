@@ -1,5 +1,7 @@
-remove_null_values <- function(l) l[!vapply(l, is.null, logical(1))]
-
+remove_null_values <- function(l) {
+  result <- l[!vapply(l, is.null, logical(1))]
+  if (length(result) == 0) list() else result
+}
 format_duration <- function(start_time, end_time = Sys.time(), digits = 2) {
   elapsed <- as.numeric(end_time - start_time, units = "secs")
 

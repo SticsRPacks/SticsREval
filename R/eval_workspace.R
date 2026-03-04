@@ -120,7 +120,7 @@ get_species <- function(data_dir) {
     dplyr::distinct(.data$species) |>
     dplyr::arrange(tolower(.data$species)) |>
     dplyr::collect() |>
-    dplyr::pull(.data$species)
+    dplyr::pull("species")
 }
 
 get_species_usm <- function(data_dir, species) {
@@ -128,7 +128,7 @@ get_species_usm <- function(data_dir, species) {
     dplyr::filter(.data$species == {{ species }}) |>
     dplyr::distinct(.data$situation) |>
     dplyr::collect() |>
-    dplyr::pull(.data$situation)
+    dplyr::pull("situation")
 }
 
 get_by_species <- function(

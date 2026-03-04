@@ -151,14 +151,11 @@ gen_plots <- function(config) {
 
       if (length(deteriorated) > 0) {
         ref_sim <- read_ref_sim(config$reference_data_dir, spec, TRUE)
-        print(lobstr::obj_size(ref_sim))
 
         if (!is.null(ref_sim)) {
           logger::log_info("Generating scatter plots for species {spec}")
           sim <- get_by_species(config$eval_workspace, spec, "sim", TRUE)
-          print(lobstr::obj_size(sim))
           obs <- get_by_species(config$eval_workspace, spec, "obs", TRUE)
-          print(lobstr::obj_size(obs))
 
           gen_scatter_plot(
             o_dir,
