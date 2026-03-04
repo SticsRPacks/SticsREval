@@ -28,6 +28,7 @@ Imports:
     SticsOnR,
     SticsRFiles,
     readr,
+    rlang,
     XML
 Remotes:
     github::SticsRPacks/CroPlotR,
