@@ -38,11 +38,14 @@ a list of crop simulation
 Running simulations of STICS using a STICS executable
 }
 \examples{
+\dontrun{
   run_simulations(
     "/path/to/stics/exe",
     "/path/to/workspace",
     c("usm1", "usm2", "usm3"),
     TRUE
   )
+}
+
 }
 \keyword{internal}
