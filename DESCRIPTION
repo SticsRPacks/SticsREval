@@ -37,9 +37,9 @@ Remotes:
     github::SticsRPacks/SticsOnR,
     github::SticsRPacks/SticsRFiles
 Suggests:
-    here,
     mockery,
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    withr
 Config/testthat/edition: 3
 URL: https://github.com/SticsRPacks/SticsREval,
     https://sticsrpacks.github.io/SticsREval/
