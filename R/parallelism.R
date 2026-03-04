@@ -18,7 +18,7 @@
 #'
 #' n_cores <- get_cores_nb(parallel = TRUE, required_nb = 4)
 #' }
-#' 
+#'
 get_cores_nb <- function(parallel = FALSE, required_nb = NA, ...) {
   # For sequential execution
   if (!parallel) {
@@ -63,7 +63,7 @@ get_cores_nb <- function(parallel = FALSE, required_nb = NA, ...) {
 #'
 #' get_cores(cores_nb = 4)
 #' }
-#' 
+#'
 get_cores <- function(...) {
   # Getting additional args list with cores_nb in it !
   dot_args <- list(...)

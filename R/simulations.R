@@ -13,12 +13,15 @@
 #' @returns a list of crop simulation
 #'
 #' @examples
+#' \dontrun{
 #'   run_simulations(
 #'     "/path/to/stics/exe",
 #'     "/path/to/workspace",
 #'     c("usm1", "usm2", "usm3"),
 #'     TRUE
 #'   )
+#' }
+#'
 #' @keywords internal
 run_simulations <- function(
   stics_exe,
