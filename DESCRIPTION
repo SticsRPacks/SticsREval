@@ -1,11 +1,18 @@
 Package: SticsREval
-Title: Stics model evaluation tool
+Title: Evaluate and Compare STICS Crop Model Versions
 Version: 0.0.0.9000
 Authors@R: 
     person("Valentine", "Rahier", , "valentine.rahier@inrae.fr", role = c("aut", "cre"))
-Description: What the package does (one paragraph).
-License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
-    license
+Description: Provides a streamlined workflow for evaluating the performance of
+    the STICS crop model and comparing versions. Given a candidate version of
+    STICS, the package runs simulations, compares the outputs against field
+    observations and against statistics from a reference model version, and
+    flags variables or simulation units (USMs) where performance has
+    deteriorated. Results are stored in Apache Arrow/Parquet format and can
+    be exported as CSV files and diagnostic plots. Relies on 'SticsOnR' for
+    running simulations, 'SticsRFiles' for reading input and output data, and
+    'CroPlotR' for computing statistical criteria and generating plots.
+License: LGPL (>= 3)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
@@ -29,3 +36,6 @@ Remotes:
 Suggests: 
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
+URL: https://github.com/SticsRPacks/SticsREval,
+    https://sticsrpacks.github.io/SticsREval/
+BugReports: https://github.com/SticsRPacks/SticsREval/issues
