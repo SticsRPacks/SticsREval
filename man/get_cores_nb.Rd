@@ -21,11 +21,14 @@ Getting the available number of cores for parallel calculations
 }
 \examples{
 
+\dontrun{
+
 n_cores <- get_cores_nb()
 
 n_cores <- get_cores_nb(parallel = TRUE)
 
 n_cores <- get_cores_nb(parallel = TRUE, required_nb = 4)
+}
 
 }
 \keyword{internal}

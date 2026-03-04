@@ -17,9 +17,11 @@ Detecting machine cores number
 }
 \examples{
 
+\dontrun{
 get_cores()
 
 get_cores(cores_nb = 4)
+}
 
 }
 \keyword{internal}

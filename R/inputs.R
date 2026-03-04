@@ -77,15 +77,48 @@ extract_species_from_usms <- function(usms, workspace, parallel, cores) {
   sorted
 }
 
-#' @importFrom rlang .data
 get_rotation_list <- function(metadata_file) {
+  if (!file.exists(metadata_file)) {
+    stop(sprintf("Metadata file not found: %s", metadata_file))
+  }
   rotations_data <- read_csv(metadata_file, delimiter = ";")
+  required_cols <- c("usm", "rotation", "rotation_order")
+  missing_cols <- setdiff(required_cols, names(rotations_data))
+  if (length(missing_cols) > 0) {
+    stop(sprintf(
+      "Missing columns in metadata file: %s",
+      paste(missing_cols, collapse = ", ")
+    ))
+  }
+  if (nrow(rotations_data) == 0) {
+    return(list())
+  }
+  cols_to_check <- c("rotation", "rotation_order")
+  original <- rotations_data[cols_to_check]
+  rotations_data <- rotations_data |>
+    dplyr::mutate(
+      rotation = suppressWarnings(as.numeric(.data$rotation)),
+      rotation_order = suppressWarnings(as.numeric(.data$rotation_order))
+    )
+  non_numeric <- cols_to_check[
+    sapply(cols_to_check, function(col) {
+      sum(is.na(rotations_data[[col]])) > sum(is.na(original[[col]]))
+    })
+  ]
+  if (length(non_numeric) > 0) {
+    stop(sprintf(
+      "Columns must be numeric: %s",
+      paste(non_numeric, collapse = ", ")
+    ))
+  }
   rotations <- rotations_data |>
-    dplyr::filter(.data$rotation != 0) |>
+    dplyr::filter(
+      !is.na(.data$rotation) & .data$rotation != 0
+    ) |>
     dplyr::arrange(.data$rotation, .data$rotation_order) |>
     dplyr::group_by(.data$rotation) |>
     dplyr::summarise(usm_vec = list(.data$usm)) |>
-    dplyr::pull(.data$usm_vec)
+    dplyr::pull("usm_vec")
   logger::log_debug("Found ", length(rotations), " rotations")
   rotations
 }
