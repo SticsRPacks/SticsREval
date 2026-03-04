@@ -242,7 +242,7 @@ display_comparisons_info <- function(data_dir, percentage) {
     )
   )
   logger::log_info(
-    paste0("Minor degradation (≤ ",
+    paste0("Minor degradation (<= ",
       percentage, "% rRMSE increase): ", format_species(all_warn)
     )
   )

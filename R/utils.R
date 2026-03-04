@@ -38,7 +38,7 @@ safe_write_csv <- function(data, path) {
   },
   error = function(e) {
     logger::log_error(
-      sprintf("❌ Unable to create '%s': %s", path, e$message)
+      sprintf("ERROR: Unable to create '%s': %s", path, e$message)
     )
     stop(sprintf("Error: unable to create %s", path), call. = FALSE)
   })
