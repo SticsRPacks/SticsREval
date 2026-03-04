@@ -12,7 +12,7 @@ Description: Provides a streamlined workflow for evaluating the performance of
     be exported as CSV files and diagnostic plots. Relies on 'SticsOnR' for
     running simulations, 'SticsRFiles' for reading input and output data, and
     'CroPlotR' for computing statistical criteria and generating plots.
-License: LGPL (>= 3)
+License: LGPL (>= 3) + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
