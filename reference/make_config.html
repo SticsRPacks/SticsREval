@@ -44,14 +44,14 @@ using validate_configuration() before being returned."><!-- mathjax --><script s
     <div class="ref-description">
     <p>This function builds a configuration list containing all parameters required
 to run simulations and evaluation workflows. The configuration is validated
-using <code><a href="validate_configuration.html">validate_configuration()</a></code> before being returned.</p>
+using <code>validate_configuration()</code> before being returned.</p>
     </div>
 
     <div id="ref-usage">
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">make_config</span><span class="op">(</span></span>
-<span>  <span class="va">stics_exe</span>,</span>
-<span>  <span class="va">workspace</span>,</span>
-<span>  <span class="va">metadata_file</span>,</span>
+<span>  stics_exe <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  workspace <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  metadata_file <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  run_simulations <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  parallel <span class="op">=</span> <span class="cn">FALSE</span>,</span>
@@ -59,7 +59,8 @@ using <code><a href="validate_configuration.html">validate_configuration()</a></
 <span>  reference_data_dir <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  percentage <span class="op">=</span> <span class="fl">5</span>,</span>
 <span>  eval_workspace <span class="op">=</span> <span class="va">DEFAULT_WORKSPACE</span>,</span>
-<span>  init_workspace <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  init_workspace <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  output_dir <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 

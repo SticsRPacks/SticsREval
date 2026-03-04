@@ -50,21 +50,16 @@ available:</p>
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">export_stats_to_csv</span><span class="op">(</span><span class="va">output_dir</span>, eval_workspace <span class="op">=</span> <span class="va">DEFAULT_WORKSPACE</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">export_stats_to_csv</span><span class="op">(</span><span class="va">config</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
     <h2>Arguments</h2>
 
 
-<dl><dt id="arg-output-dir">output_dir<a class="anchor" aria-label="anchor" href="#arg-output-dir"></a></dt>
-<dd><p>Character. Path to the directory where output files will be
-saved.</p></dd>
-
-
-<dt id="arg-eval-workspace">eval_workspace<a class="anchor" aria-label="anchor" href="#arg-eval-workspace"></a></dt>
-<dd><p>Character. Path to the evaluation workspace containing
-simulation and observation data. Defaults to <code>DEFAULT_WORKSPACE</code>.</p></dd>
+<dl><dt id="arg-config">config<a class="anchor" aria-label="anchor" href="#arg-config"></a></dt>
+<dd><p>List. Configuration object created by <code><a href="make_config.html">make_config()</a></code>,
+containing all parameters required for the export.</p></dd>
 
 </dl></div>
     <div id="value">
