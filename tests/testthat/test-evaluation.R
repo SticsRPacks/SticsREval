@@ -54,10 +54,15 @@ test_that(
   "prepare_species_workspace throws an error when directory cannot be created",
   {
     stub(prepare_species_workspace, "get_species_usm", function(...) c("usm1"))
+    invalid_path <- if (.Platform$OS.type == "windows") {
+      "C:/invalid:path/test"
+    } else {
+      "/proc/invalid_root_path"
+    }
 
     expect_error(
       suppressWarnings(
-        prepare_species_workspace("/proc/invalid_root_path", "wheat")
+        prepare_species_workspace(invalid_path, "wheat")
       ),
       regexp = "Error while creating"
     )

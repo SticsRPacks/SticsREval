@@ -34,9 +34,14 @@ test_that("prepare_species_output_dir creates nested directories recursively", {
 test_that(
   "prepare_species_output_dir throws an error when directory cannot be created",
   {
+    invalid_path <- if (.Platform$OS.type == "windows") {
+      "C:/invalid:path/test"
+    } else {
+      "/proc/invalid_root_path"
+    }
     expect_error(
       suppressWarnings(
-        prepare_species_output_dir("/proc/invalid_root_path", "wheat")
+        prepare_species_output_dir(invalid_path, "wheat")
       ),
       regexp = "Can't create output directory"
     )
