@@ -253,20 +253,20 @@ test_that(
   {
     mock_gen_scatter <- mock(NULL)
 
-    stub(gen_plots, "validate_export_config",     mock(NULL))
-    stub(gen_plots, "valide_plovalidate_plots_configts_config",        mock(NULL))
-    stub(gen_plots, "get_species",                mock(c("wheat")))
+    stub(gen_plots, "validate_export_config", mock(NULL))
+    stub(gen_plots, "valide_plovalidate_plots_configts_config", mock(NULL))
+    stub(gen_plots, "get_species", mock(c("wheat")))
     stub(
       gen_plots,
       "parallelizable_loop",
       function(n, par, cores, fn) lapply(seq_len(n), fn)
     )
     stub(gen_plots, "prepare_species_output_dir", mock(tempdir()))
-    stub(gen_plots, "get_species_comparison",     mock(make_comparison_df()))
-    stub(gen_plots, "gen_comparison_plot",        mock(NULL))
-    stub(gen_plots, "get_crit_vars",              mock(c("LAI")))
-    stub(gen_plots, "get_warn_vars",              mock(character(0)))
-    stub(gen_plots, "read_ref_sim",               mock(list()))
+    stub(gen_plots, "get_species_comparison", mock(make_comparison_df()))
+    stub(gen_plots, "gen_comparison_plot", mock(NULL))
+    stub(gen_plots, "get_crit_vars", mock(c("LAI")))
+    stub(gen_plots, "get_warn_vars", mock(character(0)))
+    stub(gen_plots, "read_ref_sim", mock(list()))
     stub(
       gen_plots,
       "get_by_species",
