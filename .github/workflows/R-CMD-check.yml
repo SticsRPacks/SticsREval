@@ -2,7 +2,7 @@
 on:
   push:
 
-name: R-CMD-check.yaml
+name: R-CMD-check
 
 permissions: read-all
 
@@ -24,7 +24,6 @@ jobs:
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       R_KEEP_PKG_SOURCE: yes
-      RENV_PATHS_ROOT: ~/.local/share/renv
 
     steps:
       - uses: actions/checkout@v4
@@ -41,6 +40,7 @@ jobs:
         with:
           extra-packages: any::rcmdcheck
           needs: check
+          cache: true
 
       - uses: r-lib/actions/check-r-package@v2
         with:
