@@ -38,22 +38,10 @@ jobs:
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
 
-      - name: Cache renv
-        uses: actions/cache@v3
+      - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          path: ${{ env.RENV_PATHS_ROOT }}
-          key: ${{ runner.os }}-renv-${{ hashFiles('**/renv.lock') }}
-          restore-keys: ${{ runner.os }}-renv-
-
-      - name: Restore renv
-        shell: Rscript {0}
-        run: |
-          install.packages("renv")
-          renv::restore()
-
-      - name: Install rcmdcheck
-        shell: Rscript {0}
-        run: install.packages("rcmdcheck")
+          extra-packages: any::rcmdcheck
+          needs: check
 
       - uses: r-lib/actions/check-r-package@v2
         with:
