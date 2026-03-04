@@ -51,6 +51,10 @@ jobs:
           install.packages("renv")
           renv::restore()
 
+      - name: Install rcmdcheck
+        shell: Rscript {0}
+        run: install.packages("rcmdcheck")
+
       - uses: r-lib/actions/check-r-package@v2
         with:
           upload-snapshots: true
