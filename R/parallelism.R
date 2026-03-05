@@ -86,10 +86,7 @@ setup_parallel_backend <- function(
     return(
       list(
         map = function(x, fun) {
-          base::lapply(
-            x,
-            function(i) fun(i)
-          )
+          base::lapply(x, fun)
         },
         cleanup = function() {}
       )

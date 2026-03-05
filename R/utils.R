@@ -24,7 +24,7 @@ format_species <- function(x) {
   if (length(x) == 0) {
     return("None")
   }
-  paste(x, collapse = ", ")
+  toString(x)
 }
 
 safe_write_csv <- function(data, path) {
@@ -45,7 +45,7 @@ safe_write_csv <- function(data, path) {
 }
 
 read_csv <- function(filepath, delimiter = ",") {
-  data <- readr::read_delim(
+  csv_data <- readr::read_delim(
     filepath,
     delim = delimiter,
     na = c("NA", "NaN", ""),
@@ -55,6 +55,6 @@ read_csv <- function(filepath, delimiter = ",") {
     ),
     show_col_types = is_debug()
   )
-  names(data) <- trimws(names(data))
-  data
+  names(csv_data) <- trimws(names(csv_data))
+  csv_data
 }

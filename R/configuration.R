@@ -1,5 +1,3 @@
-`%||%` <- function(a, b) if (!is.null(a)) a else b
-
 #' Create configuration for the evaluation workflow
 #'
 #' This function builds a configuration list containing all parameters
@@ -89,30 +87,42 @@ make_config <- function(
 #'
 #' @keywords internal
 validate_eval_configuration <- function(config) {
-  if (is.null(config$stics_exe)) stop("Stics executable path must be defined")
-  if (is.null(config$workspace)) stop("Workspace path must be defined")
+  if (is.null(config$stics_exe)) {
+    stop("Stics executable path must be defined", call. = FALSE)
+  }
+  if (is.null(config$workspace)) {
+    stop("Workspace path must be defined", call. = FALSE)
+  }
   if (
     !is.null(config$reference_data_dir) &&
       !dir.exists(config$reference_data_dir)
   ) {
-    stop("Reference data directory must be a valid path if defined")
+    stop(
+      "Reference data directory must be a valid path if defined",
+      call. = FALSE
+    )
   }
   if (is.null(config$metadata_file) || !file.exists(config$metadata_file)) {
-    stop("Metadata file must be a valid path")
+    stop("Metadata file must be a valid path", call. = FALSE)
   }
   if (is.null(config$eval_workspace)) {
-    stop("Eval workspace path must be defined")
+    stop("Eval workspace path must be defined", call. = FALSE)
   }
 }
 
 validate_export_config <- function(config) {
-  if (is.null(config$output_dir)) stop("Output dir path must be defined")
+  if (is.null(config$output_dir)) {
+    stop("Output dir path must be defined", call. = FALSE)
+  }
   if (!dir.exists(config$output_dir) &&
         !dir.create(config$output_dir)) {
-    stop(paste0("Can't create ", config$output_dir, " directory"))
+    stop(
+      "Can't create ", config$output_dir, " directory",
+      call. = FALSE
+    )
   }
   if (is.null(config$eval_workspace)) {
-    stop("Eval workspace path must be defined")
+    stop("Eval workspace path must be defined", call. = FALSE)
   }
 }
 
@@ -121,6 +131,9 @@ validate_plots_config <- function(config) {
     !is.null(config$reference_data_dir) &&
       !dir.exists(config$reference_data_dir)
   ) {
-    stop("Reference data directory must be a valid path if defined")
+    stop(
+      "Reference data directory must be a valid path if defined",
+      call. = FALSE
+    )
   }
 }

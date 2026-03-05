@@ -79,16 +79,16 @@ extract_species_from_usms <- function(usms, workspace, parallel, cores) {
 
 get_rotation_list <- function(metadata_file) {
   if (!file.exists(metadata_file)) {
-    stop(sprintf("Metadata file not found: %s", metadata_file))
+    stop("Metadata file not found: ", metadata_file, call. = FALSE)
   }
   rotations_data <- read_csv(metadata_file, delimiter = ";")
   required_cols <- c("usm", "rotation", "rotation_order")
   missing_cols <- setdiff(required_cols, names(rotations_data))
   if (length(missing_cols) > 0) {
-    stop(sprintf(
-      "Missing columns in metadata file: %s",
-      paste(missing_cols, collapse = ", ")
-    ))
+    stop(
+      "Missing columns in metadata file: ", toString(missing_cols),
+      call. = FALSE
+    )
   }
   if (nrow(rotations_data) == 0) {
     return(list())
@@ -101,20 +101,17 @@ get_rotation_list <- function(metadata_file) {
       rotation_order = suppressWarnings(as.numeric(.data$rotation_order))
     )
   non_numeric <- cols_to_check[
-    sapply(cols_to_check, function(col) {
+    vapply(cols_to_check, function(col) {
       sum(is.na(rotations_data[[col]])) > sum(is.na(original[[col]]))
-    })
+    }, logical(1))
   ]
   if (length(non_numeric) > 0) {
-    stop(sprintf(
-      "Columns must be numeric: %s",
-      paste(non_numeric, collapse = ", ")
-    ))
+    stop(
+      "Columns must be numeric: ", toString(non_numeric), call. = FALSE
+    )
   }
   rotations <- rotations_data |>
-    dplyr::filter(
-      !is.na(.data$rotation) & .data$rotation != 0
-    ) |>
+    dplyr::filter(!is.na(.data$rotation), .data$rotation != 0) |>
     dplyr::arrange(.data$rotation, .data$rotation_order) |>
     dplyr::group_by(.data$rotation) |>
     dplyr::summarise(usm_vec = list(.data$usm)) |>

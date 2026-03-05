@@ -1,5 +1,6 @@
 gen_scatter_plot <- function(output_dir, sim, obs, ref_sim, vars) {
-  plots <- CroPlotR:::plot.cropr_simulation(
+  loadNamespace("CroPlotR")
+  plots <- plot(
     "New version" = sim,
     "Ref version" = ref_sim,
     obs = obs,
@@ -7,7 +8,7 @@ gen_scatter_plot <- function(output_dir, sim, obs, ref_sim, vars) {
     select_scat = "sim",
     var = vars
   )
-  page <- htmltools::tagList(
+  page_list <- htmltools::tagList(
     lapply(vars, function(var) {
       suppressWarnings(
         plotly::ggplotly(
@@ -17,7 +18,7 @@ gen_scatter_plot <- function(output_dir, sim, obs, ref_sim, vars) {
     })
   )
   htmltools::save_html(
-    page,
+    page_list,
     file = file.path(
       output_dir,
       "scatter_plots.html"
@@ -56,10 +57,10 @@ gen_comparison_plot <- function(
     ) +
     ggplot2::geom_point() +
     ggplot2::scale_color_manual(values = c(
-      "Critical" = "red",
-      "Warning"  = "orange",
-      "Improved" = "green",
-      "Other"    = "grey50"
+      Critical = "red",
+      Warning  = "orange",
+      Improved = "green",
+      Other    = "grey50"
     )) +
     ggplot2::geom_abline(intercept = 0, slope = 1) +
     ggplot2::geom_abline(

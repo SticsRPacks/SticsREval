@@ -13,7 +13,7 @@ prepare_species_workspace <- function(eval_workspace, species) {
     if (!dir.exists(species_workspace) &&
         !dir.create(species_workspace, recursive = TRUE)
     ) {
-      stop(paste0("Error while creating ", spec, " output directory"))
+      stop("Error while creating ", spec, " output directory", call. = FALSE)
     }
     logger::log_debug(
       "Exporting {spec} evaluation results in {species_workspace}"
