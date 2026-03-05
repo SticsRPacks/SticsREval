@@ -3,16 +3,21 @@
 # ===========================================================================
 
 test_that("gen_scatter_plot calls CroPlotR plot with correct arguments", {
-  fake_ggplot <- structure(list(), class = "ggplot")
-  captured    <- NULL
+  fake_ggplot <- list()
+  class(fake_ggplot) <- "ggplot"
+  captured <- NULL
 
-  fake_sim     <- structure(list(), class = "cropr_simulation")
-  fake_obs     <- list()
-  fake_ref_sim <- structure(list(), class = "cropr_simulation")
+  fake_sim <- list()
+  class(fake_sim) <- "cropr_simulation"
+  fake_obs <- list()
+  fake_ref_sim <- list()
+  class(fake_ref_sim) <- "cropr_simulation"
+
+  captured_env <- new.env(parent = emptyenv())
 
   local_mocked_bindings(
     plot.cropr_simulation = function(...) {
-      captured <<- list(...)
+      assign("captured", list(...), envir = captured_env)
       list()
     },
     .package = "CroPlotR"
@@ -22,29 +27,32 @@ test_that("gen_scatter_plot calls CroPlotR plot with correct arguments", {
     "CroPlotR::extract_plot",
     mock(list(fake_ggplot), cycle = TRUE)
   )
-  stub(gen_scatter_plot, "plotly::ggplotly",     mock(list(), cycle = TRUE))
+  stub(gen_scatter_plot, "plotly::ggplotly", mock(list(), cycle = TRUE))
   stub(gen_scatter_plot, "htmltools::save_html", mock(NULL))
 
   gen_scatter_plot(
     output_dir = tempdir(),
-    sim        = fake_sim,
-    obs        = fake_obs,
-    ref_sim    = fake_ref_sim,
-    vars       = c("LAI", "MASEC")
+    sim = fake_sim,
+    obs = fake_obs,
+    ref_sim = fake_ref_sim,
+    vars = c("LAI", "MASEC")
   )
 
-  expect_equal(captured$obs,         fake_obs)
-  expect_equal(captured$type,        "scatter")
-  expect_equal(captured$select_scat, "sim")
-  expect_equal(captured$var,         c("LAI", "MASEC"))
+  expect_identical(captured_env$captured$obs, fake_obs)
+  expect_identical(captured_env$captured$type, "scatter")
+  expect_identical(captured_env$captured$select_scat, "sim")
+  expect_identical(captured_env$captured$var, c("LAI", "MASEC"))
 })
 
 test_that("gen_scatter_plot calls extract_plot once per variable", {
-  fake_ggplot  <- structure(list(), class = "ggplot")
+  fake_ggplot <- list()
+  class(fake_ggplot) <- "ggplot"
   mock_extract <- mock(list(fake_ggplot), cycle = TRUE)
 
-  fake_sim     <- structure(list(), class = "cropr_simulation")
-  fake_ref_sim <- structure(list(), class = "cropr_simulation")
+  fake_sim <- list()
+  class(fake_sim) <- "cropr_simulation"
+  fake_ref_sim <- list()
+  class(fake_ref_sim) <- "cropr_simulation"
 
   local_mocked_bindings(
     plot.cropr_simulation = function(...) list(),
@@ -65,12 +73,14 @@ test_that("gen_scatter_plot calls extract_plot once per variable", {
   expect_called(mock_extract, 3)
 })
 
-test_that("gen_scatter_plot saves HTML to output_dir/scatter_plots.html", {
-  fake_ggplot    <- structure(list(), class = "ggplot")
+test_that("gen_scatter_plot saves HTML to output_dir/scatter_plots.html", { # nolint: nonportable_path_linter
+  fake_ggplot <- list()
+  class(fake_ggplot) <- "ggplot"
   mock_save_html <- mock(NULL)
-
-  fake_sim     <- structure(list(), class = "cropr_simulation")
-  fake_ref_sim <- structure(list(), class = "cropr_simulation")
+  fake_sim <- list()
+  class(fake_sim) <- "cropr_simulation"
+  fake_ref_sim <- list()
+  class(fake_ref_sim) <- "cropr_simulation"
 
   local_mocked_bindings(
     plot.cropr_simulation = function(...) list(),
@@ -94,13 +104,16 @@ test_that("gen_scatter_plot saves HTML to output_dir/scatter_plots.html", {
   )
 
   args <- mock_args(mock_save_html)[[1]]
-  expect_equal(args$file, file.path(out_dir, "scatter_plots.html"))
+  expect_identical(args$file, file.path(out_dir, "scatter_plots.html"))
 })
 
 test_that("gen_scatter_plot returns NULL invisibly", {
-  fake_ggplot  <- structure(list(), class = "ggplot")
-  fake_sim     <- structure(list(), class = "cropr_simulation")
-  fake_ref_sim <- structure(list(), class = "cropr_simulation")
+  fake_ggplot <- list()
+  class(fake_ggplot) <- "ggplot"
+  fake_sim <- list()
+  class(fake_sim) <- "cropr_simulation"
+  fake_ref_sim <- list()
+  class(fake_ref_sim) <- "cropr_simulation"
 
   local_mocked_bindings(
     plot.cropr_simulation = function(...) list(),
@@ -134,7 +147,8 @@ make_comparison_df <- function() {
     variable = c("LAI", "MASEC", "ZRAC"),
     rmse_ref = c(0.5,   1.0,    0.3),
     rmse_new = c(0.6,   0.8,    0.5),
-    ratio    = c(1.2,   0.8,    1.7)
+    ratio = c(1.2,   0.8,    1.7),
+    stringsAsFactors = FALSE
   )
 }
 
@@ -163,7 +177,7 @@ test_that("gen_comparison_plot passes output_dir to save_plot_png", {
   gen_comparison_plot(out_dir, make_comparison_df(), percentage = 20)
 
   args <- mock_args(mock_save)[[1]]
-  expect_equal(args$out_dir, out_dir)
+  expect_identical(args$out_dir, out_dir)
 })
 
 test_that(
@@ -172,8 +186,10 @@ test_that(
     mock_save <- mock(NULL)
     captured  <- NULL
 
+    captured_env <- new.env(parent = emptyenv())
+
     stub(gen_comparison_plot, "CroPlotR::save_plot_png", function(p, ...) {
-      captured <<- p
+      assign("captured", p, envir = captured_env)
       NULL
     })
 
@@ -183,7 +199,7 @@ test_that(
       percentage = 20
     )
 
-    expect_s3_class(captured, "ggplot")
+    expect_s3_class(captured_env$captured, "ggplot")
   }
 )
 
@@ -194,7 +210,7 @@ test_that("gen_comparison_plot uses suffix 'scatter_' for save_plot_png", {
   gen_comparison_plot(tempdir(), make_comparison_df(), percentage = 10)
 
   args <- mock_args(mock_save)[[1]]
-  expect_equal(args$suffix, "scatter_")
+  expect_identical(args$suffix, "scatter_")
 })
 
 # ===========================================================================
@@ -203,12 +219,12 @@ test_that("gen_comparison_plot uses suffix 'scatter_' for save_plot_png", {
 
 make_fake_config <- function(overrides = list()) {
   cfg <- list(
-    output_dir         = tempdir(),
+    output_dir = tempdir(),
     reference_data_dir = tempdir(),
-    percentage         = 20,
-    parallel           = FALSE,
-    cores              = NA,
-    eval_workspace     = list()
+    percentage = 20,
+    parallel = FALSE,
+    cores = NA,
+    eval_workspace = list()
   )
   for (nm in names(overrides)) cfg[[nm]] <- overrides[[nm]]
   cfg
@@ -221,9 +237,9 @@ test_that("gen_plots calls validate_export_config and validate_plots_config", {
   mock_loop            <- mock(list())
 
   stub(gen_plots, "validate_export_config", mock_validate_export)
-  stub(gen_plots, "validate_plots_config",    mock_validate_plots)
-  stub(gen_plots, "get_species",            mock_species)
-  stub(gen_plots, "parallelizable_loop",    mock_loop)
+  stub(gen_plots, "validate_plots_config", mock_validate_plots)
+  stub(gen_plots, "get_species", mock_species)
+  stub(gen_plots, "parallelizable_loop", mock_loop)
 
   gen_plots(make_fake_config())
 
@@ -234,18 +250,16 @@ test_that("gen_plots calls validate_export_config and validate_plots_config", {
 test_that("gen_plots skips plot generation when spec_comparison is NULL", {
   mock_loop <- mock(NULL)
 
-  stub(gen_plots, "validate_export_config",      mock(NULL))
-  stub(gen_plots, "validate_plots_config",         mock(NULL))
-  stub(gen_plots, "get_species",                 mock(c("wheat")))
-  stub(gen_plots, "parallelizable_loop",         mock_loop)
-  stub(gen_plots, "prepare_species_output_dir",  mock(tempdir()))
-  stub(gen_plots, "get_species_comparison",      mock(NULL))
-  stub(gen_plots, "gen_comparison_plot",         mock(NULL))
+  stub(gen_plots, "validate_export_config", mock(NULL))
+  stub(gen_plots, "validate_plots_config", mock(NULL))
+  stub(gen_plots, "get_species", mock("wheat"))
+  stub(gen_plots, "parallelizable_loop", mock_loop)
+  stub(gen_plots, "prepare_species_output_dir", mock(tempdir()))
+  stub(gen_plots, "get_species_comparison", mock(NULL))
+  stub(gen_plots, "gen_comparison_plot", mock(NULL))
 
   gen_plots(make_fake_config())
 
-  # parallelizable_loop appelé mais gen_comparison_plot jamais appelé
-  # (le mock de parallelizable_loop court-circuite la boucle)
   expect_called(mock_loop, 1)
 })
 
@@ -253,22 +267,21 @@ test_that(
   "gen_plots calls gen_comparison_plot when comparison data is available",
   {
     mock_gen_comparison <- mock(NULL)
-    mock_gen_scatter    <- mock(NULL)
+    mock_gen_scatter <- mock(NULL)
 
-    # On simule parallelizable_loop en appelant directement la fonction interne
-    stub(gen_plots, "validate_export_config",     mock(NULL))
-    stub(gen_plots, "validate_plots_config",        mock(NULL))
-    stub(gen_plots, "get_species",                mock(c("wheat")))
+    stub(gen_plots, "validate_export_config", mock(NULL))
+    stub(gen_plots, "validate_plots_config", mock(NULL))
+    stub(gen_plots, "get_species", mock("wheat"))
     stub(
       gen_plots,
       "parallelizable_loop",
       function(n, par, cores, fn) lapply(seq_len(n), fn)
     )
     stub(gen_plots, "prepare_species_output_dir", mock(tempdir()))
-    stub(gen_plots, "get_species_comparison",     mock(make_comparison_df()))
-    stub(gen_plots, "gen_comparison_plot",        mock_gen_comparison)
-    stub(gen_plots, "get_crit_vars",              mock(character(0)))
-    stub(gen_plots, "get_warn_vars",              mock(character(0)))
+    stub(gen_plots, "get_species_comparison", mock(make_comparison_df()))
+    stub(gen_plots, "gen_comparison_plot", mock_gen_comparison)
+    stub(gen_plots, "get_crit_vars", mock(character(0)))
+    stub(gen_plots, "get_warn_vars", mock(character(0)))
 
     gen_plots(make_fake_config())
 
@@ -283,7 +296,7 @@ test_that(
 
     stub(gen_plots, "validate_export_config", mock(NULL))
     stub(gen_plots, "valide_plovalidate_plots_configts_config", mock(NULL))
-    stub(gen_plots, "get_species", mock(c("wheat")))
+    stub(gen_plots, "get_species", mock("wheat"))
     stub(
       gen_plots,
       "parallelizable_loop",
@@ -292,7 +305,7 @@ test_that(
     stub(gen_plots, "prepare_species_output_dir", mock(tempdir()))
     stub(gen_plots, "get_species_comparison", mock(make_comparison_df()))
     stub(gen_plots, "gen_comparison_plot", mock(NULL))
-    stub(gen_plots, "get_crit_vars", mock(c("LAI")))
+    stub(gen_plots, "get_crit_vars", mock("LAI"))
     stub(gen_plots, "get_warn_vars", mock(character(0)))
     stub(gen_plots, "read_ref_sim", mock(list()))
     stub(
@@ -300,8 +313,8 @@ test_that(
       "get_by_species",
       mock(data.frame(), cycle = TRUE)
     )
-    stub(gen_plots, "CroPlotR::split_df2sim",     mock(list(), cycle = TRUE))
-    stub(gen_plots, "gen_scatter_plot",           mock_gen_scatter)
+    stub(gen_plots, "CroPlotR::split_df2sim", mock(list(), cycle = TRUE))
+    stub(gen_plots, "gen_scatter_plot", mock_gen_scatter)
 
     gen_plots(make_fake_config())
 
@@ -314,20 +327,20 @@ test_that(
   {
     mock_gen_scatter <- mock(NULL)
 
-    stub(gen_plots, "validate_export_config",     mock(NULL))
-    stub(gen_plots, "validate_plots_config",        mock(NULL))
-    stub(gen_plots, "get_species",                mock(c("wheat")))
+    stub(gen_plots, "validate_export_config", mock(NULL))
+    stub(gen_plots, "validate_plots_config", mock(NULL))
+    stub(gen_plots, "get_species", mock("wheat"))
     stub(
       gen_plots,
       "parallelizable_loop",
       function(n, par, cores, fn) lapply(seq_len(n), fn)
     )
     stub(gen_plots, "prepare_species_output_dir", mock(tempdir()))
-    stub(gen_plots, "get_species_comparison",     mock(make_comparison_df()))
-    stub(gen_plots, "gen_comparison_plot",        mock(NULL))
-    stub(gen_plots, "get_crit_vars",              mock(character(0)))
-    stub(gen_plots, "get_warn_vars",              mock(character(0)))
-    stub(gen_plots, "gen_scatter_plot",           mock_gen_scatter)
+    stub(gen_plots, "get_species_comparison", mock(make_comparison_df()))
+    stub(gen_plots, "gen_comparison_plot", mock(NULL))
+    stub(gen_plots, "get_crit_vars", mock(character(0)))
+    stub(gen_plots, "get_warn_vars", mock(character(0)))
+    stub(gen_plots, "gen_scatter_plot", mock_gen_scatter)
 
     gen_plots(make_fake_config())
 
@@ -338,21 +351,21 @@ test_that(
 test_that("gen_plots does not call gen_scatter_plot when ref_sim is NULL", {
   mock_gen_scatter <- mock(NULL)
 
-  stub(gen_plots, "validate_export_config",     mock(NULL))
-  stub(gen_plots, "validate_plots_config",        mock(NULL))
-  stub(gen_plots, "get_species",                mock(c("wheat")))
+  stub(gen_plots, "validate_export_config", mock(NULL))
+  stub(gen_plots, "validate_plots_config", mock(NULL))
+  stub(gen_plots, "get_species", mock("wheat"))
   stub(
     gen_plots,
     "parallelizable_loop",
     function(n, par, cores, fn) lapply(seq_len(n), fn)
   )
   stub(gen_plots, "prepare_species_output_dir", mock(tempdir()))
-  stub(gen_plots, "get_species_comparison",     mock(make_comparison_df()))
-  stub(gen_plots, "gen_comparison_plot",        mock(NULL))
-  stub(gen_plots, "get_crit_vars",              mock(c("LAI")))
-  stub(gen_plots, "get_warn_vars",              mock(character(0)))
-  stub(gen_plots, "read_ref_sim",               mock(NULL))
-  stub(gen_plots, "gen_scatter_plot",           mock_gen_scatter)
+  stub(gen_plots, "get_species_comparison", mock(make_comparison_df()))
+  stub(gen_plots, "gen_comparison_plot", mock(NULL))
+  stub(gen_plots, "get_crit_vars", mock("LAI"))
+  stub(gen_plots, "get_warn_vars", mock(character(0)))
+  stub(gen_plots, "read_ref_sim", mock(NULL))
+  stub(gen_plots, "gen_scatter_plot", mock_gen_scatter)
 
   gen_plots(make_fake_config())
 

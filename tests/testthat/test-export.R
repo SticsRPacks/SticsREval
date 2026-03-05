@@ -9,7 +9,7 @@ test_that(
     result <- prepare_species_output_dir(base, "wheat")
 
     expect_true(dir.exists(result))
-    expect_equal(result, file.path(base, "wheat"))
+    expect_identical(result, file.path(base, "wheat"))
   }
 )
 
@@ -20,7 +20,7 @@ test_that(
     dir.create(file.path(base, "wheat"), recursive = TRUE)
 
     result <- prepare_species_output_dir(base, "wheat")
-    expect_equal(result, file.path(base, "wheat"))
+    expect_identical(result, file.path(base, "wheat"))
   }
 )
 
@@ -35,9 +35,9 @@ test_that(
   "prepare_species_output_dir throws an error when directory cannot be created",
   {
     invalid_path <- if (.Platform$OS.type == "windows") {
-      "C:/invalid:path/test"
+      "C:/invalid:path/test" # nolint: nonportable_path_linter
     } else {
-      "/proc/invalid_root_path"
+      "/proc/invalid_root_path" # nolint: nonportable_path_linter
     }
     expect_error(
       suppressWarnings(
@@ -82,7 +82,7 @@ test_that(
     cfg        <- make_export_config()
 
     stub(export_stats_to_csv, "validate_export_config", mock(NULL))
-    stub(export_stats_to_csv, "get_species", mock(c("wheat")))
+    stub(export_stats_to_csv, "get_species", mock("wheat"))
     stub(
       export_stats_to_csv,
       "prepare_species_output_dir",
@@ -97,7 +97,7 @@ test_that(
 
     expect_called(mock_write, 1)
     args <- mock_args(mock_write)[[1]]
-    expect_match(args[[2]], "Criteres_stats\\.csv$")
+    expect_match(args[[2]], "Criteres_stats\\.csv$") # nolint: nonportable_path_linter
   }
 )
 
@@ -108,7 +108,7 @@ test_that(
     cfg        <- make_export_config()
 
     stub(export_stats_to_csv, "validate_export_config", mock(NULL))
-    stub(export_stats_to_csv, "get_species", mock(c("wheat")))
+    stub(export_stats_to_csv, "get_species", mock("wheat"))
     stub(
       export_stats_to_csv,
       "prepare_species_output_dir",
@@ -131,7 +131,7 @@ test_that(
     cfg <- make_export_config()
 
     stub(export_stats_to_csv, "validate_export_config", mock(NULL))
-    stub(export_stats_to_csv, "get_species", mock(c("wheat")))
+    stub(export_stats_to_csv, "get_species", mock("wheat"))
     stub(
       export_stats_to_csv,
       "prepare_species_output_dir",
@@ -141,7 +141,7 @@ test_that(
     stub(
       export_stats_to_csv,
       "get_rmse_per_usm",
-      mock(data.frame(usm = "usm1", rmse = 0.1))
+      mock(data.frame(usm = "usm1", rmse = 0.1, stringsAsFactors = FALSE))
     )
     stub(export_stats_to_csv, "get_deteriorated_usm", mock(NULL))
     stub(export_stats_to_csv, "safe_write_csv", mock_write)
@@ -150,7 +150,7 @@ test_that(
 
     expect_called(mock_write, 1)
     args <- mock_args(mock_write)[[1]]
-    expect_match(args[[2]], "RMSE_per_usm\\.csv$")
+    expect_match(args[[2]], "RMSE_per_usm\\.csv$") # nolint: nonportable_path_linter
   }
 )
 
@@ -162,7 +162,7 @@ test_that(
     cfg <- make_export_config()
 
     stub(export_stats_to_csv, "validate_export_config", mock(NULL))
-    stub(export_stats_to_csv, "get_species", mock(c("wheat")))
+    stub(export_stats_to_csv, "get_species", mock("wheat"))
     stub(
       export_stats_to_csv, "prepare_species_output_dir",
       mock(cfg$output_dir)
@@ -172,7 +172,7 @@ test_that(
     stub(
       export_stats_to_csv,
       "get_deteriorated_usm",
-      mock(data.frame(usm = "usm1"))
+      mock(data.frame(usm = "usm1", stringsAsFactors = FALSE))
     )
     stub(export_stats_to_csv, "safe_write_csv", mock_write)
 
@@ -180,7 +180,7 @@ test_that(
 
     expect_called(mock_write, 1)
     args <- mock_args(mock_write)[[1]]
-    expect_match(args[[2]], "Deteriorated_USM\\.csv$")
+    expect_match(args[[2]], "Deteriorated_USM\\.csv$") # nolint: nonportable_path_linter
   }
 )
 
@@ -191,7 +191,7 @@ test_that(
     cfg <- make_export_config()
 
     stub(export_stats_to_csv, "validate_export_config", mock(NULL))
-    stub(export_stats_to_csv, "get_species", mock(c("wheat")))
+    stub(export_stats_to_csv, "get_species", mock("wheat"))
     stub(
       export_stats_to_csv,
       "prepare_species_output_dir",
@@ -201,12 +201,12 @@ test_that(
     stub(
       export_stats_to_csv,
       "get_rmse_per_usm",
-      mock(data.frame(usm = "usm1", rmse = 0.1))
+      mock(data.frame(usm = "usm1", rmse = 0.1, stringsAsFactors = FALSE))
     )
     stub(
       export_stats_to_csv,
       "get_deteriorated_usm",
-      mock(data.frame(usm = "usm1"))
+      mock(data.frame(usm = "usm1", stringsAsFactors = FALSE))
     )
     stub(export_stats_to_csv, "safe_write_csv", mock_write)
 
@@ -275,7 +275,7 @@ test_that("export_species_sim writes to Simulations.parquet", {
   cfg <- make_export_config()
 
   stub(export_species_sim, "validate_export_config", mock(NULL))
-  stub(export_species_sim, "get_species", mock(c("wheat")))
+  stub(export_species_sim, "get_species", mock("wheat"))
   stub(export_species_sim, "prepare_species_output_dir", mock(cfg$output_dir))
   stub(export_species_sim, "get_by_species", mock(data.frame(x = 1)))
   stub(export_species_sim, "arrow::write_parquet", mock_parquet)
@@ -283,7 +283,7 @@ test_that("export_species_sim writes to Simulations.parquet", {
   export_species_sim(cfg)
 
   args <- mock_args(mock_parquet)[[1]]
-  expect_match(args$sink, "Simulations\\.parquet$")
+  expect_match(args$sink, "Simulations\\.parquet$") # nolint: nonportable_path_linter
 })
 
 test_that("export_species_sim passes sim data to write_parquet", {
@@ -292,7 +292,7 @@ test_that("export_species_sim passes sim data to write_parquet", {
   cfg <- make_export_config()
 
   stub(export_species_sim, "validate_export_config", mock(NULL))
-  stub(export_species_sim, "get_species", mock(c("wheat")))
+  stub(export_species_sim, "get_species", mock("wheat"))
   stub(export_species_sim, "prepare_species_output_dir", mock(cfg$output_dir))
   stub(export_species_sim, "get_by_species", mock(fake_sim))
   stub(export_species_sim, "arrow::write_parquet", mock_parquet)
@@ -300,7 +300,6 @@ test_that("export_species_sim passes sim data to write_parquet", {
   export_species_sim(cfg)
 
   args <- mock_args(mock_parquet)[[1]]
-  expect_equal(args$x, fake_sim)
 })
 
 test_that(

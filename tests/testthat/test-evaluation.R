@@ -6,7 +6,7 @@ test_that("prepare_species_workspace creates species directory", {
   base <- file.path(tempdir(), basename(tempfile()))
   dir.create(base)
 
-  stub(prepare_species_workspace, "get_species_usm", function(...) c("usm1"))
+  stub(prepare_species_workspace, "get_species_usm", function(...) "usm1")
 
   prepare_species_workspace(base, "wheat")
 
@@ -28,7 +28,7 @@ test_that("prepare_species_workspace processes multiple species", {
   base <- file.path(tempdir(), basename(tempfile()))
   dir.create(base)
 
-  stub(prepare_species_workspace, "get_species_usm", function(...) c("usm1"))
+  stub(prepare_species_workspace, "get_species_usm", function(...) "usm1")
 
   prepare_species_workspace(base, c("wheat", "maize"))
 
@@ -41,7 +41,7 @@ test_that("prepare_species_workspace skips only species without USMs", {
   dir.create(base)
 
   stub(prepare_species_workspace, "get_species_usm", function(ws, spec) {
-    if (spec == "wheat") c("usm1") else character(0)
+    if (spec == "wheat") "usm1" else character(0)
   })
 
   prepare_species_workspace(base, c("wheat", "maize"))
@@ -53,11 +53,11 @@ test_that("prepare_species_workspace skips only species without USMs", {
 test_that(
   "prepare_species_workspace throws an error when directory cannot be created",
   {
-    stub(prepare_species_workspace, "get_species_usm", function(...) c("usm1"))
+    stub(prepare_species_workspace, "get_species_usm", function(...) "usm1")
     invalid_path <- if (.Platform$OS.type == "windows") {
-      "C:/invalid:path/test"
+      "C:/invalid:path/test" # nolint: nonportable_path_linter
     } else {
-      "/proc/invalid_root_path"
+      "/proc/invalid_root_path" # nolint: nonportable_path_linter
     }
 
     expect_error(
@@ -76,7 +76,7 @@ test_that(
 test_that("evaluate_all_species calls prepare_species_workspace", {
   mock_prepare <- mock(NULL)
 
-  stub(evaluate_all_species, "get_species", mock(c("wheat")))
+  stub(evaluate_all_species, "get_species", mock("wheat"))
   stub(evaluate_all_species, "prepare_species_workspace", mock_prepare)
   stub(evaluate_all_species, "gen_species_stats", mock(NULL))
   stub(evaluate_all_species, "gen_deteriorated_usm", mock(NULL))
@@ -90,7 +90,7 @@ test_that("evaluate_all_species calls prepare_species_workspace", {
 test_that("evaluate_all_species calls gen_species_stats", {
   mock_stats <- mock(NULL)
 
-  stub(evaluate_all_species, "get_species", mock(c("wheat")))
+  stub(evaluate_all_species, "get_species", mock("wheat"))
   stub(evaluate_all_species, "prepare_species_workspace", mock(NULL))
   stub(evaluate_all_species, "gen_species_stats", mock_stats)
   stub(evaluate_all_species, "gen_deteriorated_usm", mock(NULL))
@@ -104,7 +104,7 @@ test_that("evaluate_all_species calls gen_species_stats", {
 test_that("evaluate_all_species calls gen_deteriorated_usm with correct args", {
   mock_det <- mock(NULL)
 
-  stub(evaluate_all_species, "get_species", mock(c("wheat")))
+  stub(evaluate_all_species, "get_species", mock("wheat"))
   stub(evaluate_all_species, "prepare_species_workspace", mock(NULL))
   stub(evaluate_all_species, "gen_species_stats", mock(NULL))
   stub(evaluate_all_species, "gen_deteriorated_usm", mock_det)
@@ -113,9 +113,9 @@ test_that("evaluate_all_species calls gen_deteriorated_usm with correct args", {
   evaluate_all_species("/ws", "/ref", 20, FALSE, NA)
 
   args <- mock_args(mock_det)[[1]]
-  expect_equal(args[[2]], c("wheat"))
-  expect_equal(args[[3]], "/ref")
-  expect_equal(args[[4]], 20)
+  expect_identical(args[[2]], "wheat")
+  expect_identical(args[[3]], "/ref")
+  expect_identical(args[[4]], 20)
 })
 
 test_that(
@@ -123,7 +123,7 @@ test_that(
   {
     mock_comp <- mock(NULL)
 
-    stub(evaluate_all_species, "get_species", mock(c("wheat")))
+    stub(evaluate_all_species, "get_species", mock("wheat"))
     stub(evaluate_all_species, "prepare_species_workspace", mock(NULL))
     stub(evaluate_all_species, "gen_species_stats", mock(NULL))
     stub(evaluate_all_species, "gen_deteriorated_usm", mock(NULL))
@@ -132,9 +132,9 @@ test_that(
     evaluate_all_species("/ws", "/ref", 20, FALSE, NA)
 
     args <- mock_args(mock_comp)[[1]]
-    expect_equal(args[[2]], c("wheat"))
-    expect_equal(args[[3]], "/ref")
-    expect_equal(args[[4]], 20)
+    expect_identical(args[[2]], "wheat")
+    expect_identical(args[[3]], "/ref")
+    expect_identical(args[[4]], 20)
   }
 )
 
@@ -143,7 +143,7 @@ test_that(
   {
     mock_stats <- mock(NULL)
 
-    stub(evaluate_all_species, "get_species", mock(c("wheat")))
+    stub(evaluate_all_species, "get_species", mock("wheat"))
     stub(evaluate_all_species, "prepare_species_workspace", mock(NULL))
     stub(evaluate_all_species, "gen_species_stats", mock_stats)
     stub(evaluate_all_species, "gen_deteriorated_usm", mock(NULL))
@@ -152,8 +152,8 @@ test_that(
     evaluate_all_species("/ws", "/ref", 20, TRUE, 4)
 
     args <- mock_args(mock_stats)[[1]]
-    expect_equal(args[[3]], TRUE)
-    expect_equal(args[[4]], 4)
+    expect_true(args[[3]])
+    expect_identical(args[[4]], 4)
   }
 )
 
@@ -247,8 +247,8 @@ test_that(
     evaluate(make_eval_config())
 
     args <- mock_args(mock_display)[[1]]
-    expect_equal(args[[1]], "/ws")
-    expect_equal(args[[2]], 20)
+    expect_identical(args[[1]], "/ws")
+    expect_identical(args[[2]], 20)
   }
 )
 
@@ -256,7 +256,11 @@ test_that(
   "evaluate logs error and does not rethrow when evaluate_all_species fails",
   {
     stub(evaluate, "validate_eval_configuration", mock(NULL))
-    stub(evaluate, "evaluate_all_species", function(...) stop("boom"))
+    stub(
+      evaluate,
+      "evaluate_all_species",
+      function(...) stop("boom", call. = FALSE)
+    )
     stub(evaluate, "display_comparisons_info", mock(NULL))
     stub(evaluate, "logger::log_error", mock(NULL))
 
@@ -271,7 +275,11 @@ test_that(
     mock_display <- mock(NULL)
 
     stub(evaluate, "validate_eval_configuration", mock(NULL))
-    stub(evaluate, "evaluate_all_species", function(...) stop("boom"))
+    stub(
+      evaluate,
+      "evaluate_all_species",
+      function(...) stop("boom", call. = FALSE)
+    )
     stub(evaluate, "display_comparisons_info", mock_display)
     stub(evaluate, "logger::log_error", mock(NULL))
 

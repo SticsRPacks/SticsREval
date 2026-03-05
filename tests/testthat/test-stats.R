@@ -5,9 +5,9 @@
 # Create a temporary directory with a minimal CSV file
 make_ref_dir <- function(species, filename, content = c("a,b", "1,2")) {
   base <- file.path(tempdir(), basename(tempfile()))
-  dir  <- file.path(base, species)
-  dir.create(dir, recursive = TRUE)
-  writeLines(content, file.path(dir, filename))
+  species_dir <- file.path(base, species)
+  dir.create(species_dir, recursive = TRUE)
+  writeLines(content, file.path(species_dir, filename))
   base
 }
 
@@ -21,8 +21,8 @@ test_that("read_ref_stats returns a data frame when the file exists", {
   result <- read_ref_stats("wheat", ref_dir)
 
   expect_s3_class(result, "data.frame")
-  expect_equal(ncol(result), 2)
-  expect_equal(nrow(result), 1)
+  expect_identical(ncol(result), 2)
+  expect_identical(nrow(result), 1)
 })
 
 test_that("read_ref_stats returns NULL when file is missing", {
@@ -59,7 +59,7 @@ test_that("read_ref_stats reads the correct file for the given species", {
   stub(read_ref_stats, "is_debug", function() FALSE)
 
   result <- read_ref_stats("maize", ref_dir)
-  expect_equal(names(result), c("x", "y", "z"))
+  expect_named(result, c("x", "y", "z"))
 })
 
 # ===========================================================================
@@ -72,7 +72,7 @@ test_that("read_ref_rmse_per_usm returns a data frame when the file exists", {
   result <- read_ref_rmse_per_usm("wheat", ref_dir)
 
   expect_s3_class(result, "data.frame")
-  expect_equal(ncol(result), 2)
+  expect_identical(ncol(result), 2)
 })
 
 test_that("read_ref_rmse_per_usm returns NULL when file is missing", {
@@ -109,8 +109,8 @@ test_that(
     stub(read_ref_rmse_per_usm, "is_debug", function() FALSE)
 
     result <- read_ref_rmse_per_usm("soy", ref_dir)
-    expect_equal(names(result), c("usm", "rmse"))
-    expect_equal(nrow(result), 1)
+    expect_named(result, c("usm", "rmse"))
+    expect_identical(nrow(result), 1)
   }
 )
 
@@ -119,8 +119,10 @@ test_that(
 # ===========================================================================
 
 # Helpers pour gen_species_stats
-fake_stats        <- data.frame(var = "LAI", stat = 0.9)
-fake_rmse_per_usm <- data.frame(usm = "usm1", rRMSE = 0.1)
+fake_stats <- data.frame(var = "LAI", stat = 0.9, stringsAsFactors = FALSE)
+fake_rmse_per_usm <- data.frame(
+  usm = "usm1", rRMSE = 0.1, stringsAsFactors = FALSE
+)
 
 make_loop_result <- function(species) {
   list(list(
@@ -199,7 +201,7 @@ test_that("gen_species_stats passes correct species to save_stats", {
   )
 
   call_args <- mock_args(mock_save)[[1]]
-  expect_equal(call_args[[2]], "maize")   # 2e argument = species
+  expect_identical(call_args[[2]], "maize")   # 2e argument = species
 })
 
 test_that("gen_species_stats passes stats data frame to save_stats", {
@@ -219,5 +221,5 @@ test_that("gen_species_stats passes stats data frame to save_stats", {
   )
 
   call_args <- mock_args(mock_save)[[1]]
-  expect_equal(call_args[[3]], fake_stats)   # 3e argument = stats
+  expect_identical(call_args[[3]], fake_stats)   # 3e argument = stats
 })

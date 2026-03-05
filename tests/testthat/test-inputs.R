@@ -58,12 +58,12 @@ test_that("load_workspace_sim passes correct arguments to run_simulations", {
   )
 
   args <- mock_args(mock_run_sim)[[1]]
-  expect_equal(args$stics_exe,  "/stics")
-  expect_equal(args$workspace,  "/ws")
-  expect_equal(args$usm_names,  c("usm1", "usm2"))
-  expect_equal(args$successive, list(c("usm1", "usm2")))
-  expect_equal(args$parallel,   TRUE)
-  expect_equal(args$cores,      2)
+  expect_identical(args$stics_exe, "/stics")
+  expect_identical(args$workspace, "/ws")
+  expect_identical(args$usm_names, c("usm1", "usm2"))
+  expect_identical(args$successive, list(c("usm1", "usm2")))
+  expect_true(args$parallel)
+  expect_identical(args$cores, 2)
 })
 
 test_that(
@@ -73,18 +73,18 @@ test_that(
     mock_save_sim <- mock(NULL)
 
     stub(load_workspace_sim, "SticsRFiles::get_sim", mock_get_sim)
-    stub(load_workspace_sim, "save_sim",             mock_save_sim)
-    stub(load_workspace_sim, "is_debug",             function() FALSE)
+    stub(load_workspace_sim, "save_sim", mock_save_sim)
+    stub(load_workspace_sim, "is_debug", function() FALSE)
 
     load_workspace_sim(
-      data_dir        = tempdir(),
-      usms_species    = make_usms_species(),
-      rotations       = NULL,
-      workspace       = "/ws",
+      data_dir = tempdir(),
+      usms_species = make_usms_species(),
+      rotations = NULL,
+      workspace = "/ws",
       run_simulations = FALSE,
-      stics_exe       = NA,
-      parallel        = FALSE,
-      cores           = NA
+      stics_exe = NA,
+      parallel = FALSE,
+      cores = NA
     )
 
     expect_called(mock_get_sim, 1)
@@ -96,49 +96,49 @@ test_that("load_workspace_sim passes correct arguments to get_sim", {
   mock_save_sim <- mock(NULL)
 
   stub(load_workspace_sim, "SticsRFiles::get_sim", mock_get_sim)
-  stub(load_workspace_sim, "save_sim",             mock_save_sim)
-  stub(load_workspace_sim, "is_debug",             function() FALSE)
+  stub(load_workspace_sim, "save_sim", mock_save_sim)
+  stub(load_workspace_sim, "is_debug", function() FALSE)
 
   load_workspace_sim(
-    data_dir        = tempdir(),
-    usms_species    = make_usms_species(c("usm1", "usm2")),
-    rotations       = NULL,
-    workspace       = "/ws",
+    data_dir = tempdir(),
+    usms_species = make_usms_species(c("usm1", "usm2")),
+    rotations = NULL,
+    workspace = "/ws",
     run_simulations = FALSE,
-    stics_exe       = NA,
-    parallel        = FALSE,
-    cores           = NA
+    stics_exe = NA,
+    parallel = FALSE,
+    cores = NA
   )
 
   args <- mock_args(mock_get_sim)[[1]]
-  expect_equal(args$workspace, "/ws")
-  expect_equal(args$usm,       c("usm1", "usm2"))
-  expect_equal(args$parallel,  FALSE)
+  expect_identical(args$workspace, "/ws")
+  expect_identical(args$usm, c("usm1", "usm2"))
+  expect_false(args$parallel)
 })
 
 test_that("load_workspace_sim calls save_sim with sim result", {
-  fake_sim      <- list(usm1 = data.frame(x = 1))
+  fake_sim <- list(usm1 = data.frame(x = 1))
   mock_save_sim <- mock(NULL)
 
-  stub(load_workspace_sim, "run_simulations",      mock(fake_sim))
-  stub(load_workspace_sim, "save_sim",             mock_save_sim)
-  stub(load_workspace_sim, "is_debug",             function() FALSE)
+  stub(load_workspace_sim, "run_simulations", mock(fake_sim))
+  stub(load_workspace_sim, "save_sim", mock_save_sim)
+  stub(load_workspace_sim, "is_debug", function() FALSE)
 
   usms_species <- make_usms_species()
   load_workspace_sim(
-    data_dir        = tempdir(),
-    usms_species    = usms_species,
-    rotations       = NULL,
-    workspace       = "/ws",
+    data_dir = tempdir(),
+    usms_species = usms_species,
+    rotations = NULL,
+    workspace = "/ws",
     run_simulations = TRUE,
-    stics_exe       = "/stics",
-    parallel        = FALSE,
-    cores           = NA
+    stics_exe = "/stics",
+    parallel = FALSE,
+    cores = NA
   )
 
   args <- mock_args(mock_save_sim)[[1]]
-  expect_equal(args[[2]], fake_sim)
-  expect_equal(args[[3]], usms_species)
+  expect_identical(args[[2]], fake_sim)
+  expect_identical(args[[3]], usms_species)
 })
 
 # ===========================================================================
@@ -165,9 +165,9 @@ test_that(
 
     expect_called(mock_get_obs, 1)
     args <- mock_args(mock_get_obs)[[1]]
-    expect_equal(args$workspace, "/ws")
-    expect_equal(args$usm,       c("usm1", "usm2"))
-    expect_equal(args$parallel,  FALSE)
+    expect_identical(args$workspace, "/ws")
+    expect_identical(args$usm, c("usm1", "usm2"))
+    expect_false(args$parallel)
   }
 )
 
@@ -191,8 +191,8 @@ test_that(
     )
 
     args <- mock_args(mock_save_obs)[[1]]
-    expect_equal(args[[2]], fake_obs)
-    expect_equal(args[[3]], usms_species)
+    expect_identical(args[[2]], fake_obs)
+    expect_identical(args[[3]], usms_species)
   }
 )
 
@@ -206,7 +206,8 @@ test_that("load_workspace_obs uses unique usms from usms_species", {
 
   usms_species <- data.frame(
     usm = c("usm1", "usm1", "usm2"),
-    species = c("wheat", "maize", "wheat")
+    species = c("wheat", "maize", "wheat"),
+    stringsAsFactors = FALSE
   )
   load_workspace_obs(
     data_dir     = tempdir(),
@@ -217,7 +218,7 @@ test_that("load_workspace_obs uses unique usms from usms_species", {
   )
 
   args <- mock_args(mock_get_obs)[[1]]
-  expect_equal(args$usm, c("usm1", "usm2"))
+  expect_identical(args$usm, c("usm1", "usm2"))
 })
 
 # ===========================================================================
@@ -278,14 +279,13 @@ test_that("extract_species_from_usms returns one row per usm", {
     cores     = NA
   )
 
-  expect_equal(nrow(result), 3)
+  expect_identical(nrow(result), 3)
 })
 
 test_that(
   "extract_species_from_usms passes correct workspace path to get_plant_txt",
   {
     mock_get_plant <- mock(list(codeplante = "wheat"))
-
     stub(
       extract_species_from_usms,
       "parallelizable_loop",
@@ -298,16 +298,14 @@ test_that(
       "SticsRFiles::get_plant_txt",
       mock_get_plant
     )
-
     extract_species_from_usms(
-      usms      = c("usm1"),
+      usms = "usm1",
       workspace = "/ws",
-      parallel  = FALSE,
-      cores     = NA
+      parallel = FALSE,
+      cores = NA
     )
-
     args <- mock_args(mock_get_plant)[[1]]
-    expect_equal(args$workspace, file.path("/ws", "usm1"))
+    expect_identical(args$workspace, file.path("/ws", "usm1"))
   }
 )
 
@@ -323,7 +321,7 @@ test_that("extract_species_from_usms maps species correctly to usms", {
     extract_species_from_usms,
     "SticsRFiles::get_plant_txt",
     function(workspace) {
-      if (grepl("usm1", workspace)) {
+      if (grepl("usm1", workspace, fixed = TRUE)) {
         list(codeplante = "wheat")
       } else {
         list(codeplante = "maize")
@@ -338,8 +336,8 @@ test_that("extract_species_from_usms maps species correctly to usms", {
     cores     = NA
   )
 
-  expect_equal(result$species[result$usm == "usm1"], "wheat")
-  expect_equal(result$species[result$usm == "usm2"], "maize")
+  expect_identical(result$species[result$usm == "usm1"], "wheat")
+  expect_identical(result$species[result$usm == "usm2"], "maize")
 })
 
 # ===========================================================================
@@ -360,7 +358,7 @@ test_that("get_rotation_list returns an empty list when no rotations", {
   ))
   stub(get_rotation_list, "is_debug", function() FALSE)
   result <- get_rotation_list(f)
-  expect_equal(length(result), 0)
+  expect_length(result, 0)
 })
 
 test_that("get_rotation_list returns one vector per rotation group", {
@@ -373,7 +371,7 @@ test_that("get_rotation_list returns one vector per rotation group", {
   ))
   stub(get_rotation_list, "is_debug", function() FALSE)
   result <- get_rotation_list(f)
-  expect_equal(length(result), 2)
+  expect_length(result, 2)
 })
 
 test_that("get_rotation_list orders usms within a rotation by rotation_order", {
@@ -384,7 +382,7 @@ test_that("get_rotation_list orders usms within a rotation by rotation_order", {
   ))
   stub(get_rotation_list, "is_debug", function() FALSE)
   result <- get_rotation_list(f)
-  expect_equal(result[[1]], c("usm1", "usm2"))
+  expect_identical(result[[1]], c("usm1", "usm2"))
 })
 
 test_that("get_rotation_list ignores usms with rotation = 0", {
@@ -396,7 +394,7 @@ test_that("get_rotation_list ignores usms with rotation = 0", {
   ))
   stub(get_rotation_list, "is_debug", function() FALSE)
   result <- get_rotation_list(f)
-  expect_equal(length(result), 1)
+  expect_length(result, 1)
   expect_false("usm2" %in% result[[1]])
 })
 
@@ -409,13 +407,13 @@ test_that("get_rotation_list groups usms correctly across multiple rotations", {
   ))
   stub(get_rotation_list, "is_debug", function() FALSE)
   result <- get_rotation_list(f)
-  expect_equal(result[[1]], c("usm1", "usm2"))
-  expect_equal(result[[2]], c("usm3"))
+  expect_identical(result[[1]], c("usm1", "usm2"))
+  expect_identical(result[[2]], "usm3")
 })
 
 test_that("get_rotation_list throws an error when file does not exist", {
   expect_error(
-    get_rotation_list("/nonexistent/path/metadata.csv"),
+    get_rotation_list(file.path("nonexistent", "path", "metadata.csv")),
     regexp = "not found"
   )
 })
@@ -454,7 +452,7 @@ test_that("get_rotation_list returns empty list when file has only a header", {
   f <- make_metadata_file("usm;rotation;rotation_order")
   stub(get_rotation_list, "is_debug", function() FALSE)
   result <- get_rotation_list(f)
-  expect_equal(length(result), 0)
+  expect_length(result, 0)
 })
 
 test_that(
@@ -496,7 +494,7 @@ test_that(
     ))
     stub(get_rotation_list, "is_debug", function() FALSE)
     result <- get_rotation_list(f)
-    expect_equal(length(result), 2)
+    expect_length(result, 2)
     usms <- unlist(result)
     expect_true(all(c("usm1", "usm2", "usm3") %in% usms))
   }

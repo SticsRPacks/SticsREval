@@ -47,7 +47,7 @@ test_that("is_critical returns FALSE for NA values", {
 
 test_that("is_critical works on vectors", {
   result <- is_critical(c(15, 5, NA, -1), 10)
-  expect_equal(result, c(TRUE, FALSE, FALSE, FALSE))
+  expect_identical(result, c(TRUE, FALSE, FALSE, FALSE))
 })
 
 test_that("is_warning returns TRUE when 0 < ratio < percentage", {
@@ -90,7 +90,7 @@ test_that("is_improved returns FALSE for NA values", {
 test_that("get_crit_vars returns variables with ratio >= percentage", {
   df <- make_comparison_df()
   result <- get_crit_vars(df, 10)
-  expect_equal(result, "LAI")
+  expect_identical(result, "LAI")
 })
 
 test_that("get_crit_vars returns empty vector when none critical", {
@@ -102,7 +102,7 @@ test_that("get_crit_vars returns empty vector when none critical", {
 test_that("get_warn_vars returns variables with 0 < ratio < percentage", {
   df <- make_comparison_df()
   result <- get_warn_vars(df, 10)
-  expect_equal(result, "SLAi")
+  expect_identical(result, "SLAi")
 })
 
 test_that("get_warn_vars returns empty vector when none warning", {
@@ -145,49 +145,55 @@ test_that("compare_rmse computes ratio correctly", {
   ref <- data.frame(
     situation = "usm1",
     variable = "LAI",
-    rRMSE = 0.5
+    rRMSE = 0.5,
+    stringsAsFactors = FALSE
   )
   new <- data.frame(
     situation = "usm1",
     variable = "LAI",
-    rRMSE = 0.6
+    rRMSE = 0.6,
+    stringsAsFactors = FALSE
   )
 
   result <- compare_rmse("wheat", ref, new)
   expected_ratio <- round((0.6 - 0.5) / 0.5 * 100, 2)
-  expect_equal(result$ratio, expected_ratio)
+  expect_identical(result$ratio, expected_ratio)
 })
 
 test_that("compare_rmse filters out non-finite ratios", {
   ref <- data.frame(
     situation = "usm1",
     variable = "LAI",
-    rRMSE = 0
+    rRMSE = 0,
+    stringsAsFactors = FALSE
   )
   new <- data.frame(
     situation = "usm1",
     variable = "LAI",
-    rRMSE = 0.5
+    rRMSE = 0.5,
+    stringsAsFactors = FALSE
   )
 
   result <- compare_rmse("wheat", ref, new)
-  expect_equal(nrow(result), 0)
+  expect_identical(nrow(result), 0)
 })
 
 test_that("compare_rmse filters out rows with NA variable", {
   ref <- data.frame(
     situation = "usm1",
     variable = NA_character_,
-    rRMSE = 0.5
+    rRMSE = 0.5,
+    stringsAsFactors = FALSE
   )
   new <- data.frame(
     situation = "usm1",
     variable = NA_character_,
-    rRMSE = 0.6
+    rRMSE = 0.6,
+    stringsAsFactors = FALSE
   )
 
   result <- compare_rmse("wheat", ref, new)
-  expect_equal(nrow(result), 0)
+  expect_identical(nrow(result), 0)
 })
 
 test_that("compare_rmse adds species column", {
@@ -208,14 +214,14 @@ test_that("compare_rmse adds species column", {
 
 test_that("compare_rmse rounds ratio to 2 decimal places", {
   ref <- data.frame(
-    situation = "usm1", variable = "LAI", rRMSE = 0.3
+    situation = "usm1", variable = "LAI", rRMSE = 0.3, stringsAsFactors = FALSE
   )
   new <- data.frame(
-    situation = "usm1", variable = "LAI", rRMSE = 0.4
+    situation = "usm1", variable = "LAI", rRMSE = 0.4, stringsAsFactors = FALSE
   )
 
   result <- compare_rmse("wheat", ref, new)
-  expect_equal(result$ratio, round(result$ratio, 2))
+  expect_identical(result$ratio, round(result$ratio, 2))
 })
 
 # ===========================================================================
@@ -239,17 +245,19 @@ test_that(
 )
 
 test_that(
-  "get_deteriorated_rmse_per_usm returns only warning/critical rows",
+  "get_deteriorated_rmse_per_usm returns only warning/critical rows", # nolint: nonportable_path_linter
   {
     ref <- data.frame(
       situation = c("usm1", "usm2", "usm3"),
       variable = c("LAI", "LAI", "LAI"),
-      rRMSE = c(0.5, 0.5, 0.5)
+      rRMSE = c(0.5, 0.5, 0.5),
+      stringsAsFactors = FALSE
     )
     new <- data.frame(
       situation = c("usm1", "usm2", "usm3"),
       variable = c("LAI", "LAI", "LAI"),
-      rRMSE = c(0.6, 0.4, 1.0)
+      rRMSE = c(0.6, 0.4, 1.0),
+      stringsAsFactors = FALSE
     )
     stub(get_deteriorated_rmse_per_usm, "get_rmse_per_usm", mock(new))
 
@@ -267,12 +275,14 @@ test_that(
     ref <- data.frame(
       situation = c("usm1", "usm2"),
       variable = c("LAI", "LAI"),
-      rRMSE = c(0.5, 0.5)
+      rRMSE = c(0.5, 0.5),
+      stringsAsFactors = FALSE
     )
     new <- data.frame(
       situation = c("usm1", "usm2"),
       variable = c("LAI", "LAI"),
-      rRMSE = c(0.6, 1.0)
+      rRMSE = c(0.6, 1.0),
+      stringsAsFactors = FALSE
     )
     stub(get_deteriorated_rmse_per_usm, "get_rmse_per_usm", mock(new))
 
@@ -280,7 +290,7 @@ test_that(
       "/ws", "wheat", ref, 5
     )
 
-    expect_true(result$ratio[1] >= result$ratio[2])
+    expect_gte(result$ratio[1], result$ratio[2])
   }
 )
 
@@ -367,7 +377,7 @@ test_that(
   {
     mock_save <- mock(NULL, cycle = TRUE)
     ref <- make_stats()
-    det <- data.frame(situation = "usm1", ratio = 25)
+    det <- data.frame(situation = "usm1", ratio = 25, stringsAsFactors = FALSE)
 
     stub(
       gen_deteriorated_usm,
@@ -397,7 +407,7 @@ test_that(
   {
     mock_warn <- mock(NULL)
 
-    stub(display_comparisons_info, "get_species", mock(c("wheat")))
+    stub(display_comparisons_info, "get_species", mock("wheat"))
     stub(
       display_comparisons_info,
       "get_species_comparison",
@@ -415,7 +425,7 @@ test_that(
   {
     df <- make_comparison_df()
 
-    stub(display_comparisons_info, "get_species", mock(c("wheat")))
+    stub(display_comparisons_info, "get_species", mock("wheat"))
     stub(
       display_comparisons_info,
       "get_species_comparison",
@@ -439,7 +449,7 @@ test_that(
     df <- make_comparison_df() |>
       dplyr::mutate(ratio = c(5, -5, -5, 3))
 
-    stub(display_comparisons_info, "get_species", mock(c("wheat")))
+    stub(display_comparisons_info, "get_species", mock("wheat"))
     stub(
       display_comparisons_info,
       "get_species_comparison",
@@ -458,7 +468,7 @@ test_that(
     df <- make_comparison_df() |>
       dplyr::mutate(ratio = c(-5, -10, -3, -1))
 
-    stub(display_comparisons_info, "get_species", mock(c("wheat")))
+    stub(display_comparisons_info, "get_species", mock("wheat"))
     stub(
       display_comparisons_info,
       "get_species_comparison",

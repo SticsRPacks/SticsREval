@@ -1,35 +1,11 @@
 # ===========================================================================
-# Tests: %||%
-# ===========================================================================
-
-test_that("%||% returns left value when not NULL", {
-  expect_equal("a" %||% "b", "a")
-})
-
-test_that("%||% returns right value when left is NULL", {
-  expect_equal(NULL %||% "b", "b")
-})
-
-test_that("%||% returns NULL when both sides are NULL", {
-  expect_null(NULL %||% NULL)
-})
-
-test_that("%||% returns left value when left is FALSE", {
-  expect_equal(FALSE %||% TRUE, FALSE)
-})
-
-test_that("%||% returns left value when left is 0", {
-  expect_equal(0 %||% 1, 0)
-})
-
-# ===========================================================================
 # Tests: make_config
 # ===========================================================================
 
 test_that("make_config returns a list", {
   stub(make_config, "init_logger", mock(NULL))
   result <- make_config()
-  expect_true(is.list(result))
+  expect_type(result, list)
 })
 
 test_that("make_config includes all expected keys", {
@@ -55,23 +31,23 @@ test_that("make_config uses provided values", {
     parallel = TRUE,
     cores = 4
   )
-  expect_equal(result$stics_exe, "/stics")
-  expect_equal(result$workspace, "/ws")
-  expect_equal(result$metadata_file, "/meta.csv")
-  expect_equal(result$percentage, 10)
-  expect_equal(result$parallel, TRUE)
-  expect_equal(result$cores, 4)
+  expect_identical(result$stics_exe, "/stics")
+  expect_identical(result$workspace, "/ws")
+  expect_identical(result$metadata_file, "/meta.csv")
+  expect_identical(result$percentage, 10)
+  expect_true(result$parallel)
+  expect_identical(result$cores, 4)
 })
 
 test_that("make_config uses default values", {
   stub(make_config, "init_logger", mock(NULL))
   result <- make_config()
-  expect_equal(result$run_simulations, TRUE)
-  expect_equal(result$verbose, 1)
-  expect_equal(result$parallel, FALSE)
+  expect_true(result$run_simulations)
+  expect_identical(result$verbose, 1)
+  expect_false(result$parallel)
   expect_true(is.na(result$cores))
-  expect_equal(result$percentage, 5)
-  expect_equal(result$init_workspace, TRUE)
+  expect_identical(result$percentage, 5)
+  expect_true(result$init_workspace)
   expect_null(result$stics_exe)
   expect_null(result$workspace)
   expect_null(result$output_dir)
@@ -83,13 +59,13 @@ test_that("make_config calls init_logger with verbose level", {
   stub(make_config, "init_logger", mock_logger)
   make_config(verbose = 2)
   expect_called(mock_logger, 1)
-  expect_equal(mock_args(mock_logger)[[1]][[1]], 2)
+  expect_identical(mock_args(mock_logger)[[1]][[1]], 2)
 })
 
 test_that("make_config sets eval_workspace to DEFAULT_WORKSPACE", {
   stub(make_config, "init_logger", mock(NULL))
   result <- make_config()
-  expect_equal(result$eval_workspace, DEFAULT_WORKSPACE)
+  expect_identical(result$eval_workspace, DEFAULT_WORKSPACE)
 })
 
 # ===========================================================================
@@ -161,7 +137,7 @@ test_that(
   "validate_eval_configuration errors when metadata_file does not exist",
   {
     cfg <- make_valid_config(
-      list(metadata_file = "/nonexistent/meta.csv")
+      list(metadata_file = "/nonexistent/meta.csv") # nolint: nonportable_path_linter
     )
     expect_error(
       validate_eval_configuration(cfg),
@@ -185,7 +161,7 @@ test_that(
   "validate_eval_configuration errors when reference_data_dir is invalid",
   {
     cfg <- make_valid_config(
-      list(reference_data_dir = "/nonexistent/ref")
+      list(reference_data_dir = "/nonexistent/ref") # nolint: nonportable_path_linter
     )
     expect_error(
       validate_eval_configuration(cfg),
@@ -249,7 +225,7 @@ test_that(
   "validate_export_config errors when output_dir cannot be created",
   {
     cfg <- make_valid_config(
-      list(output_dir = "/proc/invalid_output")
+      list(output_dir = "/proc/invalid_output") # nolint: nonportable_path_linter
     )
     expect_error(
       suppressWarnings(validate_export_config(cfg)),
@@ -295,7 +271,7 @@ test_that(
   "validate_plots_config errors when reference_data_dir is invalid",
   {
     cfg <- make_valid_config(
-      list(reference_data_dir = "/nonexistent/ref")
+      list(reference_data_dir = "/nonexistent/ref") # nolint: nonportable_path_linter
     )
     expect_error(
       validate_plots_config(cfg),

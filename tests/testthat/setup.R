@@ -1,6 +1,3 @@
-library(mockery)
-library(SticsREval)
-
 withr::local_dir(tempdir(), .local_envir = teardown_env())
 
 logger::log_threshold(logger::FATAL)

@@ -12,21 +12,21 @@ test_that(
     stub(run_simulations, "SticsOnR::stics_wrapper",         mock_wrapper)
 
     run_simulations(
-      stics_exe  = "/path/to/stics",
-      workspace  = "/path/to/workspace",
-      usm_names  = c("usm1", "usm2"),
+      stics_exe = file.path("path", "to", "stics"),
+      workspace = file.path("path", "to", "workspace"),
+      usm_names = c("usm1", "usm2"),
       successive = list(c("usm1", "usm2")),
-      verbose    = FALSE
+      verbose = FALSE
     )
 
     expect_called(mock_options, 1)
     args <- mock_args(mock_options)[[1]]
-    expect_equal(args$stics_exe,  "/path/to/stics")
-    expect_equal(args$workspace,  "/path/to/workspace")
-    expect_equal(args$successive, list(c("usm1", "usm2")))
-    expect_equal(args$verbose,    FALSE)
-    expect_equal(args$parallel,   FALSE)
-    expect_equal(args$cores,      NA)
+    expect_identical(args$stics_exe, file.path("path", "to", "stics"))
+    expect_identical(args$workspace, file.path("path", "to", "workspace"))
+    expect_identical(args$successive, list(c("usm1", "usm2")))
+    expect_false(args$verbose)
+    expect_false(args$parallel)
+    expect_identical(args$cores, NA)
   }
 )
 
@@ -35,19 +35,19 @@ test_that("run_simulations passes usm_names as situation to stics_wrapper", {
   mock_wrapper <- mock(list(sim_list = list()))
 
   stub(run_simulations, "SticsOnR::stics_wrapper_options", mock_options)
-  stub(run_simulations, "SticsOnR::stics_wrapper",         mock_wrapper)
+  stub(run_simulations, "SticsOnR::stics_wrapper", mock_wrapper)
 
   run_simulations(
-    stics_exe  = "/path/to/stics",
-    workspace  = "/path/to/workspace",
-    usm_names  = c("usm1", "usm2"),
+    stics_exe = file.path("path", "to", "stics"),
+    workspace = file.path("path", "to", "workspace"),
+    usm_names = c("usm1", "usm2"),
     successive = NULL,
-    verbose    = FALSE
+    verbose = FALSE
   )
 
   expect_called(mock_wrapper, 1)
   args <- mock_args(mock_wrapper)[[1]]
-  expect_equal(args$situation, c("usm1", "usm2"))
+  expect_identical(args$situation, c("usm1", "usm2"))
 })
 
 test_that("run_simulations returns sim_list from stics_wrapper result", {
@@ -61,14 +61,14 @@ test_that("run_simulations returns sim_list from stics_wrapper result", {
   )
 
   result <- run_simulations(
-    stics_exe  = "/path/to/stics",
-    workspace  = "/path/to/workspace",
-    usm_names  = c("usm1", "usm2"),
+    stics_exe = file.path("path", "to", "stics"),
+    workspace = file.path("path", "to", "workspace"),
+    usm_names = c("usm1", "usm2"),
     successive = NULL,
-    verbose    = FALSE
+    verbose = FALSE
   )
 
-  expect_equal(result, fake_sim_list)
+  expect_identical(result, fake_sim_list)
 })
 
 test_that(
@@ -83,18 +83,18 @@ test_that(
     )
 
     run_simulations(
-      stics_exe  = "/path/to/stics",
-      workspace  = "/path/to/workspace",
-      usm_names  = c("usm1"),
+      stics_exe = file.path("path", "to", "stics"),
+      workspace = file.path("path", "to", "workspace"),
+      usm_names = "usm1",
       successive = NULL,
-      verbose    = FALSE,
-      parallel   = TRUE,
-      cores      = 4
+      verbose = FALSE,
+      parallel = TRUE,
+      cores = 4
     )
 
     args <- mock_args(mock_options)[[1]]
-    expect_equal(args$parallel, TRUE)
-    expect_equal(args$cores,    4)
+    expect_true(args$parallel)
+    expect_identical(args$cores, 4)
   }
 )
 
@@ -110,15 +110,15 @@ test_that(
     )
 
     run_simulations(
-      stics_exe  = "/path/to/stics",
-      workspace  = "/path/to/workspace",
-      usm_names  = c("usm1"),
+      stics_exe = file.path("file", "to", "stics"),
+      workspace = file.path("path", "to", "workspace"),
+      usm_names = "usm1",
       successive = NULL,
-      verbose    = TRUE
+      verbose = TRUE
     )
 
     args <- mock_args(mock_options)[[1]]
-    expect_equal(args$time_display, TRUE)
+    expect_true(args$time_display)
   }
 )
 
@@ -128,12 +128,12 @@ test_that(
 
 make_parquet_dir <- function(species) {
   base <- file.path(tempdir(), basename(tempfile()))
-  dir  <- file.path(base, species)
-  dir.create(dir, recursive = TRUE)
+  species_dir <- file.path(base, species)
+  dir.create(species_dir, recursive = TRUE)
 
   # Create a minimal parquet file with arrow
-  df <- data.frame(x = 1:3, y = c("a", "b", "c"))
-  arrow::write_parquet(df, file.path(dir, "Simulations.parquet"))
+  min_df <- data.frame(x = 1:3, y = c("a", "b", "c"), stringsAsFactors = FALSE)
+  arrow::write_parquet(min_df, file.path(species_dir, "Simulations.parquet"))
 
   base
 }
@@ -183,8 +183,8 @@ test_that("read_ref_sim returns a data frame when collect = TRUE", {
   result <- read_ref_sim(ref_dir, "wheat", collect = TRUE)
 
   expect_s3_class(result, "data.frame")
-  expect_equal(ncol(result), 2)
-  expect_equal(nrow(result), 3)
+  expect_identical(ncol(result), 2)
+  expect_identical(nrow(result), 3)
 })
 
 test_that("read_ref_sim collect = FALSE is the default", {
@@ -202,5 +202,5 @@ test_that("read_ref_sim reads data for the correct species", {
   result <- read_ref_sim(ref_dir, "soy", collect = TRUE)
 
   expect_s3_class(result, "data.frame")
-  expect_equal(names(result), c("x", "y"))
+  expect_named(result, c("x", "y"))
 })

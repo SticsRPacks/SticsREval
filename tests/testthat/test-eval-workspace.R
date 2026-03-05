@@ -21,39 +21,39 @@ make_species_parquet <- function(species, filename) {
 # Tests: path helpers
 # ===========================================================================
 
-test_that("sim_ds_path returns data_dir/sim", {
-  expect_equal(sim_ds_path("/base"), "/base/sim")
+test_that("sim_ds_path returns data_dir/sim", { # nolint: nonportable_path_linter
+  expect_identical(sim_ds_path("/base"), file.path("base", "sim"))
 })
 
-test_that("obs_ds_path returns data_dir/obs", {
-  expect_equal(obs_ds_path("/base"), "/base/obs")
+test_that("obs_ds_path returns data_dir/obs", { # nolint: nonportable_path_linter
+  expect_identical(obs_ds_path("/base"), file.path("base", "obs"))
 })
 
 test_that("stats_ds_path returns correct path", {
-  expect_equal(
+  expect_identical(
     stats_ds_path("/base", "wheat"),
-    "/base/wheat/Criteres_stats.parquet"
+    file.path("base", "wheat", "Criteres_stats.parquet")
   )
 })
 
 test_that("rmse_per_usm_ds_path returns correct path", {
-  expect_equal(
+  expect_identical(
     rmse_per_usm_ds_path("/base", "wheat"),
-    "/base/wheat/RMSE_per_USM.parquet"
+    file.path("base", "wheat", "RMSE_per_USM.parquet")
   )
 })
 
 test_that("deteriorated_ds_path returns correct path", {
-  expect_equal(
+  expect_identical(
     deteriorated_ds_path("/base", "wheat"),
-    "/base/wheat/Deteriorated_RMSE_per_usm.parquet"
+    file.path("base", "wheat", "Deteriorated_RMSE_per_usm.parquet")
   )
 })
 
 test_that("comparison_ds_path returns correct path", {
-  expect_equal(
+  expect_identical(
     comparison_ds_path("/base", "wheat"),
-    "/base/wheat/Comparison.parquet"
+    file.path("base", "wheat", "Comparison.parquet")
   )
 })
 
@@ -85,7 +85,7 @@ test_that("open_parquet_or_null logs the warn_msg when file missing", {
     warn_msg = "custom warning message"
   )
 
-  expect_equal(mock_args(mock_warn)[[1]][[1]], "custom warning message")
+  expect_identical(mock_args(mock_warn)[[1]][[1]], "custom warning message")
 })
 
 test_that("open_parquet_or_null returns lazy dataset when collect = FALSE", {
@@ -111,12 +111,12 @@ test_that("open_parquet_or_null returns data frame when collect = TRUE", {
 test_that("init_eval_workspace creates workspace directory", {
   base <- file.path(tempdir(), basename(tempfile()))
   stub(init_eval_workspace, "extract_species_from_usms", mock(
-    data.frame(usm = "usm1", species = "wheat")
+    data.frame(usm = "usm1", species = "wheat", stringsAsFactors = FALSE)
   ))
   stub(init_eval_workspace, "get_rotation_list", mock(list()))
   stub(init_eval_workspace, "load_workspace_sim", mock(NULL))
   stub(init_eval_workspace, "load_workspace_obs", mock(NULL))
-  stub(init_eval_workspace, "list.dirs", mock(c("usm1")))
+  stub(init_eval_workspace, "list.dirs", mock("usm1"))
 
   init_eval_workspace(
     data_workspace = "/data",
@@ -163,12 +163,12 @@ test_that(
     writeLines("old", old_file)
 
     stub(init_eval_workspace, "extract_species_from_usms", mock(
-      data.frame(usm = "usm1", species = "wheat")
+      data.frame(usm = "usm1", species = "wheat", stringsAsFactors = FALSE)
     ))
     stub(init_eval_workspace, "get_rotation_list", mock(list()))
     stub(init_eval_workspace, "load_workspace_sim", mock(NULL))
     stub(init_eval_workspace, "load_workspace_obs", mock(NULL))
-    stub(init_eval_workspace, "list.dirs", mock(c("usm1")))
+    stub(init_eval_workspace, "list.dirs", mock("usm1"))
 
     init_eval_workspace(
       data_workspace = "/data",
@@ -192,12 +192,12 @@ test_that(
     dir.create(base)
 
     stub(init_eval_workspace, "extract_species_from_usms", mock(
-      data.frame(usm = "usm1", species = "wheat")
+      data.frame(usm = "usm1", species = "wheat", stringsAsFactors = FALSE)
     ))
     stub(init_eval_workspace, "get_rotation_list", mock(list()))
     stub(init_eval_workspace, "load_workspace_sim", mock(NULL))
     stub(init_eval_workspace, "load_workspace_obs", mock(NULL))
-    stub(init_eval_workspace, "list.dirs", mock(c("usm1")))
+    stub(init_eval_workspace, "list.dirs", mock("usm1"))
 
     expect_no_error(
       init_eval_workspace(
@@ -221,7 +221,7 @@ test_that("init_eval_workspace throws error when dir cannot be created", {
     suppressWarnings(
       init_eval_workspace(
         data_workspace = "/data",
-        eval_workspace = "/proc/invalid_path",
+        eval_workspace = "/proc/invalid_path", # nolint: nonportable_path_linter
         metadata_file = "/meta.csv",
         stics_exe = "/stics",
         must_run_simulations = FALSE,
@@ -238,12 +238,12 @@ test_that("init_eval_workspace calls load_workspace_sim", {
   mock_load_sim <- mock(NULL)
 
   stub(init_eval_workspace, "extract_species_from_usms", mock(
-    data.frame(usm = "usm1", species = "wheat")
+    data.frame(usm = "usm1", species = "wheat", stringsAsFactors = FALSE)
   ))
   stub(init_eval_workspace, "get_rotation_list", mock(list()))
   stub(init_eval_workspace, "load_workspace_sim", mock_load_sim)
   stub(init_eval_workspace, "load_workspace_obs", mock(NULL))
-  stub(init_eval_workspace, "list.dirs", mock(c("usm1")))
+  stub(init_eval_workspace, "list.dirs", mock("usm1"))
 
   init_eval_workspace(
     data_workspace = "/data",
@@ -263,12 +263,12 @@ test_that("init_eval_workspace calls load_workspace_obs", {
   mock_load_obs <- mock(NULL)
 
   stub(init_eval_workspace, "extract_species_from_usms", mock(
-    data.frame(usm = "usm1", species = "wheat")
+    data.frame(usm = "usm1", species = "wheat", stringsAsFactors = FALSE)
   ))
   stub(init_eval_workspace, "get_rotation_list", mock(list()))
   stub(init_eval_workspace, "load_workspace_sim", mock(NULL))
   stub(init_eval_workspace, "load_workspace_obs", mock_load_obs)
-  stub(init_eval_workspace, "list.dirs", mock(c("usm1")))
+  stub(init_eval_workspace, "list.dirs", mock("usm1"))
 
   init_eval_workspace(
     data_workspace = "/data",
@@ -328,8 +328,12 @@ test_that("get_obs_ds returns an arrow Dataset when path exists", {
 test_that("save_sim writes a partitioned parquet dataset", {
   base <- file.path(tempdir(), basename(tempfile()))
   dir.create(base)
-  sim <- data.frame(situation = "usm1", LAI = 1.2)
-  usms_species <- data.frame(usm = "usm1", species = "wheat")
+  sim <- data.frame(situation = "usm1", LAI = 1.2, stringsAsFactors = FALSE)
+  usms_species <- data.frame(
+    usm = "usm1",
+    species = "wheat",
+    stringsAsFactors = FALSE
+  )
 
   mock_bind <- mock(sim)
   mock_join <- mock(sim)
@@ -343,15 +347,19 @@ test_that("save_sim writes a partitioned parquet dataset", {
 
   expect_called(mock_write, 1)
   args <- mock_args(mock_write)[[1]]
-  expect_equal(args$path, sim_ds_path(base))
-  expect_equal(args$partitioning, "species")
+  expect_identical(args$path, sim_ds_path(base))
+  expect_identical(args$partitioning, "species")
 })
 
 test_that("save_obs writes a partitioned parquet dataset", {
   base <- file.path(tempdir(), basename(tempfile()))
   dir.create(base)
-  obs <- data.frame(situation = "usm1", LAI = 1.0)
-  usms_species <- data.frame(usm = "usm1", species = "wheat")
+  obs <- data.frame(situation = "usm1", LAI = 1.0, stringsAsFactors = FALSE)
+  usms_species <- data.frame(
+    usm = "usm1",
+    species = "wheat",
+    stringsAsFactors = FALSE
+  )
 
   mock_bind <- mock(obs)
   mock_join <- mock(obs)
@@ -365,8 +373,8 @@ test_that("save_obs writes a partitioned parquet dataset", {
 
   expect_called(mock_write, 1)
   args <- mock_args(mock_write)[[1]]
-  expect_equal(args$path, obs_ds_path(base))
-  expect_equal(args$partitioning, "species")
+  expect_identical(args$path, obs_ds_path(base))
+  expect_identical(args$partitioning, "species")
 })
 
 # ===========================================================================
@@ -377,19 +385,21 @@ test_that("get_species returns sorted species names", {
   base <- file.path(tempdir(), basename(tempfile()))
   df <- data.frame(
     situation = c("usm1", "usm2", "usm3"),
-    species = c("wheat", "maize", "soy")
+    species = c("wheat", "maize", "soy"),
+    stringsAsFactors = FALSE
   )
   make_parquet(file.path(base, "obs"), df)
 
   result <- get_species(base)
-  expect_equal(result, sort(c("wheat", "maize", "soy")))
+  expect_identical(result, sort(c("wheat", "maize", "soy")))
 })
 
 test_that("get_species_usm returns USMs for given species", {
   base <- file.path(tempdir(), basename(tempfile()))
   df <- data.frame(
     situation = c("usm1", "usm2", "usm3"),
-    species = c("wheat", "wheat", "maize")
+    species = c("wheat", "wheat", "maize"),
+    stringsAsFactors = FALSE
   )
   make_parquet(file.path(base, "obs"), df)
 
@@ -402,7 +412,8 @@ test_that("get_by_species returns lazy dataset when collect = FALSE", {
   df <- data.frame(
     situation = "usm1",
     species = "wheat",
-    LAI = 1.2
+    LAI = 1.2,
+    stringsAsFactors = FALSE
   )
   make_parquet(file.path(base, "sim"), df)
 
@@ -415,13 +426,14 @@ test_that("get_by_species returns data frame when collect = TRUE", {
   df <- data.frame(
     situation = c("usm1", "usm2"),
     species = c("wheat", "wheat"),
-    LAI = c(1.2, 1.5)
+    LAI = c(1.2, 1.5),
+    stringsAsFactors = FALSE
   )
   make_parquet(file.path(base, "sim"), df)
 
   result <- get_by_species(base, "wheat", "sim", collect = TRUE)
   expect_s3_class(result, "data.frame")
-  expect_equal(nrow(result), 2)
+  expect_identical(nrow(result), 2)
 })
 
 test_that("get_by_species filters by species", {
@@ -429,13 +441,14 @@ test_that("get_by_species filters by species", {
   df <- data.frame(
     situation = c("usm1", "usm2"),
     species = c("wheat", "maize"),
-    LAI = c(1.2, 0.8)
+    LAI = c(1.2, 0.8),
+    stringsAsFactors = FALSE
   )
   make_parquet(file.path(base, "obs"), df)
 
   result <- get_by_species(base, "wheat", "obs", collect = TRUE)
-  expect_equal(nrow(result), 1)
-  expect_equal(result$situation, "usm1")
+  expect_identical(nrow(result), 1)
+  expect_identical(result$situation, "usm1")
 })
 
 # ===========================================================================
@@ -445,7 +458,7 @@ test_that("get_by_species filters by species", {
 test_that("save_stats writes parquet to correct path", {
   base <- file.path(tempdir(), basename(tempfile()))
   dir.create(file.path(base, "wheat"), recursive = TRUE)
-  df <- data.frame(var = "LAI", stat = 0.9)
+  df <- data.frame(var = "LAI", stat = 0.9, stringsAsFactors = FALSE)
 
   save_stats(base, "wheat", df)
 
@@ -460,8 +473,8 @@ test_that("get_stats delegates to open_parquet_or_null", {
 
   expect_called(mock_open, 1)
   args <- mock_args(mock_open)[[1]]
-  expect_equal(args$path, stats_ds_path("/base", "wheat"))
-  expect_equal(args$collect, TRUE)
+  expect_identical(args$path, stats_ds_path("/base", "wheat"))
+  expect_true(args$collect)
 })
 
 test_that("get_stats returns NULL when file missing", {
@@ -488,7 +501,7 @@ test_that("get_stats returns data frame when collect = TRUE", {
 test_that("save_rmse_per_usm writes parquet to correct path", {
   base <- file.path(tempdir(), basename(tempfile()))
   dir.create(file.path(base, "wheat"), recursive = TRUE)
-  df <- data.frame(usm = "usm1", rmse = 0.1)
+  df <- data.frame(usm = "usm1", rmse = 0.1, stringsAsFactors = FALSE)
 
   save_rmse_per_usm(base, "wheat", df)
 
@@ -503,7 +516,7 @@ test_that("get_rmse_per_usm delegates to open_parquet_or_null", {
 
   expect_called(mock_open, 1)
   args <- mock_args(mock_open)[[1]]
-  expect_equal(args$path, rmse_per_usm_ds_path("/base", "wheat"))
+  expect_identical(args$path, rmse_per_usm_ds_path("/base", "wheat"))
 })
 
 test_that("get_rmse_per_usm returns NULL when file missing", {
@@ -524,7 +537,7 @@ test_that("get_rmse_per_usm returns data frame when collect = TRUE", {
 test_that("save_deteriorated_usm writes parquet to correct path", {
   base <- file.path(tempdir(), basename(tempfile()))
   dir.create(file.path(base, "wheat"), recursive = TRUE)
-  df <- data.frame(usm = "usm1", rRMSE = 0.5)
+  df <- data.frame(usm = "usm1", rRMSE = 0.5, stringsAsFactors = FALSE)
 
   save_deteriorated_usm(base, "wheat", df)
 
@@ -541,7 +554,7 @@ test_that("get_deteriorated_usm delegates to open_parquet_or_null", {
 
   expect_called(mock_open, 1)
   args <- mock_args(mock_open)[[1]]
-  expect_equal(args$path, deteriorated_ds_path("/base", "wheat"))
+  expect_identical(args$path, deteriorated_ds_path("/base", "wheat"))
 })
 
 test_that("get_deteriorated_usm returns NULL when file missing", {
@@ -564,7 +577,7 @@ test_that("get_deteriorated_usm returns data frame when collect = TRUE", {
 test_that("save_species_comparison writes parquet to correct path", {
   base <- file.path(tempdir(), basename(tempfile()))
   dir.create(file.path(base, "wheat"), recursive = TRUE)
-  df <- data.frame(variable = "LAI", ratio = 1.1)
+  df <- data.frame(variable = "LAI", ratio = 1.1, stringsAsFactors = FALSE)
 
   save_species_comparison(base, "wheat", df)
 
@@ -581,8 +594,8 @@ test_that("get_species_comparison delegates to open_parquet_or_null", {
 
   expect_called(mock_open, 1)
   args <- mock_args(mock_open)[[1]]
-  expect_equal(args$path, comparison_ds_path("/base", "wheat"))
-  expect_equal(args$collect, TRUE)
+  expect_identical(args$path, comparison_ds_path("/base", "wheat"))
+  expect_true(args$collect)
 })
 
 test_that("get_species_comparison returns NULL when file missing", {
