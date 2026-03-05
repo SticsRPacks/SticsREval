@@ -9,6 +9,9 @@ jobs:
         with:
           use-public-rspm: true
       - uses: r-lib/actions/setup-renv@v2
+      - name: Install lintr
+        run: renv::install(c("lintr", "cyclocomp"))
+        shell: Rscript {0}
       - name: Run lintr
         run: lintr::lint_package()
         shell: Rscript {0}
