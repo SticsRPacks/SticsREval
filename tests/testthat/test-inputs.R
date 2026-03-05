@@ -359,7 +359,6 @@ test_that("get_rotation_list returns an empty list when no rotations", {
     "usm2;0;0"
   ))
   stub(get_rotation_list, "is_debug", function() FALSE)
-
   result <- get_rotation_list(f)
   expect_equal(length(result), 0)
 })
@@ -367,13 +366,12 @@ test_that("get_rotation_list returns an empty list when no rotations", {
 test_that("get_rotation_list returns one vector per rotation group", {
   f <- make_metadata_file(c(
     "usm;rotation;rotation_order",
-    "usm1;1;1",
-    "usm2;1;2",
-    "usm3;2;1",
-    "usm4;2;2"
+    "usm1;rot_A;1",
+    "usm2;rot_A;2",
+    "usm3;rot_B;1",
+    "usm4;rot_B;2"
   ))
   stub(get_rotation_list, "is_debug", function() FALSE)
-
   result <- get_rotation_list(f)
   expect_equal(length(result), 2)
 })
@@ -381,11 +379,10 @@ test_that("get_rotation_list returns one vector per rotation group", {
 test_that("get_rotation_list orders usms within a rotation by rotation_order", {
   f <- make_metadata_file(c(
     "usm;rotation;rotation_order",
-    "usm2;1;2",
-    "usm1;1;1"
+    "usm2;rot_A;2",
+    "usm1;rot_A;1"
   ))
   stub(get_rotation_list, "is_debug", function() FALSE)
-
   result <- get_rotation_list(f)
   expect_equal(result[[1]], c("usm1", "usm2"))
 })
@@ -393,12 +390,11 @@ test_that("get_rotation_list orders usms within a rotation by rotation_order", {
 test_that("get_rotation_list ignores usms with rotation = 0", {
   f <- make_metadata_file(c(
     "usm;rotation;rotation_order",
-    "usm1;1;1",
+    "usm1;rot_A;1",
     "usm2;0;0",
-    "usm3;1;2"
+    "usm3;rot_A;2"
   ))
   stub(get_rotation_list, "is_debug", function() FALSE)
-
   result <- get_rotation_list(f)
   expect_equal(length(result), 1)
   expect_false("usm2" %in% result[[1]])
@@ -407,12 +403,11 @@ test_that("get_rotation_list ignores usms with rotation = 0", {
 test_that("get_rotation_list groups usms correctly across multiple rotations", {
   f <- make_metadata_file(c(
     "usm;rotation;rotation_order",
-    "usm1;1;1",
-    "usm2;1;2",
-    "usm3;2;1"
+    "usm1;rot_A;1",
+    "usm2;rot_A;2",
+    "usm3;rot_B;1"
   ))
   stub(get_rotation_list, "is_debug", function() FALSE)
-
   result <- get_rotation_list(f)
   expect_equal(result[[1]], c("usm1", "usm2"))
   expect_equal(result[[2]], c("usm3"))
@@ -429,11 +424,10 @@ test_that(
   "get_rotation_list throws an error when required columns are missing",
   {
     f <- make_metadata_file(c(
-      "usm;campaign",   # manque rotation et rotation_order
+      "usm;campaign",
       "usm1;2024"
     ))
     stub(get_rotation_list, "is_debug", function() FALSE)
-
     expect_error(get_rotation_list(f), regexp = "Missing columns")
   }
 )
@@ -442,11 +436,10 @@ test_that(
   "get_rotation_list throws an error when only some columns are missing",
   {
     f <- make_metadata_file(c(
-      "usm;rotation",   # manque rotation_order
-      "usm1;1"
+      "usm;rotation",
+      "usm1;rot_A"
     ))
     stub(get_rotation_list, "is_debug", function() FALSE)
-
     expect_error(get_rotation_list(f), regexp = "rotation_order")
   }
 )
@@ -454,28 +447,25 @@ test_that(
 test_that("get_rotation_list throws an error when file is empty", {
   f <- make_metadata_file(character(0))
   stub(get_rotation_list, "is_debug", function() FALSE)
-
   expect_error(get_rotation_list(f))
 })
 
 test_that("get_rotation_list returns empty list when file has only a header", {
   f <- make_metadata_file("usm;rotation;rotation_order")
   stub(get_rotation_list, "is_debug", function() FALSE)
-
   result <- get_rotation_list(f)
   expect_equal(length(result), 0)
 })
 
 test_that(
-  "get_rotation_list throws an error when rotation column is not numeric",
+  "get_rotation_list throws an error when rotation_order column is not numeric",
   {
     f <- make_metadata_file(c(
       "usm;rotation;rotation_order",
-      "usm1;abc;1"
+      "usm1;rot_A;abc"
     ))
     stub(get_rotation_list, "is_debug", function() FALSE)
-
-    expect_error(get_rotation_list(f))
+    expect_error(get_rotation_list(f), regexp = "rotation_order")
   }
 )
 
@@ -484,14 +474,30 @@ test_that(
   {
     f <- make_metadata_file(c(
       "usm;rotation;rotation_order",
-      "usm1;1;1",
+      "usm1;rot_A;1",
       "usm2;NA;1"
     ))
     stub(get_rotation_list, "is_debug", function() FALSE)
-
     result <- get_rotation_list(f)
     usms <- unlist(result)
     expect_true("usm1" %in% usms)
     expect_false("usm2" %in% usms)
+  }
+)
+
+test_that(
+  "get_rotation_list works with mixed numeric-like and string rotation values",
+  {
+    f <- make_metadata_file(c(
+      "usm;rotation;rotation_order",
+      "usm1;rot_A;1",
+      "usm2;123;1",
+      "usm3;rot_A;2"
+    ))
+    stub(get_rotation_list, "is_debug", function() FALSE)
+    result <- get_rotation_list(f)
+    expect_equal(length(result), 2)
+    usms <- unlist(result)
+    expect_true(all(c("usm1", "usm2", "usm3") %in% usms))
   }
 )

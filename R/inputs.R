@@ -81,6 +81,7 @@ get_rotation_list <- function(metadata_file) {
   if (!file.exists(metadata_file)) {
     stop("Metadata file not found: ", metadata_file, call. = FALSE)
   }
+
   rotations_data <- read_csv(metadata_file, delimiter = ";")
   required_cols <- c("usm", "rotation", "rotation_order")
   missing_cols <- setdiff(required_cols, names(rotations_data))
@@ -90,32 +91,37 @@ get_rotation_list <- function(metadata_file) {
       call. = FALSE
     )
   }
+
   if (nrow(rotations_data) == 0) {
     return(list())
   }
-  cols_to_check <- c("rotation", "rotation_order")
-  original <- rotations_data[cols_to_check]
+
+  # Convert rotation_order to numeric (must still be numeric)
+  original_order <- rotations_data[["rotation_order"]]
   rotations_data <- rotations_data |>
     dplyr::mutate(
-      rotation = suppressWarnings(as.numeric(.data$rotation)),
       rotation_order = suppressWarnings(as.numeric(.data$rotation_order))
     )
-  non_numeric <- cols_to_check[
-    vapply(cols_to_check, function(col) {
-      sum(is.na(rotations_data[[col]])) > sum(is.na(original[[col]]))
-    }, logical(1))
-  ]
-  if (length(non_numeric) > 0) {
-    stop(
-      "Columns must be numeric: ", toString(non_numeric), call. = FALSE
-    )
+
+  if (
+    sum(is.na(rotations_data[["rotation_order"]])) > sum(is.na(original_order))
+  ) {
+    stop("Column must be numeric: rotation_order", call. = FALSE)
   }
+
+  # rotation: keep as character, treat NA and "0" as absent
+  rotations_data <- rotations_data |>
+    dplyr::mutate(
+      rotation = as.character(.data$rotation)
+    )
+
   rotations <- rotations_data |>
-    dplyr::filter(!is.na(.data$rotation), .data$rotation != 0) |>
+    dplyr::filter(!is.na(.data$rotation), .data$rotation != "0") |>
     dplyr::arrange(.data$rotation, .data$rotation_order) |>
     dplyr::group_by(.data$rotation) |>
     dplyr::summarise(usm_vec = list(.data$usm)) |>
     dplyr::pull("usm_vec")
+
   logger::log_debug("Found ", length(rotations), " rotations")
   rotations
 }
