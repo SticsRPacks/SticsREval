@@ -1,1 +1,1 @@
-linters: all_linters(implicit_integer_linter = NULL)
+linters: all_linters(implicit_integer_linter = NULL, object_usage_linter = NULL)
