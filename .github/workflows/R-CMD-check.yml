@@ -26,11 +26,17 @@ jobs:
           r-version: ${{ matrix.config.r }}
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
+      - uses: r-lib/actions/setup-pandoc@v2
+      - name: Install system dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake libcurl4-openssl-dev libx11-dev libxslt-dev
       - uses: r-lib/actions/setup-renv@v2
         with:
           cache-version: 2
-      - name: Install rcmdcheck
-        run: renv::install("rcmdcheck")
+      - name: Install rcmdcheck and testthat
+        run: renv::install("rcmdcheck", "testthat")
         shell: Rscript {0}
       - uses: r-lib/actions/check-r-package@v2
         with:
