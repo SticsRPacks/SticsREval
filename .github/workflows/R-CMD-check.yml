@@ -26,7 +26,6 @@ jobs:
           r-version: ${{ matrix.config.r }}
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
-      - uses: r-lib/actions/setup-pandoc@v2
       - name: Install system dependencies
         if: runner.os == 'Linux'
         run: |
@@ -35,8 +34,8 @@ jobs:
       - uses: r-lib/actions/setup-renv@v2
         with:
           cache-version: 2
-      - name: Install rcmdcheck and testthat
-        run: renv::install(c("rcmdcheck", "testthat"))
+      - name: Install rcmdcheck and testthat and mockery
+        run: renv::install(c("rcmdcheck", "testthat", "mockery"))
         shell: Rscript {0}
       - uses: r-lib/actions/check-r-package@v2
         with:
