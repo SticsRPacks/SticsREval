@@ -15,3 +15,5 @@ jobs:
       - name: Run lintr
         run: lintr::lint_package()
         shell: Rscript {0}
+        env:
+          LINTR_ERROR_ON_LINT: true
