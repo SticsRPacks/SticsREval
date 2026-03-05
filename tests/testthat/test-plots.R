@@ -1,13 +1,14 @@
 # ===========================================================================
 # Tests: gen_scatter_plot
 # ===========================================================================
-# NOTE: CroPlotR:::plot.cropr_simulation ne peut pas être intercepté par
-# mockery::stub car c'est un appel interne (:::). On utilise
-# testthat::local_mocked_bindings pour patcher au niveau du namespace CroPlotR.
 
 test_that("gen_scatter_plot calls CroPlotR plot with correct arguments", {
   fake_ggplot <- structure(list(), class = "ggplot")
   captured    <- NULL
+
+  fake_sim     <- structure(list(), class = "cropr_simulation")
+  fake_obs     <- list()
+  fake_ref_sim <- structure(list(), class = "cropr_simulation")
 
   local_mocked_bindings(
     plot.cropr_simulation = function(...) {
@@ -21,12 +22,8 @@ test_that("gen_scatter_plot calls CroPlotR plot with correct arguments", {
     "CroPlotR::extract_plot",
     mock(list(fake_ggplot), cycle = TRUE)
   )
-  stub(gen_scatter_plot, "plotly::ggplotly",        mock(list(), cycle = TRUE))
-  stub(gen_scatter_plot, "htmltools::save_html",    mock(NULL))
-
-  fake_sim <- list()
-  fake_obs <- list()
-  fake_ref_sim <- list()
+  stub(gen_scatter_plot, "plotly::ggplotly",     mock(list(), cycle = TRUE))
+  stub(gen_scatter_plot, "htmltools::save_html", mock(NULL))
 
   gen_scatter_plot(
     output_dir = tempdir(),
@@ -46,6 +43,9 @@ test_that("gen_scatter_plot calls extract_plot once per variable", {
   fake_ggplot  <- structure(list(), class = "ggplot")
   mock_extract <- mock(list(fake_ggplot), cycle = TRUE)
 
+  fake_sim     <- structure(list(), class = "cropr_simulation")
+  fake_ref_sim <- structure(list(), class = "cropr_simulation")
+
   local_mocked_bindings(
     plot.cropr_simulation = function(...) list(),
     .package = "CroPlotR"
@@ -56,8 +56,10 @@ test_that("gen_scatter_plot calls extract_plot once per variable", {
 
   gen_scatter_plot(
     tempdir(),
-    list(), list(), list(),
-    vars = c("LAI", "MASEC", "ZRAC")
+    sim     = fake_sim,
+    obs     = list(),
+    ref_sim = fake_ref_sim,
+    vars    = c("LAI", "MASEC", "ZRAC")
   )
 
   expect_called(mock_extract, 3)
@@ -67,33 +69,59 @@ test_that("gen_scatter_plot saves HTML to output_dir/scatter_plots.html", {
   fake_ggplot    <- structure(list(), class = "ggplot")
   mock_save_html <- mock(NULL)
 
+  fake_sim     <- structure(list(), class = "cropr_simulation")
+  fake_ref_sim <- structure(list(), class = "cropr_simulation")
+
   local_mocked_bindings(
     plot.cropr_simulation = function(...) list(),
     .package = "CroPlotR"
   )
-  stub(gen_scatter_plot, "CroPlotR::extract_plot", mock(list(fake_ggplot)))
-  stub(gen_scatter_plot, "plotly::ggplotly",        mock(list()))
+  stub(
+    gen_scatter_plot,
+    "CroPlotR::extract_plot",
+    mock(list(fake_ggplot), cycle = TRUE)
+  )
+  stub(gen_scatter_plot, "plotly::ggplotly",        mock(list(), cycle = TRUE))
   stub(gen_scatter_plot, "htmltools::save_html",    mock_save_html)
 
   out_dir <- tempdir()
-  gen_scatter_plot(out_dir, list(), list(), list(), vars = "LAI")
+  gen_scatter_plot(
+    out_dir,
+    sim     = fake_sim,
+    obs     = list(),
+    ref_sim = fake_ref_sim,
+    vars    = "LAI"
+  )
 
   args <- mock_args(mock_save_html)[[1]]
   expect_equal(args$file, file.path(out_dir, "scatter_plots.html"))
 })
 
 test_that("gen_scatter_plot returns NULL invisibly", {
-  fake_ggplot <- structure(list(), class = "ggplot")
+  fake_ggplot  <- structure(list(), class = "ggplot")
+  fake_sim     <- structure(list(), class = "cropr_simulation")
+  fake_ref_sim <- structure(list(), class = "cropr_simulation")
 
   local_mocked_bindings(
     plot.cropr_simulation = function(...) list(),
     .package = "CroPlotR"
   )
-  stub(gen_scatter_plot, "CroPlotR::extract_plot", mock(list(fake_ggplot)))
-  stub(gen_scatter_plot, "plotly::ggplotly",        mock(list()))
+  stub(
+    gen_scatter_plot,
+    "CroPlotR::extract_plot",
+    mock(list(fake_ggplot), cycle = TRUE)
+  )
+  stub(gen_scatter_plot, "plotly::ggplotly",        mock(list(), cycle = TRUE))
   stub(gen_scatter_plot, "htmltools::save_html",    mock(NULL))
 
-  result <- gen_scatter_plot(tempdir(), list(), list(), list(), vars = "LAI")
+  result <- gen_scatter_plot(
+    tempdir(),
+    sim     = fake_sim,
+    obs     = list(),
+    ref_sim = fake_ref_sim,
+    vars    = "LAI"
+  )
+
   expect_null(result)
 })
 

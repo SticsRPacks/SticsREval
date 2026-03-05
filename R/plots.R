@@ -1,6 +1,6 @@
 gen_scatter_plot <- function(output_dir, sim, obs, ref_sim, vars) {
   loadNamespace("CroPlotR")
-  plots <- plot(
+  plots <- getS3method("plot", class(sim))(
     "New version" = sim,
     "Ref version" = ref_sim,
     obs = obs,

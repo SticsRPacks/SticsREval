@@ -40,17 +40,16 @@ gen_species_stats <- function(eval_workspace, species, parallel, cores) {
       )
 
       logger::log_info("Generating statistics for ", spec)
+      loadNamespace("CroPlotR")
       stats <- run_with_log_control(
-        # Calling summary() directly does not work in a future context
-        CroPlotR:::summary.cropr_simulation(
+        getS3method("summary", class(splited_sim))(
           splited_sim,
           obs = splited_obs
         )
       )
       logger::log_info("Generating RMSE per USM for species ", spec)
       rmse_per_usm <- run_with_log_control(
-        # Calling summary() directly does not work in a future context
-        CroPlotR:::summary.cropr_simulation(
+        getS3method("summary", class(splited_sim))(
           splited_sim,
           obs = splited_obs,
           all_situations = FALSE,
