@@ -180,7 +180,9 @@ get_stats <- function(data_dir, species, collect = FALSE) {
   open_parquet_or_null(
     path = stats_ds_path(data_dir, species),
     collect = collect,
-    warn_msg = "No stats file dound for species {species} in {data_dir}"
+    warn_msg = paste(
+      "No stats file dound for species", species, "in", data_dir
+    )
   )
 }
 
@@ -195,7 +197,9 @@ get_rmse_per_usm <- function(data_dir, species, collect = FALSE) {
   open_parquet_or_null(
     path = rmse_per_usm_ds_path(data_dir, species),
     collect = collect,
-    warn_msg = "No RMSE per USM file found for species {species} in {data_dir}"
+    warn_msg = paste(
+      "No RMSE per USM file found for species", species, "in", data_dir
+    )
   )
 }
 
@@ -210,8 +214,10 @@ get_deteriorated_usm <- function(data_dir, species, collect = FALSE) {
   open_parquet_or_null(
     path = deteriorated_ds_path(data_dir, species),
     collect = collect,
-    warn_msg = "No deteriorated USM file found for species {species} in
-    {data_dir}"
+    warn_msg = paste(
+      "No deteriorated USM file found for species",
+      species, "in", data_dir
+    )
   )
 }
 
@@ -226,6 +232,9 @@ get_species_comparison <- function(data_dir, species, collect = FALSE) {
   open_parquet_or_null(
     path = comparison_ds_path(data_dir, species),
     collect = collect,
-    warn_msg = "No comparison file found for species {species} in {data_dir}"
+    warn_msg = paste(
+      "No comparison file found for species",
+      species, "in", data_dir
+    )
   )
 }
