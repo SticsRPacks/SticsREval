@@ -36,7 +36,7 @@ jobs:
         with:
           cache-version: 2
       - name: Install rcmdcheck and testthat
-        run: renv::install("rcmdcheck", "testthat")
+        run: renv::install(c("rcmdcheck", "testthat"))
         shell: Rscript {0}
       - uses: r-lib/actions/check-r-package@v2
         with:
