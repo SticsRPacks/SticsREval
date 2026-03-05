@@ -1,3 +1,4 @@
+#' @importFrom utils getS3method
 gen_scatter_plot <- function(output_dir, sim, obs, ref_sim, vars) {
   loadNamespace("CroPlotR")
   plots <- getS3method("plot", class(sim))(

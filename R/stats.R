@@ -22,6 +22,7 @@ read_ref_rmse_per_usm <- function(species, reference_data_dir) {
   read_csv(reference_file)
 }
 
+#' @importFrom utils getS3method
 gen_species_stats <- function(eval_workspace, species, parallel, cores) {
   results <- parallelizable_loop(
     length(species),
