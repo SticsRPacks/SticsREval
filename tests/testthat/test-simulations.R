@@ -183,8 +183,8 @@ test_that("read_ref_sim returns a data frame when collect = TRUE", {
   result <- read_ref_sim(ref_dir, "wheat", collect = TRUE)
 
   expect_s3_class(result, "data.frame")
-  expect_identical(ncol(result), 2)
-  expect_identical(nrow(result), 3)
+  expect_identical(ncol(result), 2L)
+  expect_identical(nrow(result), 3L)
 })
 
 test_that("read_ref_sim collect = FALSE is the default", {

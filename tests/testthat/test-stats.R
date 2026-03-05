@@ -21,8 +21,8 @@ test_that("read_ref_stats returns a data frame when the file exists", {
   result <- read_ref_stats("wheat", ref_dir)
 
   expect_s3_class(result, "data.frame")
-  expect_identical(ncol(result), 2)
-  expect_identical(nrow(result), 1)
+  expect_identical(ncol(result), 2L)
+  expect_identical(nrow(result), 1L)
 })
 
 test_that("read_ref_stats returns NULL when file is missing", {
@@ -72,7 +72,7 @@ test_that("read_ref_rmse_per_usm returns a data frame when the file exists", {
   result <- read_ref_rmse_per_usm("wheat", ref_dir)
 
   expect_s3_class(result, "data.frame")
-  expect_identical(ncol(result), 2)
+  expect_identical(ncol(result), 2L)
 })
 
 test_that("read_ref_rmse_per_usm returns NULL when file is missing", {
@@ -110,7 +110,7 @@ test_that(
 
     result <- read_ref_rmse_per_usm("soy", ref_dir)
     expect_named(result, c("usm", "rmse"))
-    expect_identical(nrow(result), 1)
+    expect_identical(nrow(result), 1L)
   }
 )
 

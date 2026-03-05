@@ -279,7 +279,7 @@ test_that("extract_species_from_usms returns one row per usm", {
     cores     = NA
   )
 
-  expect_identical(nrow(result), 3)
+  expect_identical(nrow(result), 3L)
 })
 
 test_that(

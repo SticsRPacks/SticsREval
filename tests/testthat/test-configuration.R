@@ -5,7 +5,7 @@
 test_that("make_config returns a list", {
   stub(make_config, "init_logger", mock(NULL))
   result <- make_config()
-  expect_type(result, list)
+  expect_type(result, "list")
 })
 
 test_that("make_config includes all expected keys", {

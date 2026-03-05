@@ -175,7 +175,7 @@ test_that("compare_rmse filters out non-finite ratios", {
   )
 
   result <- compare_rmse("wheat", ref, new)
-  expect_identical(nrow(result), 0)
+  expect_identical(nrow(result), 0L)
 })
 
 test_that("compare_rmse filters out rows with NA variable", {
@@ -193,7 +193,7 @@ test_that("compare_rmse filters out rows with NA variable", {
   )
 
   result <- compare_rmse("wheat", ref, new)
-  expect_identical(nrow(result), 0)
+  expect_identical(nrow(result), 0L)
 })
 
 test_that("compare_rmse adds species column", {

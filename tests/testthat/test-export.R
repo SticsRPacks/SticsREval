@@ -288,18 +288,18 @@ test_that("export_species_sim writes to Simulations.parquet", {
 
 test_that("export_species_sim passes sim data to write_parquet", {
   mock_parquet <- mock(NULL)
-  fake_sim <- data.frame(LAI = c(1.2, 1.5), MASEC = c(100, 200))
+  fake_sim <- data.frame(
+    LAI = c(1.2, 1.5), MASEC = c(100, 200), stringsAsFactors = FALSE
+  )
   cfg <- make_export_config()
-
   stub(export_species_sim, "validate_export_config", mock(NULL))
   stub(export_species_sim, "get_species", mock("wheat"))
   stub(export_species_sim, "prepare_species_output_dir", mock(cfg$output_dir))
   stub(export_species_sim, "get_by_species", mock(fake_sim))
   stub(export_species_sim, "arrow::write_parquet", mock_parquet)
-
   export_species_sim(cfg)
-
   args <- mock_args(mock_parquet)[[1]]
+  expect_identical(args[[1]], fake_sim)
 })
 
 test_that(

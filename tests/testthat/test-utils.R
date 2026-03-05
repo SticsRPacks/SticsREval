@@ -155,8 +155,8 @@ test_that("read_csv reads a simple CSV file correctly", {
 
   result <- read_csv(tmp)
   expect_s3_class(result, "data.frame")
-  expect_identical(ncol(result), 3)
-  expect_identical(nrow(result), 2)
+  expect_identical(ncol(result), 3L)
+  expect_identical(nrow(result), 2L)
   unlink(tmp)
 })
 
@@ -191,7 +191,7 @@ test_that("read_csv respects a custom delimiter", {
   stub(read_csv, "is_debug", function() FALSE)
 
   result <- read_csv(tmp, delimiter = ";")
-  expect_identical(ncol(result), 2)
+  expect_identical(ncol(result), 2L)
   unlink(tmp)
 })
 

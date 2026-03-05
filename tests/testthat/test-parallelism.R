@@ -76,7 +76,7 @@ test_that("get_cores_nb returns required_nb equal to available cores", {
 
 test_that("setup_parallel_backend returns a list with map and cleanup", {
   result <- setup_parallel_backend(n_tasks = 3, parallel = FALSE, cores = NA)
-  expect_type(result, list)
+  expect_type(result, "list")
   expect_type(result$map, "closure")
   expect_type(result$cleanup, "closure")
 })
@@ -110,7 +110,7 @@ test_that("setup_parallel_backend parallel returns list with map and cleanup", {
 
   result <- setup_parallel_backend(n_tasks = 2, parallel = TRUE, cores = 2)
 
-  expect_type(result, list)
+  expect_type(result, "list")
   expect_type(result$map, "closure")
   expect_type(result$cleanup, "closure")
 })

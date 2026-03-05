@@ -22,37 +22,37 @@ make_species_parquet <- function(species, filename) {
 # ===========================================================================
 
 test_that("sim_ds_path returns data_dir/sim", { # nolint: nonportable_path_linter
-  expect_identical(sim_ds_path("/base"), file.path("base", "sim"))
+  expect_identical(sim_ds_path("base"), file.path("base", "sim"))
 })
 
 test_that("obs_ds_path returns data_dir/obs", { # nolint: nonportable_path_linter
-  expect_identical(obs_ds_path("/base"), file.path("base", "obs"))
+  expect_identical(obs_ds_path("base"), file.path("base", "obs"))
 })
 
 test_that("stats_ds_path returns correct path", {
   expect_identical(
-    stats_ds_path("/base", "wheat"),
+    stats_ds_path("base", "wheat"),
     file.path("base", "wheat", "Criteres_stats.parquet")
   )
 })
 
 test_that("rmse_per_usm_ds_path returns correct path", {
   expect_identical(
-    rmse_per_usm_ds_path("/base", "wheat"),
+    rmse_per_usm_ds_path("base", "wheat"),
     file.path("base", "wheat", "RMSE_per_USM.parquet")
   )
 })
 
 test_that("deteriorated_ds_path returns correct path", {
   expect_identical(
-    deteriorated_ds_path("/base", "wheat"),
+    deteriorated_ds_path("base", "wheat"),
     file.path("base", "wheat", "Deteriorated_RMSE_per_usm.parquet")
   )
 })
 
 test_that("comparison_ds_path returns correct path", {
   expect_identical(
-    comparison_ds_path("/base", "wheat"),
+    comparison_ds_path("base", "wheat"),
     file.path("base", "wheat", "Comparison.parquet")
   )
 })
@@ -433,7 +433,7 @@ test_that("get_by_species returns data frame when collect = TRUE", {
 
   result <- get_by_species(base, "wheat", "sim", collect = TRUE)
   expect_s3_class(result, "data.frame")
-  expect_identical(nrow(result), 2)
+  expect_identical(nrow(result), 2L)
 })
 
 test_that("get_by_species filters by species", {
@@ -447,7 +447,7 @@ test_that("get_by_species filters by species", {
   make_parquet(file.path(base, "obs"), df)
 
   result <- get_by_species(base, "wheat", "obs", collect = TRUE)
-  expect_identical(nrow(result), 1)
+  expect_identical(nrow(result), 1L)
   expect_identical(result$situation, "usm1")
 })
 
