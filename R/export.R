@@ -1,9 +1,10 @@
 prepare_species_output_dir <- function(output_dir, species) {
   o_dir <- file.path(output_dir, species)
   if (!dir.exists(o_dir) && !dir.create(o_dir, recursive = TRUE)) {
-    stop(paste0(
-      "Can't create output directory ", o_dir, " for species {species}"
-    ))
+    stop(
+      "Can't create output directory ", o_dir, " for species {species}",
+      call. = FALSE
+    )
   }
   o_dir
 }

@@ -1,5 +1,4 @@
-library(mockery)
-library(SticsREval)
+library(mockery) # nolint: unused_import_linter
 
 withr::local_dir(tempdir(), .local_envir = teardown_env())
 

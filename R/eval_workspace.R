@@ -16,14 +16,15 @@ init_eval_workspace <- function(
   if (!dir.exists(eval_workspace) &&
       !dir.create(eval_workspace)
   ) {
-    stop("Can't create evaluation workspace")
+    stop("Can't create evaluation workspace", call. = FALSE)
   } else if (dir.exists(eval_workspace)) {
     files <- list.files(eval_workspace, full.names = TRUE)
     if (length(files) > 0 && !force) {
-      stop(paste0(
+      stop(
         "Workspace ", eval_workspace, " already exists and is not empty. ",
-        "Use force = TRUE to overwrite."
-      ))
+        "Use force = TRUE to overwrite.",
+        call. = FALSE
+      )
     }
     unlink(files, recursive = TRUE, force = TRUE)
   }
@@ -81,7 +82,7 @@ comparison_ds_path <- function(data_dir, species) {
 
 save_sim <- function(data_dir, sim, usms_species) {
   CroPlotR::bind_rows(sim) |>
-    dplyr::inner_join(usms_species, by = c("situation" = "usm")) |>
+    dplyr::inner_join(usms_species, by = c(situation = "usm")) |>
     arrow::write_dataset(
       path = sim_ds_path(data_dir),
       format = "parquet",
@@ -91,7 +92,7 @@ save_sim <- function(data_dir, sim, usms_species) {
 
 save_obs <- function(data_dir, obs, usms_species) {
   CroPlotR::bind_rows(obs, .id = "situation") |>
-    dplyr::inner_join(usms_species, by = c("situation" = "usm")) |>
+    dplyr::inner_join(usms_species, by = c(situation = "usm")) |>
     arrow::write_dataset(
       path = obs_ds_path(data_dir),
       format = "parquet",
@@ -102,10 +103,12 @@ save_obs <- function(data_dir, obs, usms_species) {
 get_sim_ds <- function(data_dir) {
   ds_path <- sim_ds_path(data_dir)
   if (!dir.exists(ds_path)) {
-    stop(paste0(
+    stop(
       "The simulation dataset at ", ds_path, " does not exist. ",
-      "Please make sure the evaluation workspace has been properly initialized."
-    ))
+      "Please make sure the evaluation workspace has been properly ",
+      "initialized.",
+      call. = FALSE
+    )
   }
   arrow::open_dataset(ds_path)
 }
@@ -113,10 +116,12 @@ get_sim_ds <- function(data_dir) {
 get_obs_ds <- function(data_dir) {
   ds_path <- obs_ds_path(data_dir)
   if (!dir.exists(ds_path)) {
-    stop(paste0(
+    stop(
       "The observation dataset at ", ds_path, " does not exist. ",
-      "Please make sure the evaluation workspace has been properly initialized."
-    ))
+      "Please make sure the evaluation workspace has been properly ",
+      "initialized.",
+      call. = FALSE
+    )
   }
   arrow::open_dataset(ds_path)
 }
@@ -128,7 +133,7 @@ open_parquet_or_null <- function(path, collect, warn_msg) {
   }
   ds <- arrow::open_dataset(path)
   if (collect) {
-    return(ds |> dplyr::collect())
+    return(dplyr::collect(ds))
   }
   ds
 }
@@ -155,11 +160,11 @@ get_by_species <- function(
   type <- match.arg(type)
   ds <- if (type == "sim") get_sim_ds(data_dir) else get_obs_ds(data_dir)
 
-  res <- ds |>
-    dplyr::filter(.data$species == {{ species }})
+  res <- dplyr::filter(ds, .data$species == {{ species }})
+
 
   if (collect) {
-    return(res |> dplyr::collect())
+    return(dplyr::collect(res))
   }
   res
 }
@@ -175,7 +180,9 @@ get_stats <- function(data_dir, species, collect = FALSE) {
   open_parquet_or_null(
     path = stats_ds_path(data_dir, species),
     collect = collect,
-    warn_msg = "No stats file dound for species {species} in {data_dir}"
+    warn_msg = paste(
+      "No stats file dound for species", species, "in", data_dir
+    )
   )
 }
 
@@ -190,7 +197,9 @@ get_rmse_per_usm <- function(data_dir, species, collect = FALSE) {
   open_parquet_or_null(
     path = rmse_per_usm_ds_path(data_dir, species),
     collect = collect,
-    warn_msg = "No RMSE per USM file found for species {species} in {data_dir}"
+    warn_msg = paste(
+      "No RMSE per USM file found for species", species, "in", data_dir
+    )
   )
 }
 
@@ -205,8 +214,10 @@ get_deteriorated_usm <- function(data_dir, species, collect = FALSE) {
   open_parquet_or_null(
     path = deteriorated_ds_path(data_dir, species),
     collect = collect,
-    warn_msg = "No deteriorated USM file found for species {species} in
-    {data_dir}"
+    warn_msg = paste(
+      "No deteriorated USM file found for species",
+      species, "in", data_dir
+    )
   )
 }
 
@@ -221,6 +232,9 @@ get_species_comparison <- function(data_dir, species, collect = FALSE) {
   open_parquet_or_null(
     path = comparison_ds_path(data_dir, species),
     collect = collect,
-    warn_msg = "No comparison file found for species {species} in {data_dir}"
+    warn_msg = paste(
+      "No comparison file found for species",
+      species, "in", data_dir
+    )
   )
 }

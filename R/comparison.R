@@ -120,7 +120,7 @@ log_comparison <- function(
     " deteriorated variables (>={percentage}%): "
   )
   if (length(crit_vars) > 0) {
-    logger::log_info(paste(crit_vars, collapse = ", "))
+    logger::log_info(toString(crit_vars))
   }
   warn_vars <- get_warn_vars(comparison, percentage)
   logger::log_info(
@@ -128,12 +128,12 @@ log_comparison <- function(
     " deteriorated variables (>0%, <{percentage}%): "
   )
   if (length(warn_vars) > 0) {
-    logger::log_info(paste(warn_vars, collapse = ", "))
+    logger::log_info(toString(warn_vars))
   }
   improved_vars <- get_improved_vars(comparison)
   logger::log_info(length(improved_vars), " improved variables (<=0%): ")
   if (length(improved_vars) > 0) {
-    logger::log_info(paste(improved_vars, collapse = ", "))
+    logger::log_info(toString(improved_vars))
   }
   logger::log_info(
     "-----------------------------------------------------------------"
@@ -162,7 +162,7 @@ gen_species_comparison <- function(
     logger::log_debug("Saving RMSE comparison for species {spec}")
     save_species_comparison(eval_workspace, spec, comp)
     logger::log_debug("Species comparison saved for species {spec}")
-    log_comparison(comp |> dplyr::collect(), percentage)
+    log_comparison(dplyr::collect(comp), percentage)
   }
 
 }
@@ -257,6 +257,6 @@ display_comparisons_info <- function(data_dir, percentage) {
   }
   if (length(all_crit) > 0) {
     logger::log_error("Found at least one critical deteriorated variable")
-    stop("Found at least one critical deteriorated variable")
+    stop("Found at least one critical deteriorated variable", call. = FALSE)
   }
 }

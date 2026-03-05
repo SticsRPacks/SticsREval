@@ -32,7 +32,7 @@ run_simulations <- function(
   parallel = FALSE,
   cores = NA
 ) {
-  options <- SticsOnR::stics_wrapper_options(
+  wrapper_options <- SticsOnR::stics_wrapper_options(
     stics_exe = stics_exe,
     workspace = workspace,
     parallel = parallel,
@@ -41,7 +41,7 @@ run_simulations <- function(
     verbose = verbose,
     time_display = verbose
   )
-  res <- SticsOnR::stics_wrapper(options, situation = usm_names)
+  res <- SticsOnR::stics_wrapper(wrapper_options, situation = usm_names)
   res$sim_list
 }
 
@@ -60,7 +60,7 @@ read_ref_sim <- function(
   }
   ds <- arrow::open_dataset(reference_file)
   if (collect) {
-    return(ds |> dplyr::collect())
+    return(dplyr::collect(ds))
   }
   ds
 }

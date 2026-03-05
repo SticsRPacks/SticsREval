@@ -103,7 +103,9 @@ get_rotation_list <- function(metadata_file) {
       rotation_order = suppressWarnings(as.numeric(.data$rotation_order))
     )
 
-  if (sum(is.na(rotations_data[["rotation_order"]])) > sum(is.na(original_order))) {
+  if (
+    sum(is.na(rotations_data[["rotation_order"]])) > sum(is.na(original_order))
+  ) {
     stop("Column must be numeric: rotation_order", call. = FALSE)
   }
 
