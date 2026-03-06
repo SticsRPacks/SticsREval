@@ -33,9 +33,11 @@ jobs:
           sudo apt-get install -y cmake libcurl4-openssl-dev libx11-dev libxslt-dev
       - uses: r-lib/actions/setup-renv@v2
         with:
-          cache-version: 3
+          cache-version: 4
       - name: Install Suggests
-        run: pak::local_install_dev_deps(dependencies = "Suggests")
+        run: |
+          install.packages('pak')
+          pak::local_install_dev_deps(dependencies = "Suggests")
         shell: Rscript {0}
       - uses: r-lib/actions/check-r-package@v2
         with:
