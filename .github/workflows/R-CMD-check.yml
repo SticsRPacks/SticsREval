@@ -33,9 +33,9 @@ jobs:
           sudo apt-get install -y cmake libcurl4-openssl-dev libx11-dev libxslt-dev
       - uses: r-lib/actions/setup-renv@v2
         with:
-          cache-version: 2
-      - name: Install rcmdcheck and testthat and mockery
-        run: renv::install(c("rcmdcheck", "testthat", "mockery"))
+          cache-version: 3
+      - name: Install Suggests
+        run: pak::local_install_dev_deps(dependencies = "Suggests")
         shell: Rscript {0}
       - uses: r-lib/actions/check-r-package@v2
         with:
