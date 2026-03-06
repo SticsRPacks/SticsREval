@@ -35,9 +35,7 @@ jobs:
         with:
           cache-version: 4
       - name: Install Suggests
-        run: |
-          install.packages('pak')
-          pak::local_install_dev_deps(dependencies = "Suggests")
+        run: renv::install(c("mockery", "testthat", "withr", "rcmdcheck"))
         shell: Rscript {0}
       - uses: r-lib/actions/check-r-package@v2
         with:

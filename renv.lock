@@ -255,6 +255,7 @@
         "parallel",
         "rlang",
         "rstudioapi",
+        "semver",
         "tibble",
         "tidyr",
         "tidyselect",
@@ -281,14 +282,16 @@
       "Roxygen": "list(markdown = TRUE)",
       "RoxygenNote": "7.3.3",
       "Collate": "'add_node_to_doc.R' 'add_stics_nodes.R' 'all_in_par.R' 'all_out_var.R' 'approx_vapour_pressure.R' 'attributes_list2matrix.R' 'check_choice_param.R' 'check_java_path.R' 'check_java_workspace.R' 'check_output_files.R' 'check_param_names.R' 'col_names_to_var.R' 'compute_date_from_day.R' 'compute_day_number.R' 'convert_xml2txt.R' 'convert_xml2txt_int.R' 'download_data.R' 'download_usm_xl.R' 'exist_param_xml.R' 'exists_javastics_pref.R' 'exists_param.R' 'expand_stics_names.R' 'extract.R' 'extract_workspace.R' 'global.R' 'file_document.R' 'find_names.R' 'force_param_values.R' 'gen_climate.R' 'gen_general_param_xml.R' 'gen_ini_doc.R' 'gen_ini_xml.R' 'gen_new_travail.R' 'gen_obs.R' 'gen_paramsti.R' 'gen_sol_xsl_file.R' 'gen_sols_xml.R' 'gen_sta_doc.R' 'gen_sta_xml.R' 'gen_tec_doc.R' 'gen_tec_xml.R' 'gen_usms_sols_doc.R' 'gen_usms_xml.R' 'gen_usms_xml2txt.R' 'gen_varmod.R' 'get_climate_txt.R' 'get_cores_nb.R' 'get_cultivars_list.R' 'get_cultivars_param.R' 'get_dev_stages.R' 'get_file.R' 'get_file_int.R' 'get_files_list.R' 'get_formalisms_xml.R' 'get_java_workspace.R' 'get_lai_forcing.R' 'get_name_value_file_value.R' 'get_obs.R' 'get_option_choice_param_values.R' 'get_options_choices.R' 'get_options_names.R' 'get_param_bounds.R' 'get_param_bounds_xml.R' 'get_param_formalisms.R' 'get_param_info_xml.R' 'get_param_names.R' 'get_param_names_xml.R' 'get_param_number.R' 'get_param_txt.R' 'get_param_type.R' 'get_param_value.R' 'get_param_xml.R' 'get_params_dict.R' 'get_params_from_doc.R' 'get_params_from_doc_attr.R' 'get_params_from_doc_node.R' 'get_params_from_table.R' 'get_plant_name.R' 'get_plants_nb.R' 'get_report_results.R' 'get_sim.R' 'get_soils_list.R' 'get_stics_versions_compat.R' 'get_used_param.R' 'get_usms_list.R' 'get_values_by_param.R' 'get_varmod.R' 'get_xml_base_doc.R' 'get_xml_base_node.R' 'get_xml_doc_example.R' 'get_xml_files_param_df.R' 'get_xml_stics_version.R' 'init_javastics_pref.R' 'is_os_name.R' 'is_stics_doc.R' 'is_stics_xml.R' 'javastics_cmd_util.R' 'javastics_path.R' 'manage_stics_versions.R' 'merge_nodesets.R' 'read_params_table.R' 'remove_node_from_doc.R' 'remove_parent_from_doc.R' 'replace_string_in_file.R' 'replace_txt_param_value.R' 'rewrite_xml_files.R' 'set_codeoptim.R' 'set_file_executable.R' 'set_java_workspace.R' 'set_param_txt.R' 'set_param_value.R' 'set_param_xml.R' 'set_sols_param_xml.R' 'set_usms_param_xml.R' 'setup_parallelism.R' 'static_help.R' 'stics_environment.R' 'stics_files_utils.R' 'upgrade_ini_xml.R' 'upgrade_param_gen_xml.R' 'upgrade_param_newform_xml.R' 'upgrade_plt_xml.R' 'upgrade_sols_xml.R' 'upgrade_sta_xml.R' 'upgrade_tec_xml.R' 'upgrade_usms_xml.R' 'upgrade_workspace_xml.R' 'var_to_col_names.R' 'xml_document.R' 'xml_files_functions.R' 'zzz.R'",
-      "Author": "Patrice Lecharpentier [aut, cre] (ORCID: <https://orcid.org/0000-0002-4044-4322>), Remi Vezy [aut] (ORCID: <https://orcid.org/0000-0002-0808-1461>), Samuel Buis [aut] (ORCID: <https://orcid.org/0000-0002-8676-5447>), Michel Giner [aut] (ORCID: <https://orcid.org/0000-0002-9310-2377>), Timothee Flutre [aut] (ORCID: <https://orcid.org/0000-0003-4489-4782>), Thomas Robine [ctb], Amine Barkaoui [ctb], Patrick Chabrier [ctb], Julie Constantin [rev], Dominique Ripoche [rev], Marie Launay [rev], Alain Mollier [rev], Christine Le Bas [rev], Joel Leonard [rev]",
-      "Maintainer": "Patrice Lecharpentier <patrice.lecharpentier@inrae.fr>",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
-      "RemoteUsername": "SticsRPacks",
       "RemoteRepo": "SticsRFiles",
-      "RemoteRef": "main",
-      "RemoteSha": "c1df5fb4151a3240770eaa2c2e2d9ae243505f98"
+      "RemoteUsername": "SticsRPacks",
+      "RemotePkgRef": "github::SticsRPacks/SticsRFiles",
+      "RemoteRef": "HEAD",
+      "RemoteSha": "80dd521282b0e78d0b2ed97c4e382df0f6605f29",
+      "NeedsCompilation": "no",
+      "Author": "Patrice Lecharpentier [aut, cre] (ORCID: <https://orcid.org/0000-0002-4044-4322>), Remi Vezy [aut] (ORCID: <https://orcid.org/0000-0002-0808-1461>), Samuel Buis [aut] (ORCID: <https://orcid.org/0000-0002-8676-5447>), Michel Giner [aut] (ORCID: <https://orcid.org/0000-0002-9310-2377>), Timothee Flutre [aut] (ORCID: <https://orcid.org/0000-0003-4489-4782>), Thomas Robine [ctb], Amine Barkaoui [ctb], Patrick Chabrier [ctb], Julie Constantin [rev], Dominique Ripoche [rev], Marie Launay [rev], Alain Mollier [rev], Christine Le Bas [rev], Joel Leonard [rev]",
+      "Maintainer": "Patrice Lecharpentier <patrice.lecharpentier@inrae.fr>"
     },
     "XML": {
       "Package": "XML",
@@ -1148,16 +1151,16 @@
     },
     "fs": {
       "Package": "fs",
-      "Version": "1.6.6",
+      "Version": "1.6.7",
       "Source": "Repository",
       "Title": "Cross-Platform File System Operations Based on 'libuv'",
-      "Authors@R": "c( person(\"Jim\", \"Hester\", role = \"aut\"), person(\"Hadley\", \"Wickham\", , \"hadley@posit.co\", role = \"aut\"), person(\"Gábor\", \"Csárdi\", , \"csardi.gabor@gmail.com\", role = c(\"aut\", \"cre\")), person(\"libuv project contributors\", role = \"cph\", comment = \"libuv library\"), person(\"Joyent, Inc. and other Node contributors\", role = \"cph\", comment = \"libuv library\"), person(\"Posit Software, PBC\", role = c(\"cph\", \"fnd\")) )",
+      "Authors@R": "c( person(\"Jim\", \"Hester\", role = \"aut\"), person(\"Hadley\", \"Wickham\", role = \"aut\"), person(\"Gábor\", \"Csárdi\", role = \"aut\"), person(\"Jeroen\", \"Ooms\", , \"jeroenooms@gmail.com\", role = \"cre\"), person(\"libuv project contributors\", role = \"cph\", comment = \"libuv library\"), person(\"Joyent, Inc. and other Node contributors\", role = \"cph\", comment = \"libuv library\"), person(\"Posit Software, PBC\", role = c(\"cph\", \"fnd\"), comment = c(ROR = \"03wc8by49\")) )",
       "Description": "A cross-platform interface to file system operations, built on top of the 'libuv' C library.",
       "License": "MIT + file LICENSE",
       "URL": "https://fs.r-lib.org, https://github.com/r-lib/fs",
       "BugReports": "https://github.com/r-lib/fs/issues",
       "Depends": [
-        "R (>= 3.6)"
+        "R (>= 4.1)"
       ],
       "Imports": [
         "methods"
@@ -1178,14 +1181,15 @@
       "ByteCompile": "true",
       "Config/Needs/website": "tidyverse/tidytemplate",
       "Config/testthat/edition": "3",
+      "Config/usethis/last-upkeep": "2025-04-23",
       "Copyright": "file COPYRIGHTS",
       "Encoding": "UTF-8",
       "Language": "en-US",
-      "RoxygenNote": "7.2.3",
+      "RoxygenNote": "7.3.3",
       "SystemRequirements": "GNU make",
       "NeedsCompilation": "yes",
-      "Author": "Jim Hester [aut], Hadley Wickham [aut], Gábor Csárdi [aut, cre], libuv project contributors [cph] (libuv library), Joyent, Inc. and other Node contributors [cph] (libuv library), Posit Software, PBC [cph, fnd]",
-      "Maintainer": "Gábor Csárdi <csardi.gabor@gmail.com>",
+      "Author": "Jim Hester [aut], Hadley Wickham [aut], Gábor Csárdi [aut], Jeroen Ooms [cre], libuv project contributors [cph] (libuv library), Joyent, Inc. and other Node contributors [cph] (libuv library), Posit Software, PBC [cph, fnd] (ROR: <https://ror.org/03wc8by49>)",
+      "Maintainer": "Jeroen Ooms <jeroenooms@gmail.com>",
       "Repository": "CRAN"
     },
     "future": {
@@ -1606,7 +1610,7 @@
     },
     "highr": {
       "Package": "highr",
-      "Version": "0.11",
+      "Version": "0.12",
       "Source": "Repository",
       "Type": "Package",
       "Title": "Syntax Highlighting for R Source Code",
@@ -1628,9 +1632,9 @@
       "BugReports": "https://github.com/yihui/highr/issues",
       "VignetteBuilder": "knitr",
       "Encoding": "UTF-8",
-      "RoxygenNote": "7.3.1",
+      "RoxygenNote": "7.3.3",
       "NeedsCompilation": "no",
-      "Author": "Yihui Xie [aut, cre] (<https://orcid.org/0000-0003-0645-5666>), Yixuan Qiu [aut], Christopher Gandrud [ctb], Qiang Li [ctb]",
+      "Author": "Yihui Xie [aut, cre] (ORCID: <https://orcid.org/0000-0003-0645-5666>), Yixuan Qiu [aut], Christopher Gandrud [ctb], Qiang Li [ctb]",
       "Maintainer": "Yihui Xie <xie@yihui.name>",
       "Repository": "CRAN"
     },
@@ -1987,7 +1991,7 @@
     },
     "later": {
       "Package": "later",
-      "Version": "1.4.7",
+      "Version": "1.4.8",
       "Source": "Repository",
       "Type": "Package",
       "Title": "Utilities for Scheduling Functions to Execute Later with Event Loops",
@@ -3141,6 +3145,40 @@
       "NeedsCompilation": "no",
       "Author": "Hadley Wickham [aut], Thomas Lin Pedersen [cre, aut] (<https://orcid.org/0000-0002-5147-4711>), Dana Seidel [aut], Posit Software, PBC [cph, fnd] (03wc8by49)",
       "Maintainer": "Thomas Lin Pedersen <thomas.pedersen@posit.co>",
+      "Repository": "CRAN"
+    },
+    "semver": {
+      "Package": "semver",
+      "Version": "0.2.1",
+      "Source": "Repository",
+      "Type": "Package",
+      "Title": "'Semantic Versioning V2.0.0' Parser",
+      "Authors@R": "c( person(\"John\", \"Harrison\", , \"johndharrison0@gmail.com\", role = c(\"aut\"), comment = \"R package semantic\"), person(\"Thomas\", \"Piernicke\", , email = \"thomasp@gfz.de\",  role = c(\"ctb\", \"cre\")), person(\"Marko\", \"Živanović\", role = c(\"aut\", \"cph\"), comment = \"semver cpp library, https://github.com/zmarko/semver\"))",
+      "Description": "Tools and functions for parsing, rendering and operating on semantic version strings. Semantic versioning is a simple set of rules and requirements that dictate how version numbers are assigned and incremented as outlined at <https://semver.org>.",
+      "License": "MIT + file LICENSE",
+      "Encoding": "UTF-8",
+      "Imports": [
+        "Rcpp (>= 0.12.8)",
+        "assertthat",
+        "utils"
+      ],
+      "LinkingTo": [
+        "Rcpp"
+      ],
+      "URL": "https://github.com/johndharrison/semver",
+      "URLNote": "https://github.com/johndharrison/semver",
+      "BugReports": "https://github.com/johndharrison/semver/issues",
+      "Suggests": [
+        "testthat",
+        "covr",
+        "knitr",
+        "rmarkdown"
+      ],
+      "RoxygenNote": "7.3.3",
+      "VignetteBuilder": "knitr",
+      "NeedsCompilation": "yes",
+      "Author": "John Harrison [aut] (R package semantic), Thomas Piernicke [ctb, cre], Marko Živanović [aut, cph] (semver cpp library, https://github.com/zmarko/semver)",
+      "Maintainer": "Thomas Piernicke <thomasp@gfz.de>",
       "Repository": "CRAN"
     },
     "stringi": {
