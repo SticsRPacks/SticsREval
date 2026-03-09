@@ -3,8 +3,6 @@ on: [push, pull_request]
 jobs:
   lint:
     runs-on: ubuntu-latest
-    env:
-      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - uses: r-lib/actions/setup-r@v2

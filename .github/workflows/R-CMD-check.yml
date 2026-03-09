@@ -27,39 +27,17 @@ jobs:
       - uses: r-lib/actions/setup-r@v2
         with:
           r-version: ${{ matrix.config.r }}
-          http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
-
+          
       - name: Install system dependencies
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake libcurl4-openssl-dev libx11-dev libxslt-dev
 
-      - name: Set RENV_PATHS_ROOT
-        shell: bash
-        run: echo "RENV_PATHS_ROOT=${{ runner.temp }}/renv" >> $GITHUB_ENV
-
-      - name: Install and activate renv
-        run: |
-          if (!requireNamespace("renv", quietly=TRUE)) install.packages("renv")
-          if (!requireNamespace("pak", quietly=TRUE)) install.packages("pak")
-        shell: Rscript {0}
-
-      - name: Fix tar on Windows
-        if: runner.os == 'Windows'
-        shell: bash
-        run: |
-          if command -v /c/Rtools/bin/tar && /c/Rtools/bin/tar --version | grep -q 'tar (GNU tar) 1.30'
-            then echo 'C:/Program Files/Git/usr/bin' >> $GITHUB_PATH
-          fi
-
-      - name: Restore Renv package cache
-        uses: actions/cache@v4
+      - use: r-lib/actions/setup-renv@v2
         with:
-          path: ${{ env.RENV_PATHS_ROOT }}
-          key: ${{ matrix.config.os }}-${{ matrix.config.r }}-5-${{ hashFiles('**/renv.lock') }}
-          restore-keys: ${{ matrix.config.os }}-${{ matrix.config.r }}-5-
+          use-public-rspm: true
 
       - name: Install renv dependencies
         run: renv::restore()
