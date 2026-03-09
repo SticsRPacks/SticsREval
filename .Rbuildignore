@@ -6,3 +6,4 @@
 ^Dockerfile$
 ^\.github$
 ^\.lintr$
+^\.vscode$
