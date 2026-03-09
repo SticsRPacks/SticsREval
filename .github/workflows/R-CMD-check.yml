@@ -19,6 +19,7 @@ jobs:
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       R_KEEP_PKG_SOURCE: yes
+      RENV_CONFIG_PAK_ENABLED: true
 
     steps:
       - uses: actions/checkout@v4
@@ -40,7 +41,9 @@ jobs:
         run: echo "RENV_PATHS_ROOT=${{ runner.temp }}/renv" >> $GITHUB_ENV
 
       - name: Install and activate renv
-        run: if (!requireNamespace("renv", quietly=TRUE)) install.packages("renv")
+        run: |
+          if (!requireNamespace("renv", quietly=TRUE)) install.packages("renv")
+          if (!requireNamespace("pak", quietly=TRUE)) install.packages("pak")
         shell: Rscript {0}
 
       - name: Fix tar on Windows
