@@ -1,8 +1,10 @@
 # Workflow derived from https://github.com/r-lib/actions/tree/v2/examples
 on:
   push:
+
 name: R-CMD-check
 permissions: read-all
+
 jobs:
   R-CMD-check:
     runs-on: ${{ matrix.config.os }}
@@ -17,6 +19,7 @@ jobs:
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       R_KEEP_PKG_SOURCE: yes
+
     steps:
       - uses: actions/checkout@v4
       - uses: r-lib/actions/setup-pandoc@v2
@@ -25,17 +28,44 @@ jobs:
           r-version: ${{ matrix.config.r }}
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
+
       - name: Install system dependencies
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake libcurl4-openssl-dev libx11-dev libxslt-dev
-      - uses: r-lib/actions/setup-renv@v2
+
+      - name: Set RENV_PATHS_ROOT
+        shell: bash
+        run: echo "RENV_PATHS_ROOT=${{ runner.temp }}/renv" >> $GITHUB_ENV
+
+      - name: Install and activate renv
+        run: if (!requireNamespace("renv", quietly=TRUE)) install.packages("renv")
+        shell: Rscript {0}
+
+      - name: Fix tar on Windows
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          if command -v /c/Rtools/bin/tar && /c/Rtools/bin/tar --version | grep -q 'tar (GNU tar) 1.30'
+            then echo 'C:/Program Files/Git/usr/bin' >> $GITHUB_PATH
+          fi
+
+      - name: Restore Renv package cache
+        uses: actions/cache@v4
         with:
-          cache-version: 5
+          path: ${{ env.RENV_PATHS_ROOT }}
+          key: ${{ matrix.config.os }}-${{ matrix.config.r }}-5-${{ hashFiles('**/renv.lock') }}
+          restore-keys: ${{ matrix.config.os }}-${{ matrix.config.r }}-5-
+
+      - name: Install renv dependencies
+        run: renv::restore()
+        shell: Rscript {0}
+
       - name: Install Suggests
         run: renv::install(c("mockery", "testthat", "withr", "rcmdcheck"))
         shell: Rscript {0}
+
       - uses: r-lib/actions/check-r-package@v2
         with:
           upload-snapshots: true
