@@ -36,12 +36,6 @@ jobs:
           sudo apt-get install -y cmake libcurl4-openssl-dev libx11-dev libxslt-dev
 
       - uses: r-lib/actions/setup-renv@v2
-        with:
-          use-public-rspm: true
-
-      - name: Install renv dependencies
-        run: renv::restore()
-        shell: Rscript {0}
 
       - name: Install Suggests
         run: renv::install(c("mockery", "testthat", "withr", "rcmdcheck"))
