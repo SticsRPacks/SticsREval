@@ -77,14 +77,14 @@
     <div id="ref-examples">
     <h2>Examples</h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
+<span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">n_cores</span> <span class="op">&lt;-</span> <span class="fu">get_cores_nb</span><span class="op">(</span><span class="op">)</span></span></span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in get_cores_nb():</span> could not find function "get_cores_nb"</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">n_cores</span> <span class="op">&lt;-</span> <span class="fu">get_cores_nb</span><span class="op">(</span>parallel <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in get_cores_nb(parallel = TRUE):</span> could not find function "get_cores_nb"</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">n_cores</span> <span class="op">&lt;-</span> <span class="fu">get_cores_nb</span><span class="op">(</span>parallel <span class="op">=</span> <span class="cn">TRUE</span>, required_nb <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span></span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in get_cores_nb(parallel = TRUE, required_nb = 4):</span> could not find function "get_cores_nb"</span>
+<span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
