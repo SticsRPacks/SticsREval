@@ -104,10 +104,6 @@ test_that("open_parquet_or_null returns data frame when collect = TRUE", {
   expect_s3_class(result, "data.frame")
 })
 
-# ===========================================================================
-# Tests: init_eval_workspace
-# ===========================================================================
-
 test_that("init_eval_workspace creates workspace directory", {
   base <- file.path(tempdir(), basename(tempfile()))
   stub(init_eval_workspace, "extract_species_from_usms", mock(
@@ -116,6 +112,7 @@ test_that("init_eval_workspace creates workspace directory", {
   stub(init_eval_workspace, "get_rotation_list", mock(list()))
   stub(init_eval_workspace, "load_workspace_sim", mock(NULL))
   stub(init_eval_workspace, "load_workspace_obs", mock(NULL))
+  stub(init_eval_workspace, "remove_init_obs", mock(NULL))
   stub(init_eval_workspace, "list.dirs", mock("usm1"))
 
   init_eval_workspace(
@@ -168,6 +165,7 @@ test_that(
     stub(init_eval_workspace, "get_rotation_list", mock(list()))
     stub(init_eval_workspace, "load_workspace_sim", mock(NULL))
     stub(init_eval_workspace, "load_workspace_obs", mock(NULL))
+    stub(init_eval_workspace, "remove_init_obs", mock(NULL))
     stub(init_eval_workspace, "list.dirs", mock("usm1"))
 
     init_eval_workspace(
@@ -197,6 +195,7 @@ test_that(
     stub(init_eval_workspace, "get_rotation_list", mock(list()))
     stub(init_eval_workspace, "load_workspace_sim", mock(NULL))
     stub(init_eval_workspace, "load_workspace_obs", mock(NULL))
+    stub(init_eval_workspace, "remove_init_obs", mock(NULL))
     stub(init_eval_workspace, "list.dirs", mock("usm1"))
 
     expect_no_error(
@@ -221,7 +220,7 @@ test_that("init_eval_workspace throws error when dir cannot be created", {
     suppressWarnings(
       init_eval_workspace(
         data_workspace = "/data",
-        eval_workspace = "/proc/invalid_path", # nolint: nonportable_path_linter
+        eval_workspace = "/proc/invalid_path",  # nolint: nonportable_path_linter
         metadata_file = "/meta.csv",
         stics_exe = "/stics",
         must_run_simulations = FALSE,
@@ -243,6 +242,7 @@ test_that("init_eval_workspace calls load_workspace_sim", {
   stub(init_eval_workspace, "get_rotation_list", mock(list()))
   stub(init_eval_workspace, "load_workspace_sim", mock_load_sim)
   stub(init_eval_workspace, "load_workspace_obs", mock(NULL))
+  stub(init_eval_workspace, "remove_init_obs", mock(NULL))
   stub(init_eval_workspace, "list.dirs", mock("usm1"))
 
   init_eval_workspace(
@@ -268,6 +268,7 @@ test_that("init_eval_workspace calls load_workspace_obs", {
   stub(init_eval_workspace, "get_rotation_list", mock(list()))
   stub(init_eval_workspace, "load_workspace_sim", mock(NULL))
   stub(init_eval_workspace, "load_workspace_obs", mock_load_obs)
+  stub(init_eval_workspace, "remove_init_obs", mock(NULL))
   stub(init_eval_workspace, "list.dirs", mock("usm1"))
 
   init_eval_workspace(
@@ -281,6 +282,33 @@ test_that("init_eval_workspace calls load_workspace_obs", {
   )
 
   expect_called(mock_load_obs, 1)
+})
+
+test_that("init_eval_workspace calls remove_init_obs", {
+  base <- file.path(tempdir(), basename(tempfile()))
+  mock_remove <- mock(NULL)
+
+  stub(init_eval_workspace, "extract_species_from_usms", mock(
+    data.frame(usm = "usm1", species = "wheat", stringsAsFactors = FALSE)
+  ))
+  stub(init_eval_workspace, "get_rotation_list", mock(list()))
+  stub(init_eval_workspace, "load_workspace_sim", mock(NULL))
+  stub(init_eval_workspace, "load_workspace_obs", mock(NULL))
+  stub(init_eval_workspace, "remove_init_obs", mock_remove)
+  stub(init_eval_workspace, "list.dirs", mock("usm1"))
+
+  init_eval_workspace(
+    data_workspace = "/data",
+    eval_workspace = base,
+    metadata_file = "/meta.csv",
+    stics_exe = "/stics",
+    must_run_simulations = FALSE,
+    parallel = FALSE,
+    cores = NA
+  )
+
+  expect_called(mock_remove, 1)
+  expect_identical(mock_args(mock_remove)[[1]][[1]], base)
 })
 
 # ===========================================================================
@@ -609,5 +637,193 @@ test_that(
     base <- make_species_parquet("wheat", "Comparison.parquet")
     result <- get_species_comparison(base, "wheat", collect = TRUE)
     expect_s3_class(result, "data.frame")
+  }
+)
+
+# ===========================================================================
+# Tests: remove_init_obs
+# ===========================================================================
+
+# Helper to create fake simulation data
+make_sim_data <- function() {
+  data.frame(
+    situation = c("A", "A", "B", "B"),
+    species = c("sp1", "sp1", "sp2", "sp2"),
+    Date = as.Date(
+      c("2023-01-01", "2023-01-02", "2023-01-01", "2023-01-03")
+    ),
+    value = c(10, 20, 30, 40),
+    stringsAsFactors = FALSE
+  )
+}
+
+# Helper to create fake observation data
+make_obs_data <- function() {
+  data.frame(
+    situation = c("A", "A", "B", "B"),
+    species = c("sp1", "sp1", "sp2", "sp2"),
+    Date = as.Date(
+      c("2023-01-01", "2023-01-02", "2023-01-01", "2023-01-03")
+    ),
+    measure1 = c(1.1, 2.2, 3.3, 4.4),
+    measure2 = c(5.5, 6.6, 7.7, 8.8),
+    stringsAsFactors = FALSE
+  )
+}
+
+test_that("values at init date are replaced with NA", {
+  stub(remove_init_obs, "get_sim_ds", function(...) make_sim_data())
+  stub(remove_init_obs, "get_obs_ds", function(...) make_obs_data())
+  stub(remove_init_obs, "obs_ds_path", function(...) tempdir())
+  stub(remove_init_obs, "arrow::write_dataset", function(data, ...) data)
+
+  result <- remove_init_obs(file.path("fake", "path"))
+
+  # Situation A: init_date = 2023-01-01
+  row_init_a <- result |>
+    dplyr::filter(situation == "A", Date == as.Date("2023-01-01"))
+  expect_true(is.na(row_init_a$measure1))
+  expect_true(is.na(row_init_a$measure2))
+
+  # Situation A: next date is preserved
+  row_next_a <- result |>
+    dplyr::filter(situation == "A", Date == as.Date("2023-01-02"))
+  expect_equal(row_next_a$measure1, 2.2)
+  expect_equal(row_next_a$measure2, 6.6)
+})
+
+test_that("values after init date are unchanged", {
+  stub(remove_init_obs, "get_sim_ds", function(...) make_sim_data())
+  stub(remove_init_obs, "get_obs_ds", function(...) make_obs_data())
+  stub(remove_init_obs, "obs_ds_path", function(...) tempdir())
+  stub(remove_init_obs, "arrow::write_dataset", function(data, ...) data)
+
+  result <- remove_init_obs(file.path("fake", "path"))
+
+  row_b <- result |>
+    dplyr::filter(situation == "B", Date == as.Date("2023-01-03"))
+  expect_equal(row_b$measure1, 4.4)
+  expect_equal(row_b$measure2, 8.8)
+})
+
+test_that("init_date is correctly computed as the minimum date per situation", {
+  sim_data <- data.frame(
+    situation = c("A", "A", "A"),
+    species = c("sp1", "sp1", "sp1"),
+    Date = as.Date(c("2023-01-03", "2023-01-01", "2023-01-02")),
+    value = c(10, 20, 30),
+    stringsAsFactors = FALSE
+  )
+  obs_data <- data.frame(
+    situation = c("A", "A", "A"),
+    species = c("sp1", "sp1", "sp1"),
+    Date = as.Date(c("2023-01-03", "2023-01-01", "2023-01-02")),
+    measure1 = c(1.0, 2.0, 3.0),
+    stringsAsFactors = FALSE
+  )
+
+  stub(remove_init_obs, "get_sim_ds", function(...) sim_data)
+  stub(remove_init_obs, "get_obs_ds", function(...) obs_data)
+  stub(remove_init_obs, "obs_ds_path", function(...) tempdir())
+  stub(remove_init_obs, "arrow::write_dataset", function(data, ...) data)
+
+  result <- remove_init_obs(file.path("fake", "path"))
+
+  # Only 2023-01-01 (min) should be NA
+  init_measure1 <- result |>
+    dplyr::filter(Date == as.Date("2023-01-01")) |>
+    dplyr::pull(measure1)
+  expect_true(is.na(init_measure1))
+  next_measure1 <- result |>
+    dplyr::filter(Date == as.Date("2023-01-02")) |>
+    dplyr::pull(measure1)
+  expect_false(is.na(next_measure1))
+  next_measure1 <- result |>
+    dplyr::filter(Date == as.Date("2023-01-03")) |>
+    dplyr::pull(measure1)
+  expect_false(is.na(next_measure1))
+})
+
+test_that("init_date column is absent from the final result", {
+  stub(remove_init_obs, "get_sim_ds", function(...) make_sim_data())
+  stub(remove_init_obs, "get_obs_ds", function(...) make_obs_data())
+  stub(remove_init_obs, "obs_ds_path", function(...) tempdir())
+  stub(remove_init_obs, "arrow::write_dataset", function(data, ...) data)
+
+  result <- remove_init_obs(file.path("fake", "path"))
+  expect_false("init_date" %in% names(result))
+})
+
+test_that("situation, species and Date columns are not modified", {
+  stub(remove_init_obs, "get_sim_ds", function(...) make_sim_data())
+  stub(remove_init_obs, "get_obs_ds", function(...) make_obs_data())
+  stub(remove_init_obs, "obs_ds_path", function(...) tempdir())
+  stub(remove_init_obs, "arrow::write_dataset", function(data, ...) data)
+
+  result <- remove_init_obs(file.path("fake", "path"))
+  obs <- make_obs_data()
+
+  expect_identical(result$situation, obs$situation)
+  expect_identical(result$species, obs$species)
+  expect_identical(result$Date, obs$Date)
+})
+
+test_that(
+  "write_dataset is called with the correct path, format and partitioning",
+  {
+    stub(remove_init_obs, "get_sim_ds", function(...) make_sim_data())
+    stub(remove_init_obs, "get_obs_ds", function(...) make_obs_data())
+    stub(
+      remove_init_obs,
+      "obs_ds_path",
+      function(...) file.path("expected", "path")
+    )
+
+    mock_write <- mock()
+    stub(remove_init_obs, "arrow::write_dataset", mock_write)
+
+    remove_init_obs(file.path("fake", "path"))
+
+    expect_called(mock_write, 1)
+    call_args <- mock_args(mock_write)[[1]]
+    expect_identical(call_args[[2]], file.path("expected", "path"))
+    expect_identical(call_args$format, "parquet")
+    expect_identical(call_args$partitioning, "species")
+  }
+)
+
+test_that(
+  "NA dates in simulation data are ignored when computing the minimum",
+  {
+    sim_data <- data.frame(
+      situation = c("A", "A"),
+      species   = c("sp1", "sp1"),
+      Date      = as.Date(c(NA, "2023-01-05")),
+      value     = c(10, 20),
+      stringsAsFactors = FALSE
+    )
+    obs_data <- data.frame(
+      situation = c("A", "A"),
+      species   = c("sp1", "sp1"),
+      Date      = as.Date(c("2023-01-05", "2023-01-06")),
+      measure1  = c(9.9, 8.8),
+      stringsAsFactors = FALSE
+    )
+
+    stub(remove_init_obs, "get_sim_ds", function(...) sim_data)
+    stub(remove_init_obs, "get_obs_ds", function(...) obs_data)
+    stub(remove_init_obs, "obs_ds_path", function(...) tempdir())
+    stub(remove_init_obs, "arrow::write_dataset", function(data, ...) data)
+
+    result <- remove_init_obs(file.path("fake", "path"))
+
+    init_measure1 <- result |>
+      dplyr::filter(Date == as.Date("2023-01-05")) |>
+      dplyr::pull(measure1)
+    expect_true(is.na(init_measure1))
+    next_measure1 <- result |>
+      dplyr::filter(Date == as.Date("2023-01-06")) |>
+      dplyr::pull(measure1)
+    expect_identical(next_measure1, 8.8)
   }
 )
