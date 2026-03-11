@@ -28,6 +28,9 @@
 #'   workspace. Defaults to TRUE.
 #' @param output_dir Character or NULL. Path to the output directory
 #'   for exported files. Defaults to NULL.
+#' @param species Character vector or NULL. Optional list of species to
+#'   evaluate. If NULL, all available species are evaluated.
+#'   Defaults to NULL.
 #' @param force Logical. Whether to overwrite an existing non-empty
 #'   evaluation workspace without prompting. Defaults to FALSE.
 #'
@@ -56,6 +59,7 @@ make_config <- function(
   eval_workspace = DEFAULT_WORKSPACE,
   init_workspace = TRUE,
   output_dir = NULL,
+  species = NULL,
   force = FALSE
 ) {
   config <- list(
@@ -71,6 +75,7 @@ make_config <- function(
     eval_workspace = eval_workspace,
     init_workspace = init_workspace,
     output_dir = output_dir,
+    species = species,
     force = force
   )
   init_logger(config$verbose)

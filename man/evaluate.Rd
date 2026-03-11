@@ -29,7 +29,7 @@ The workflow includes the following steps:
 \item Initializes the logger using the specified verbosity level.
 \item Optionally initializes the evaluation workspace (copying data,
 preparing inputs, and running simulations if required).
-\item Runs evaluation for all species using \code{evaluate_all_species()}.
+\item Runs evaluation for all species using \code{evaluate_species()}.
 \item Displays comparison summaries using \code{display_comparisons_info()}.
 }
 

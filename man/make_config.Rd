@@ -17,6 +17,7 @@ make_config(
   eval_workspace = DEFAULT_WORKSPACE,
   init_workspace = TRUE,
   output_dir = NULL,
+  species = NULL,
   force = FALSE
 )
 }
@@ -54,6 +55,10 @@ workspace. Defaults to TRUE.}
 
 \item{output_dir}{Character or NULL. Path to the output directory
 for exported files. Defaults to NULL.}
+
+\item{species}{Character vector or NULL. Optional list of species to
+evaluate. If NULL, all available species are evaluated.
+Defaults to NULL.}
 
 \item{force}{Logical. Whether to overwrite an existing non-empty
 evaluation workspace without prompting. Defaults to FALSE.}

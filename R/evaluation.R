@@ -21,18 +21,14 @@ prepare_species_workspace <- function(eval_workspace, species) {
   }
 }
 
-evaluate_all_species <- function(
+evaluate_species <- function(
   eval_workspace,
+  species,
   reference_data_dir,
   percentage,
   parallel,
   cores
 ) {
-  species <- get_species(eval_workspace)
-  logger::log_debug(
-    "Found {length(species)} species in workspace {eval_workspace}:
-    {format_species(species)}"
-  )
   logger::log_debug("Preparing species workspaces.")
   prepare_species_workspace(eval_workspace, species)
   logger::log_debug("Generating stats for species.")
@@ -69,7 +65,7 @@ evaluate_all_species <- function(
 #'   \item Initializes the logger using the specified verbosity level.
 #'   \item Optionally initializes the evaluation workspace (copying data,
 #'   preparing inputs, and running simulations if required).
-#'   \item Runs evaluation for all species using `evaluate_all_species()`.
+#'   \item Runs evaluation for all species using `evaluate_species()`.
 #'   \item Displays comparison summaries using `display_comparisons_info()`.
 #' }
 #'
@@ -109,14 +105,34 @@ evaluate <- function(config) {
   }
   logger::log_info("Starting evaluation...")
   tryCatch({
-    evaluate_all_species(
+    spec_to_eval <- get_species(config$eval_workspace)
+    if (!is.null(config$species)) {
+      spec_to_eval <- intersect(config$species, spec_to_eval)
+    }
+    if (length(spec_to_eval) == 0) {
+      logger::log_info(
+        "No species found in workspace {config$eval_workspace} corresponding
+        to defined species list {config$species}."
+      )
+      return()
+    }
+    logger::log_debug(
+      "Found {length(spec_to_eval)} species in workspace
+      {config$eval_workspace}: {format_species(spec_to_eval)}"
+    )
+    evaluate_species(
       config$eval_workspace,
+      spec_to_eval,
       config$reference_data_dir,
       config$percentage,
       config$parallel,
       config$cores
     )
-    display_comparisons_info(config$eval_workspace, config$percentage)
+    display_comparisons_info(
+      config$eval_workspace,
+      spec_to_eval,
+      config$percentage
+    )
   }, error = function(e) {
     logger::log_error(e$message)
   })
