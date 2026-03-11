@@ -401,31 +401,24 @@ test_that(
 # ===========================================================================
 # Tests: display_comparisons_info
 # ===========================================================================
-
 test_that(
   "display_comparisons_info warns and returns when no comparisons",
   {
     mock_warn <- mock(NULL)
-
-    stub(display_comparisons_info, "get_species", mock("wheat"))
     stub(
       display_comparisons_info,
       "get_species_comparison",
       mock(NULL)
     )
     stub(display_comparisons_info, "logger::log_warn", mock_warn)
-
-    display_comparisons_info("/ws", 10)
+    display_comparisons_info("/ws", "wheat", 10)
     expect_called(mock_warn, 1)
   }
 )
-
 test_that(
   "display_comparisons_info stops when critical variables found",
   {
     df <- make_comparison_df()
-
-    stub(display_comparisons_info, "get_species", mock("wheat"))
     stub(
       display_comparisons_info,
       "get_species_comparison",
@@ -438,18 +431,14 @@ test_that(
       "logger::log_error",
       mock(NULL, cycle = TRUE)
     )
-
-    expect_error(display_comparisons_info("/ws", 10))
+    expect_error(display_comparisons_info("/ws", "wheat", 10))
   }
 )
-
 test_that(
   "display_comparisons_info does not stop when only warnings",
   {
     df <- make_comparison_df() |>
       dplyr::mutate(ratio = c(5, -5, -5, 3))
-
-    stub(display_comparisons_info, "get_species", mock("wheat"))
     stub(
       display_comparisons_info,
       "get_species_comparison",
@@ -457,25 +446,20 @@ test_that(
     )
     stub(display_comparisons_info, "logger::log_info", mock(NULL, cycle = TRUE))
     stub(display_comparisons_info, "logger::log_warn", mock(NULL, cycle = TRUE))
-
-    expect_no_error(display_comparisons_info("/ws", 10))
+    expect_no_error(display_comparisons_info("/ws", "wheat", 10))
   }
 )
-
 test_that(
   "display_comparisons_info does not stop when all variables ok",
   {
     df <- make_comparison_df() |>
       dplyr::mutate(ratio = c(-5, -10, -3, -1))
-
-    stub(display_comparisons_info, "get_species", mock("wheat"))
     stub(
       display_comparisons_info,
       "get_species_comparison",
       mock(df)
     )
     stub(display_comparisons_info, "logger::log_info", mock(NULL, cycle = TRUE))
-
-    expect_no_error(display_comparisons_info("/ws", 10))
+    expect_no_error(display_comparisons_info("/ws", "wheat", 10))
   }
 )

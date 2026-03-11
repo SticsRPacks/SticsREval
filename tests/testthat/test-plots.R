@@ -232,9 +232,9 @@ make_fake_config <- function(overrides = list()) {
 
 test_that("gen_plots calls validate_export_config and validate_plots_config", {
   mock_validate_export <- mock(NULL)
-  mock_validate_plots  <- mock(NULL)
-  mock_species         <- mock(character(0))
-  mock_loop            <- mock(list())
+  mock_validate_plots <- mock(NULL)
+  mock_species <- mock(character(0))
+  mock_loop <- mock(list())
 
   stub(gen_plots, "validate_export_config", mock_validate_export)
   stub(gen_plots, "validate_plots_config", mock_validate_plots)
@@ -371,3 +371,36 @@ test_that("gen_plots does not call gen_scatter_plot when ref_sim is NULL", {
 
   expect_called(mock_gen_scatter, 0)
 })
+
+test_that(
+  "gen_plots filters species when config$species is set",
+  {
+    mock_prepare <- mock(tempdir(), cycle = TRUE)
+    cfg <- make_fake_config(list(species = "wheat"))
+
+    stub(gen_plots, "validate_export_config", mock(NULL))
+    stub(gen_plots, "validate_plots_config", mock(NULL))
+    stub(gen_plots, "get_species", mock(c("wheat", "maize")))
+    stub(gen_plots, "parallelizable_loop", function(n, ...) {
+      expect_identical(n, 1L)
+    })
+
+    gen_plots(cfg)
+  }
+)
+
+test_that(
+  "gen_plots processes all species when config$species is NULL",
+  {
+    cfg <- make_fake_config(list(species = NULL))
+
+    stub(gen_plots, "validate_export_config", mock(NULL))
+    stub(gen_plots, "validate_plots_config", mock(NULL))
+    stub(gen_plots, "get_species", mock(c("wheat", "maize")))
+    stub(gen_plots, "parallelizable_loop", function(n, ...) {
+      expect_identical(n, 2L)
+    })
+
+    gen_plots(cfg)
+  }
+)

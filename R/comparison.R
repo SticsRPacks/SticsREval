@@ -191,8 +191,7 @@ gen_deteriorated_usm <- function(
   }
 }
 
-display_comparisons_info <- function(data_dir, percentage) {
-  species <- get_species(data_dir)
+display_comparisons_info <- function(data_dir, species, percentage) {
   comparisons <- lapply(species, function(s) {
     get_species_comparison(data_dir, s, TRUE)
   })

@@ -54,7 +54,7 @@ test_that(
 
 make_export_config <- function(overrides = list()) {
   cfg <- list(
-    output_dir     = file.path(tempdir(), basename(tempfile())),
+    output_dir = file.path(tempdir(), basename(tempfile())),
     eval_workspace = list()
   )
   for (nm in names(overrides)) cfg[[nm]] <- overrides[[nm]]
@@ -234,6 +234,48 @@ test_that(
   }
 )
 
+test_that(
+  "export_stats_to_csv filters species when config$species is set",
+  {
+    mock_prepare <- mock(tempdir(), cycle = TRUE)
+    cfg <- make_export_config(list(species = "wheat"))
+
+    stub(export_stats_to_csv, "validate_export_config", mock(NULL))
+    stub(export_stats_to_csv, "get_species", mock(c("wheat", "maize")))
+    stub(export_stats_to_csv, "prepare_species_output_dir", mock_prepare)
+    stub(export_stats_to_csv, "get_stats", mock(NULL, cycle = TRUE))
+    stub(export_stats_to_csv, "get_rmse_per_usm", mock(NULL, cycle = TRUE))
+    stub(export_stats_to_csv, "get_deteriorated_usm", mock(NULL, cycle = TRUE))
+    stub(export_stats_to_csv, "safe_write_csv", mock(NULL))
+
+    export_stats_to_csv(cfg)
+
+    expect_called(mock_prepare, 1)
+    args <- mock_args(mock_prepare)[[1]]
+    expect_identical(args[[2]], "wheat")
+  }
+)
+
+test_that(
+  "export_stats_to_csv processes all species when config$species is NULL",
+  {
+    mock_prepare <- mock(tempdir(), cycle = TRUE)
+    cfg <- make_export_config(list(species = NULL))
+
+    stub(export_stats_to_csv, "validate_export_config", mock(NULL))
+    stub(export_stats_to_csv, "get_species", mock(c("wheat", "maize")))
+    stub(export_stats_to_csv, "prepare_species_output_dir", mock_prepare)
+    stub(export_stats_to_csv, "get_stats", mock(NULL, cycle = TRUE))
+    stub(export_stats_to_csv, "get_rmse_per_usm", mock(NULL, cycle = TRUE))
+    stub(export_stats_to_csv, "get_deteriorated_usm", mock(NULL, cycle = TRUE))
+    stub(export_stats_to_csv, "safe_write_csv", mock(NULL))
+
+    export_stats_to_csv(cfg)
+
+    expect_called(mock_prepare, 2)
+  }
+)
+
 # ===========================================================================
 # Tests: export_species_sim
 # ===========================================================================
@@ -315,6 +357,44 @@ test_that(
     stub(export_species_sim, "arrow::write_parquet", mock(NULL, cycle = TRUE))
 
     export_species_sim(cfg)
+    expect_called(mock_prepare, 2)
+  }
+)
+
+test_that(
+  "export_species_sim filters species when config$species is set",
+  {
+    mock_prepare <- mock(tempdir(), cycle = TRUE)
+    cfg <- make_export_config(list(species = "wheat"))
+
+    stub(export_species_sim, "validate_export_config", mock(NULL))
+    stub(export_species_sim, "get_species", mock(c("wheat", "maize")))
+    stub(export_species_sim, "prepare_species_output_dir", mock_prepare)
+    stub(export_species_sim, "get_by_species", mock(data.frame(), cycle = TRUE))
+    stub(export_species_sim, "arrow::write_parquet", mock(NULL, cycle = TRUE))
+
+    export_species_sim(cfg)
+
+    expect_called(mock_prepare, 1)
+    args <- mock_args(mock_prepare)[[1]]
+    expect_identical(args[[2]], "wheat")
+  }
+)
+
+test_that(
+  "export_species_sim processes all species when config$species is NULL",
+  {
+    mock_prepare <- mock(tempdir(), cycle = TRUE)
+    cfg <- make_export_config(list(species = NULL))
+
+    stub(export_species_sim, "validate_export_config", mock(NULL))
+    stub(export_species_sim, "get_species", mock(c("wheat", "maize")))
+    stub(export_species_sim, "prepare_species_output_dir", mock_prepare)
+    stub(export_species_sim, "get_by_species", mock(data.frame(), cycle = TRUE))
+    stub(export_species_sim, "arrow::write_parquet", mock(NULL, cycle = TRUE))
+
+    export_species_sim(cfg)
+
     expect_called(mock_prepare, 2)
   }
 )
