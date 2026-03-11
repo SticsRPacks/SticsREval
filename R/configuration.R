@@ -86,17 +86,23 @@ make_config <- function(
 #'
 #' @description
 #' The configuration must follow these rules to be considered as valid:
-#'  - `stics_exe`, `workspace` must be defined
+#'  - if `init_workspace` is TRUE, `stics_exe`, `workspace` and
+#'    `metadata_file` must be defined and `metadata_file` must be a valid path
 #'  - if `reference_data_dir` is defined, it must be a valid path
-#'  - `metadata_file` must be a valid path
+#'  - `eval_workspace` must be defined
 #'
 #' @keywords internal
 validate_eval_configuration <- function(config) {
-  if (is.null(config$stics_exe)) {
-    stop("Stics executable path must be defined", call. = FALSE)
-  }
-  if (is.null(config$workspace)) {
-    stop("Workspace path must be defined", call. = FALSE)
+  if (config$init_workspace) {
+    if (is.null(config$stics_exe)) {
+      stop("Stics executable path must be defined", call. = FALSE)
+    }
+    if (is.null(config$workspace)) {
+      stop("Workspace path must be defined", call. = FALSE)
+    }
+    if (is.null(config$metadata_file) || !file.exists(config$metadata_file)) {
+      stop("Metadata file must be a valid path", call. = FALSE)
+    }
   }
   if (
     !is.null(config$reference_data_dir) &&
@@ -106,9 +112,6 @@ validate_eval_configuration <- function(config) {
       "Reference data directory must be a valid path if defined",
       call. = FALSE
     )
-  }
-  if (is.null(config$metadata_file) || !file.exists(config$metadata_file)) {
-    stop("Metadata file must be a valid path", call. = FALSE)
   }
   if (is.null(config$eval_workspace)) {
     stop("Eval workspace path must be defined", call. = FALSE)
