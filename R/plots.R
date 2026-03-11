@@ -125,6 +125,9 @@ gen_plots <- function(config) {
   validate_export_config(config)
   validate_plots_config(config)
   species <- get_species(config$eval_workspace)
+  if (!is.null(config$species)) {
+    species <- intersect(species, config$species)
+  }
   parallelizable_loop(
     length(species),
     config$parallel,
