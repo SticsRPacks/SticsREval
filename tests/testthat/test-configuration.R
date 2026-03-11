@@ -82,7 +82,8 @@ make_valid_config <- function(overrides = list()) {
     reference_data_dir = NULL,
     eval_workspace = tempdir(),
     output_dir = tempdir(),
-    percentage = 5
+    percentage = 5,
+    species = NULL
   )
   for (nm in names(overrides)) cfg[[nm]] <- overrides[[nm]]
   cfg
@@ -93,79 +94,98 @@ make_valid_config <- function(overrides = list()) {
 # ===========================================================================
 
 test_that(
-  "validate_eval_configuration passes with valid config",
+  "validate_eval_configuration passes with valid config
+  (init_workspace = FALSE)",
   {
-    cfg <- make_valid_config()
+    cfg <- make_valid_config(list(init_workspace = FALSE))
     expect_no_error(validate_eval_configuration(cfg))
   }
 )
 
 test_that(
-  "validate_eval_configuration errors when stics_exe is NULL",
+  "validate_eval_configuration passes with valid config
+  (init_workspace = TRUE)",
   {
-    cfg <- make_valid_config(list(stics_exe = NULL))
+    cfg <- make_valid_config(list(init_workspace = TRUE))
+    expect_no_error(validate_eval_configuration(cfg))
+  }
+)
+
+test_that(
+  "validate_eval_configuration stops when stics_exe is NULL and
+  init_workspace = TRUE",
+  {
+    cfg <- make_valid_config(list(init_workspace = TRUE, stics_exe = NULL))
     expect_error(
       validate_eval_configuration(cfg),
-      regexp = "Stics executable"
+      regexp = "Stics executable path must be defined"
     )
   }
 )
 
 test_that(
-  "validate_eval_configuration errors when workspace is NULL",
+  "validate_eval_configuration stops when workspace is NULL and
+  init_workspace = TRUE",
   {
-    cfg <- make_valid_config(list(workspace = NULL))
+    cfg <- make_valid_config(list(init_workspace = TRUE, workspace = NULL))
     expect_error(
       validate_eval_configuration(cfg),
-      regexp = "Workspace"
+      regexp = "Workspace path must be defined"
     )
   }
 )
 
 test_that(
-  "validate_eval_configuration errors when metadata_file is NULL",
+  "validate_eval_configuration stops when metadata_file is NULL and
+  init_workspace = TRUE",
   {
-    cfg <- make_valid_config(list(metadata_file = NULL))
+    cfg <- make_valid_config(list(init_workspace = TRUE, metadata_file = NULL))
     expect_error(
       validate_eval_configuration(cfg),
-      regexp = "Metadata file"
+      regexp = "Metadata file must be a valid path"
     )
   }
 )
 
 test_that(
-  "validate_eval_configuration errors when metadata_file does not exist",
+  "validate_eval_configuration stops when metadata_file does not exist
+  and init_workspace = TRUE",
   {
     cfg <- make_valid_config(
-      list(metadata_file = "/nonexistent/meta.csv") # nolint: nonportable_path_linter
+      list(
+        init_workspace = TRUE,
+        metadata_file = file.path("nonexistent", "meta.csv")
+      )
     )
     expect_error(
       validate_eval_configuration(cfg),
-      regexp = "Metadata file"
+      regexp = "Metadata file must be a valid path"
     )
   }
 )
 
 test_that(
-  "validate_eval_configuration errors when eval_workspace is NULL",
+  "validate_eval_configuration does not check stics_exe when
+  init_workspace = FALSE",
   {
-    cfg <- make_valid_config(list(eval_workspace = NULL))
-    expect_error(
-      validate_eval_configuration(cfg),
-      regexp = "Eval workspace"
-    )
+    cfg <- make_valid_config(list(init_workspace = FALSE, stics_exe = NULL))
+    expect_no_error(validate_eval_configuration(cfg))
   }
 )
 
 test_that(
-  "validate_eval_configuration errors when reference_data_dir is invalid",
+  "validate_eval_configuration stops when reference_data_dir is defined but
+  does not exist",
   {
     cfg <- make_valid_config(
-      list(reference_data_dir = "/nonexistent/ref") # nolint: nonportable_path_linter
+      list(
+        init_workspace = FALSE,
+        reference_data_dir = file.path("nonexistent", "ref")
+      )
     )
     expect_error(
       validate_eval_configuration(cfg),
-      regexp = "Reference data directory"
+      regexp = "Reference data directory must be a valid path if defined"
     )
   }
 )
@@ -173,7 +193,9 @@ test_that(
 test_that(
   "validate_eval_configuration passes when reference_data_dir is NULL",
   {
-    cfg <- make_valid_config(list(reference_data_dir = NULL))
+    cfg <- make_valid_config(
+      list(init_workspace = FALSE, reference_data_dir = NULL)
+    )
     expect_no_error(validate_eval_configuration(cfg))
   }
 )
@@ -182,9 +204,22 @@ test_that(
   "validate_eval_configuration passes when reference_data_dir exists",
   {
     cfg <- make_valid_config(
-      list(reference_data_dir = tempdir())
+      list(init_workspace = FALSE, reference_data_dir = tempdir())
     )
     expect_no_error(validate_eval_configuration(cfg))
+  }
+)
+
+test_that(
+  "validate_eval_configuration stops when eval_workspace is NULL",
+  {
+    cfg <- make_valid_config(
+      list(init_workspace = FALSE, eval_workspace = NULL)
+    )
+    expect_error(
+      validate_eval_configuration(cfg),
+      regexp = "Eval workspace path must be defined"
+    )
   }
 )
 
