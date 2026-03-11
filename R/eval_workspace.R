@@ -152,7 +152,7 @@ remove_init_obs <- function(data_dir) {
     dplyr::mutate(
       dplyr::across(
         -dplyr::all_of(exclude_cols),
-        ~ dplyr::if_else(.data$Date == init_date, NA_real_, .x)
+        ~ dplyr::if_else(.data$Date == .data$init_date, NA_real_, .x)
       )
     ) |>
     dplyr::select(-init_date) |>
