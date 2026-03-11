@@ -155,7 +155,7 @@ remove_init_obs <- function(data_dir) {
         ~ dplyr::if_else(.data$Date == .data$init_date, NA_real_, .x)
       )
     ) |>
-    dplyr::select(-init_date) |>
+    dplyr::select(-"init_date") |>
     arrow::write_dataset(
       obs_ds_path(data_dir),
       format = "parquet",
