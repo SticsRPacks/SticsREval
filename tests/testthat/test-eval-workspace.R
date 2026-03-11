@@ -308,7 +308,7 @@ test_that("init_eval_workspace calls remove_init_obs", {
   )
 
   expect_called(mock_remove, 1)
-  expect_equal(mock_args(mock_remove)[[1]][[1]], base)
+  expect_identical(mock_args(mock_remove)[[1]][[1]], base)
 })
 
 # ===========================================================================
@@ -646,26 +646,28 @@ test_that(
 
 # Helper to create fake simulation data
 make_sim_data <- function() {
-  tibble::tibble(
+  data.frame(
     situation = c("A", "A", "B", "B"),
     species = c("sp1", "sp1", "sp2", "sp2"),
     Date = as.Date(
       c("2023-01-01", "2023-01-02", "2023-01-01", "2023-01-03")
     ),
-    value = c(10, 20, 30, 40)
+    value = c(10, 20, 30, 40),
+    stringsAsFactors = FALSE
   )
 }
 
 # Helper to create fake observation data
 make_obs_data <- function() {
-  tibble::tibble(
+  data.frame(
     situation = c("A", "A", "B", "B"),
     species = c("sp1", "sp1", "sp2", "sp2"),
     Date = as.Date(
       c("2023-01-01", "2023-01-02", "2023-01-01", "2023-01-03")
     ),
     measure1 = c(1.1, 2.2, 3.3, 4.4),
-    measure2 = c(5.5, 6.6, 7.7, 8.8)
+    measure2 = c(5.5, 6.6, 7.7, 8.8),
+    stringsAsFactors = FALSE
   )
 }
 
@@ -705,17 +707,19 @@ test_that("values after init date are unchanged", {
 })
 
 test_that("init_date is correctly computed as the minimum date per situation", {
-  sim_data <- tibble::tibble(
+  sim_data <- data.frame(
     situation = c("A", "A", "A"),
     species = c("sp1", "sp1", "sp1"),
     Date = as.Date(c("2023-01-03", "2023-01-01", "2023-01-02")),
-    value = c(10, 20, 30)
+    value = c(10, 20, 30),
+    stringsAsFactors = FALSE
   )
-  obs_data <- tibble::tibble(
+  obs_data <- data.frame(
     situation = c("A", "A", "A"),
     species = c("sp1", "sp1", "sp1"),
     Date = as.Date(c("2023-01-03", "2023-01-01", "2023-01-02")),
-    measure1 = c(1.0, 2.0, 3.0)
+    measure1 = c(1.0, 2.0, 3.0),
+    stringsAsFactors = FALSE
   )
 
   stub(remove_init_obs, "get_sim_ds", function(...) sim_data)
@@ -791,17 +795,19 @@ test_that(
 test_that(
   "NA dates in simulation data are ignored when computing the minimum",
   {
-    sim_data <- tibble::tibble(
+    sim_data <- data.frame(
       situation = c("A", "A"),
       species   = c("sp1", "sp1"),
       Date      = as.Date(c(NA, "2023-01-05")),
-      value     = c(10, 20)
+      value     = c(10, 20),
+      stringsAsFactors = FALSE
     )
-    obs_data <- tibble::tibble(
+    obs_data <- data.frame(
       situation = c("A", "A"),
       species   = c("sp1", "sp1"),
       Date      = as.Date(c("2023-01-05", "2023-01-06")),
-      measure1  = c(9.9, 8.8)
+      measure1  = c(9.9, 8.8),
+      stringsAsFactors = FALSE
     )
 
     stub(remove_init_obs, "get_sim_ds", function(...) sim_data)

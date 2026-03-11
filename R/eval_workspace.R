@@ -142,17 +142,17 @@ open_parquet_or_null <- function(path, collect, warn_msg) {
 remove_init_obs <- function(data_dir) {
 
   init_dates <- get_sim_ds(data_dir) |>
-    dplyr::group_by(situation) |>
-    dplyr::summarise(init_date = min(Date, na.rm = TRUE))
+    dplyr::group_by(.data$situation) |>
+    dplyr::summarise(init_date = min(.data$Date, na.rm = TRUE))
 
   exclude_cols <- c("situation", "species", "Date", "init_date")
 
-  transformed <- get_obs_ds(data_dir) |>
+  get_obs_ds(data_dir) |>
     dplyr::left_join(init_dates, by = "situation") |>
     dplyr::mutate(
       dplyr::across(
         -dplyr::all_of(exclude_cols),
-        ~ dplyr::if_else(Date == init_date, NA_real_, .x)
+        ~ dplyr::if_else(.data$Date == init_date, NA_real_, .x)
       )
     ) |>
     dplyr::select(-init_date) |>
