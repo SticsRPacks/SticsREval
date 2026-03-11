@@ -65,6 +65,7 @@ required to run simulations and evaluation workflows.</p>
 <span>  eval_workspace <span class="op">=</span> <span class="va">DEFAULT_WORKSPACE</span>,</span>
 <span>  init_workspace <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  output_dir <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  species <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  force <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -129,6 +130,12 @@ workspace. Defaults to TRUE.</p></dd>
 <dt id="arg-output-dir">output_dir<a class="anchor" aria-label="anchor" href="#arg-output-dir"></a></dt>
 <dd><p>Character or NULL. Path to the output directory
 for exported files. Defaults to NULL.</p></dd>
+
+
+<dt id="arg-species">species<a class="anchor" aria-label="anchor" href="#arg-species"></a></dt>
+<dd><p>Character vector or NULL. Optional list of species to
+evaluate. If NULL, all available species are evaluated.
+Defaults to NULL.</p></dd>
 
 
 <dt id="arg-force">force<a class="anchor" aria-label="anchor" href="#arg-force"></a></dt>

@@ -80,7 +80,7 @@ Errors occurring during evaluation are caught and logged.</p>
 <p>The workflow includes the following steps:</p><ul><li><p>Initializes the logger using the specified verbosity level.</p></li>
 <li><p>Optionally initializes the evaluation workspace (copying data,
 preparing inputs, and running simulations if required).</p></li>
-<li><p>Runs evaluation for all species using <code>evaluate_all_species()</code>.</p></li>
+<li><p>Runs evaluation for all species using <code>evaluate_species()</code>.</p></li>
 <li><p>Displays comparison summaries using <code>display_comparisons_info()</code>.</p></li>
 </ul><p>Errors occurring during the evaluation phase are captured and logged using
 <code><a href="https://daroczig.github.io/logger/reference/log_level.html" class="external-link">logger::log_error()</a></code>, allowing the process to fail gracefully.</p>
