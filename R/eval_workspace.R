@@ -53,6 +53,7 @@ init_eval_workspace <- function(
     parallel,
     cores
   )
+  remove_init_obs(eval_workspace)
   rm(extracted_species_df)
 }
 
@@ -136,6 +137,30 @@ open_parquet_or_null <- function(path, collect, warn_msg) {
     return(dplyr::collect(ds))
   }
   ds
+}
+
+remove_init_obs <- function(data_dir) {
+
+  init_dates <- get_sim_ds(data_dir) |>
+    dplyr::group_by(situation) |>
+    dplyr::summarise(init_date = min(Date, na.rm = TRUE))
+
+  exclude_cols <- c("situation", "species", "Date", "init_date")
+
+  transformed <- get_obs_ds(data_dir) |>
+    dplyr::left_join(init_dates, by = "situation") |>
+    dplyr::mutate(
+      dplyr::across(
+        -dplyr::all_of(exclude_cols),
+        ~ dplyr::if_else(Date == init_date, NA_real_, .x)
+      )
+    ) |>
+    dplyr::select(-init_date) |>
+    arrow::write_dataset(
+      obs_ds_path(data_dir),
+      format = "parquet",
+      partitioning = "species"
+    )
 }
 
 get_species <- function(data_dir) {
