@@ -10,7 +10,8 @@ init_eval_workspace <- function(
   must_run_simulations,
   parallel,
   cores,
-  force = FALSE
+  force = FALSE,
+  species_filter = NULL
 ) {
   logger::log_info("Initializing workspace {eval_workspace}...")
   if (!dir.exists(eval_workspace) &&
@@ -33,7 +34,8 @@ init_eval_workspace <- function(
     all_usms,
     data_workspace,
     parallel,
-    cores
+    cores,
+    species_filter = species_filter
   )
   rotations <- get_rotation_list(metadata_file)
   load_workspace_sim(
