@@ -340,6 +340,122 @@ test_that("extract_species_from_usms maps species correctly to usms", {
   expect_identical(result$species[result$usm == "usm2"], "maize")
 })
 
+test_that(
+  "extract_species_from_usms returns all USMs when species_filter is NULL",
+  {
+    stub(
+      extract_species_from_usms,
+      "parallelizable_loop",
+      function(n, par, cores, fn) lapply(seq_len(n), fn)
+    )
+    stub(
+      extract_species_from_usms,
+      "SticsRFiles::get_plant_txt",
+      function(workspace) list(codeplante = "BLE")
+    )
+
+    result <- extract_species_from_usms(
+      usms = c("usm1", "usm2", "usm3"),
+      workspace = "/ws",
+      parallel = FALSE,
+      cores = NA,
+      species_filter = NULL
+    )
+
+    expect_s3_class(result, "data.frame")
+    expect_identical(nrow(result), 3L)
+    expect_setequal(result$usm, c("usm1", "usm2", "usm3"))
+  }
+)
+
+test_that("extract_species_from_usms correctly filters USMs by species", {
+  stub(
+    extract_species_from_usms,
+    "parallelizable_loop",
+    function(n, par, cores, fn) lapply(seq_len(n), fn)
+  )
+  stub(
+    extract_species_from_usms,
+    "SticsRFiles::get_plant_txt",
+    function(workspace) {
+      if (grepl("usm2", workspace, fixed = TRUE)) {
+        list(codeplante = "MAI")
+      } else {
+        list(codeplante = "BLE")
+      }
+    }
+  )
+
+  result <- extract_species_from_usms(
+    usms = c("usm1", "usm2", "usm3"),
+    workspace = "/ws",
+    parallel = FALSE,
+    cores = NA,
+    species_filter = "BLE"
+  )
+
+  expect_identical(nrow(result), 2L)
+  expect_true(all(result$species == "BLE"))
+  expect_false("usm2" %in% result$usm)
+})
+
+test_that(
+  "extract_species_from_usms returns an empty data.frame when no species
+  matches the filter",
+  {
+    stub(
+      extract_species_from_usms,
+      "parallelizable_loop",
+      function(n, par, cores, fn) lapply(seq_len(n), fn)
+    )
+    stub(
+      extract_species_from_usms,
+      "SticsRFiles::get_plant_txt",
+      function(workspace) list(codeplante = "BLE")
+    )
+
+    result <- extract_species_from_usms(
+      usms = c("usm1", "usm2"),
+      workspace = "/ws",
+      parallel = FALSE,
+      cores = NA,
+      species_filter = "SOJ"
+    )
+
+    expect_identical(nrow(result), 0L)
+  }
+)
+
+test_that("extract_species_from_usms accepts a multi-species filter vector", {
+  stub(
+    extract_species_from_usms,
+    "parallelizable_loop",
+    function(n, par, cores, fn) lapply(seq_len(n), fn)
+  )
+  stub(
+    extract_species_from_usms,
+    "SticsRFiles::get_plant_txt",
+    function(workspace) {
+      if (grepl("usm2", workspace, fixed = TRUE)) {
+        list(codeplante = "MAI")
+      } else {
+        list(codeplante = "BLE")
+      }
+    }
+  )
+
+  result <- extract_species_from_usms(
+    usms = c("usm1", "usm2", "usm3"),
+    workspace = "/ws",
+    parallel = FALSE,
+    cores = NA,
+    species_filter = c("BLE", "MAI")
+  )
+
+  expect_identical(nrow(result), 3L)
+  expect_setequal(result$species, c("BLE", "MAI"))
+})
+
 # ===========================================================================
 # Tests: get_rotation_list
 # ===========================================================================

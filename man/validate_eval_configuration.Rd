@@ -9,9 +9,10 @@ validate_eval_configuration(config)
 \description{
 The configuration must follow these rules to be considered as valid:
 \itemize{
-\item \code{stics_exe}, \code{workspace} must be defined
+\item if \code{init_workspace} is TRUE, \code{stics_exe}, \code{workspace} and
+\code{metadata_file} must be defined and \code{metadata_file} must be a valid path
 \item if \code{reference_data_dir} is defined, it must be a valid path
-\item \code{metadata_file} must be a valid path
+\item \code{eval_workspace} must be defined
 }
 }
 \keyword{internal}

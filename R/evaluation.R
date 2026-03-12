@@ -100,7 +100,8 @@ evaluate <- function(config) {
       config$run_simulations,
       config$parallel,
       config$cores,
-      config$force
+      force = config$force,
+      species_filter = config$species
     )
   }
   logger::log_info("Starting evaluation...")
