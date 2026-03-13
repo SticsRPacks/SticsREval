@@ -39,7 +39,10 @@ prepare_species_output_dir <- function(output_dir, species) {
 #'
 #' @examples
 #' \dontrun{
-#' export_stats_to_csv("results/", eval_workspace = "workspace/")
+#' config <- make_config(
+#'  output_dir = "results/"
+#' )
+#' export_stats_to_csv(config)
 #' }
 #'
 #' @export
@@ -47,9 +50,6 @@ export_stats_to_csv <- function(config) {
   start_time <- Sys.time()
   validate_export_config(config)
   species <- get_species(config$eval_workspace)
-  if (!is.null(config$species)) {
-    species <- intersect(species, config$species)
-  }
   for (spec in species) {
     logger::log_info("Exporting stats data for species {spec}")
     o_dir <- prepare_species_output_dir(config$output_dir, spec)
@@ -98,7 +98,10 @@ export_stats_to_csv <- function(config) {
 #'
 #' @examples
 #' \dontrun{
-#' export_species_sim("results/", eval_workspace = "workspace/")
+#' config <- make_config(
+#'  output_dir = "results"
+#' )
+#' export_species_sim(config)
 #' }
 #'
 #' @export
@@ -107,9 +110,6 @@ export_species_sim <- function(config) {
   start_time <- Sys.time()
   validate_export_config(config)
   species <- get_species(config$eval_workspace)
-  if (!is.null(config$species)) {
-    species <- intersect(species, config$species)
-  }
   for (spec in species) {
     logger::log_info("Exporting simulations data for species {spec}")
     o_dir <- prepare_species_output_dir(config$output_dir, spec)

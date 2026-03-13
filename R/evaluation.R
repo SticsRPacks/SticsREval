@@ -1,14 +1,23 @@
-prepare_species_workspace <- function(eval_workspace, species) {
-  for (spec in species) {
-    logger::log_info("Starting evaluation of species {spec}")
-    species_usms <- get_species_usm(eval_workspace, spec)
-    if (!length(species_usms)) {
-      logger::log_warn("No USM for species {spec}.")
-      next
+prepare_species_workspace <- function(
+  eval_workspace, species = NULL, usms = NULL
+) {
+  workspace_species <- get_species(eval_workspace)
+  ignored_species <- Filter(function(spec) {
+    species_usms <- get_species_usm(eval_workspace, spec, usms = usms)
+    not_selected <- !is.null(species) && !(spec %in% species)
+    if (not_selected || length(species_usms) == 0) {
+      species_workspace <- file.path(eval_workspace, spec)
+      logger::log_info("Species {spec} ignored.")
+      if (dir.exists(species_workspace)) {
+        unlink(species_workspace, recursive = TRUE)
+      }
+      return(TRUE)
     }
     logger::log_info("Found {length(species_usms)} USMs for species {spec}.")
-    rm(species_usms)
-    gc()
+    FALSE
+  }, workspace_species)
+  spec_to_eval <- workspace_species[! workspace_species %in% ignored_species]
+  for (spec in unique(spec_to_eval)) {
     species_workspace <- file.path(eval_workspace, spec)
     if (!dir.exists(species_workspace) &&
         !dir.create(species_workspace, recursive = TRUE)
@@ -27,15 +36,14 @@ evaluate_species <- function(
   reference_data_dir,
   percentage,
   parallel,
-  cores
+  cores,
+  usms = NULL
 ) {
-  logger::log_debug("Preparing species workspaces.")
-  prepare_species_workspace(eval_workspace, species)
   logger::log_debug("Generating stats for species.")
-  gen_species_stats(eval_workspace, species, parallel, cores)
+  gen_species_stats(eval_workspace, species, parallel, cores, usms = usms)
   logger::log_debug("Computing deteriorated USM for species.")
   gen_deteriorated_usm(
-    eval_workspace, species, reference_data_dir, percentage
+    eval_workspace, species, reference_data_dir, percentage, usms = usms
   )
   logger::log_debug("Computing species comparison.")
   gen_species_comparison(
@@ -100,38 +108,45 @@ evaluate <- function(config) {
       config$run_simulations,
       config$parallel,
       config$cores,
-      force = config$force,
-      species_filter = config$species
+      force = config$force
     )
   }
   logger::log_info("Starting evaluation...")
   tryCatch({
-    spec_to_eval <- get_species(config$eval_workspace)
+    species <- get_species(config$eval_workspace)
+    logger::log_debug("Preparing species workspaces.")
+    prepare_species_workspace(
+      config$eval_workspace, species = config$species, usms = config$usms
+    )
     if (!is.null(config$species)) {
-      spec_to_eval <- intersect(config$species, spec_to_eval)
+      species <- intersect(config$species, species)
     }
-    if (length(spec_to_eval) == 0) {
-      logger::log_info(
-        "No species found in workspace {config$eval_workspace} corresponding
-        to defined species list {config$species}."
-      )
+    if (!is.null(config$usms)) {
+      species <- species[
+        vapply(species, function(sp) {
+          length(get_species_usm(config$eval_workspace, sp, config$usms)) > 0
+        }, FUN.VALUE = logical(1))
+      ]
+    }
+    if (length(species) == 0) {
       return()
     }
     logger::log_debug(
-      "Found {length(spec_to_eval)} species in workspace
-      {config$eval_workspace}: {format_species(spec_to_eval)}"
+      "Found {length(species)} species in workspace
+      {config$eval_workspace}: {format_species(species)}"
     )
     evaluate_species(
       config$eval_workspace,
-      spec_to_eval,
+      species,
       config$reference_data_dir,
       config$percentage,
       config$parallel,
-      config$cores
+      config$cores,
+      usms = config$usms
     )
     display_comparisons_info(
       config$eval_workspace,
-      spec_to_eval,
+      species,
       config$percentage
     )
   }, error = function(e) {

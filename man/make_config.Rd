@@ -18,6 +18,7 @@ make_config(
   init_workspace = TRUE,
   output_dir = NULL,
   species = NULL,
+  usms = NULL,
   force = FALSE
 )
 }
@@ -58,6 +59,10 @@ for exported files. Defaults to NULL.}
 
 \item{species}{Character vector or NULL. Optional list of species to
 evaluate. If NULL, all available species are evaluated.
+Defaults to NULL.}
+
+\item{usms}{Character vector or NULL. Optional list of USMs to
+evaluate. If NULL, all available USMs are evaluated.
 Defaults to NULL.}
 
 \item{force}{Logical. Whether to overwrite an existing non-empty

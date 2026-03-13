@@ -43,7 +43,11 @@ and deteriorated variables are available.
 }
 \examples{
 \dontrun{
-gen_plots("results/", percentage = 0.2, eval_workspace = "workspace/")
+config <- make_config(
+ output_dir = "results/",
+ reference_data_dir = "ref_dir/"
+)
+gen_plots(config)
 }
 
 }

@@ -116,7 +116,11 @@ gen_comparison_plot <- function(
 #'
 #' @examples
 #' \dontrun{
-#' gen_plots("results/", percentage = 0.2, eval_workspace = "workspace/")
+#' config <- make_config(
+#'  output_dir = "results/",
+#'  reference_data_dir = "ref_dir/"
+#' )
+#' gen_plots(config)
 #' }
 #'
 #' @export
@@ -125,9 +129,6 @@ gen_plots <- function(config) {
   validate_export_config(config)
   validate_plots_config(config)
   species <- get_species(config$eval_workspace)
-  if (!is.null(config$species)) {
-    species <- intersect(species, config$species)
-  }
   parallelizable_loop(
     length(species),
     config$parallel,
