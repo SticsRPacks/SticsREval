@@ -169,23 +169,25 @@
 <code>make_config()</code><a class="anchor" aria-label="anchor" href="#make_config"></a>
 </h3>
 <p>Creates and validates the configuration object that is passed to all other functions. All parameters for simulation, evaluation, and export are defined here.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/SticsRPacks/SticsREval" class="external-link">SticsREval</a></span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">config</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/make_config.html">make_config</a></span><span class="op">(</span></span>
-<span>  stics_exe          <span class="op">=</span> <span class="st">"/path/to/stics"</span>,</span>
-<span>  workspace          <span class="op">=</span> <span class="st">"workspace/"</span>,</span>
-<span>  metadata_file      <span class="op">=</span> <span class="st">"metadata.csv"</span>,</span>
-<span>  run_simulations    <span class="op">=</span> <span class="cn">TRUE</span>,      <span class="co"># set to FALSE to skip simulations</span></span>
-<span>  verbose            <span class="op">=</span> <span class="fl">1</span>,</span>
-<span>  parallel           <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  cores              <span class="op">=</span> <span class="cn">NA</span>,</span>
-<span>  reference_data_dir <span class="op">=</span> <span class="cn">NULL</span>,      <span class="co"># path to reference version stats for regression detection</span></span>
-<span>  percentage         <span class="op">=</span> <span class="fl">5</span>,         <span class="co"># threshold (%) to flag deteriorated variables</span></span>
-<span>  eval_workspace     <span class="op">=</span> <span class="st">"eval_workspace/"</span>,</span>
-<span>  init_workspace     <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  output_dir         <span class="op">=</span> <span class="st">"outputs/"</span></span>
-<span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="fu">library</span>(SticsREval)</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>config <span class="ot">&lt;-</span> <span class="fu">make_config</span>(</span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>  <span class="at">stics_exe          =</span> <span class="st">"/path/to/stics"</span>,</span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>  <span class="at">workspace          =</span> <span class="st">"workspace/"</span>,</span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>  <span class="at">metadata_file      =</span> <span class="st">"metadata.csv"</span>,</span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a>  <span class="at">run_simulations    =</span> <span class="cn">TRUE</span>,      <span class="co"># set to FALSE to skip simulations</span></span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a>  <span class="at">verbose            =</span> <span class="dv">1</span>,</span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a>  <span class="at">parallel           =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a>  <span class="at">cores              =</span> <span class="cn">NA</span>,</span>
+<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a>  <span class="at">reference_data_dir =</span> <span class="cn">NULL</span>,      <span class="co"># path to reference version stats for regression detection</span></span>
+<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a>  <span class="at">percentage         =</span> <span class="dv">5</span>,         <span class="co"># threshold (%) to flag deteriorated variables</span></span>
+<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a>  <span class="at">eval_workspace     =</span> <span class="st">"eval_workspace/"</span>,</span>
+<span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a>  <span class="at">init_workspace     =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb5-15"><a href="#cb5-15" tabindex="-1"></a>  <span class="at">output_dir         =</span> <span class="st">"outputs/"</span>,</span>
+<span id="cb5-16"><a href="#cb5-16" tabindex="-1"></a>  <span class="at">force              =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb5-17"><a href="#cb5-17" tabindex="-1"></a>  <span class="at">species            =</span> <span class="cn">NULL</span></span>
+<span id="cb5-18"><a href="#cb5-18" tabindex="-1"></a>  <span class="at">usms               =</span> <span class="cn">NULL</span></span>
+<span id="cb5-19"><a href="#cb5-19" tabindex="-1"></a>)</span></code></pre></div>
 <table class="table">
 <colgroup>
 <col width="50%">
@@ -243,6 +245,18 @@
 <tr class="even">
 <td><code>output_dir</code></td>
 <td>Output directory for exports</td>
+</tr>
+<tr class="odd">
+<td><code>force</code></td>
+<td>Whether to overwrite an existing non-empty evaluation workspace without prompting. (default: <code>FALSE</code>)</td>
+</tr>
+<tr class="even">
+<td><code>species</code></td>
+<td>Optional list of species to evaluate. If NULL, all available species are evaluated. (default: <code>NULL</code>)</td>
+</tr>
+<tr class="odd">
+<td><code>usms</code></td>
+<td>Optional list of USMs to evaluate. If NULL, all available USMs are evaluated. (default: <code>NULL</code>)</td>
 </tr>
 </tbody>
 </table>
