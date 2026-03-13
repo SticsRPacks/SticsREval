@@ -39,7 +39,10 @@ For each species:
 }
 \examples{
 \dontrun{
-export_stats_to_csv("results/", eval_workspace = "workspace/")
+config <- make_config(
+ output_dir = "results/"
+)
+export_stats_to_csv(config)
 }
 
 }

@@ -32,7 +32,10 @@ For each species:
 }
 \examples{
 \dontrun{
-export_species_sim("results/", eval_workspace = "workspace/")
+config <- make_config(
+ output_dir = "results"
+)
+export_species_sim(config)
 }
 
 }

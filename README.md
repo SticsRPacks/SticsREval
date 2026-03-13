@@ -110,7 +110,10 @@ config <- make_config(
   percentage         = 5,         # threshold (%) to flag deteriorated variables
   eval_workspace     = "eval_workspace/",
   init_workspace     = TRUE,
-  output_dir         = "outputs/"
+  output_dir         = "outputs/",
+  force              = TRUE,
+  species            = NULL
+  usms               = NULL
 )
 ```
 
@@ -128,6 +131,9 @@ config <- make_config(
 | `eval_workspace` | Path to the evaluation workspace |
 | `init_workspace` | Whether to initialize the workspace (default: `TRUE`) |
 | `output_dir` | Output directory for exports |
+| `force` | Whether to overwrite an existing non-empty evaluation workspace without prompting. (default: `FALSE`) |
+| `species` | Optional list of species to evaluate. If NULL, all available species are evaluated. (default: `NULL`)  |
+| `usms` | Optional list of USMs to evaluate. If NULL, all available USMs are evaluated. (default: `NULL`) |
 
 ---
 
