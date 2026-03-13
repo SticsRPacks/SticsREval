@@ -10,8 +10,7 @@ init_eval_workspace <- function(
   must_run_simulations,
   parallel,
   cores,
-  force = FALSE,
-  species_filter = NULL
+  force = FALSE
 ) {
   logger::log_info("Initializing workspace {eval_workspace}...")
   if (!dir.exists(eval_workspace) &&
@@ -34,8 +33,7 @@ init_eval_workspace <- function(
     all_usms,
     data_workspace,
     parallel,
-    cores,
-    species_filter = species_filter
+    cores
   )
   rotations <- get_rotation_list(metadata_file)
   load_workspace_sim(
@@ -173,22 +171,29 @@ get_species <- function(data_dir) {
     dplyr::pull("species")
 }
 
-get_species_usm <- function(data_dir, species) {
-  get_obs_ds(data_dir) |>
+get_species_usm <- function(data_dir, species, usms = NULL) {
+  res <- get_obs_ds(data_dir) |>
     dplyr::filter(.data$species == {{ species }}) |>
-    dplyr::distinct(.data$situation) |>
+    dplyr::distinct(.data$situation)
+  if (!is.null(usms)) {
+    res <- dplyr::filter(res, .data$situation %in% usms)
+  }
+  res |>
     dplyr::collect() |>
     dplyr::pull("situation")
 }
 
 get_by_species <- function(
-  data_dir, species, type = c("sim", "obs"), collect = FALSE
+  data_dir, species, type = c("sim", "obs"), collect = FALSE, usms = NULL
 ) {
   type <- match.arg(type)
   ds <- if (type == "sim") get_sim_ds(data_dir) else get_obs_ds(data_dir)
 
   res <- dplyr::filter(ds, .data$species == {{ species }})
 
+  if (!is.null(usms)) {
+    res <- dplyr::filter(res, .data$situation %in% usms)
+  }
 
   if (collect) {
     return(dplyr::collect(res))
@@ -220,14 +225,18 @@ save_rmse_per_usm <- function(data_dir, species, rmse_per_usm) {
   )
 }
 
-get_rmse_per_usm <- function(data_dir, species, collect = FALSE) {
-  open_parquet_or_null(
+get_rmse_per_usm <- function(data_dir, species, collect = FALSE, usms = NULL) {
+  res <- open_parquet_or_null(
     path = rmse_per_usm_ds_path(data_dir, species),
     collect = collect,
     warn_msg = paste(
       "No RMSE per USM file found for species", species, "in", data_dir
     )
   )
+  if (!is.null(usms)) {
+    res <- dplyr::filter(res, .data$situation %in% usms)
+  }
+  res
 }
 
 save_deteriorated_usm <- function(data_dir, species, deteriorated) {

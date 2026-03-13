@@ -46,10 +46,11 @@ get_deteriorated_rmse_per_usm <- function(
   eval_workspace,
   species,
   ref_stats,
-  percentage
+  percentage,
+  usms = NULL
 ) {
   logger::log_debug("Reading RMSE per USM parquet file for species {species}")
-  new_stats <- get_rmse_per_usm(eval_workspace, species)
+  new_stats <- get_rmse_per_usm(eval_workspace, species, usms = usms)
   if (is.null(new_stats)) {
     return(NULL)
   }
@@ -168,7 +169,7 @@ gen_species_comparison <- function(
 }
 
 gen_deteriorated_usm <- function(
-  eval_workspace, species, reference_data_dir, percentage
+  eval_workspace, species, reference_data_dir, percentage, usms = NULL
 ) {
   for (spec in species) {
     logger::log_debug("Reading reference RMSE per USM for species {spec}")
@@ -181,7 +182,8 @@ gen_deteriorated_usm <- function(
       eval_workspace,
       spec,
       ref_stats,
-      percentage
+      percentage,
+      usms = usms
     )
     if (!is.null(deteriorated_usm)) {
       logger::log_debug("Saving deteriorated USM for species {spec}")

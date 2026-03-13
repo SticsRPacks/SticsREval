@@ -31,6 +31,9 @@
 #' @param species Character vector or NULL. Optional list of species to
 #'   evaluate. If NULL, all available species are evaluated.
 #'   Defaults to NULL.
+#' @param usms Character vector or NULL. Optional list of USMs to
+#'   evaluate. If NULL, all available USMs are evaluated.
+#'   Defaults to NULL.
 #' @param force Logical. Whether to overwrite an existing non-empty
 #'   evaluation workspace without prompting. Defaults to FALSE.
 #'
@@ -60,6 +63,7 @@ make_config <- function(
   init_workspace = TRUE,
   output_dir = NULL,
   species = NULL,
+  usms = NULL,
   force = FALSE
 ) {
   config <- list(
@@ -76,6 +80,7 @@ make_config <- function(
     init_workspace = init_workspace,
     output_dir = output_dir,
     species = species,
+    usms = usms,
     force = force
   )
   init_logger(config$verbose)

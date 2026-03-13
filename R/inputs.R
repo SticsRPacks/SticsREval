@@ -56,7 +56,7 @@ load_workspace_obs <- function(
 }
 
 extract_species_from_usms <- function(
-  usms, workspace, parallel, cores, species_filter = NULL
+  usms, workspace, parallel, cores
 ) {
   logger::log_debug("Extracting species from USMs...")
   result <- parallelizable_loop(
@@ -68,12 +68,6 @@ extract_species_from_usms <- function(
       species <- SticsRFiles::get_plant_txt(
         workspace = file.path(workspace, usm)
       )
-      if (
-        !is.null(species_filter) &&
-          !(species$codeplante %in% species_filter)
-      ) {
-        return(NULL)
-      }
       list(
         species = species$codeplante,
         usm = usm
