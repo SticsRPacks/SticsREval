@@ -115,7 +115,9 @@ evaluate <- function(config) {
   tryCatch({
     species <- get_species(config$eval_workspace)
     logger::log_debug("Preparing species workspaces.")
-    prepare_species_workspace(config$eval_workspace, species = config$species, usms = config$usms)
+    prepare_species_workspace(
+      config$eval_workspace, species = config$species, usms = config$usms
+    )
     if (!is.null(config$species)) {
       species <- intersect(config$species, species)
     }

@@ -22,7 +22,9 @@ test_that("prepare_species_workspace skips species with no USMs", {
 test_that("prepare_species_workspace processes multiple species", {
   base <- file.path(tempdir(), basename(tempfile()))
   dir.create(base)
-  stub(prepare_species_workspace, "get_species", function(...) c("wheat", "maize"))
+  stub(
+    prepare_species_workspace, "get_species", function(...) c("wheat", "maize")
+  )
   stub(prepare_species_workspace, "get_species_usm", function(...) "usm1")
   prepare_species_workspace(base, species = c("wheat", "maize"))
   expect_true(dir.exists(file.path(base, "wheat")))
@@ -32,7 +34,9 @@ test_that("prepare_species_workspace processes multiple species", {
 test_that("prepare_species_workspace skips only species without USMs", {
   base <- file.path(tempdir(), basename(tempfile()))
   dir.create(base)
-  stub(prepare_species_workspace, "get_species", function(...) c("wheat", "maize"))
+  stub(
+    prepare_species_workspace, "get_species", function(...) c("wheat", "maize")
+  )
   stub(prepare_species_workspace, "get_species_usm", function(ws, spec, ...) {
     if (spec == "wheat") "usm1" else character(0)
   })
@@ -41,26 +45,41 @@ test_that("prepare_species_workspace skips only species without USMs", {
   expect_false(dir.exists(file.path(base, "maize")))
 })
 
-test_that("prepare_species_workspace with species = NULL processes all workspace species", {
-  base <- file.path(tempdir(), basename(tempfile()))
-  dir.create(base)
-  stub(prepare_species_workspace, "get_species", function(...) c("wheat", "maize"))
-  stub(prepare_species_workspace, "get_species_usm", function(...) "usm1")
-  prepare_species_workspace(base)
-  expect_true(dir.exists(file.path(base, "wheat")))
-  expect_true(dir.exists(file.path(base, "maize")))
-})
+test_that(
+  "prepare_species_workspace with species = NULL processes all workspace
+  species",
+  {
+    base <- file.path(tempdir(), basename(tempfile()))
+    dir.create(base)
+    stub(
+      prepare_species_workspace,
+      "get_species",
+      function(...) c("wheat", "maize")
+    )
+    stub(prepare_species_workspace, "get_species_usm", function(...) "usm1")
+    prepare_species_workspace(base)
+    expect_true(dir.exists(file.path(base, "wheat")))
+    expect_true(dir.exists(file.path(base, "maize")))
+  }
+)
 
-test_that("prepare_species_workspace filters out species not in species filter", {
-  base <- file.path(tempdir(), basename(tempfile()))
-  dir.create(base)
-  stub(prepare_species_workspace, "get_species", function(...) c("wheat", "maize", "soy"))
-  stub(prepare_species_workspace, "get_species_usm", function(...) "usm1")
-  prepare_species_workspace(base, species = "wheat")
-  expect_true(dir.exists(file.path(base, "wheat")))
-  expect_false(dir.exists(file.path(base, "maize")))
-  expect_false(dir.exists(file.path(base, "soy")))
-})
+test_that(
+  "prepare_species_workspace filters out species not in species filter",
+  {
+    base <- file.path(tempdir(), basename(tempfile()))
+    dir.create(base)
+    stub(
+      prepare_species_workspace,
+      "get_species",
+      function(...) c("wheat", "maize", "soy")
+    )
+    stub(prepare_species_workspace, "get_species_usm", function(...) "usm1")
+    prepare_species_workspace(base, species = "wheat")
+    expect_true(dir.exists(file.path(base, "wheat")))
+    expect_false(dir.exists(file.path(base, "maize")))
+    expect_false(dir.exists(file.path(base, "soy")))
+  }
+)
 
 test_that(
   "prepare_species_workspace throws an error when directory cannot be created",
@@ -204,23 +223,28 @@ test_that(
   }
 )
 
-test_that("evaluate calls prepare_species_workspace with eval_workspace, species and usms", {
-  mock_prepare <- mock(NULL)
-  stub(evaluate, "validate_eval_configuration", mock(NULL))
-  stub(evaluate, "get_species", mock("wheat"))
-  stub(evaluate, "prepare_species_workspace", mock_prepare)
-  stub(evaluate, "evaluate_species", mock(NULL))
-  stub(evaluate, "display_comparisons_info", mock(NULL))
-  evaluate(make_eval_config())
-  expect_called(mock_prepare, 1)
-  args <- mock_args(mock_prepare)[[1]]
-  expect_identical(args[[1]], "/ws")
-  expect_identical(args[[2]], NULL)
-  expect_identical(args[[3]], NULL)
-})
+test_that(
+  "evaluate calls prepare_species_workspace with eval_workspace, species and
+  usms",
+  {
+    mock_prepare <- mock(NULL)
+    stub(evaluate, "validate_eval_configuration", mock(NULL))
+    stub(evaluate, "get_species", mock("wheat"))
+    stub(evaluate, "prepare_species_workspace", mock_prepare)
+    stub(evaluate, "evaluate_species", mock(NULL))
+    stub(evaluate, "display_comparisons_info", mock(NULL))
+    evaluate(make_eval_config())
+    expect_called(mock_prepare, 1)
+    args <- mock_args(mock_prepare)[[1]]
+    expect_identical(args[[1]], "/ws")
+    expect_null(args[[2]])
+    expect_null(args[[3]])
+  }
+)
 
 test_that(
-  "evaluate calls display_comparisons_info with eval_workspace, species and percentage",
+  "evaluate calls display_comparisons_info with eval_workspace, species and
+  percentage",
   {
     mock_display <- mock(NULL)
     stub(evaluate, "validate_eval_configuration", mock(NULL))
@@ -263,16 +287,20 @@ test_that("evaluate filters species by config$usms when provided", {
   expect_identical(args[[2]], "wheat")
 })
 
-test_that("evaluate returns early and does not call evaluate_species when no species remain", {
-  mock_eval <- mock(NULL)
-  stub(evaluate, "validate_eval_configuration", mock(NULL))
-  stub(evaluate, "get_species", mock(c("wheat", "maize")))
-  stub(evaluate, "prepare_species_workspace", mock(NULL))
-  stub(evaluate, "evaluate_species", mock_eval)
-  stub(evaluate, "display_comparisons_info", mock(NULL))
-  evaluate(make_eval_config(list(species = "soy")))  # soy not in workspace
-  expect_called(mock_eval, 0)
-})
+test_that(
+  "evaluate returns early and does not call evaluate_species when no
+  species remain",
+  {
+    mock_eval <- mock(NULL)
+    stub(evaluate, "validate_eval_configuration", mock(NULL))
+    stub(evaluate, "get_species", mock(c("wheat", "maize")))
+    stub(evaluate, "prepare_species_workspace", mock(NULL))
+    stub(evaluate, "evaluate_species", mock_eval)
+    stub(evaluate, "display_comparisons_info", mock(NULL))
+    evaluate(make_eval_config(list(species = "soy")))  # soy not in workspace
+    expect_called(mock_eval, 0)
+  }
+)
 
 test_that(
   "evaluate logs error and does not rethrow when evaluate_species fails",
@@ -280,7 +308,11 @@ test_that(
     stub(evaluate, "validate_eval_configuration", mock(NULL))
     stub(evaluate, "get_species", mock("wheat"))
     stub(evaluate, "prepare_species_workspace", mock(NULL))
-    stub(evaluate, "evaluate_species", function(...) stop("boom", call. = FALSE))
+    stub(
+      evaluate,
+      "evaluate_species",
+      function(...) stop("boom", call. = FALSE)
+    )
     stub(evaluate, "display_comparisons_info", mock(NULL))
     stub(evaluate, "logger::log_error", mock(NULL))
     expect_no_error(evaluate(make_eval_config()))
@@ -294,7 +326,11 @@ test_that(
     stub(evaluate, "validate_eval_configuration", mock(NULL))
     stub(evaluate, "get_species", mock("wheat"))
     stub(evaluate, "prepare_species_workspace", mock(NULL))
-    stub(evaluate, "evaluate_species", function(...) stop("boom", call. = FALSE))
+    stub(
+      evaluate,
+      "evaluate_species",
+      function(...) stop("boom", call. = FALSE)
+    )
     stub(evaluate, "display_comparisons_info", mock_display)
     stub(evaluate, "logger::log_error", mock(NULL))
     evaluate(make_eval_config())
