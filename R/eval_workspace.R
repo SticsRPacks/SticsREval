@@ -184,7 +184,8 @@ get_species_usm <- function(data_dir, species, usms = NULL) {
 }
 
 get_by_species <- function(
-  data_dir, species, type = c("sim", "obs"), collect = FALSE, usms = NULL
+  data_dir, species, type = c("sim", "obs"), collect = FALSE,
+  usms = NULL, var2exclude = NULL
 ) {
   type <- match.arg(type)
   ds <- if (type == "sim") get_sim_ds(data_dir) else get_obs_ds(data_dir)
@@ -193,6 +194,10 @@ get_by_species <- function(
 
   if (!is.null(usms)) {
     res <- dplyr::filter(res, .data$situation %in% usms)
+  }
+  if (!is.null(var2exclude)) {
+    cols_to_keep <- setdiff(names(res), var2exclude)
+    res <- dplyr::select(res, dplyr::all_of(cols_to_keep))
   }
 
   if (collect) {
@@ -225,7 +230,9 @@ save_rmse_per_usm <- function(data_dir, species, rmse_per_usm) {
   )
 }
 
-get_rmse_per_usm <- function(data_dir, species, collect = FALSE, usms = NULL) {
+get_rmse_per_usm <- function(
+  data_dir, species, collect = FALSE, usms = NULL, var2exclude = NULL
+) {
   res <- open_parquet_or_null(
     path = rmse_per_usm_ds_path(data_dir, species),
     collect = collect,
@@ -233,8 +240,15 @@ get_rmse_per_usm <- function(data_dir, species, collect = FALSE, usms = NULL) {
       "No RMSE per USM file found for species", species, "in", data_dir
     )
   )
+  if (is.null(res)) {
+    return(res)
+  }
   if (!is.null(usms)) {
     res <- dplyr::filter(res, .data$situation %in% usms)
+  }
+  if (!is.null(var2exclude)) {
+    cols_to_keep <- setdiff(names(res), var2exclude)
+    res <- dplyr::select(res, dplyr::all_of(cols_to_keep))
   }
   res
 }

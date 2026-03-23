@@ -37,13 +37,18 @@ evaluate_species <- function(
   percentage,
   parallel,
   cores,
-  usms = NULL
+  usms = NULL,
+  var2exclude = NULL
 ) {
   logger::log_debug("Generating stats for species.")
-  gen_species_stats(eval_workspace, species, parallel, cores, usms = usms)
+  gen_species_stats(
+    eval_workspace, species, parallel, cores,
+    usms = usms, var2exclude = var2exclude
+  )
   logger::log_debug("Computing deteriorated USM for species.")
   gen_deteriorated_usm(
-    eval_workspace, species, reference_data_dir, percentage, usms = usms
+    eval_workspace, species, reference_data_dir, percentage,
+    usms = usms, var2exclude = var2exclude
   )
   logger::log_debug("Computing species comparison.")
   gen_species_comparison(
@@ -142,7 +147,8 @@ evaluate <- function(config) {
       config$percentage,
       config$parallel,
       config$cores,
-      usms = config$usms
+      usms = config$usms,
+      var2exclude = config$var2exclude
     )
     display_comparisons_info(
       config$eval_workspace,

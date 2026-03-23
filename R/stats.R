@@ -24,7 +24,7 @@ read_ref_rmse_per_usm <- function(species, reference_data_dir) {
 
 #' @importFrom utils getS3method
 gen_species_stats <- function(
-  eval_workspace, species, parallel, cores, usms = NULL
+  eval_workspace, species, parallel, cores, usms = NULL, var2exclude = NULL
 ) {
   results <- parallelizable_loop(
     length(species),
@@ -36,10 +36,16 @@ gen_species_stats <- function(
         "Splitting simulations and observations data for species {spec}"
       )
       splited_sim <- CroPlotR::split_df2sim(
-        get_by_species(eval_workspace, spec, "sim", collect = TRUE, usms = usms)
+        get_by_species(
+          eval_workspace, spec, "sim", collect = TRUE,
+          usms = usms, var2exclude = var2exclude
+        )
       )
       splited_obs <- CroPlotR::split_df2sim(
-        get_by_species(eval_workspace, spec, "obs", collect = TRUE, usms = usms)
+        get_by_species(
+          eval_workspace, spec, "obs", collect = TRUE,
+          usms = usms, var2exclude = var2exclude
+        )
       )
 
       logger::log_info("Generating statistics for ", spec)

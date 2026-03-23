@@ -34,6 +34,10 @@
 #' @param usms Character vector or NULL. Optional list of USMs to
 #'   evaluate. If NULL, all available USMs are evaluated.
 #'   Defaults to NULL.
+#' @param var2exclude Character vector or NULL. Optional list of variables
+#'   to exclude from evaluation. If NULL, all available variables are
+#'   evaluated.
+#'   Defaults to NULL.
 #' @param force Logical. Whether to overwrite an existing non-empty
 #'   evaluation workspace without prompting. Defaults to FALSE.
 #'
@@ -64,6 +68,7 @@ make_config <- function(
   output_dir = NULL,
   species = NULL,
   usms = NULL,
+  var2exclude = NULL,
   force = FALSE
 ) {
   config <- list(
@@ -81,6 +86,7 @@ make_config <- function(
     output_dir = output_dir,
     species = species,
     usms = usms,
+    var2exclude = var2exclude,
     force = force
   )
   init_logger(config$verbose)
