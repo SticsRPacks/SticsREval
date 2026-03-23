@@ -19,6 +19,7 @@ make_config(
   output_dir = NULL,
   species = NULL,
   usms = NULL,
+  var2exclude = NULL,
   force = FALSE
 )
 }
@@ -63,6 +64,11 @@ Defaults to NULL.}
 
 \item{usms}{Character vector or NULL. Optional list of USMs to
 evaluate. If NULL, all available USMs are evaluated.
+Defaults to NULL.}
+
+\item{var2exclude}{Character vector or NULL. Optional list of variables
+to exclude from evaluation. If NULL, all available variables are
+evaluated.
 Defaults to NULL.}
 
 \item{force}{Logical. Whether to overwrite an existing non-empty

@@ -9,11 +9,11 @@ make_parquet <- function(dir, df = data.frame(x = 1:3)) {
   dir
 }
 
-make_species_parquet <- function(species, filename) {
+make_species_parquet <- function(species, filename, df = data.frame(x = 1:3)) {
   base <- file.path(tempdir(), basename(tempfile()))
   dir.create(file.path(base, species), recursive = TRUE)
   path <- file.path(base, species, filename)
-  arrow::write_parquet(data.frame(x = 1:3), path)
+  arrow::write_parquet(df, path)
   base
 }
 
@@ -479,6 +479,126 @@ test_that("get_by_species filters by species", {
   expect_identical(result$situation, "usm1")
 })
 
+test_that("get_by_species filters by usms when provided", {
+  base <- file.path(tempdir(), basename(tempfile()))
+  df <- data.frame(
+    situation = c("usm1", "usm2", "usm3"),
+    species = c("wheat", "wheat", "wheat"),
+    LAI = c(1.2, 1.5, 1.8),
+    stringsAsFactors = FALSE
+  )
+  make_parquet(file.path(base, "sim"), df)
+  result <- get_by_species(
+    base, "wheat", "sim", collect = TRUE, usms = c("usm1", "usm3")
+  )
+  expect_identical(nrow(result), 2L)
+  expect_true(all(result$situation %in% c("usm1", "usm3")))
+  expect_false("usm2" %in% result$situation)
+})
+
+test_that("get_by_species returns empty data frame when usms matches nothing", {
+  base <- file.path(tempdir(), basename(tempfile()))
+  df <- data.frame(
+    situation = c("usm1", "usm2"),
+    species = c("wheat", "wheat"),
+    LAI = c(1.2, 1.5),
+    stringsAsFactors = FALSE
+  )
+  make_parquet(file.path(base, "sim"), df)
+  result <- get_by_species(
+    base, "wheat", "sim", collect = TRUE, usms = "usm_inexistant"
+  )
+  expect_identical(nrow(result), 0L)
+})
+
+test_that("get_by_species usms filter does not leak across species", {
+  base <- file.path(tempdir(), basename(tempfile()))
+  df <- data.frame(
+    situation = c("usm1", "usm1"),
+    species = c("wheat", "maize"),
+    LAI = c(1.2, 0.8),
+    stringsAsFactors = FALSE
+  )
+  make_parquet(file.path(base, "sim"), df)
+  result <- get_by_species(base, "wheat", "sim", collect = TRUE, usms = "usm1")
+  expect_identical(nrow(result), 1L)
+  expect_identical(result$species, "wheat")
+})
+
+test_that("get_by_species excludes column listed in var2exclude", {
+  base <- file.path(tempdir(), basename(tempfile()))
+  df <- data.frame(
+    situation = "usm1",
+    species = "wheat",
+    LAI = 1.2,
+    bias = 0.05,
+    stringsAsFactors = FALSE
+  )
+  make_parquet(file.path(base, "sim"), df)
+  result <- get_by_species(
+    base, "wheat", "sim", collect = TRUE, var2exclude = "bias"
+  )
+  expect_false("bias" %in% names(result))
+  expect_true("LAI" %in% names(result))
+})
+
+test_that("get_by_species excludes multiple columns listed in var2exclude", {
+  base <- file.path(tempdir(), basename(tempfile()))
+  df <- data.frame(
+    situation = "usm1",
+    species = "wheat",
+    LAI = 1.2,
+    bias = 0.05,
+    n = 10L,
+    stringsAsFactors = FALSE
+  )
+  make_parquet(file.path(base, "sim"), df)
+  result <- get_by_species(
+    base, "wheat", "sim", collect = TRUE, var2exclude = c("bias", "n")
+  )
+  expect_false(any(c("bias", "n") %in% names(result)))
+  expect_true(all(c("situation", "LAI") %in% names(result)))
+})
+
+test_that("get_by_species applies both usms and var2exclude together", {
+  base <- file.path(tempdir(), basename(tempfile()))
+  df <- data.frame(
+    situation = c("usm1", "usm2", "usm3"),
+    species = c("wheat", "wheat", "wheat"),
+    LAI = c(1.2, 1.5, 1.8),
+    bias = c(0.01, 0.02, 0.03),
+    stringsAsFactors = FALSE
+  )
+  make_parquet(file.path(base, "sim"), df)
+  result <- get_by_species(
+    base, "wheat", "sim", collect = TRUE,
+    usms = c("usm1", "usm2"),
+    var2exclude = "bias"
+  )
+  expect_identical(nrow(result), 2L)
+  expect_false("usm3" %in% result$situation)
+  expect_false("bias" %in% names(result))
+})
+
+test_that("get_by_species applies usms and var2exclude with obs type", {
+  base <- file.path(tempdir(), basename(tempfile()))
+  df <- data.frame(
+    situation = c("usm1", "usm2"),
+    species = c("wheat", "wheat"),
+    LAI = c(1.2, 1.5),
+    bias = c(0.01, 0.02),
+    stringsAsFactors = FALSE
+  )
+  make_parquet(file.path(base, "obs"), df)
+  result <- get_by_species(
+    base, "wheat", "obs", collect = TRUE,
+    usms = "usm1",
+    var2exclude = "bias"
+  )
+  expect_identical(nrow(result), 1L)
+  expect_false("bias" %in% names(result))
+})
+
 # ===========================================================================
 # Tests: save_stats / get_stats # nolint
 # ===========================================================================
@@ -556,6 +676,104 @@ test_that("get_rmse_per_usm returns data frame when collect = TRUE", {
   base <- make_species_parquet("wheat", "RMSE_per_USM.parquet")
   result <- get_rmse_per_usm(base, "wheat", collect = TRUE)
   expect_s3_class(result, "data.frame")
+})
+
+test_that("get_rmse_per_usm filters by usms when provided", {
+  base <- make_species_parquet(
+    "wheat", "RMSE_per_USM.parquet",
+    df = data.frame(
+      situation = c("usm1", "usm2", "usm3"),
+      rmse = c(0.1, 0.2, 0.3),
+      stringsAsFactors = FALSE
+    )
+  )
+  result <- get_rmse_per_usm(
+    base, "wheat", collect = TRUE, usms = c("usm1", "usm3")
+  )
+  expect_identical(nrow(result), 2L)
+  expect_true(all(result$situation %in% c("usm1", "usm3")))
+  expect_false("usm2" %in% result$situation)
+})
+
+test_that(
+  "get_rmse_per_usm returns empty data frame when usms matches nothing",
+  {
+    base <- make_species_parquet(
+      "wheat", "RMSE_per_USM.parquet",
+      df = data.frame(
+        situation = c("usm1", "usm2"),
+        rmse = c(0.1, 0.2),
+        stringsAsFactors = FALSE
+      )
+    )
+    result <- get_rmse_per_usm(
+      base, "wheat", collect = TRUE, usms = "usm_inexistant"
+    )
+    expect_identical(nrow(result), 0L)
+  }
+)
+
+test_that("get_rmse_per_usm excludes columns listed in var2exclude", {
+  base <- make_species_parquet(
+    "wheat", "RMSE_per_USM.parquet",
+    df = data.frame(
+      situation = "usm1",
+      rmse = 0.1,
+      bias = 0.05,
+      stringsAsFactors = FALSE
+    )
+  )
+  result <- get_rmse_per_usm(
+    base, "wheat", collect = TRUE, var2exclude = "bias"
+  )
+  expect_false("bias" %in% names(result))
+  expect_true("rmse" %in% names(result))
+  expect_true("situation" %in% names(result))
+})
+
+test_that("get_rmse_per_usm excludes multiple columns listed in var2exclude", {
+  base <- make_species_parquet(
+    "wheat", "RMSE_per_USM.parquet",
+    df = data.frame(
+      situation = "usm1",
+      rmse = 0.1,
+      bias = 0.05,
+      n = 10L,
+      stringsAsFactors = FALSE
+    )
+  )
+  result <- get_rmse_per_usm(
+    base, "wheat", collect = TRUE, var2exclude = c("bias", "n")
+  )
+  expect_false(any(c("bias", "n") %in% names(result)))
+  expect_true(all(c("situation", "rmse") %in% names(result)))
+})
+
+test_that("get_rmse_per_usm applies both usms and var2exclude together", {
+  base <- make_species_parquet(
+    "wheat", "RMSE_per_USM.parquet",
+    df = data.frame(
+      situation = c("usm1", "usm2", "usm3"),
+      rmse = c(0.1, 0.2, 0.3),
+      bias = c(0.01, 0.02, 0.03),
+      stringsAsFactors = FALSE
+    )
+  )
+  result <- get_rmse_per_usm(
+    base, "wheat", collect = TRUE,
+    usms = c("usm1", "usm2"),
+    var2exclude = "bias"
+  )
+  expect_identical(nrow(result), 2L)
+  expect_false("usm3" %in% result$situation)
+  expect_false("bias" %in% names(result))
+})
+
+test_that("get_rmse_per_usm ignores usms and var2exclude when data is NULL", {
+  stub(get_rmse_per_usm, "open_parquet_or_null", mock(NULL))
+  expect_null(get_rmse_per_usm(
+    "/base", "wheat", usms = "usm1", var2exclude = "bias"
+  ))
 })
 
 # ===========================================================================

@@ -16,9 +16,10 @@ test_that("make_config includes all expected keys", {
     "verbose", "parallel", "cores",
     "reference_data_dir", "metadata_file",
     "percentage", "eval_workspace",
-    "init_workspace", "output_dir"
+    "init_workspace", "output_dir", "species", "usms",
+    "var2exclude", "force"
   )
-  expect_true(all(expected_keys %in% names(result)))
+  expect_named(result, expected_keys)
 })
 
 test_that("make_config uses provided values", {
@@ -52,6 +53,10 @@ test_that("make_config uses default values", {
   expect_null(result$workspace)
   expect_null(result$output_dir)
   expect_null(result$reference_data_dir)
+  expect_false(result$force)
+  expect_null(result$usms)
+  expect_null(result$species)
+  expect_null(result$var2exclude)
 })
 
 test_that("make_config calls init_logger with verbose level", {
