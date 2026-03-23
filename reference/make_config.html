@@ -67,6 +67,7 @@ required to run simulations and evaluation workflows.</p>
 <span>  output_dir <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  species <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  usms <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  var2exclude <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  force <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -142,6 +143,13 @@ Defaults to NULL.</p></dd>
 <dt id="arg-usms">usms<a class="anchor" aria-label="anchor" href="#arg-usms"></a></dt>
 <dd><p>Character vector or NULL. Optional list of USMs to
 evaluate. If NULL, all available USMs are evaluated.
+Defaults to NULL.</p></dd>
+
+
+<dt id="arg-var-exclude">var2exclude<a class="anchor" aria-label="anchor" href="#arg-var-exclude"></a></dt>
+<dd><p>Character vector or NULL. Optional list of variables
+to exclude from evaluation. If NULL, all available variables are
+evaluated.
 Defaults to NULL.</p></dd>
 
 
