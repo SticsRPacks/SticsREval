@@ -74,7 +74,7 @@ This will install all required packages at the versions specified in `renv.lock`
 
 ```
   STICS candidate version          Reference version stats
-  (stics_exe + workspace)          (reference_data_dir)
+  (stics_exe + workspace)          (reference_workspace)
            │                                │
            ▼                                │
      make_config()   ◄──────────────────────┘
@@ -98,21 +98,22 @@ Creates and validates the configuration object that is passed to all other funct
 library(SticsREval)
 
 config <- make_config(
-  stics_exe          = "/path/to/stics",
-  workspace          = "workspace/",
-  metadata_file      = "metadata.csv",
-  run_simulations    = TRUE,      # set to FALSE to skip simulations
-  verbose            = 1,
-  parallel           = FALSE,
-  cores              = NA,
-  reference_data_dir = NULL,      # path to reference version stats for regression detection
-  percentage         = 5,         # threshold (%) to flag deteriorated variables
-  eval_workspace     = "eval_workspace/",
-  init_workspace     = TRUE,
-  output_dir         = "outputs/",
-  force              = TRUE,
-  species            = NULL
-  usms               = NULL
+  stics_exe           = "/path/to/stics",
+  workspace           = "workspace/",
+  metadata_file       = "metadata.csv",
+  run_simulations     = TRUE,      # set to FALSE to skip simulations
+  verbose             = 1,
+  parallel            = FALSE,
+  cores               = NA,
+  reference_workspace = NULL,      # path to reference version stats for regression detection
+  percentage          = 5,         # threshold (%) to flag deteriorated variables
+  eval_workspace      = "eval_workspace/",
+  init_workspace      = TRUE,
+  output_dir          = "outputs/",
+  force               = TRUE,
+  species             = NULL
+  usms                = NULL,
+  var2exclude         = NULL
 )
 ```
 
@@ -125,7 +126,7 @@ config <- make_config(
 | `verbose` | Logging verbosity level (default: `1`) |
 | `parallel` | Enable parallel execution (default: `FALSE`) |
 | `cores` | Number of cores for parallel execution (`NA` = auto) |
-| `reference_data_dir` | Path to the **reference version** simulation statistics, used to detect regressions |
+| `reference_workspace` | Path to the **reference version** simulation statistics, used to detect regressions |
 | `percentage` | Threshold (%) above which a variable is flagged as deteriorated vs. the reference (default: `5`) |
 | `eval_workspace` | Path to the evaluation workspace |
 | `init_workspace` | Whether to initialize the workspace (default: `TRUE`) |
@@ -133,6 +134,7 @@ config <- make_config(
 | `force` | Whether to overwrite an existing non-empty evaluation workspace without prompting. (default: `FALSE`) |
 | `species` | Optional list of species to evaluate. If NULL, all available species are evaluated. (default: `NULL`)  |
 | `usms` | Optional list of USMs to evaluate. If NULL, all available USMs are evaluated. (default: `NULL`) |
+| `var2exclude` | Optional list of variables to exclude from evaluation. If NULL, all available variables are evaluated. (default: `NULL`) |
 
 ---
 
@@ -142,7 +144,7 @@ The **core function** of the package. It orchestrates the full evaluation workfl
 
 - Runs STICS simulations for the candidate version (via `SticsOnR`)
 - Compares simulation outputs against **field observations** (absolute performance)
-- Compares simulation statistics against **reference version statistics** to detect regressions (when `reference_data_dir` is provided)
+- Compares simulation statistics against **reference version statistics** to detect regressions (when `reference_workspace` is provided)
 - Flags variables and USMs where performance has deteriorated beyond the `percentage` threshold
 - Saves all results as **Arrow/Parquet files** in the `eval_workspace` directory
 - Displays a summary of comparison results
@@ -178,7 +180,7 @@ export_stats_to_csv(config)
 Generates diagnostic plots for each species:
 
 - **Comparison plots** — observed vs. simulated for all variables, for the candidate version
-- **Scatter plots** — comparing the candidate version against the reference version statistics, highlighting variables that have deteriorated beyond the `percentage` threshold (only generated when `reference_data_dir` is set in `make_config()` and regressions are detected)
+- **Scatter plots** — comparing the candidate version against the reference version statistics, highlighting variables that have deteriorated beyond the `percentage` threshold (only generated when `reference_workspace` is set in `make_config()` and regressions are detected)
 
 ```r
 gen_plots(config)

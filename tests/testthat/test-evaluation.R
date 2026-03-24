@@ -157,7 +157,7 @@ test_that(
 make_eval_config <- function(overrides = list()) {
   cfg <- list(
     eval_workspace = "/ws",
-    reference_data_dir = "/ref",
+    reference_workspace = "/ref",
     percentage = 20,
     parallel = FALSE,
     cores = NA,

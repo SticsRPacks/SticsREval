@@ -84,7 +84,7 @@ make_valid_config <- function(overrides = list()) {
     stics_exe = "/stics",
     workspace = "/ws",
     metadata_file = meta,
-    reference_data_dir = NULL,
+    reference_workspace = NULL,
     eval_workspace = tempdir(),
     output_dir = tempdir(),
     percentage = 5,
@@ -206,10 +206,10 @@ test_that(
 )
 
 test_that(
-  "validate_eval_configuration passes when reference_data_dir exists",
+  "validate_eval_configuration passes when reference_workspace exists",
   {
     cfg <- make_valid_config(
-      list(init_workspace = FALSE, reference_data_dir = tempdir())
+      list(init_workspace = FALSE, reference_workspace = tempdir())
     )
     expect_no_error(validate_eval_configuration(cfg))
   }
@@ -290,18 +290,18 @@ test_that(
 # ===========================================================================
 
 test_that(
-  "validate_plots_config passes when reference_data_dir is NULL",
+  "validate_plots_config passes when reference_workspace is NULL",
   {
-    cfg <- make_valid_config(list(reference_data_dir = NULL))
+    cfg <- make_valid_config(list(reference_workspace = NULL))
     expect_no_error(validate_plots_config(cfg))
   }
 )
 
 test_that(
-  "validate_plots_config passes when reference_data_dir exists",
+  "validate_plots_config passes when reference_workspace exists",
   {
     cfg <- make_valid_config(
-      list(reference_data_dir = tempdir())
+      list(reference_workspace = tempdir())
     )
     expect_no_error(validate_plots_config(cfg))
   }

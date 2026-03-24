@@ -220,7 +220,7 @@ test_that("gen_comparison_plot uses suffix 'scatter_' for save_plot_png", {
 make_fake_config <- function(overrides = list()) {
   cfg <- list(
     output_dir = tempdir(),
-    reference_data_dir = tempdir(),
+    reference_workspace = tempdir(),
     percentage = 20,
     parallel = FALSE,
     cores = NA,
