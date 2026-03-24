@@ -129,10 +129,10 @@ test_that("gen_scatter_plot returns NULL invisibly", {
 
   result <- gen_scatter_plot(
     tempdir(),
-    sim     = fake_sim,
-    obs     = list(),
+    sim = fake_sim,
+    obs = list(),
     ref_sim = fake_ref_sim,
-    vars    = "LAI"
+    vars = "LAI"
   )
 
   expect_null(result)
@@ -307,7 +307,6 @@ test_that(
     stub(gen_plots, "gen_comparison_plot", mock(NULL))
     stub(gen_plots, "get_crit_vars", mock("LAI"))
     stub(gen_plots, "get_warn_vars", mock(character(0)))
-    stub(gen_plots, "read_ref_sim", mock(list()))
     stub(
       gen_plots,
       "get_by_species",
@@ -364,7 +363,7 @@ test_that("gen_plots does not call gen_scatter_plot when ref_sim is NULL", {
   stub(gen_plots, "gen_comparison_plot", mock(NULL))
   stub(gen_plots, "get_crit_vars", mock("LAI"))
   stub(gen_plots, "get_warn_vars", mock(character(0)))
-  stub(gen_plots, "read_ref_sim", mock(NULL))
+  stub(gen_plots, "get_by_species", mock(NULL))
   stub(gen_plots, "gen_scatter_plot", mock_gen_scatter)
 
   gen_plots(make_fake_config())

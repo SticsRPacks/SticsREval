@@ -18,8 +18,8 @@
 #'   Defaults to FALSE.
 #' @param cores Integer or NA. Number of cores to use for parallel
 #'   execution. If NA, the number of available cores may be used.
-#' @param reference_data_dir Character or NULL. Path to reference
-#'   simulation data. If NULL, reference-based analyses may be skipped.
+#' @param reference_workspace Character or NULL. Path to reference
+#'   evaluation data. If NULL, reference-based analyses may be skipped.
 #' @param percentage Numeric. Threshold used for evaluation metrics
 #'   (e.g., detecting deteriorated variables). Defaults to 5.
 #' @param eval_workspace Character. Path to the evaluation workspace.
@@ -61,7 +61,7 @@ make_config <- function(
   verbose = 1,
   parallel = FALSE,
   cores = NA,
-  reference_data_dir = NULL,
+  reference_workspace = NULL,
   percentage = 5,
   eval_workspace = DEFAULT_WORKSPACE,
   init_workspace = TRUE,
@@ -78,7 +78,7 @@ make_config <- function(
     verbose = verbose,
     parallel = parallel,
     cores = cores,
-    reference_data_dir = reference_data_dir,
+    reference_workspace = reference_workspace,
     metadata_file = metadata_file,
     percentage = percentage,
     eval_workspace = eval_workspace,
@@ -99,7 +99,7 @@ make_config <- function(
 #' The configuration must follow these rules to be considered as valid:
 #'  - if `init_workspace` is TRUE, `stics_exe`, `workspace` and
 #'    `metadata_file` must be defined and `metadata_file` must be a valid path
-#'  - if `reference_data_dir` is defined, it must be a valid path
+#'  - if `reference_workspace` is defined, it must be a valid path
 #'  - `eval_workspace` must be defined
 #'
 #' @keywords internal
@@ -116,11 +116,11 @@ validate_eval_configuration <- function(config) {
     }
   }
   if (
-    !is.null(config$reference_data_dir) &&
-      !dir.exists(config$reference_data_dir)
+    !is.null(config$reference_workspace) &&
+      !dir.exists(config$reference_workspace)
   ) {
     stop(
-      "Reference data directory must be a valid path if defined",
+      "Reference workspace directory must be a valid path if defined",
       call. = FALSE
     )
   }
@@ -147,11 +147,11 @@ validate_export_config <- function(config) {
 
 validate_plots_config <- function(config) {
   if (
-    !is.null(config$reference_data_dir) &&
-      !dir.exists(config$reference_data_dir)
+    !is.null(config$reference_workspace) &&
+      !dir.exists(config$reference_workspace)
   ) {
     stop(
-      "Reference data directory must be a valid path if defined",
+      "Reference workspace directory must be a valid path if defined",
       call. = FALSE
     )
   }

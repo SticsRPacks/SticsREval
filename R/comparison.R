@@ -145,10 +145,10 @@ log_comparison <- function(
 }
 
 gen_species_comparison <- function(
-  eval_workspace, species, reference_data_dir, percentage
+  eval_workspace, species, reference_workspace, percentage
 ) {
   for (spec in species) {
-    ref_stats <- read_ref_stats(spec, reference_data_dir)
+    ref_stats <- get_stats(reference_workspace, spec)
     if (is.null(ref_stats)) {
       next
     }
@@ -172,12 +172,14 @@ gen_species_comparison <- function(
 }
 
 gen_deteriorated_usm <- function(
-  eval_workspace, species, reference_data_dir, percentage,
+  eval_workspace, species, reference_workspace, percentage,
   usms = NULL, var2exclude = NULL
 ) {
   for (spec in species) {
     logger::log_debug("Reading reference RMSE per USM for species {spec}")
-    ref_stats <- read_ref_rmse_per_usm(spec, reference_data_dir)
+    ref_stats <- get_rmse_per_usm(
+      reference_workspace, spec, usms = usms, var2exclude = var2exclude
+    )
     if (is.null(ref_stats)) {
       next
     }

@@ -128,7 +128,7 @@ get_obs_ds <- function(data_dir) {
 }
 
 open_parquet_or_null <- function(path, collect, warn_msg) {
-  if (!file.exists(path)) {
+  if (!isTRUE(file.exists(path))) {
     logger::log_warn(warn_msg)
     return(NULL)
   }

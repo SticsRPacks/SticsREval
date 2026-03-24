@@ -82,7 +82,6 @@ This will install all required packages at the versions specified in `renv.lock`
            ▼
       evaluate()     ← runs simulations + compares vs obs & reference → saves .parquet files
            │
-           ├──► export_species_sim()    ← export simulations per species (.parquet)
            ├──► export_stats_to_csv()   ← export statistics + deteriorated USMs to CSV
            └──► gen_plots()             ← comparison plots + scatter plots of regressions
 ```
@@ -158,16 +157,6 @@ After running, the `eval_workspace` directory will contain Parquet files with si
 
 ---
 
-### `export_species_sim()`
-
-Exports the simulated data **per species** from the evaluation workspace to individual Parquet files (one `Simulations.parquet` per species directory), enabling flexible downstream analysis.
-
-```r
-export_species_sim(config)
-```
-
----
-
 ### `export_stats_to_csv()`
 
 Exports the evaluation statistics per species to CSV files. For each species, three files are produced when available:
@@ -204,13 +193,13 @@ library(SticsREval)
 
 # 1. Configure the evaluation
 #    - stics_exe points to the candidate version of STICS to evaluate
-#    - reference_data_dir points to the statistics of the reference version
+#    - reference_workspace points to the statistics of the reference version
 config <- make_config(
   stics_exe          = "/path/to/stics_candidate",
   workspace          = "workspace/",
   metadata_file      = "metadata.csv",
   run_simulations    = TRUE,
-  reference_data_dir = "reference_version_stats/",  # stats from the reference version
+  reference_workspace = "reference_version_stats/",  # stats from the reference version
   percentage         = 5,                            # flag variables with >5% deterioration
   eval_workspace     = "eval_workspace/",
   output_dir         = "outputs/"
@@ -219,13 +208,10 @@ config <- make_config(
 # 2. Run simulations + evaluate vs observations and reference version stats
 evaluate(config)
 
-# 3. Export simulations per species to Parquet
-export_species_sim(config)
-
-# 4. Export statistics and deteriorated USMs to CSV
+# 3. Export statistics and deteriorated USMs to CSV
 export_stats_to_csv(config)
 
-# 5. Generate comparison and regression scatter plots
+# 4. Generate comparison and regression scatter plots
 gen_plots(config)
 ```
 

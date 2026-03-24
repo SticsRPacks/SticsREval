@@ -1,27 +1,3 @@
-read_ref_stats <- function(species, reference_data_dir) {
-  reference_dir <- file.path(reference_data_dir, species)
-  reference_file <- file.path(reference_dir, "Criteres_stats.csv")
-  if (!length(reference_file) || !file.exists(reference_file)) {
-    logger::log_warn(
-      "No reference stats found for species {species} in {reference_dir}"
-    )
-    return(NULL)
-  }
-  read_csv(reference_file)
-}
-
-read_ref_rmse_per_usm <- function(species, reference_data_dir) {
-  reference_dir <- file.path(reference_data_dir, species)
-  reference_file <- file.path(reference_dir, "RMSE_per_usm.csv")
-  if (!length(reference_file) || !file.exists(reference_file)) {
-    logger::log_warn(
-      "No reference RMSE per USM found for species {species} in {reference_dir}"
-    )
-    return(NULL)
-  }
-  read_csv(reference_file)
-}
-
 #' @importFrom utils getS3method
 gen_species_stats <- function(
   eval_workspace, species, parallel, cores, usms = NULL, var2exclude = NULL

@@ -33,7 +33,7 @@ prepare_species_workspace <- function(
 evaluate_species <- function(
   eval_workspace,
   species,
-  reference_data_dir,
+  reference_workspace,
   percentage,
   parallel,
   cores,
@@ -45,14 +45,21 @@ evaluate_species <- function(
     eval_workspace, species, parallel, cores,
     usms = usms, var2exclude = var2exclude
   )
+  if (is.null(reference_workspace)) {
+    logger::log_info(
+      "No reference workspace defined.
+      Skipping deteriorated usm generation and comparison"
+    )
+    return()
+  }
   logger::log_debug("Computing deteriorated USM for species.")
   gen_deteriorated_usm(
-    eval_workspace, species, reference_data_dir, percentage,
+    eval_workspace, species, reference_workspace, percentage,
     usms = usms, var2exclude = var2exclude
   )
   logger::log_debug("Computing species comparison.")
   gen_species_comparison(
-    eval_workspace, species, reference_data_dir, percentage
+    eval_workspace, species, reference_workspace, percentage
   )
 }
 
@@ -143,7 +150,7 @@ evaluate <- function(config) {
     evaluate_species(
       config$eval_workspace,
       species,
-      config$reference_data_dir,
+      config$reference_workspace,
       config$percentage,
       config$parallel,
       config$cores,

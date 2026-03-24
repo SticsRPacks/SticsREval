@@ -45,7 +45,7 @@ and deteriorated variables are available.
 \dontrun{
 config <- make_config(
  output_dir = "results/",
- reference_data_dir = "ref_dir/"
+ reference_workspace = "ref_dir/"
 )
 gen_plots(config)
 }

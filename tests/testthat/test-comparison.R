@@ -303,7 +303,6 @@ test_that(
   {
     mock_save <- mock(NULL)
 
-    stub(gen_species_comparison, "read_ref_stats", mock(NULL))
     stub(gen_species_comparison, "get_stats", mock(NULL))
     stub(gen_species_comparison, "save_species_comparison", mock_save)
 
@@ -318,7 +317,6 @@ test_that(
     mock_save <- mock(NULL)
     ref <- make_stats()
 
-    stub(gen_species_comparison, "read_ref_stats", mock(ref))
     stub(gen_species_comparison, "get_stats", mock(NULL))
     stub(gen_species_comparison, "save_species_comparison", mock_save)
 
@@ -334,7 +332,6 @@ test_that(
     ref <- make_stats()
     new <- make_stats(rrmse = c(0.4, 0.6, 0.3, 0.7))
 
-    stub(gen_species_comparison, "read_ref_stats", mock(ref, cycle = TRUE))
     stub(gen_species_comparison, "get_stats", mock(new, cycle = TRUE))
     stub(
       gen_species_comparison,
@@ -359,7 +356,7 @@ test_that(
   {
     mock_save <- mock(NULL)
 
-    stub(gen_deteriorated_usm, "read_ref_rmse_per_usm", mock(NULL))
+    stub(gen_deteriorated_usm, "get_rmse_per_usm", mock(NULL))
     stub(
       gen_deteriorated_usm,
       "get_deteriorated_rmse_per_usm",
@@ -381,7 +378,7 @@ test_that(
 
     stub(
       gen_deteriorated_usm,
-      "read_ref_rmse_per_usm",
+      "get_rmse_per_usm",
       mock(ref, cycle = TRUE)
     )
     stub(

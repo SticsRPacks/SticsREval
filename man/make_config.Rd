@@ -12,7 +12,7 @@ make_config(
   verbose = 1,
   parallel = FALSE,
   cores = NA,
-  reference_data_dir = NULL,
+  reference_workspace = NULL,
   percentage = 5,
   eval_workspace = DEFAULT_WORKSPACE,
   init_workspace = TRUE,
@@ -43,8 +43,8 @@ Defaults to FALSE.}
 \item{cores}{Integer or NA. Number of cores to use for parallel
 execution. If NA, the number of available cores may be used.}
 
-\item{reference_data_dir}{Character or NULL. Path to reference
-simulation data. If NULL, reference-based analyses may be skipped.}
+\item{reference_workspace}{Character or NULL. Path to reference
+evaluation data. If NULL, reference-based analyses may be skipped.}
 
 \item{percentage}{Numeric. Threshold used for evaluation metrics
 (e.g., detecting deteriorated variables). Defaults to 5.}
