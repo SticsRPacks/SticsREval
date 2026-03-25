@@ -164,7 +164,7 @@ gen_species_comparison <- function(
       stats
     )
     logger::log_debug("Saving RMSE comparison for species {spec}")
-    save_species_comparison(eval_workspace, spec, comp)
+    save_species_comparison(eval_workspace, comp)
     logger::log_debug("Species comparison saved for species {spec}")
     log_comparison(dplyr::collect(comp), percentage)
   }
@@ -194,7 +194,7 @@ gen_deteriorated_usm <- function(
     )
     if (!is.null(deteriorated_usm)) {
       logger::log_debug("Saving deteriorated USM for species {spec}")
-      save_deteriorated_usm(eval_workspace, spec, deteriorated_usm)
+      save_deteriorated_usm(eval_workspace, deteriorated_usm)
       logger::log_debug("Deteriorated USM saved for species {spec}")
     }
   }

@@ -1,35 +1,3 @@
-prepare_species_workspace <- function(
-  eval_workspace, species = NULL, usms = NULL
-) {
-  workspace_species <- get_species(eval_workspace)
-  ignored_species <- Filter(function(spec) {
-    species_usms <- get_species_usm(eval_workspace, spec, usms = usms)
-    not_selected <- !is.null(species) && !(spec %in% species)
-    if (not_selected || length(species_usms) == 0) {
-      species_workspace <- file.path(eval_workspace, spec)
-      logger::log_info("Species {spec} ignored.")
-      if (dir.exists(species_workspace)) {
-        unlink(species_workspace, recursive = TRUE)
-      }
-      return(TRUE)
-    }
-    logger::log_info("Found {length(species_usms)} USMs for species {spec}.")
-    FALSE
-  }, workspace_species)
-  spec_to_eval <- workspace_species[! workspace_species %in% ignored_species]
-  for (spec in unique(spec_to_eval)) {
-    species_workspace <- file.path(eval_workspace, spec)
-    if (!dir.exists(species_workspace) &&
-        !dir.create(species_workspace, recursive = TRUE)
-    ) {
-      stop("Error while creating ", spec, " output directory", call. = FALSE)
-    }
-    logger::log_debug(
-      "Exporting {spec} evaluation results in {species_workspace}"
-    )
-  }
-}
-
 evaluate_species <- function(
   eval_workspace,
   species,
@@ -126,10 +94,6 @@ evaluate <- function(config) {
   logger::log_info("Starting evaluation...")
   tryCatch({
     species <- get_species(config$eval_workspace)
-    logger::log_debug("Preparing species workspaces.")
-    prepare_species_workspace(
-      config$eval_workspace, species = config$species, usms = config$usms
-    )
     if (!is.null(config$species)) {
       species <- intersect(config$species, species)
     }
