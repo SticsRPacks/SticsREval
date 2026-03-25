@@ -260,13 +260,23 @@ save_stats <- function(data_dir, species, stats) {
   )
 }
 
+#' Get statistics from the evaluation repository
+#'
+#' @param data_dir Path to the evaluation repository
+#' @param species Character string specifying the species to retrieve
+#' statistics for
+#' @param collect If TRUE, returns a data.frame. If FALSE, returns an
+#' Arrow dataset
+#' @return A data.frame or Arrow dataset with statistics for the given
+#' species, or NULL if no stats file is found
+#'
 #' @export
 get_stats <- function(data_dir, species, collect = FALSE) {
   ds <- open_parquet_or_null(
     path = stats_ds_path(data_dir),
     collect = collect,
     warn_msg = paste(
-      "No stats file dound for species", species, "in", data_dir
+      "No stats file found for species", species, "in", data_dir
     )
   )
   if (is.null(ds)) {
