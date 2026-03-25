@@ -189,13 +189,15 @@ get_species_usm <- function(data_dir, species, usms = NULL) {
 }
 
 get_by_species <- function(
-  data_dir, species, type = c("sim", "obs"), collect = FALSE,
+  data_dir, species = NULL, type = c("sim", "obs"), collect = FALSE,
   usms = NULL, var2exclude = NULL
 ) {
   type <- match.arg(type)
-  ds <- if (type == "sim") get_sim_ds(data_dir) else get_obs_ds(data_dir)
+  res <- if (type == "sim") get_sim_ds(data_dir) else get_obs_ds(data_dir)
 
-  res <- dplyr::filter(ds, .data$species == {{ species }})
+  if (!is.null(species)) {
+    res <- dplyr::filter(res, .data$species == {{ species }})
+  }
 
   if (!is.null(usms)) {
     res <- dplyr::filter(res, .data$situation %in% usms)
@@ -211,6 +213,42 @@ get_by_species <- function(
   res
 }
 
+#' Get simulated data from the evaluation repository
+#'
+#' @param data_dir Path to the evaluation repository
+#' @param species Optional character vector of species to filter by
+#' @param usms Optional character vector of USM names to filter by
+#' @return A data.frame or Arrow dataset with simulated data
+#'
+#' @export
+get_sim <- function(data_dir, species = NULL, usms = NULL) {
+  get_by_species(
+    data_dir = data_dir,
+    species = species,
+    type = "sim",
+    usms = usms,
+    collect = TRUE
+  )
+}
+
+#' Get observed data from the evaluation repository
+#'
+#' @param data_dir Path to the evaluation repository
+#' @param species Optional character vector of species to filter by
+#' @param usms Optional character vector of USM names to filter by
+#' @return A data.frame or Arrow dataset with observed data
+#'
+#' @export
+get_obs <- function(data_dir, species = NULL, usms = NULL) {
+  get_by_species(
+    data_dir = data_dir,
+    species = species,
+    type = "obs",
+    usms = usms,
+    collect = TRUE
+  )
+}
+
 save_stats <- function(data_dir, species, stats) {
   stats <- dplyr::mutate(stats, species = species)
   arrow::write_dataset(
@@ -222,12 +260,23 @@ save_stats <- function(data_dir, species, stats) {
   )
 }
 
+#' Get statistics from the evaluation repository
+#'
+#' @param data_dir Path to the evaluation repository
+#' @param species Character string specifying the species to retrieve
+#' statistics for
+#' @param collect If TRUE, returns a data.frame. If FALSE, returns an
+#' Arrow dataset
+#' @return A data.frame or Arrow dataset with statistics for the given
+#' species, or NULL if no stats file is found
+#'
+#' @export
 get_stats <- function(data_dir, species, collect = FALSE) {
   ds <- open_parquet_or_null(
     path = stats_ds_path(data_dir),
     collect = collect,
     warn_msg = paste(
-      "No stats file dound for species", species, "in", data_dir
+      "No stats file found for species", species, "in", data_dir
     )
   )
   if (is.null(ds)) {
