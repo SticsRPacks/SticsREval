@@ -145,10 +145,10 @@ log_comparison <- function(
 }
 
 gen_species_comparison <- function(
-  eval_workspace, species, reference_data_dir, percentage
+  eval_workspace, species, reference_workspace, percentage
 ) {
   for (spec in species) {
-    ref_stats <- read_ref_stats(spec, reference_data_dir)
+    ref_stats <- get_stats(reference_workspace, spec)
     if (is.null(ref_stats)) {
       next
     }
@@ -164,7 +164,7 @@ gen_species_comparison <- function(
       stats
     )
     logger::log_debug("Saving RMSE comparison for species {spec}")
-    save_species_comparison(eval_workspace, spec, comp)
+    save_species_comparison(eval_workspace, comp)
     logger::log_debug("Species comparison saved for species {spec}")
     log_comparison(dplyr::collect(comp), percentage)
   }
@@ -172,12 +172,14 @@ gen_species_comparison <- function(
 }
 
 gen_deteriorated_usm <- function(
-  eval_workspace, species, reference_data_dir, percentage,
+  eval_workspace, species, reference_workspace, percentage,
   usms = NULL, var2exclude = NULL
 ) {
   for (spec in species) {
     logger::log_debug("Reading reference RMSE per USM for species {spec}")
-    ref_stats <- read_ref_rmse_per_usm(spec, reference_data_dir)
+    ref_stats <- get_rmse_per_usm(
+      reference_workspace, spec, usms = usms, var2exclude = var2exclude
+    )
     if (is.null(ref_stats)) {
       next
     }
@@ -192,7 +194,7 @@ gen_deteriorated_usm <- function(
     )
     if (!is.null(deteriorated_usm)) {
       logger::log_debug("Saving deteriorated USM for species {spec}")
-      save_deteriorated_usm(eval_workspace, spec, deteriorated_usm)
+      save_deteriorated_usm(eval_workspace, deteriorated_usm)
       logger::log_debug("Deteriorated USM saved for species {spec}")
     }
   }

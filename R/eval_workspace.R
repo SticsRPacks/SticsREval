@@ -65,20 +65,20 @@ obs_ds_path <- function(data_dir) {
   file.path(data_dir, "obs")
 }
 
-stats_ds_path <- function(data_dir, species) {
-  file.path(data_dir, species, "Criteres_stats.parquet")
+stats_ds_path <- function(data_dir) {
+  file.path(data_dir, "Criteres_stats")
 }
 
-rmse_per_usm_ds_path <- function(data_dir, species) {
-  file.path(data_dir, species, "RMSE_per_USM.parquet")
+rmse_per_usm_ds_path <- function(data_dir) {
+  file.path(data_dir, "RMSE_per_USM")
 }
 
-deteriorated_ds_path <- function(data_dir, species) {
-  file.path(data_dir, species, "Deteriorated_RMSE_per_usm.parquet")
+deteriorated_ds_path <- function(data_dir) {
+  file.path(data_dir, "Deteriorated_RMSE_per_usm")
 }
 
-comparison_ds_path <- function(data_dir, species) {
-  file.path(data_dir, species, "Comparison.parquet")
+comparison_ds_path <- function(data_dir) {
+  file.path(data_dir, "comparison")
 }
 
 save_sim <- function(data_dir, sim, usms_species) {
@@ -128,7 +128,7 @@ get_obs_ds <- function(data_dir) {
 }
 
 open_parquet_or_null <- function(path, collect, warn_msg) {
-  if (!file.exists(path)) {
+  if (!isTRUE(file.exists(path))) {
     logger::log_warn(warn_msg)
     return(NULL)
   }
@@ -207,26 +207,43 @@ get_by_species <- function(
 }
 
 save_stats <- function(data_dir, species, stats) {
-  arrow::write_parquet(
+  stats <- dplyr::mutate(stats, species = species)
+  arrow::write_dataset(
     stats,
-    stats_ds_path(data_dir, species)
+    stats_ds_path(data_dir),
+    format = "parquet",
+    partitioning = "species",
+    existing_data_behavior = "delete_matching"
   )
 }
 
 get_stats <- function(data_dir, species, collect = FALSE) {
-  open_parquet_or_null(
-    path = stats_ds_path(data_dir, species),
+  ds <- open_parquet_or_null(
+    path = stats_ds_path(data_dir),
     collect = collect,
     warn_msg = paste(
       "No stats file dound for species", species, "in", data_dir
     )
   )
+  if (is.null(ds)) {
+    return(NULL)
+  }
+  res <- dplyr::filter(ds, .data$species == {{ species }})
+
+  if (collect) {
+    return(dplyr::collect(res))
+  }
+  res
 }
 
 save_rmse_per_usm <- function(data_dir, species, rmse_per_usm) {
-  arrow::write_parquet(
+  rmse_per_usm <- dplyr::mutate(rmse_per_usm, species = species)
+  arrow::write_dataset(
     rmse_per_usm,
-    rmse_per_usm_ds_path(data_dir, species)
+    rmse_per_usm_ds_path(data_dir),
+    format = "parquet",
+    partitioning = "species",
+    existing_data_behavior = "delete_matching"
   )
 }
 
@@ -234,7 +251,7 @@ get_rmse_per_usm <- function(
   data_dir, species, collect = FALSE, usms = NULL, var2exclude = NULL
 ) {
   res <- open_parquet_or_null(
-    path = rmse_per_usm_ds_path(data_dir, species),
+    path = rmse_per_usm_ds_path(data_dir),
     collect = collect,
     warn_msg = paste(
       "No RMSE per USM file found for species", species, "in", data_dir
@@ -243,6 +260,7 @@ get_rmse_per_usm <- function(
   if (is.null(res)) {
     return(res)
   }
+  res <- dplyr::filter(res, .data$species == {{ species }})
   if (!is.null(usms)) {
     res <- dplyr::filter(res, .data$situation %in% usms)
   }
@@ -253,38 +271,62 @@ get_rmse_per_usm <- function(
   res
 }
 
-save_deteriorated_usm <- function(data_dir, species, deteriorated) {
-  arrow::write_parquet(
+save_deteriorated_usm <- function(data_dir, deteriorated) {
+  arrow::write_dataset(
     deteriorated,
-    deteriorated_ds_path(data_dir, species)
+    deteriorated_ds_path(data_dir),
+    format = "parquet",
+    partitioning = "species",
+    existing_data_behavior = "delete_matching"
   )
 }
 
 get_deteriorated_usm <- function(data_dir, species, collect = FALSE) {
-  open_parquet_or_null(
-    path = deteriorated_ds_path(data_dir, species),
+  ds <- open_parquet_or_null(
+    path = deteriorated_ds_path(data_dir),
     collect = collect,
     warn_msg = paste(
       "No deteriorated USM file found for species",
       species, "in", data_dir
     )
   )
+  if (is.null(ds)) {
+    return(NULL)
+  }
+  res <- dplyr::filter(ds, .data$species == {{ species }})
+
+  if (collect) {
+    return(dplyr::collect(res))
+  }
+  res
 }
 
-save_species_comparison <- function(data_dir, species, spec_comparison) {
-  arrow::write_parquet(
+save_species_comparison <- function(data_dir, spec_comparison) {
+  arrow::write_dataset(
     spec_comparison,
-    comparison_ds_path(data_dir, species)
+    comparison_ds_path(data_dir),
+    format = "parquet",
+    partitioning = "species",
+    existing_data_behavior = "delete_matching"
   )
 }
 
 get_species_comparison <- function(data_dir, species, collect = FALSE) {
-  open_parquet_or_null(
-    path = comparison_ds_path(data_dir, species),
+  ds <- open_parquet_or_null(
+    path = comparison_ds_path(data_dir),
     collect = collect,
     warn_msg = paste(
       "No comparison file found for species",
       species, "in", data_dir
     )
   )
+  if (is.null(ds)) {
+    return(NULL)
+  }
+  res <- dplyr::filter(ds, .data$species == {{ species }})
+
+  if (collect) {
+    return(dplyr::collect(res))
+  }
+  res
 }

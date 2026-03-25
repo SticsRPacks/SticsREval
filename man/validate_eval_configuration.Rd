@@ -11,7 +11,7 @@ The configuration must follow these rules to be considered as valid:
 \itemize{
 \item if \code{init_workspace} is TRUE, \code{stics_exe}, \code{workspace} and
 \code{metadata_file} must be defined and \code{metadata_file} must be a valid path
-\item if \code{reference_data_dir} is defined, it must be a valid path
+\item if \code{reference_workspace} is defined, it must be a valid path
 \item \code{eval_workspace} must be defined
 }
 }

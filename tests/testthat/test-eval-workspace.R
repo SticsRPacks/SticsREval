@@ -9,11 +9,10 @@ make_parquet <- function(dir, df = data.frame(x = 1:3)) {
   dir
 }
 
-make_species_parquet <- function(species, filename, df = data.frame(x = 1:3)) {
+make_species_parquet <- function(species, dirtype, df = data.frame(x = 1:3)) {
+  df$species <- species
   base <- file.path(tempdir(), basename(tempfile()))
-  dir.create(file.path(base, species), recursive = TRUE)
-  path <- file.path(base, species, filename)
-  arrow::write_parquet(df, path)
+  arrow::write_dataset(df, file.path(base, dirtype), partitioning = "species")
   base
 }
 
@@ -31,29 +30,29 @@ test_that("obs_ds_path returns data_dir/obs", { # nolint: nonportable_path_linte
 
 test_that("stats_ds_path returns correct path", {
   expect_identical(
-    stats_ds_path("base", "wheat"),
-    file.path("base", "wheat", "Criteres_stats.parquet")
+    stats_ds_path("base"),
+    file.path("base", "Criteres_stats")
   )
 })
 
 test_that("rmse_per_usm_ds_path returns correct path", {
   expect_identical(
-    rmse_per_usm_ds_path("base", "wheat"),
-    file.path("base", "wheat", "RMSE_per_USM.parquet")
+    rmse_per_usm_ds_path("base"),
+    file.path("base", "RMSE_per_USM")
   )
 })
 
 test_that("deteriorated_ds_path returns correct path", {
   expect_identical(
-    deteriorated_ds_path("base", "wheat"),
-    file.path("base", "wheat", "Deteriorated_RMSE_per_usm.parquet")
+    deteriorated_ds_path("base"),
+    file.path("base", "Deteriorated_RMSE_per_usm")
   )
 })
 
 test_that("comparison_ds_path returns correct path", {
   expect_identical(
-    comparison_ds_path("base", "wheat"),
-    file.path("base", "wheat", "Comparison.parquet")
+    comparison_ds_path("base"),
+    file.path("base", "comparison")
   )
 })
 
@@ -98,7 +97,7 @@ test_that("open_parquet_or_null returns lazy dataset when collect = FALSE", {
 
 test_that("open_parquet_or_null returns data frame when collect = TRUE", {
   base <- make_species_parquet("wheat", "test.parquet")
-  path <- file.path(base, "wheat", "test.parquet")
+  path <- file.path(base, "test.parquet")
 
   result <- open_parquet_or_null(path, collect = TRUE, warn_msg = "")
   expect_s3_class(result, "data.frame")
@@ -605,12 +604,12 @@ test_that("get_by_species applies usms and var2exclude with obs type", {
 
 test_that("save_stats writes parquet to correct path", {
   base <- file.path(tempdir(), basename(tempfile()))
-  dir.create(file.path(base, "wheat"), recursive = TRUE)
+  dir.create(base, recursive = TRUE)
   df <- data.frame(var = "LAI", stat = 0.9, stringsAsFactors = FALSE)
 
   save_stats(base, "wheat", df)
 
-  expect_true(file.exists(stats_ds_path(base, "wheat")))
+  expect_true(file.exists(stats_ds_path(base)))
 })
 
 test_that("get_stats delegates to open_parquet_or_null", {
@@ -621,7 +620,7 @@ test_that("get_stats delegates to open_parquet_or_null", {
 
   expect_called(mock_open, 1)
   args <- mock_args(mock_open)[[1]]
-  expect_identical(args$path, stats_ds_path("/base", "wheat"))
+  expect_identical(args$path, stats_ds_path("/base"))
   expect_true(args$collect)
 })
 
@@ -631,13 +630,13 @@ test_that("get_stats returns NULL when file missing", {
 })
 
 test_that("get_stats returns lazy dataset when collect = FALSE", {
-  base <- make_species_parquet("wheat", "Criteres_stats.parquet")
+  base <- make_species_parquet("wheat", "Criteres_stats")
   result <- get_stats(base, "wheat", collect = FALSE)
   expect_false(is.data.frame(result))
 })
 
 test_that("get_stats returns data frame when collect = TRUE", {
-  base <- make_species_parquet("wheat", "Criteres_stats.parquet")
+  base <- make_species_parquet("wheat", "Criteres_stats")
   result <- get_stats(base, "wheat", collect = TRUE)
   expect_s3_class(result, "data.frame")
 })
@@ -648,12 +647,11 @@ test_that("get_stats returns data frame when collect = TRUE", {
 
 test_that("save_rmse_per_usm writes parquet to correct path", {
   base <- file.path(tempdir(), basename(tempfile()))
-  dir.create(file.path(base, "wheat"), recursive = TRUE)
   df <- data.frame(usm = "usm1", rmse = 0.1, stringsAsFactors = FALSE)
 
   save_rmse_per_usm(base, "wheat", df)
 
-  expect_true(file.exists(rmse_per_usm_ds_path(base, "wheat")))
+  expect_true(file.exists(rmse_per_usm_ds_path(base)))
 })
 
 test_that("get_rmse_per_usm delegates to open_parquet_or_null", {
@@ -664,7 +662,7 @@ test_that("get_rmse_per_usm delegates to open_parquet_or_null", {
 
   expect_called(mock_open, 1)
   args <- mock_args(mock_open)[[1]]
-  expect_identical(args$path, rmse_per_usm_ds_path("/base", "wheat"))
+  expect_identical(args$path, rmse_per_usm_ds_path("/base"))
 })
 
 test_that("get_rmse_per_usm returns NULL when file missing", {
@@ -673,14 +671,14 @@ test_that("get_rmse_per_usm returns NULL when file missing", {
 })
 
 test_that("get_rmse_per_usm returns data frame when collect = TRUE", {
-  base <- make_species_parquet("wheat", "RMSE_per_USM.parquet")
+  base <- make_species_parquet("wheat", "RMSE_per_USM")
   result <- get_rmse_per_usm(base, "wheat", collect = TRUE)
   expect_s3_class(result, "data.frame")
 })
 
 test_that("get_rmse_per_usm filters by usms when provided", {
   base <- make_species_parquet(
-    "wheat", "RMSE_per_USM.parquet",
+    "wheat", "RMSE_per_USM",
     df = data.frame(
       situation = c("usm1", "usm2", "usm3"),
       rmse = c(0.1, 0.2, 0.3),
@@ -699,7 +697,7 @@ test_that(
   "get_rmse_per_usm returns empty data frame when usms matches nothing",
   {
     base <- make_species_parquet(
-      "wheat", "RMSE_per_USM.parquet",
+      "wheat", "RMSE_per_USM",
       df = data.frame(
         situation = c("usm1", "usm2"),
         rmse = c(0.1, 0.2),
@@ -715,7 +713,7 @@ test_that(
 
 test_that("get_rmse_per_usm excludes columns listed in var2exclude", {
   base <- make_species_parquet(
-    "wheat", "RMSE_per_USM.parquet",
+    "wheat", "RMSE_per_USM",
     df = data.frame(
       situation = "usm1",
       rmse = 0.1,
@@ -733,7 +731,7 @@ test_that("get_rmse_per_usm excludes columns listed in var2exclude", {
 
 test_that("get_rmse_per_usm excludes multiple columns listed in var2exclude", {
   base <- make_species_parquet(
-    "wheat", "RMSE_per_USM.parquet",
+    "wheat", "RMSE_per_USM",
     df = data.frame(
       situation = "usm1",
       rmse = 0.1,
@@ -751,7 +749,7 @@ test_that("get_rmse_per_usm excludes multiple columns listed in var2exclude", {
 
 test_that("get_rmse_per_usm applies both usms and var2exclude together", {
   base <- make_species_parquet(
-    "wheat", "RMSE_per_USM.parquet",
+    "wheat", "RMSE_per_USM",
     df = data.frame(
       situation = c("usm1", "usm2", "usm3"),
       rmse = c(0.1, 0.2, 0.3),
@@ -782,14 +780,14 @@ test_that("get_rmse_per_usm ignores usms and var2exclude when data is NULL", {
 
 test_that("save_deteriorated_usm writes parquet to correct path", {
   base <- file.path(tempdir(), basename(tempfile()))
-  dir.create(file.path(base, "wheat"), recursive = TRUE)
-  df <- data.frame(usm = "usm1", rRMSE = 0.5, stringsAsFactors = FALSE)
-
-  save_deteriorated_usm(base, "wheat", df)
-
-  expect_true(
-    file.exists(deteriorated_ds_path(base, "wheat"))
+  df <- data.frame(
+    usm = "usm1",
+    species = "wheat",
+    rRMSE = 0.5,
+    stringsAsFactors = FALSE
   )
+  save_deteriorated_usm(base, df)
+  expect_true(file.exists(deteriorated_ds_path(base)))
 })
 
 test_that("get_deteriorated_usm delegates to open_parquet_or_null", {
@@ -800,7 +798,7 @@ test_that("get_deteriorated_usm delegates to open_parquet_or_null", {
 
   expect_called(mock_open, 1)
   args <- mock_args(mock_open)[[1]]
-  expect_identical(args$path, deteriorated_ds_path("/base", "wheat"))
+  expect_identical(args$path, deteriorated_ds_path("/base"))
 })
 
 test_that("get_deteriorated_usm returns NULL when file missing", {
@@ -810,7 +808,7 @@ test_that("get_deteriorated_usm returns NULL when file missing", {
 
 test_that("get_deteriorated_usm returns data frame when collect = TRUE", {
   base <- make_species_parquet(
-    "wheat", "Deteriorated_RMSE_per_usm.parquet"
+    "wheat", "Deteriorated_RMSE_per_usm"
   )
   result <- get_deteriorated_usm(base, "wheat", collect = TRUE)
   expect_s3_class(result, "data.frame")
@@ -822,13 +820,15 @@ test_that("get_deteriorated_usm returns data frame when collect = TRUE", {
 
 test_that("save_species_comparison writes parquet to correct path", {
   base <- file.path(tempdir(), basename(tempfile()))
-  dir.create(file.path(base, "wheat"), recursive = TRUE)
-  df <- data.frame(variable = "LAI", ratio = 1.1, stringsAsFactors = FALSE)
-
-  save_species_comparison(base, "wheat", df)
-
+  df <- data.frame(
+    variable = "LAI",
+    species = "wheat",
+    ratio = 1.1,
+    stringsAsFactors = FALSE
+  )
+  save_species_comparison(base, df)
   expect_true(
-    file.exists(comparison_ds_path(base, "wheat"))
+    file.exists(comparison_ds_path(base))
   )
 })
 
@@ -840,7 +840,7 @@ test_that("get_species_comparison delegates to open_parquet_or_null", {
 
   expect_called(mock_open, 1)
   args <- mock_args(mock_open)[[1]]
-  expect_identical(args$path, comparison_ds_path("/base", "wheat"))
+  expect_identical(args$path, comparison_ds_path("/base"))
   expect_true(args$collect)
 })
 
@@ -852,8 +852,9 @@ test_that("get_species_comparison returns NULL when file missing", {
 test_that(
   "get_species_comparison returns data frame when collect = TRUE",
   {
-    base <- make_species_parquet("wheat", "Comparison.parquet")
-    result <- get_species_comparison(base, "wheat", collect = TRUE)
+    species <- "wheat"
+    base <- make_species_parquet(species, "comparison")
+    result <- get_species_comparison(base, species, collect = TRUE)
     expect_s3_class(result, "data.frame")
   }
 )

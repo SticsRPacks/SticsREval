@@ -74,7 +74,7 @@ This will install all required packages at the versions specified in `renv.lock`
 
 ```
   STICS candidate version          Reference version stats
-  (stics_exe + workspace)          (reference_data_dir)
+  (stics_exe + workspace)          (reference_workspace)
            │                                │
            ▼                                │
      make_config()   ◄──────────────────────┘
@@ -82,7 +82,6 @@ This will install all required packages at the versions specified in `renv.lock`
            ▼
       evaluate()     ← runs simulations + compares vs obs & reference → saves .parquet files
            │
-           ├──► export_species_sim()    ← export simulations per species (.parquet)
            ├──► export_stats_to_csv()   ← export statistics + deteriorated USMs to CSV
            └──► gen_plots()             ← comparison plots + scatter plots of regressions
 ```
@@ -99,21 +98,22 @@ Creates and validates the configuration object that is passed to all other funct
 library(SticsREval)
 
 config <- make_config(
-  stics_exe          = "/path/to/stics",
-  workspace          = "workspace/",
-  metadata_file      = "metadata.csv",
-  run_simulations    = TRUE,      # set to FALSE to skip simulations
-  verbose            = 1,
-  parallel           = FALSE,
-  cores              = NA,
-  reference_data_dir = NULL,      # path to reference version stats for regression detection
-  percentage         = 5,         # threshold (%) to flag deteriorated variables
-  eval_workspace     = "eval_workspace/",
-  init_workspace     = TRUE,
-  output_dir         = "outputs/",
-  force              = TRUE,
-  species            = NULL
-  usms               = NULL
+  stics_exe           = "/path/to/stics",
+  workspace           = "workspace/",
+  metadata_file       = "metadata.csv",
+  run_simulations     = TRUE,      # set to FALSE to skip simulations
+  verbose             = 1,
+  parallel            = FALSE,
+  cores               = NA,
+  reference_workspace = NULL,      # path to reference version stats for regression detection
+  percentage          = 5,         # threshold (%) to flag deteriorated variables
+  eval_workspace      = "eval_workspace/",
+  init_workspace      = TRUE,
+  output_dir          = "outputs/",
+  force               = TRUE,
+  species             = NULL
+  usms                = NULL,
+  var2exclude         = NULL
 )
 ```
 
@@ -126,7 +126,7 @@ config <- make_config(
 | `verbose` | Logging verbosity level (default: `1`) |
 | `parallel` | Enable parallel execution (default: `FALSE`) |
 | `cores` | Number of cores for parallel execution (`NA` = auto) |
-| `reference_data_dir` | Path to the **reference version** simulation statistics, used to detect regressions |
+| `reference_workspace` | Path to the **reference version** simulation statistics, used to detect regressions |
 | `percentage` | Threshold (%) above which a variable is flagged as deteriorated vs. the reference (default: `5`) |
 | `eval_workspace` | Path to the evaluation workspace |
 | `init_workspace` | Whether to initialize the workspace (default: `TRUE`) |
@@ -134,6 +134,7 @@ config <- make_config(
 | `force` | Whether to overwrite an existing non-empty evaluation workspace without prompting. (default: `FALSE`) |
 | `species` | Optional list of species to evaluate. If NULL, all available species are evaluated. (default: `NULL`)  |
 | `usms` | Optional list of USMs to evaluate. If NULL, all available USMs are evaluated. (default: `NULL`) |
+| `var2exclude` | Optional list of variables to exclude from evaluation. If NULL, all available variables are evaluated. (default: `NULL`) |
 
 ---
 
@@ -143,7 +144,7 @@ The **core function** of the package. It orchestrates the full evaluation workfl
 
 - Runs STICS simulations for the candidate version (via `SticsOnR`)
 - Compares simulation outputs against **field observations** (absolute performance)
-- Compares simulation statistics against **reference version statistics** to detect regressions (when `reference_data_dir` is provided)
+- Compares simulation statistics against **reference version statistics** to detect regressions (when `reference_workspace` is provided)
 - Flags variables and USMs where performance has deteriorated beyond the `percentage` threshold
 - Saves all results as **Arrow/Parquet files** in the `eval_workspace` directory
 - Displays a summary of comparison results
@@ -155,16 +156,6 @@ evaluate(config)
 ```
 
 After running, the `eval_workspace` directory will contain Parquet files with simulated data, observed data, and evaluation statistics per species.
-
----
-
-### `export_species_sim()`
-
-Exports the simulated data **per species** from the evaluation workspace to individual Parquet files (one `Simulations.parquet` per species directory), enabling flexible downstream analysis.
-
-```r
-export_species_sim(config)
-```
 
 ---
 
@@ -189,7 +180,7 @@ export_stats_to_csv(config)
 Generates diagnostic plots for each species:
 
 - **Comparison plots** — observed vs. simulated for all variables, for the candidate version
-- **Scatter plots** — comparing the candidate version against the reference version statistics, highlighting variables that have deteriorated beyond the `percentage` threshold (only generated when `reference_data_dir` is set in `make_config()` and regressions are detected)
+- **Scatter plots** — comparing the candidate version against the reference version statistics, highlighting variables that have deteriorated beyond the `percentage` threshold (only generated when `reference_workspace` is set in `make_config()` and regressions are detected)
 
 ```r
 gen_plots(config)
@@ -204,13 +195,13 @@ library(SticsREval)
 
 # 1. Configure the evaluation
 #    - stics_exe points to the candidate version of STICS to evaluate
-#    - reference_data_dir points to the statistics of the reference version
+#    - reference_workspace points to the statistics of the reference version
 config <- make_config(
   stics_exe          = "/path/to/stics_candidate",
   workspace          = "workspace/",
   metadata_file      = "metadata.csv",
   run_simulations    = TRUE,
-  reference_data_dir = "reference_version_stats/",  # stats from the reference version
+  reference_workspace = "reference_version_stats/",  # stats from the reference version
   percentage         = 5,                            # flag variables with >5% deterioration
   eval_workspace     = "eval_workspace/",
   output_dir         = "outputs/"
@@ -219,13 +210,10 @@ config <- make_config(
 # 2. Run simulations + evaluate vs observations and reference version stats
 evaluate(config)
 
-# 3. Export simulations per species to Parquet
-export_species_sim(config)
-
-# 4. Export statistics and deteriorated USMs to CSV
+# 3. Export statistics and deteriorated USMs to CSV
 export_stats_to_csv(config)
 
-# 5. Generate comparison and regression scatter plots
+# 4. Generate comparison and regression scatter plots
 gen_plots(config)
 ```
 

@@ -118,7 +118,7 @@ gen_comparison_plot <- function(
 #' \dontrun{
 #' config <- make_config(
 #'  output_dir = "results/",
-#'  reference_data_dir = "ref_dir/"
+#'  reference_workspace = "ref_dir/"
 #' )
 #' gen_plots(config)
 #' }
@@ -156,7 +156,7 @@ gen_plots <- function(config) {
       rm(spec_comparison)
 
       if (length(deteriorated) > 0) {
-        ref_sim <- read_ref_sim(config$reference_data_dir, spec, TRUE)
+        ref_sim <- get_by_species(config$reference_workspace, spec, "sim", TRUE)
 
         if (!is.null(ref_sim)) {
           logger::log_info("Generating scatter plots for species {spec}")
