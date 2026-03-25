@@ -495,7 +495,7 @@ test_that("get_by_species filters by usms when provided", {
   )
   make_parquet(file.path(base, "sim"), df)
   result <- get_by_species(
-    base, "wheat", "sim", collect = TRUE, usms = c("usm1", "usm3")
+    base, NULL, "sim", collect = TRUE, usms = c("usm1", "usm3")
   )
   expect_identical(nrow(result), 2L)
   expect_true(all(result$situation %in% c("usm1", "usm3")))
@@ -512,7 +512,7 @@ test_that("get_by_species returns empty data frame when usms matches nothing", {
   )
   make_parquet(file.path(base, "sim"), df)
   result <- get_by_species(
-    base, "wheat", "sim", collect = TRUE, usms = "usm_inexistant"
+    base, NULL, "sim", collect = TRUE, usms = "usm_inexistant"
   )
   expect_identical(nrow(result), 0L)
 })
@@ -542,7 +542,7 @@ test_that("get_by_species excludes column listed in var2exclude", {
   )
   make_parquet(file.path(base, "sim"), df)
   result <- get_by_species(
-    base, "wheat", "sim", collect = TRUE, var2exclude = "bias"
+    base, NULL, "sim", collect = TRUE, var2exclude = "bias"
   )
   expect_false("bias" %in% names(result))
   expect_true("LAI" %in% names(result))
@@ -560,7 +560,7 @@ test_that("get_by_species excludes multiple columns listed in var2exclude", {
   )
   make_parquet(file.path(base, "sim"), df)
   result <- get_by_species(
-    base, "wheat", "sim", collect = TRUE, var2exclude = c("bias", "n")
+    base, NULL, "sim", collect = TRUE, var2exclude = c("bias", "n")
   )
   expect_false(any(c("bias", "n") %in% names(result)))
   expect_true(all(c("situation", "LAI") %in% names(result)))
