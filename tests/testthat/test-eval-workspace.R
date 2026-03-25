@@ -56,6 +56,13 @@ test_that("comparison_ds_path returns correct path", {
   )
 })
 
+test_that("metadata_ds_path returns correct path", {
+  expect_identical(
+    metadata_ds_path("base"),
+    file.path("base", "metadata.parquet")
+  )
+})
+
 # ===========================================================================
 # Tests: open_parquet_or_null
 # ===========================================================================
@@ -1046,3 +1053,26 @@ test_that(
     expect_identical(next_measure1, 8.8)
   }
 )
+
+# ===========================================================================
+# Tests: get_stics_version
+# ===========================================================================
+
+test_that("get_stics_version returns NULL when no metadata file exists", {
+  base <- file.path(tempdir(), basename(tempfile()))
+  dir.create(base, recursive = TRUE)
+  result <- get_stics_version(base)
+  expect_null(result)
+})
+
+test_that("get_stics_version returns stics_version from metadata dataset", {
+  base <- file.path(tempdir(), basename(tempfile()))
+  dir.create(base, recursive = TRUE)
+  df <- data.frame(
+    stics_version = "b09f41236_2026-02-17",
+    stringsAsFactors = FALSE
+  )
+  arrow::write_parquet(df, metadata_ds_path(base))
+  result <- get_stics_version(base)
+  expect_identical(result, "b09f41236_2026-02-17")
+})
