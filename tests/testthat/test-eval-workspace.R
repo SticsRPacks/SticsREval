@@ -647,7 +647,6 @@ test_that("get_stats returns data frame when collect = TRUE", {
 
 test_that("save_rmse_per_usm writes parquet to correct path", {
   base <- file.path(tempdir(), basename(tempfile()))
-  dir.create(file.path(base, "wheat"), recursive = TRUE)
   df <- data.frame(usm = "usm1", rmse = 0.1, stringsAsFactors = FALSE)
 
   save_rmse_per_usm(base, "wheat", df)
@@ -788,9 +787,7 @@ test_that("save_deteriorated_usm writes parquet to correct path", {
     stringsAsFactors = FALSE
   )
   save_deteriorated_usm(base, df)
-  expect_true(
-    file.exists(deteriorated_ds_path(base))
-  )
+  expect_true(file.exists(deteriorated_ds_path(base)))
 })
 
 test_that("get_deteriorated_usm delegates to open_parquet_or_null", {
@@ -823,13 +820,15 @@ test_that("get_deteriorated_usm returns data frame when collect = TRUE", {
 
 test_that("save_species_comparison writes parquet to correct path", {
   base <- file.path(tempdir(), basename(tempfile()))
-  dir.create(file.path(base, "wheat"), recursive = TRUE)
-  df <- data.frame(variable = "LAI", species = "wheat", ratio = 1.1, stringsAsFactors = FALSE)
-
+  df <- data.frame(
+    variable = "LAI",
+    species = "wheat",
+    ratio = 1.1,
+    stringsAsFactors = FALSE
+  )
   save_species_comparison(base, df)
-
   expect_true(
-    file.exists(comparison_ds_path(base, "wheat"))
+    file.exists(comparison_ds_path(base))
   )
 })
 
@@ -841,7 +840,7 @@ test_that("get_species_comparison delegates to open_parquet_or_null", {
 
   expect_called(mock_open, 1)
   args <- mock_args(mock_open)[[1]]
-  expect_identical(args$path, comparison_ds_path("/base", "wheat"))
+  expect_identical(args$path, comparison_ds_path("/base"))
   expect_true(args$collect)
 })
 

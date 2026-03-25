@@ -77,7 +77,7 @@ deteriorated_ds_path <- function(data_dir) {
   file.path(data_dir, "Deteriorated_RMSE_per_usm")
 }
 
-comparison_ds_path <- function(data_dir, species) {
+comparison_ds_path <- function(data_dir) {
   file.path(data_dir, "comparison")
 }
 
