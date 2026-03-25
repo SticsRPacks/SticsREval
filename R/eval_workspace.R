@@ -53,6 +53,7 @@ init_eval_workspace <- function(
     parallel,
     cores
   )
+  load_stics_version(eval_workspace, stics_exe)
   remove_init_obs(eval_workspace)
   rm(extracted_species_df)
 }
@@ -79,6 +80,10 @@ deteriorated_ds_path <- function(data_dir) {
 
 comparison_ds_path <- function(data_dir) {
   file.path(data_dir, "comparison")
+}
+
+metadata_ds_path <- function(data_dir) {
+  file.path(data_dir, "metadata.parquet")
 }
 
 save_sim <- function(data_dir, sim, usms_species) {
@@ -329,4 +334,30 @@ get_species_comparison <- function(data_dir, species, collect = FALSE) {
     return(dplyr::collect(res))
   }
   res
+}
+
+save_metadata <- function(data_dir, metadata) {
+  arrow::write_parquet(
+    metadata,
+    sink = metadata_ds_path(data_dir)
+  )
+}
+
+#' Get the STICS version from the metadata dataset
+#'
+#' @param data_dir Path to the evaluation repository
+#' @return A character string with the STICS version, or NULL if no metadata
+#' file is found
+#'
+#' @export
+get_stics_version <- function(data_dir) {
+  ds <- open_parquet_or_null(
+    path = metadata_ds_path(data_dir),
+    collect = TRUE,
+    warn_msg = paste("No metadata file found in", data_dir)
+  )
+  if (is.null(ds)) {
+    return(NULL)
+  }
+  ds$stics_version
 }

@@ -127,3 +127,17 @@ get_rotation_list <- function(metadata_file) {
   logger::log_debug("Found ", length(rotations), " rotations")
   rotations
 }
+
+load_stics_version <- function(data_dir, stics_exe) {
+  ret <- try(
+    system2(
+      command = stics_exe,
+      args = "--version",
+      stderr = TRUE,
+      stdout = TRUE
+    ),
+    silent = TRUE
+  )
+  metadata <- data.frame(stics_version =  trimws(ret[1]))
+  save_metadata(data_dir, metadata)
+}
