@@ -6,11 +6,14 @@
 <url><loc>/index.html</loc></url>
 <url><loc>/reference/compare_rmse.html</loc></url>
 <url><loc>/reference/evaluate.html</loc></url>
-<url><loc>/reference/export_species_sim.html</loc></url>
 <url><loc>/reference/export_stats_to_csv.html</loc></url>
 <url><loc>/reference/gen_plots.html</loc></url>
 <url><loc>/reference/get_cores.html</loc></url>
 <url><loc>/reference/get_cores_nb.html</loc></url>
+<url><loc>/reference/get_obs.html</loc></url>
+<url><loc>/reference/get_sim.html</loc></url>
+<url><loc>/reference/get_stats.html</loc></url>
+<url><loc>/reference/get_stics_version.html</loc></url>
 <url><loc>/reference/index.html</loc></url>
 <url><loc>/reference/make_config.html</loc></url>
 <url><loc>/reference/run_simulations.html</loc></url>
