@@ -218,16 +218,19 @@ get_by_species <- function(
 #' @param data_dir Path to the evaluation repository
 #' @param species Optional character vector of species to filter by
 #' @param usms Optional character vector of USM names to filter by
+#' @param var2exclude Optional character vector of variables to exclude
+#'  from simulation results
 #' @return A data.frame or Arrow dataset with simulated data
 #'
 #' @export
-get_sim <- function(data_dir, species = NULL, usms = NULL) {
+get_sim <- function(data_dir, species = NULL, usms = NULL, var2exclude = NULL) {
   get_by_species(
     data_dir = data_dir,
     species = species,
     type = "sim",
     usms = usms,
-    collect = TRUE
+    collect = TRUE,
+    var2exclude = var2exclude
   )
 }
 
@@ -236,16 +239,19 @@ get_sim <- function(data_dir, species = NULL, usms = NULL) {
 #' @param data_dir Path to the evaluation repository
 #' @param species Optional character vector of species to filter by
 #' @param usms Optional character vector of USM names to filter by
+#' @param var2exclude Optional character vector of variables to exclude
+#'  from observation
 #' @return A data.frame or Arrow dataset with observed data
 #'
 #' @export
-get_obs <- function(data_dir, species = NULL, usms = NULL) {
+get_obs <- function(data_dir, species = NULL, usms = NULL, var2exclude = NULL) {
   get_by_species(
     data_dir = data_dir,
     species = species,
     type = "obs",
     usms = usms,
-    collect = TRUE
+    collect = TRUE,
+    var2exclude = var2exclude
   )
 }
 
