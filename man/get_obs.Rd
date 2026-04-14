@@ -4,7 +4,7 @@
 \alias{get_obs}
 \title{Get observed data from the evaluation repository}
 \usage{
-get_obs(data_dir, species = NULL, usms = NULL)
+get_obs(data_dir, species = NULL, usms = NULL, var2exclude = NULL)
 }
 \arguments{
 \item{data_dir}{Path to the evaluation repository}
@@ -12,6 +12,9 @@ get_obs(data_dir, species = NULL, usms = NULL)
 \item{species}{Optional character vector of species to filter by}
 
 \item{usms}{Optional character vector of USM names to filter by}
+
+\item{var2exclude}{Optional character vector of variables to exclude
+from observation}
 }
 \value{
 A data.frame or Arrow dataset with observed data

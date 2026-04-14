@@ -4,7 +4,7 @@
 \alias{get_sim}
 \title{Get simulated data from the evaluation repository}
 \usage{
-get_sim(data_dir, species = NULL, usms = NULL)
+get_sim(data_dir, species = NULL, usms = NULL, var2exclude = NULL)
 }
 \arguments{
 \item{data_dir}{Path to the evaluation repository}
@@ -12,6 +12,9 @@ get_sim(data_dir, species = NULL, usms = NULL)
 \item{species}{Optional character vector of species to filter by}
 
 \item{usms}{Optional character vector of USM names to filter by}
+
+\item{var2exclude}{Optional character vector of variables to exclude
+from simulation results}
 }
 \value{
 A data.frame or Arrow dataset with simulated data
