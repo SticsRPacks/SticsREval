@@ -17,5 +17,4 @@ jobs:
         run: lintr::lint_package()
         shell: Rscript {0}
         env:
-          RENV_BOOTSTRAP_FROM_CRAN: true
           LINTR_ERROR_ON_LINT: true
