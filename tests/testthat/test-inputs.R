@@ -508,22 +508,16 @@ test_that("load_stics_version saves metadata with correct stics_version", {
   base <- file.path(tempdir(), basename(tempfile()))
   dir.create(base, recursive = TRUE)
 
-  mockery::stub(load_stics_version, "system2", function(...) {
-    c(" b09f41236_2026-02-17", "STICS Program", "Version: 1.0")
-  })
+  mockery::stub(
+    load_stics_version,
+    "SticsOnR::get_version_number",
+    function(...) {
+      "b09f41236_2026-02-17"
+    }
+  )
 
   load_stics_version(base, "stics_exe")
   result <- get_stics_version(base)
+
   expect_identical(result, "b09f41236_2026-02-17")
-})
-
-test_that("load_stics_version handles system2 error gracefully", {
-  base <- file.path(tempdir(), basename(tempfile()))
-  dir.create(base, recursive = TRUE)
-
-  mockery::stub(load_stics_version, "system2", function(...) {
-    stop("executable not found", call. = FALSE)
-  })
-
-  expect_error(load_stics_version("bad_exe", base))
 })

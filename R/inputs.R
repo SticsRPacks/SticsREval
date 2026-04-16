@@ -129,15 +129,10 @@ get_rotation_list <- function(metadata_file) {
 }
 
 load_stics_version <- function(data_dir, stics_exe) {
-  ret <- try(
-    system2(
-      command = stics_exe,
-      args = "--version",
-      stderr = TRUE,
-      stdout = TRUE
-    ),
-    silent = TRUE
+  stics_version <- SticsOnR::get_version_number(stics_exe)
+  metadata <- data.frame(
+    stics_version =  as.character(stics_version),
+    stringsAsFactors = FALSE
   )
-  metadata <- data.frame(stics_version =  trimws(ret[1]))
   save_metadata(data_dir, metadata)
 }

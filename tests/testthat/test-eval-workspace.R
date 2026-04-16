@@ -118,6 +118,7 @@ test_that("init_eval_workspace creates workspace directory", {
   stub(init_eval_workspace, "get_rotation_list", mock(list()))
   stub(init_eval_workspace, "load_workspace_sim", mock(NULL))
   stub(init_eval_workspace, "load_workspace_obs", mock(NULL))
+  stub(init_eval_workspace, "load_stics_version", mock(NULL))
   stub(init_eval_workspace, "remove_init_obs", mock(NULL))
   stub(init_eval_workspace, "list.dirs", mock("usm1"))
 
@@ -171,6 +172,7 @@ test_that(
     stub(init_eval_workspace, "get_rotation_list", mock(list()))
     stub(init_eval_workspace, "load_workspace_sim", mock(NULL))
     stub(init_eval_workspace, "load_workspace_obs", mock(NULL))
+    stub(init_eval_workspace, "load_stics_version", mock(NULL))
     stub(init_eval_workspace, "remove_init_obs", mock(NULL))
     stub(init_eval_workspace, "list.dirs", mock("usm1"))
 
@@ -201,6 +203,7 @@ test_that(
     stub(init_eval_workspace, "get_rotation_list", mock(list()))
     stub(init_eval_workspace, "load_workspace_sim", mock(NULL))
     stub(init_eval_workspace, "load_workspace_obs", mock(NULL))
+    stub(init_eval_workspace, "load_stics_version", mock(NULL))
     stub(init_eval_workspace, "remove_init_obs", mock(NULL))
     stub(init_eval_workspace, "list.dirs", mock("usm1"))
 
@@ -248,6 +251,7 @@ test_that("init_eval_workspace calls load_workspace_sim", {
   stub(init_eval_workspace, "get_rotation_list", mock(list()))
   stub(init_eval_workspace, "load_workspace_sim", mock_load_sim)
   stub(init_eval_workspace, "load_workspace_obs", mock(NULL))
+  stub(init_eval_workspace, "load_stics_version", mock(NULL))
   stub(init_eval_workspace, "remove_init_obs", mock(NULL))
   stub(init_eval_workspace, "list.dirs", mock("usm1"))
 
@@ -274,6 +278,7 @@ test_that("init_eval_workspace calls load_workspace_obs", {
   stub(init_eval_workspace, "get_rotation_list", mock(list()))
   stub(init_eval_workspace, "load_workspace_sim", mock(NULL))
   stub(init_eval_workspace, "load_workspace_obs", mock_load_obs)
+  stub(init_eval_workspace, "load_stics_version", mock(NULL))
   stub(init_eval_workspace, "remove_init_obs", mock(NULL))
   stub(init_eval_workspace, "list.dirs", mock("usm1"))
 
@@ -290,6 +295,33 @@ test_that("init_eval_workspace calls load_workspace_obs", {
   expect_called(mock_load_obs, 1)
 })
 
+test_that("init_eval_workspace calls load_stics_version", {
+  base <- file.path(tempdir(), basename(tempfile()))
+  mock_load_stics_version <- mock(NULL)
+
+  stub(init_eval_workspace, "extract_species_from_usms", mock(
+    data.frame(usm = "usm1", species = "wheat", stringsAsFactors = FALSE)
+  ))
+  stub(init_eval_workspace, "get_rotation_list", mock(list()))
+  stub(init_eval_workspace, "load_workspace_sim", mock(NULL))
+  stub(init_eval_workspace, "load_workspace_obs", mock(NULL))
+  stub(init_eval_workspace, "load_stics_version", mock_load_stics_version)
+  stub(init_eval_workspace, "remove_init_obs", mock(NULL))
+  stub(init_eval_workspace, "list.dirs", mock("usm1"))
+
+  init_eval_workspace(
+    data_workspace = "/data",
+    eval_workspace = base,
+    metadata_file = "/meta.csv",
+    stics_exe = "/stics",
+    must_run_simulations = TRUE,
+    parallel = FALSE,
+    cores = NA
+  )
+
+  expect_called(mock_load_stics_version, 1)
+})
+
 test_that("init_eval_workspace calls remove_init_obs", {
   base <- file.path(tempdir(), basename(tempfile()))
   mock_remove <- mock(NULL)
@@ -300,6 +332,7 @@ test_that("init_eval_workspace calls remove_init_obs", {
   stub(init_eval_workspace, "get_rotation_list", mock(list()))
   stub(init_eval_workspace, "load_workspace_sim", mock(NULL))
   stub(init_eval_workspace, "load_workspace_obs", mock(NULL))
+  stub(init_eval_workspace, "load_stics_version", mock(NULL))
   stub(init_eval_workspace, "remove_init_obs", mock_remove)
   stub(init_eval_workspace, "list.dirs", mock("usm1"))
 
