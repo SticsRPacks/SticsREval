@@ -4,7 +4,7 @@
 \alias{get_stats}
 \title{Get statistics from the evaluation repository}
 \usage{
-get_stats(data_dir, species, collect = FALSE)
+get_stats(data_dir, version, species, collect = FALSE)
 }
 \arguments{
 \item{data_dir}{Path to the evaluation repository}

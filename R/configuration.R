@@ -7,8 +7,8 @@
 #' to ensure consistent parameter handling.
 #'
 #' @param stics_exe Character. Path to the STICS executable.
-#' @param workspace Character. Path to the working directory containing
-#'   simulation inputs.
+#' @param usms_workspace Character. Path to the working directory
+#'   containing simulation inputs.
 #' @param metadata_file Character. Path to the metadata file describing
 #'   simulations.
 #' @param run_simulations Logical. Whether to run simulations.
@@ -18,12 +18,13 @@
 #'   Defaults to FALSE.
 #' @param cores Integer or NA. Number of cores to use for parallel
 #'   execution. If NA, the number of available cores may be used.
-#' @param reference_workspace Character or NULL. Path to reference
-#'   evaluation data. If NULL, reference-based analyses may be skipped.
+#' @param reference_version Character or NULL. Version of the reference
+#'   evaluation data. Must be present in evaluation workspace.
+#'   If NULL, reference-based analyses may be skipped.
 #' @param percentage Numeric. Threshold used for evaluation metrics
 #'   (e.g., detecting deteriorated variables). Defaults to 5.
 #' @param eval_workspace Character. Path to the evaluation workspace.
-#'   Defaults to `DEFAULT_WORKSPACE`.
+#'   Defaults to NULL.
 #' @param init_workspace Logical. Whether to initialize the evaluation
 #'   workspace. Defaults to TRUE.
 #' @param output_dir Character or NULL. Path to the output directory
@@ -38,8 +39,6 @@
 #'   to exclude from evaluation. If NULL, all available variables are
 #'   evaluated.
 #'   Defaults to NULL.
-#' @param force Logical. Whether to overwrite an existing non-empty
-#'   evaluation workspace without prompting. Defaults to FALSE.
 #'
 #' @return A named list containing the configuration parameters.
 #'
@@ -55,30 +54,29 @@
 #' @export
 make_config <- function(
   stics_exe = NULL,
-  workspace  = NULL,
+  usms_workspace  = NULL,
   metadata_file  = NULL,
   run_simulations = TRUE,
   verbose = 1,
   parallel = FALSE,
   cores = NA,
-  reference_workspace = NULL,
+  reference_version = NULL,
   percentage = 5,
-  eval_workspace = DEFAULT_WORKSPACE,
+  eval_workspace = NULL,
   init_workspace = TRUE,
   output_dir = NULL,
   species = NULL,
   usms = NULL,
-  var2exclude = NULL,
-  force = FALSE
+  var2exclude = NULL
 ) {
   config <- list(
     stics_exe = stics_exe,
-    workspace = workspace,
+    usms_workspace = usms_workspace,
     run_simulations = run_simulations,
     verbose = verbose,
     parallel = parallel,
     cores = cores,
-    reference_workspace = reference_workspace,
+    reference_version = reference_version,
     metadata_file = metadata_file,
     percentage = percentage,
     eval_workspace = eval_workspace,
@@ -86,8 +84,7 @@ make_config <- function(
     output_dir = output_dir,
     species = species,
     usms = usms,
-    var2exclude = var2exclude,
-    force = force
+    var2exclude = var2exclude
   )
   init_logger(config$verbose)
   config
@@ -99,8 +96,9 @@ make_config <- function(
 #' The configuration must follow these rules to be considered as valid:
 #'  - if `init_workspace` is TRUE, `stics_exe`, `workspace` and
 #'    `metadata_file` must be defined and `metadata_file` must be a valid path
-#'  - if `reference_workspace` is defined, it must be a valid path
 #'  - `eval_workspace` must be defined
+#'  - if `reference_version` is defined, it must be a version present in
+#'    evaluation workspace
 #'
 #' @keywords internal
 validate_eval_configuration <- function(config) {
@@ -108,24 +106,27 @@ validate_eval_configuration <- function(config) {
     if (is.null(config$stics_exe)) {
       stop("Stics executable path must be defined", call. = FALSE)
     }
-    if (is.null(config$workspace)) {
-      stop("Workspace path must be defined", call. = FALSE)
+    if (is.null(config$usms_workspace)) {
+      stop("USMs workspace path must be defined", call. = FALSE)
     }
     if (is.null(config$metadata_file) || !file.exists(config$metadata_file)) {
       stop("Metadata file must be a valid path", call. = FALSE)
     }
   }
-  if (
-    !is.null(config$reference_workspace) &&
-      !dir.exists(config$reference_workspace)
-  ) {
-    stop(
-      "Reference workspace directory must be a valid path if defined",
-      call. = FALSE
-    )
-  }
   if (is.null(config$eval_workspace)) {
     stop("Eval workspace path must be defined", call. = FALSE)
+  }
+  if (!is.null(config$reference_version)) {
+    versions <- get_all_versions(config$eval_workspace)
+    if (is.null(versions) || !(config$reference_version %in% versions)) {
+      all_versions <- get_all_versions(config$eval_workspace)
+      stop(
+        "Reference version is not present in evaluation workspace.",
+        "Available versions:",
+        toString(all_versions),
+        call. = FALSE
+      )
+    }
   }
 }
 
@@ -146,13 +147,13 @@ validate_export_config <- function(config) {
 }
 
 validate_plots_config <- function(config) {
-  if (
-    !is.null(config$reference_workspace) &&
-      !dir.exists(config$reference_workspace)
-  ) {
-    stop(
-      "Reference workspace directory must be a valid path if defined",
-      call. = FALSE
-    )
+  if (!is.null(config$reference_version)) {
+    versions <- get_all_versions(config$eval_workspace)
+    if (is.null(versions) || !(config$reference_version %in% versions)) {
+      stop(
+        "Reference version is not present in evaluation workspace.",
+        call. = FALSE
+      )
+    }
   }
 }

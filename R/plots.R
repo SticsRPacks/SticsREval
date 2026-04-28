@@ -128,7 +128,8 @@ gen_plots <- function(config) {
   start_time <- Sys.time()
   validate_export_config(config)
   validate_plots_config(config)
-  species <- get_species(config$eval_workspace)
+  evaluated_version <- get_stics_version(config$eval_workspace)
+  species <- get_species(config$eval_workspace, evaluated_version)
   parallelizable_loop(
     length(species),
     config$parallel,
@@ -137,7 +138,7 @@ gen_plots <- function(config) {
       spec <- species[i]
       o_dir <- prepare_species_output_dir(config$output_dir, spec)
       spec_comparison <- get_species_comparison(
-        config$eval_workspace, spec, TRUE
+        config$eval_workspace, evaluated_version, spec, TRUE
       )
 
       if (is.null(spec_comparison)) {
@@ -156,12 +157,16 @@ gen_plots <- function(config) {
       rm(spec_comparison)
 
       if (length(deteriorated) > 0) {
-        ref_sim <- get_by_species(config$reference_workspace, spec, "sim", TRUE)
+        ref_sim <- get_sim(
+          config$eval_workspace,
+          config$reference_version,
+          spec
+        )
 
         if (!is.null(ref_sim)) {
           logger::log_info("Generating scatter plots for species {spec}")
-          sim <- get_by_species(config$eval_workspace, spec, "sim", TRUE)
-          obs <- get_by_species(config$eval_workspace, spec, "obs", TRUE)
+          sim <- get_sim(config$eval_workspace, evaluated_version, spec)
+          obs <- get_obs(config$eval_workspace, evaluated_version, spec)
 
           gen_scatter_plot(
             o_dir,

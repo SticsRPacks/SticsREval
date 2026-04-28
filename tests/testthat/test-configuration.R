@@ -12,12 +12,12 @@ test_that("make_config includes all expected keys", {
   stub(make_config, "init_logger", mock(NULL))
   result <- make_config()
   expected_keys <- c(
-    "stics_exe", "workspace", "run_simulations",
+    "stics_exe", "usms_workspace", "run_simulations",
     "verbose", "parallel", "cores",
-    "reference_workspace", "metadata_file",
+    "reference_version", "metadata_file",
     "percentage", "eval_workspace",
     "init_workspace", "output_dir", "species", "usms",
-    "var2exclude", "force"
+    "var2exclude"
   )
   expect_named(result, expected_keys)
 })
@@ -26,14 +26,14 @@ test_that("make_config uses provided values", {
   stub(make_config, "init_logger", mock(NULL))
   result <- make_config(
     stics_exe = "/stics",
-    workspace = "/ws",
+    usms_workspace = "/ws",
     metadata_file = "/meta.csv",
     percentage = 10,
     parallel = TRUE,
     cores = 4
   )
   expect_identical(result$stics_exe, "/stics")
-  expect_identical(result$workspace, "/ws")
+  expect_identical(result$usms_workspace, "/ws")
   expect_identical(result$metadata_file, "/meta.csv")
   expect_identical(result$percentage, 10)
   expect_true(result$parallel)
@@ -50,10 +50,10 @@ test_that("make_config uses default values", {
   expect_identical(result$percentage, 5)
   expect_true(result$init_workspace)
   expect_null(result$stics_exe)
-  expect_null(result$workspace)
+  expect_null(result$usms_workspace)
+  expect_null(result$eval_workspace)
   expect_null(result$output_dir)
-  expect_null(result$reference_workspace)
-  expect_false(result$force)
+  expect_null(result$reference_version)
   expect_null(result$usms)
   expect_null(result$species)
   expect_null(result$var2exclude)
@@ -67,12 +67,6 @@ test_that("make_config calls init_logger with verbose level", {
   expect_identical(mock_args(mock_logger)[[1]][[1]], 2)
 })
 
-test_that("make_config sets eval_workspace to DEFAULT_WORKSPACE", {
-  stub(make_config, "init_logger", mock(NULL))
-  result <- make_config()
-  expect_identical(result$eval_workspace, DEFAULT_WORKSPACE)
-})
-
 # ===========================================================================
 # Helpers
 # ===========================================================================
@@ -82,9 +76,9 @@ make_valid_config <- function(overrides = list()) {
   writeLines("usm;rotation;rotation_order", meta)
   cfg <- list(
     stics_exe = "/stics",
-    workspace = "/ws",
+    usms_workspace = "/ws",
     metadata_file = meta,
-    reference_workspace = NULL,
+    reference_version = NULL,
     eval_workspace = tempdir(),
     output_dir = tempdir(),
     percentage = 5,
@@ -129,13 +123,13 @@ test_that(
 )
 
 test_that(
-  "validate_eval_configuration stops when workspace is NULL and
+  "validate_eval_configuration stops when usms_workspace is NULL and
   init_workspace = TRUE",
   {
-    cfg <- make_valid_config(list(init_workspace = TRUE, workspace = NULL))
+    cfg <- make_valid_config(list(init_workspace = TRUE, usms_workspace = NULL))
     expect_error(
       validate_eval_configuration(cfg),
-      regexp = "Workspace path must be defined"
+      regexp = "USMs workspace path must be defined"
     )
   }
 )
@@ -179,27 +173,10 @@ test_that(
 )
 
 test_that(
-  "validate_eval_configuration stops when reference_workspace is defined but
-  does not exist",
+  "validate_eval_configuration passes when reference_version is NULL",
   {
     cfg <- make_valid_config(
-      list(
-        init_workspace = FALSE,
-        reference_workspace = file.path("nonexistent", "ref")
-      )
-    )
-    expect_error(
-      validate_eval_configuration(cfg),
-      regexp = "Reference workspace directory must be a valid path if defined"
-    )
-  }
-)
-
-test_that(
-  "validate_eval_configuration passes when reference_workspace is NULL",
-  {
-    cfg <- make_valid_config(
-      list(init_workspace = FALSE, reference_workspace = NULL)
+      list(init_workspace = FALSE, reference_version = NULL)
     )
     expect_no_error(validate_eval_configuration(cfg))
   }
@@ -290,32 +267,54 @@ test_that(
 # ===========================================================================
 
 test_that(
-  "validate_plots_config passes when reference_workspace is NULL",
+  "validate_plots_config passes when reference_version is NULL",
   {
-    cfg <- make_valid_config(list(reference_workspace = NULL))
+    cfg <- make_valid_config(list(reference_version = NULL))
     expect_no_error(validate_plots_config(cfg))
   }
 )
 
 test_that(
-  "validate_plots_config passes when reference_workspace exists",
+  "validate_plots_config passes when reference_version exists",
   {
-    cfg <- make_valid_config(
-      list(reference_workspace = tempdir())
+    cfg <- make_valid_config(list(reference_version = "1.0.0"))
+
+    mockery::stub(
+      validate_plots_config,
+      "get_all_versions",
+      mockery::mock(c("1.0.0", "2.0.0"))
     )
+
     expect_no_error(validate_plots_config(cfg))
   }
 )
 
 test_that(
-  "validate_plots_config errors when reference_workspace is invalid",
+  "validate_plots_config fails when reference_version not in metadata",
   {
-    cfg <- make_valid_config(
-      list(reference_workspace = "/nonexistent/ref") # nolint: nonportable_path_linter
+    cfg <- make_valid_config(list(reference_version = "9.9.9"))
+
+    mockery::stub(
+      validate_plots_config,
+      "get_all_versions",
+      mockery::mock(c("1.0.0", "2.0.0"))
     )
-    expect_error(
-      validate_plots_config(cfg),
-      regexp = "Reference workspace directory"
+
+    expect_error(validate_plots_config(cfg))
+  }
+)
+
+test_that(
+  "validate_plots_config fails when no metadata found",
+  {
+    cfg <- make_valid_config(list(reference_version = "1.0.0"))
+
+    mockery::stub(
+      validate_plots_config,
+      "get_all_versions",
+      mockery::mock(NULL)
     )
+
+    expect_error(validate_plots_config(cfg))
   }
 )

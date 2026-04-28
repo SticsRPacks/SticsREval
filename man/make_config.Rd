@@ -6,28 +6,27 @@
 \usage{
 make_config(
   stics_exe = NULL,
-  workspace = NULL,
+  usms_workspace = NULL,
   metadata_file = NULL,
   run_simulations = TRUE,
   verbose = 1,
   parallel = FALSE,
   cores = NA,
-  reference_workspace = NULL,
+  reference_version = NULL,
   percentage = 5,
-  eval_workspace = DEFAULT_WORKSPACE,
+  eval_workspace = NULL,
   init_workspace = TRUE,
   output_dir = NULL,
   species = NULL,
   usms = NULL,
-  var2exclude = NULL,
-  force = FALSE
+  var2exclude = NULL
 )
 }
 \arguments{
 \item{stics_exe}{Character. Path to the STICS executable.}
 
-\item{workspace}{Character. Path to the working directory containing
-simulation inputs.}
+\item{usms_workspace}{Character. Path to the working directory
+containing simulation inputs.}
 
 \item{metadata_file}{Character. Path to the metadata file describing
 simulations.}
@@ -43,14 +42,15 @@ Defaults to FALSE.}
 \item{cores}{Integer or NA. Number of cores to use for parallel
 execution. If NA, the number of available cores may be used.}
 
-\item{reference_workspace}{Character or NULL. Path to reference
-evaluation data. If NULL, reference-based analyses may be skipped.}
+\item{reference_version}{Character or NULL. Version of the reference
+evaluation data. Must be present in evaluation workspace.
+If NULL, reference-based analyses may be skipped.}
 
 \item{percentage}{Numeric. Threshold used for evaluation metrics
 (e.g., detecting deteriorated variables). Defaults to 5.}
 
 \item{eval_workspace}{Character. Path to the evaluation workspace.
-Defaults to \code{DEFAULT_WORKSPACE}.}
+Defaults to NULL.}
 
 \item{init_workspace}{Logical. Whether to initialize the evaluation
 workspace. Defaults to TRUE.}
@@ -70,9 +70,6 @@ Defaults to NULL.}
 to exclude from evaluation. If NULL, all available variables are
 evaluated.
 Defaults to NULL.}
-
-\item{force}{Logical. Whether to overwrite an existing non-empty
-evaluation workspace without prompting. Defaults to FALSE.}
 }
 \value{
 A named list containing the configuration parameters.

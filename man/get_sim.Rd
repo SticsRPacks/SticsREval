@@ -4,7 +4,7 @@
 \alias{get_sim}
 \title{Get simulated data from the evaluation repository}
 \usage{
-get_sim(data_dir, species = NULL, usms = NULL, var2exclude = NULL)
+get_sim(data_dir, version, species = NULL, usms = NULL, var2exclude = NULL)
 }
 \arguments{
 \item{data_dir}{Path to the evaluation repository}
