@@ -211,6 +211,7 @@ get_by_species <- function(
 #' Get simulated data from the evaluation repository
 #'
 #' @param data_dir Path to the evaluation repository
+#' @param version Version of STICS
 #' @param species Optional character vector of species to filter by
 #' @param usms Optional character vector of USM names to filter by
 #' @param var2exclude Optional character vector of variables to exclude
@@ -235,6 +236,7 @@ get_sim <- function(
 #' Get observed data from the evaluation repository
 #'
 #' @param data_dir Path to the evaluation repository
+#' @param version Version of STICS
 #' @param species Optional character vector of species to filter by
 #' @param usms Optional character vector of USM names to filter by
 #' @param var2exclude Optional character vector of variables to exclude
@@ -270,6 +272,7 @@ save_stats <- function(data_dir, version, species, stats) {
 #' Get statistics from the evaluation repository
 #'
 #' @param data_dir Path to the evaluation repository
+#' @param version Version of STICS
 #' @param species Character string specifying the species to retrieve
 #' statistics for
 #' @param collect If TRUE, returns a data.frame. If FALSE, returns an
@@ -442,7 +445,7 @@ add_evaluated_version <- function(data_dir, version) {
       metadata <- dplyr::mutate(
         metadata,
         last_evaluated = dplyr::if_else(
-          stics_version == version, TRUE, last_evaluated
+          .data$stics_version == version, TRUE, .data$last_evaluated
         )
       )
     } else {

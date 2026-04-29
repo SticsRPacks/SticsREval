@@ -132,6 +132,6 @@ evaluate <- function(config) {
       config$percentage
     )
   }, error = function(e) {
-    logger::log_error(paste(capture.output(print(e)), collapse = "\n"))
+    logger::log_error(paste(utils::capture.output(print(e)), collapse = "\n"))
   })
 }

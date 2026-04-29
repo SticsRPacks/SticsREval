@@ -9,6 +9,8 @@ get_sim(data_dir, version, species = NULL, usms = NULL, var2exclude = NULL)
 \arguments{
 \item{data_dir}{Path to the evaluation repository}
 
+\item{version}{Version of STICS}
+
 \item{species}{Optional character vector of species to filter by}
 
 \item{usms}{Optional character vector of USM names to filter by}

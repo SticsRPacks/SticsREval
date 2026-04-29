@@ -9,6 +9,8 @@ get_stats(data_dir, version, species, collect = FALSE)
 \arguments{
 \item{data_dir}{Path to the evaluation repository}
 
+\item{version}{Version of STICS}
+
 \item{species}{Character string specifying the species to retrieve
 statistics for}
 
