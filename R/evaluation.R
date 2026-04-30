@@ -1,7 +1,7 @@
 evaluate_species <- function(
   eval_workspace,
   species,
-  reference_workspace,
+  reference_version,
   percentage,
   parallel,
   cores,
@@ -13,21 +13,21 @@ evaluate_species <- function(
     eval_workspace, species, parallel, cores,
     usms = usms, var2exclude = var2exclude
   )
-  if (is.null(reference_workspace)) {
+  if (is.null(reference_version)) {
     logger::log_info(
-      "No reference workspace defined.
+      "No reference version defined.
       Skipping deteriorated usm generation and comparison"
     )
     return()
   }
   logger::log_debug("Computing deteriorated USM for species.")
   gen_deteriorated_usm(
-    eval_workspace, species, reference_workspace, percentage,
+    eval_workspace, species, reference_version, percentage,
     usms = usms, var2exclude = var2exclude
   )
   logger::log_debug("Computing species comparison.")
   gen_species_comparison(
-    eval_workspace, species, reference_workspace, percentage
+    eval_workspace, species, reference_version, percentage
   )
 }
 
@@ -81,26 +81,31 @@ evaluate <- function(config) {
   validate_eval_configuration(config)
   if (config$init_workspace) {
     init_eval_workspace(
-      config$workspace,
+      config$usms_workspace,
       config$eval_workspace,
       config$metadata_file,
       config$stics_exe,
       config$run_simulations,
       config$parallel,
-      config$cores,
-      force = config$force
+      config$cores
     )
   }
   logger::log_info("Starting evaluation...")
   tryCatch({
-    species <- get_species(config$eval_workspace)
+    evaluated_version <- get_stics_version(config$eval_workspace)
+    species <- get_species(config$eval_workspace, evaluated_version)
     if (!is.null(config$species)) {
       species <- intersect(config$species, species)
     }
     if (!is.null(config$usms)) {
       species <- species[
         vapply(species, function(sp) {
-          length(get_species_usm(config$eval_workspace, sp, config$usms)) > 0
+          length(get_species_usm(
+            config$eval_workspace,
+            evaluated_version,
+            sp,
+            config$usms
+          )) > 0
         }, FUN.VALUE = logical(1))
       ]
     }
@@ -114,7 +119,7 @@ evaluate <- function(config) {
     evaluate_species(
       config$eval_workspace,
       species,
-      config$reference_workspace,
+      config$reference_version,
       config$percentage,
       config$parallel,
       config$cores,
@@ -127,6 +132,6 @@ evaluate <- function(config) {
       config$percentage
     )
   }, error = function(e) {
-    logger::log_error(e$message)
+    logger::log_error(paste(utils::capture.output(print(e)), collapse = "\n"))
   })
 }

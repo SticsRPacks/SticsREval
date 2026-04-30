@@ -5,23 +5,19 @@
 test_that("gen_scatter_plot calls CroPlotR plot with correct arguments", {
   fake_ggplot <- list()
   class(fake_ggplot) <- "ggplot"
-  captured <- NULL
-
   fake_sim <- list()
   class(fake_sim) <- "cropr_simulation"
   fake_obs <- list()
   fake_ref_sim <- list()
   class(fake_ref_sim) <- "cropr_simulation"
-
   captured_env <- new.env(parent = emptyenv())
 
-  local_mocked_bindings(
-    plot.cropr_simulation = function(...) {
+  stub(gen_scatter_plot, "getS3method", function(...) {
+    function(...) {
       assign("captured", list(...), envir = captured_env)
       list()
-    },
-    .package = "CroPlotR"
-  )
+    }
+  })
   stub(
     gen_scatter_plot,
     "CroPlotR::extract_plot",
@@ -47,27 +43,23 @@ test_that("gen_scatter_plot calls CroPlotR plot with correct arguments", {
 test_that("gen_scatter_plot calls extract_plot once per variable", {
   fake_ggplot <- list()
   class(fake_ggplot) <- "ggplot"
-  mock_extract <- mock(list(fake_ggplot), cycle = TRUE)
-
   fake_sim <- list()
   class(fake_sim) <- "cropr_simulation"
   fake_ref_sim <- list()
   class(fake_ref_sim) <- "cropr_simulation"
+  mock_extract <- mock(list(fake_ggplot), cycle = TRUE)
 
-  local_mocked_bindings(
-    plot.cropr_simulation = function(...) list(),
-    .package = "CroPlotR"
-  )
+  stub(gen_scatter_plot, "getS3method", function(...) function(...) list())
   stub(gen_scatter_plot, "CroPlotR::extract_plot", mock_extract)
-  stub(gen_scatter_plot, "plotly::ggplotly",        mock(list(), cycle = TRUE))
-  stub(gen_scatter_plot, "htmltools::save_html",    mock(NULL))
+  stub(gen_scatter_plot, "plotly::ggplotly", mock(list(), cycle = TRUE))
+  stub(gen_scatter_plot, "htmltools::save_html", mock(NULL))
 
   gen_scatter_plot(
     tempdir(),
-    sim     = fake_sim,
-    obs     = list(),
+    sim = fake_sim,
+    obs = list(),
     ref_sim = fake_ref_sim,
-    vars    = c("LAI", "MASEC", "ZRAC")
+    vars = c("LAI", "MASEC", "ZRAC")
   )
 
   expect_called(mock_extract, 3)
@@ -76,31 +68,28 @@ test_that("gen_scatter_plot calls extract_plot once per variable", {
 test_that("gen_scatter_plot saves HTML to output_dir/scatter_plots.html", { # nolint: nonportable_path_linter
   fake_ggplot <- list()
   class(fake_ggplot) <- "ggplot"
-  mock_save_html <- mock(NULL)
   fake_sim <- list()
   class(fake_sim) <- "cropr_simulation"
   fake_ref_sim <- list()
   class(fake_ref_sim) <- "cropr_simulation"
+  mock_save_html <- mock(NULL)
 
-  local_mocked_bindings(
-    plot.cropr_simulation = function(...) list(),
-    .package = "CroPlotR"
-  )
+  stub(gen_scatter_plot, "getS3method", function(...) function(...) list())
   stub(
     gen_scatter_plot,
     "CroPlotR::extract_plot",
     mock(list(fake_ggplot), cycle = TRUE)
   )
-  stub(gen_scatter_plot, "plotly::ggplotly",        mock(list(), cycle = TRUE))
-  stub(gen_scatter_plot, "htmltools::save_html",    mock_save_html)
+  stub(gen_scatter_plot, "plotly::ggplotly", mock(list(), cycle = TRUE))
+  stub(gen_scatter_plot, "htmltools::save_html", mock_save_html)
 
   out_dir <- tempdir()
   gen_scatter_plot(
     out_dir,
-    sim     = fake_sim,
-    obs     = list(),
+    sim = fake_sim,
+    obs = list(),
     ref_sim = fake_ref_sim,
-    vars    = "LAI"
+    vars = "LAI"
   )
 
   args <- mock_args(mock_save_html)[[1]]
@@ -108,24 +97,21 @@ test_that("gen_scatter_plot saves HTML to output_dir/scatter_plots.html", { # no
 })
 
 test_that("gen_scatter_plot returns NULL invisibly", {
-  fake_ggplot <- list()
-  class(fake_ggplot) <- "ggplot"
   fake_sim <- list()
   class(fake_sim) <- "cropr_simulation"
   fake_ref_sim <- list()
   class(fake_ref_sim) <- "cropr_simulation"
 
-  local_mocked_bindings(
-    plot.cropr_simulation = function(...) list(),
-    .package = "CroPlotR"
-  )
+  stub(gen_scatter_plot, "getS3method", function(...) function(...) list())
+  fake_ggplot <- list()
+  class(fake_ggplot) <- "ggplot"
   stub(
     gen_scatter_plot,
     "CroPlotR::extract_plot",
     mock(list(fake_ggplot), cycle = TRUE)
   )
-  stub(gen_scatter_plot, "plotly::ggplotly",        mock(list(), cycle = TRUE))
-  stub(gen_scatter_plot, "htmltools::save_html",    mock(NULL))
+  stub(gen_scatter_plot, "plotly::ggplotly", mock(list(), cycle = TRUE))
+  stub(gen_scatter_plot, "htmltools::save_html", mock(NULL))
 
   result <- gen_scatter_plot(
     tempdir(),
@@ -220,7 +206,7 @@ test_that("gen_comparison_plot uses suffix 'scatter_' for save_plot_png", {
 make_fake_config <- function(overrides = list()) {
   cfg <- list(
     output_dir = tempdir(),
-    reference_workspace = tempdir(),
+    reference_version = "1.0.0",
     percentage = 20,
     parallel = FALSE,
     cores = NA,
@@ -295,7 +281,7 @@ test_that(
     mock_gen_scatter <- mock(NULL)
 
     stub(gen_plots, "validate_export_config", mock(NULL))
-    stub(gen_plots, "valide_plovalidate_plots_configts_config", mock(NULL))
+    stub(gen_plots, "validate_plots_config", mock(NULL))
     stub(gen_plots, "get_species", mock("wheat"))
     stub(
       gen_plots,
@@ -303,15 +289,13 @@ test_that(
       function(n, par, cores, fn) lapply(seq_len(n), fn)
     )
     stub(gen_plots, "prepare_species_output_dir", mock(tempdir()))
+    stub(gen_plots, "get_stics_version", mock("1.0.0"))
     stub(gen_plots, "get_species_comparison", mock(make_comparison_df()))
     stub(gen_plots, "gen_comparison_plot", mock(NULL))
     stub(gen_plots, "get_crit_vars", mock("LAI"))
     stub(gen_plots, "get_warn_vars", mock(character(0)))
-    stub(
-      gen_plots,
-      "get_by_species",
-      mock(data.frame(), cycle = TRUE)
-    )
+    stub(gen_plots, "get_sim", mock(data.frame(), cycle = TRUE))
+    stub(gen_plots, "get_obs", mock(data.frame(), cycle = TRUE))
     stub(gen_plots, "CroPlotR::split_df2sim", mock(list(), cycle = TRUE))
     stub(gen_plots, "gen_scatter_plot", mock_gen_scatter)
 
@@ -363,7 +347,7 @@ test_that("gen_plots does not call gen_scatter_plot when ref_sim is NULL", {
   stub(gen_plots, "gen_comparison_plot", mock(NULL))
   stub(gen_plots, "get_crit_vars", mock("LAI"))
   stub(gen_plots, "get_warn_vars", mock(character(0)))
-  stub(gen_plots, "get_by_species", mock(NULL))
+  stub(gen_plots, "get_sim", mock(NULL))
   stub(gen_plots, "gen_scatter_plot", mock_gen_scatter)
 
   gen_plots(make_fake_config())

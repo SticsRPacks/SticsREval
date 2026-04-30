@@ -55,15 +55,18 @@ test_that(
 make_eval_config <- function(overrides = list()) {
   cfg <- list(
     eval_workspace = "/ws",
-    reference_workspace = "/ref",
+    reference_version = "/ref",
     percentage = 20,
     parallel = FALSE,
     cores = NA,
     init_workspace = FALSE,
-    workspace = "/original_ws",
+    usms_workspace = "/original_ws",
     metadata_file = "/meta.csv",
     stics_exe = "/stics",
-    run_simulations = FALSE
+    run_simulations = FALSE,
+    usms = NULL,
+    species = NULL,
+    var2exclude = NULL
   )
   for (nm in names(overrides)) cfg[[nm]] <- overrides[[nm]]
   cfg
@@ -86,6 +89,7 @@ test_that("evaluate calls evaluate_species when init_workspace = FALSE", {
   mock_eval <- mock(NULL)
   stub(evaluate, "validate_eval_configuration", mock(NULL))
   stub(evaluate, "get_species", mock("wheat"))
+  stub(evaluate, "get_stics_version", mock("1.0.0"))
   stub(evaluate, "evaluate_species", mock_eval)
   stub(evaluate, "display_comparisons_info", mock(NULL))
   evaluate(make_eval_config(list(init_workspace = FALSE)))
@@ -124,6 +128,7 @@ test_that(
     mock_display <- mock(NULL)
     stub(evaluate, "validate_eval_configuration", mock(NULL))
     stub(evaluate, "get_species", mock("wheat"))
+    stub(evaluate, "get_stics_version", mock("1.0.0"))
     stub(evaluate, "evaluate_species", mock(NULL))
     stub(evaluate, "display_comparisons_info", mock_display)
     evaluate(make_eval_config())
@@ -138,6 +143,7 @@ test_that("evaluate filters species by config$species when provided", {
   mock_eval <- mock(NULL)
   stub(evaluate, "validate_eval_configuration", mock(NULL))
   stub(evaluate, "get_species", mock(c("wheat", "maize")))
+  stub(evaluate, "get_stics_version", mock("1.0.0"))
   stub(evaluate, "evaluate_species", mock_eval)
   stub(evaluate, "display_comparisons_info", mock(NULL))
   evaluate(make_eval_config(list(species = "wheat")))
@@ -149,7 +155,7 @@ test_that("evaluate filters species by config$usms when provided", {
   mock_eval <- mock(NULL)
   stub(evaluate, "validate_eval_configuration", mock(NULL))
   stub(evaluate, "get_species", mock(c("wheat", "maize")))
-  stub(evaluate, "get_species_usm", function(ws, sp, usms) {
+  stub(evaluate, "get_species_usm", function(ws, v, sp, usms) {
     if (sp == "wheat") "usm1" else character(0)
   })
   stub(evaluate, "evaluate_species", mock_eval)

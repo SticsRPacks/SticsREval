@@ -2,6 +2,7 @@
 gen_species_stats <- function(
   eval_workspace, species, parallel, cores, usms = NULL, var2exclude = NULL
 ) {
+  evaluated_version <- get_stics_version(eval_workspace)
   results <- parallelizable_loop(
     length(species),
     parallel,
@@ -11,19 +12,22 @@ gen_species_stats <- function(
       logger::log_debug(
         "Splitting simulations and observations data for species {spec}"
       )
+      exclude <- c("version", "species")
+      if (!is.null(var2exclude)) {
+        exclude <- c(exclude, var2exclude)
+      }
       splited_sim <- CroPlotR::split_df2sim(
-        get_by_species(
-          eval_workspace, spec, "sim", collect = TRUE,
-          usms = usms, var2exclude = var2exclude
+        get_sim(
+          eval_workspace, evaluated_version, spec,
+          usms = usms, var2exclude = exclude
         )
       )
       splited_obs <- CroPlotR::split_df2sim(
-        get_by_species(
-          eval_workspace, spec, "obs", collect = TRUE,
-          usms = usms, var2exclude = var2exclude
+        get_obs(
+          eval_workspace, evaluated_version, spec,
+          usms = usms, var2exclude = exclude
         )
       )
-
       logger::log_info("Generating statistics for ", spec)
       loadNamespace("CroPlotR")
       stats <- run_with_log_control(
@@ -50,9 +54,11 @@ gen_species_stats <- function(
   )
   for (res in results) {
     logger::log_debug("Saving statistics for ", res$species)
-    save_stats(eval_workspace, res$species, res$stats)
+    save_stats(eval_workspace, evaluated_version, res$species, res$stats)
     logger::log_debug("Saving RMSE per USM for species {res$species}")
-    save_rmse_per_usm(eval_workspace, res$species, res$rmse_per_usm)
+    save_rmse_per_usm(
+      eval_workspace, evaluated_version, res$species, res$rmse_per_usm
+    )
     logger::log_debug("RMSE per USM for species {res$species} saved.")
   }
 }

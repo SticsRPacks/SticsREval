@@ -51,8 +51,10 @@ get_deteriorated_rmse_per_usm <- function(
   var2exclude = NULL
 ) {
   logger::log_debug("Reading RMSE per USM parquet file for species {species}")
+  evaluated_version <- get_stics_version(eval_workspace)
   new_stats <- get_rmse_per_usm(
-    eval_workspace, species, usms = usms, var2exclude = var2exclude
+    eval_workspace, evaluated_version, species,
+    usms = usms, var2exclude = var2exclude
   )
   if (is.null(new_stats)) {
     return(NULL)
@@ -145,15 +147,16 @@ log_comparison <- function(
 }
 
 gen_species_comparison <- function(
-  eval_workspace, species, reference_workspace, percentage
+  eval_workspace, species, reference_version, percentage
 ) {
+  evaluated_version <- get_stics_version(eval_workspace)
   for (spec in species) {
-    ref_stats <- get_stats(reference_workspace, spec)
+    ref_stats <- get_stats(eval_workspace, reference_version, spec)
     if (is.null(ref_stats)) {
       next
     }
     logger::log_debug("Reading stats file for species {spec}")
-    stats <- get_stats(eval_workspace, spec)
+    stats <- get_stats(eval_workspace, evaluated_version, spec)
     if (is.null(stats)) {
       next
     }
@@ -164,7 +167,7 @@ gen_species_comparison <- function(
       stats
     )
     logger::log_debug("Saving RMSE comparison for species {spec}")
-    save_species_comparison(eval_workspace, comp)
+    save_species_comparison(eval_workspace, evaluated_version, comp)
     logger::log_debug("Species comparison saved for species {spec}")
     log_comparison(dplyr::collect(comp), percentage)
   }
@@ -172,13 +175,14 @@ gen_species_comparison <- function(
 }
 
 gen_deteriorated_usm <- function(
-  eval_workspace, species, reference_workspace, percentage,
+  eval_workspace, species, reference_version, percentage,
   usms = NULL, var2exclude = NULL
 ) {
   for (spec in species) {
     logger::log_debug("Reading reference RMSE per USM for species {spec}")
     ref_stats <- get_rmse_per_usm(
-      reference_workspace, spec, usms = usms, var2exclude = var2exclude
+      eval_workspace, reference_version, spec,
+      usms = usms, var2exclude = var2exclude
     )
     if (is.null(ref_stats)) {
       next
@@ -194,15 +198,17 @@ gen_deteriorated_usm <- function(
     )
     if (!is.null(deteriorated_usm)) {
       logger::log_debug("Saving deteriorated USM for species {spec}")
-      save_deteriorated_usm(eval_workspace, deteriorated_usm)
+      evaluated_version <- get_stics_version(eval_workspace)
+      save_deteriorated_usm(eval_workspace, evaluated_version, deteriorated_usm)
       logger::log_debug("Deteriorated USM saved for species {spec}")
     }
   }
 }
 
 display_comparisons_info <- function(data_dir, species, percentage) {
+  evaluated_version <- get_stics_version(data_dir)
   comparisons <- lapply(species, function(s) {
-    get_species_comparison(data_dir, s, TRUE)
+    get_species_comparison(data_dir, evaluated_version, s, TRUE)
   })
   comparisons <- remove_null_values(comparisons)
   if (length(comparisons) == 0) {

@@ -1,4 +1,5 @@
 load_workspace_sim <- function(
+  stics_version,
   data_dir,
   usms_species,
   rotations,
@@ -30,12 +31,13 @@ load_workspace_sim <- function(
       cores = cores
     )
   }
-  save_sim(data_dir, sim, usms_species)
+  save_sim(data_dir, sim, stics_version, usms_species)
   rm(sim)
   gc()
 }
 
 load_workspace_obs <- function(
+  stics_version,
   data_dir,
   usms_species,
   workspace,
@@ -50,7 +52,7 @@ load_workspace_obs <- function(
     parallel = parallel,
     cores = cores
   )
-  save_obs(data_dir, obs, usms_species)
+  save_obs(data_dir, obs, stics_version, usms_species)
   rm(obs)
   gc()
 }
@@ -130,9 +132,7 @@ get_rotation_list <- function(metadata_file) {
 
 load_stics_version <- function(data_dir, stics_exe) {
   stics_version <- SticsOnR::get_version_number(stics_exe)
-  metadata <- data.frame(
-    stics_version =  as.character(stics_version),
-    stringsAsFactors = FALSE
-  )
-  save_metadata(data_dir, metadata)
+  stics_version <- as.character(stics_version)
+  add_evaluated_version(data_dir, stics_version)
+  stics_version
 }

@@ -4,10 +4,12 @@
 \alias{get_obs}
 \title{Get observed data from the evaluation repository}
 \usage{
-get_obs(data_dir, species = NULL, usms = NULL, var2exclude = NULL)
+get_obs(data_dir, version, species = NULL, usms = NULL, var2exclude = NULL)
 }
 \arguments{
 \item{data_dir}{Path to the evaluation repository}
+
+\item{version}{Version of STICS}
 
 \item{species}{Optional character vector of species to filter by}
 

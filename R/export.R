@@ -49,21 +49,26 @@ prepare_species_output_dir <- function(output_dir, species) {
 export_stats_to_csv <- function(config) {
   start_time <- Sys.time()
   validate_export_config(config)
-  species <- get_species(config$eval_workspace)
+  evaluated_version <- get_stics_version(config$eval_workspace)
+  species <- get_species(config$eval_workspace, evaluated_version)
   for (spec in species) {
     logger::log_info("Exporting stats data for species {spec}")
     o_dir <- prepare_species_output_dir(config$output_dir, spec)
-    stats <- get_stats(config$eval_workspace, spec, TRUE)
+    stats <- get_stats(config$eval_workspace, evaluated_version, spec, TRUE)
     if (!is.null(stats)) {
       safe_write_csv(stats, file.path(o_dir, "Criteres_stats.csv"))
     }
-    rmse_per_usm <- get_rmse_per_usm(config$eval_workspace, spec, TRUE)
+    rmse_per_usm <- get_rmse_per_usm(
+      config$eval_workspace, evaluated_version, spec, TRUE
+    )
     if (!is.null(rmse_per_usm)) {
       safe_write_csv(
         rmse_per_usm, file.path(o_dir, "RMSE_per_usm.csv")
       )
     }
-    deteriorated_usm <- get_deteriorated_usm(config$eval_workspace, spec, TRUE)
+    deteriorated_usm <- get_deteriorated_usm(
+      config$eval_workspace, evaluated_version, spec, TRUE
+    )
     if (!is.null(deteriorated_usm)) {
       safe_write_csv(
         deteriorated_usm, file.path(o_dir, "Deteriorated_USM.csv")

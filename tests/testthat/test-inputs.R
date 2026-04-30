@@ -16,22 +16,23 @@ make_usms_species <- function(
 test_that(
   "load_workspace_sim calls run_simulations when run_simulations = TRUE",
   {
-    mock_run_sim  <- mock(list())
+    mock_run_sim <- mock(list())
     mock_save_sim <- mock(NULL)
 
     stub(load_workspace_sim, "run_simulations", mock_run_sim)
-    stub(load_workspace_sim, "save_sim",        mock_save_sim)
-    stub(load_workspace_sim, "is_debug",        function() FALSE)
+    stub(load_workspace_sim, "save_sim", mock_save_sim)
+    stub(load_workspace_sim, "is_debug", function() FALSE)
 
     load_workspace_sim(
-      data_dir        = tempdir(),
-      usms_species    = make_usms_species(),
-      rotations       = NULL,
-      workspace       = "/ws",
+      data_dir = tempdir(),
+      stics_version = "1.0.0",
+      usms_species = make_usms_species(),
+      rotations = NULL,
+      workspace = "/ws",
       run_simulations = TRUE,
-      stics_exe       = "/stics",
-      parallel        = FALSE,
-      cores           = NA
+      stics_exe = "/stics",
+      parallel = FALSE,
+      cores = NA
     )
 
     expect_called(mock_run_sim, 1)
@@ -43,18 +44,19 @@ test_that("load_workspace_sim passes correct arguments to run_simulations", {
   mock_save_sim <- mock(NULL)
 
   stub(load_workspace_sim, "run_simulations", mock_run_sim)
-  stub(load_workspace_sim, "save_sim",        mock_save_sim)
-  stub(load_workspace_sim, "is_debug",        function() FALSE)
+  stub(load_workspace_sim, "save_sim", mock_save_sim)
+  stub(load_workspace_sim, "is_debug", function() FALSE)
 
   load_workspace_sim(
-    data_dir        = tempdir(),
-    usms_species    = make_usms_species(c("usm1", "usm2")),
-    rotations       = list(c("usm1", "usm2")),
-    workspace       = "/ws",
+    data_dir = tempdir(),
+    stics_version = "1.0.0",
+    usms_species = make_usms_species(c("usm1", "usm2")),
+    rotations = list(c("usm1", "usm2")),
+    workspace = "/ws",
     run_simulations = TRUE,
-    stics_exe       = "/stics",
-    parallel        = TRUE,
-    cores           = 2
+    stics_exe = "/stics",
+    parallel = TRUE,
+    cores = 2
   )
 
   args <- mock_args(mock_run_sim)[[1]]
@@ -78,6 +80,7 @@ test_that(
 
     load_workspace_sim(
       data_dir = tempdir(),
+      stics_version = "1.0.0",
       usms_species = make_usms_species(),
       rotations = NULL,
       workspace = "/ws",
@@ -101,6 +104,7 @@ test_that("load_workspace_sim passes correct arguments to get_sim", {
 
   load_workspace_sim(
     data_dir = tempdir(),
+    stics_version = "1.0.0",
     usms_species = make_usms_species(c("usm1", "usm2")),
     rotations = NULL,
     workspace = "/ws",
@@ -127,6 +131,7 @@ test_that("load_workspace_sim calls save_sim with sim result", {
   usms_species <- make_usms_species()
   load_workspace_sim(
     data_dir = tempdir(),
+    stics_version = "1.0.0",
     usms_species = usms_species,
     rotations = NULL,
     workspace = "/ws",
@@ -138,7 +143,8 @@ test_that("load_workspace_sim calls save_sim with sim result", {
 
   args <- mock_args(mock_save_sim)[[1]]
   expect_identical(args[[2]], fake_sim)
-  expect_identical(args[[3]], usms_species)
+  expect_identical(args[[3]], "1.0.0")
+  expect_identical(args[[4]], usms_species)
 })
 
 # ===========================================================================
@@ -148,19 +154,20 @@ test_that("load_workspace_sim calls save_sim with sim result", {
 test_that(
   "load_workspace_obs calls SticsRFiles::get_obs with correct arguments",
   {
-    mock_get_obs  <- mock(list())
+    mock_get_obs <- mock(list())
     mock_save_obs <- mock(NULL)
 
     stub(load_workspace_obs, "SticsRFiles::get_obs", mock_get_obs)
-    stub(load_workspace_obs, "save_obs",             mock_save_obs)
-    stub(load_workspace_obs, "is_debug",             function() FALSE)
+    stub(load_workspace_obs, "save_obs", mock_save_obs)
+    stub(load_workspace_obs, "is_debug", function() FALSE)
 
     load_workspace_obs(
-      data_dir     = tempdir(),
+      data_dir = tempdir(),
+      stics_version = "1.0.0",
       usms_species = make_usms_species(c("usm1", "usm2")),
-      workspace    = "/ws",
-      parallel     = FALSE,
-      cores        = NA
+      workspace = "/ws",
+      parallel = FALSE,
+      cores = NA
     )
 
     expect_called(mock_get_obs, 1)
@@ -174,25 +181,27 @@ test_that(
 test_that(
   "load_workspace_obs calls save_obs with obs result and usms_species",
   {
-    fake_obs      <- list(usm1 = data.frame(y = 1))
+    fake_obs <- list(usm1 = data.frame(y = 1))
     mock_save_obs <- mock(NULL)
 
     stub(load_workspace_obs, "SticsRFiles::get_obs", mock(fake_obs))
-    stub(load_workspace_obs, "save_obs",             mock_save_obs)
-    stub(load_workspace_obs, "is_debug",             function() FALSE)
+    stub(load_workspace_obs, "save_obs", mock_save_obs)
+    stub(load_workspace_obs, "is_debug", function() FALSE)
 
     usms_species <- make_usms_species()
     load_workspace_obs(
-      data_dir     = tempdir(),
+      data_dir = tempdir(),
+      stics_version = "1.0.0",
       usms_species = usms_species,
-      workspace    = "/ws",
-      parallel     = FALSE,
-      cores        = NA
+      workspace = "/ws",
+      parallel = FALSE,
+      cores = NA
     )
 
     args <- mock_args(mock_save_obs)[[1]]
     expect_identical(args[[2]], fake_obs)
-    expect_identical(args[[3]], usms_species)
+    expect_identical(args[[3]], "1.0.0")
+    expect_identical(args[[4]], usms_species)
   }
 )
 
@@ -201,8 +210,8 @@ test_that("load_workspace_obs uses unique usms from usms_species", {
   mock_save_obs <- mock(NULL)
 
   stub(load_workspace_obs, "SticsRFiles::get_obs", mock_get_obs)
-  stub(load_workspace_obs, "save_obs",             mock_save_obs)
-  stub(load_workspace_obs, "is_debug",             function() FALSE)
+  stub(load_workspace_obs, "save_obs", mock_save_obs)
+  stub(load_workspace_obs, "is_debug", function() FALSE)
 
   usms_species <- data.frame(
     usm = c("usm1", "usm1", "usm2"),
@@ -210,11 +219,12 @@ test_that("load_workspace_obs uses unique usms from usms_species", {
     stringsAsFactors = FALSE
   )
   load_workspace_obs(
-    data_dir     = tempdir(),
+    data_dir = tempdir(),
+    stics_version = "1.0.0",
     usms_species = usms_species,
-    workspace    = "/ws",
-    parallel     = FALSE,
-    cores        = NA
+    workspace = "/ws",
+    parallel = FALSE,
+    cores = NA
   )
 
   args <- mock_args(mock_get_obs)[[1]]
