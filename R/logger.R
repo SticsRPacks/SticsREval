@@ -23,3 +23,10 @@ init_logger <- function(verbose = 1) {
 
   logger::log_info("Logger initialized (level = {log_level})")
 }
+
+default_logger <- list(
+  info = function(...) logger::log_info(...),
+  debug = function(...) logger::log_debug(...),
+  warn = function(...) logger::log_warn(...),
+  error = function(...) logger::log_error(...)
+)

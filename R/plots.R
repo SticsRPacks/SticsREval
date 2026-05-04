@@ -28,58 +28,6 @@ gen_scatter_plot <- function(output_dir, sim, obs, ref_sim, vars) {
   invisible(NULL)
 }
 
-#' @importFrom rlang .data
-gen_comparison_plot <- function(
-  output_dir,
-  comparison,
-  percentage
-) {
-  p <- comparison |>
-    dplyr::mutate(
-      status = dplyr::case_when(
-        is_critical(.data$ratio, percentage) ~ "Critical",
-        is_warning(.data$ratio, percentage) ~ "Warning",
-        is_improved(.data$ratio) ~ "Improved",
-        TRUE ~ "Other"
-      )
-    ) |>
-    ggplot2::ggplot(
-      ggplot2::aes(
-        x = .data$rmse_ref,
-        y = .data$rmse_new,
-        color = .data$status,
-        text  = .data$variable
-      ),
-      ggplot2::labs(
-        x = "Ref RMSE",
-        y = "New RMSE",
-        color = "Status"
-      )
-    ) +
-    ggplot2::geom_point() +
-    ggplot2::scale_color_manual(values = c(
-      Critical = "red",
-      Warning  = "orange",
-      Improved = "green",
-      Other    = "grey50"
-    )) +
-    ggplot2::geom_abline(intercept = 0, slope = 1) +
-    ggplot2::geom_abline(
-      intercept = 0,
-      slope = 1 + percentage / 100,
-      linetype = "dashed"
-    ) +
-    ggrepel::geom_text_repel(
-      ggplot2::aes(label = .data$variable),
-      na.rm = TRUE,
-      show.legend = FALSE,
-      max.overlaps = 100
-    ) +
-    ggplot2::theme(legend.position = "none") +
-    ggplot2::ggtitle("rRMSE New Version vs Ref Version")
-  CroPlotR::save_plot_png(p, out_dir = output_dir, suffix = "scatter_")
-}
-
 #' Generate comparison and scatter plots for each species
 #'
 #' This function generates diagnostic plots for each species found in the
@@ -124,64 +72,77 @@ gen_comparison_plot <- function(
 #' }
 #'
 #' @export
-gen_plots <- function(config) {
+gen_plots <- function(
+  config,
+  workspace = EvalWorkspace$new(config$eval_workspace),
+  backend = ParallelBackend$new(config$parallel, config$cores),
+  scatter_fn = gen_scatter_plot,
+  comparison_fn = function(x, dir) x$plot_comparison(dir),
+  logger_info = logger::log_info
+) {
   start_time <- Sys.time()
-  validate_export_config(config)
-  validate_plots_config(config)
-  evaluated_version <- get_stics_version(config$eval_workspace)
-  species <- get_species(config$eval_workspace, evaluated_version)
-  parallelizable_loop(
+
+  config$validate_export()$validate_plots()
+
+  species <- workspace$get_species()
+
+  backend$run(
     length(species),
-    config$parallel,
-    config$cores,
     function(i) {
+
       spec <- species[i]
+
       o_dir <- prepare_species_output_dir(config$output_dir, spec)
-      spec_comparison <- get_species_comparison(
-        config$eval_workspace, evaluated_version, spec, TRUE
+
+      spec_comparison <- workspace$get_species_comparison(
+        spec,
+        config$percentage
       )
 
       if (is.null(spec_comparison)) {
-        logger::log_info("Skipping plot generation for species {spec}")
-        return()
+        logger_info(sprintf("Skipping plot generation for species %s", spec))
+        return(NULL)
       }
 
-      logger::log_info("Generating variable comparison plot for species {spec}")
-      gen_comparison_plot(o_dir, spec_comparison, config$percentage)
+      logger_info(sprintf(
+        "Generating variable comparison plot for species %s", spec
+      ))
+
+      comparison_fn(spec_comparison, o_dir)
 
       deteriorated <- c(
-        get_crit_vars(spec_comparison, config$percentage),
-        get_warn_vars(spec_comparison, config$percentage)
+        spec_comparison$critical_vars,
+        spec_comparison$warning_vars
       )
 
-      rm(spec_comparison)
+      if (length(deteriorated) == 0) return(NULL)
 
-      if (length(deteriorated) > 0) {
-        ref_sim <- get_sim(
-          config$eval_workspace,
-          config$reference_version,
-          spec
-        )
+      var2exclude <- c("version", "species")
 
-        if (!is.null(ref_sim)) {
-          logger::log_info("Generating scatter plots for species {spec}")
-          sim <- get_sim(config$eval_workspace, evaluated_version, spec)
-          obs <- get_obs(config$eval_workspace, evaluated_version, spec)
+      ref_sim <- workspace$with_version(config$reference_version)$get_sim(spec, var2exclude = var2exclude)
 
-          gen_scatter_plot(
-            o_dir,
-            CroPlotR::split_df2sim(sim),
-            CroPlotR::split_df2sim(obs),
-            CroPlotR::split_df2sim(ref_sim),
-            deteriorated
-          )
-          rm(sim, obs, ref_sim)
-          invisible(NULL)
-        }
-      }
+      if (is.null(ref_sim)) return(NULL)
+
+      logger_info(sprintf("Generating scatter plots for species %s", spec))
+
+      sim <- workspace$get_sim(spec, var2exclude = var2exclude)
+      obs <- workspace$get_obs(spec, var2exclude = var2exclude)
+
+      scatter_fn(
+        o_dir,
+        CroPlotR::split_df2sim(sim),
+        CroPlotR::split_df2sim(obs),
+        CroPlotR::split_df2sim(ref_sim),
+        deteriorated
+      )
+
+      NULL
     }
   )
-  logger::log_info(paste0(
+
+  logger_info(paste0(
     "Plots generation time: ", format_duration(start_time)
   ))
+
+  invisible(NULL)
 }

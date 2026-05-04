@@ -1,1045 +1,261 @@
-# ===========================================================================
-# Helpers
-# ===========================================================================
+library(testthat)
+library(arrow)
+library(dplyr)
 
-make_parquet <- function(dir, version = "1.0.0", df = data.frame(x = 1:3)) {
-  df$version <- version
-  arrow::write_dataset(df, dir, partitioning = "version")
-  dir
+# ---- Helpers ----
+
+make_ws <- function(dir, version = NULL) {
+  EvalWorkspace$new(dir, version = version)
 }
 
-make_species_parquet <- function(
-  species, dirtype, version = "1.0.0", df = data.frame(x = 1:3)
-) {
-  df$species <- species
-  df$version <- version
-  base <- file.path(tempdir(), basename(tempfile()))
+write_metadata <- function(dir, rows) {
+  arrow::write_parquet(
+    data.frame(rows),
+    sink = metadata_ds_path(dir)
+  )
+}
+
+write_parquet_ds <- function(data, path, partitioning = NULL) {
   arrow::write_dataset(
-    df, file.path(base, dirtype), partitioning = c("version", "species")
+    data,
+    path = path,
+    format = "parquet",
+    partitioning = partitioning
   )
-  base
 }
 
-# ===========================================================================
-# Tests: path helpers
-# ===========================================================================
+# ---- Path helpers ----
 
-test_that("sim_ds_path returns data_dir/sim", { # nolint: nonportable_path_linter
-  expect_identical(sim_ds_path("base"), file.path("base", "sim"))
+test_that("path helpers return correct subpaths", {
+  expect_equal(sim_ds_path("/ws"),                 "/ws/sim")
+  expect_equal(obs_ds_path("/ws"),                 "/ws/obs")
+  expect_equal(stats_ds_path("/ws"),               "/ws/Criteres_stats")
+  expect_equal(rmse_per_usm_ds_path("/ws"),        "/ws/RMSE_per_USM")
+  expect_equal(deteriorated_ds_path("/ws"),        "/ws/Deteriorated_RMSE_per_usm")
+  expect_equal(comparison_ds_path("/ws"),          "/ws/comparison")
+  expect_equal(metadata_ds_path("/ws"),            "/ws/metadata.parquet")
 })
 
-test_that("obs_ds_path returns data_dir/obs", { # nolint: nonportable_path_linter
-  expect_identical(obs_ds_path("base"), file.path("base", "obs"))
+# ---- initialize / get_stics_version ----
+
+test_that("initialize uses provided version without reading metadata", {
+  dir <- withr::local_tempdir()
+  ws <- make_ws(dir, version = "v2")
+  expect_equal(ws$get_version(), "v2")
 })
 
-test_that("stats_ds_path returns correct path", {
-  expect_identical(
-    stats_ds_path("base"),
-    file.path("base", "Criteres_stats")
-  )
-})
-
-test_that("rmse_per_usm_ds_path returns correct path", {
-  expect_identical(
-    rmse_per_usm_ds_path("base"),
-    file.path("base", "RMSE_per_USM")
-  )
-})
-
-test_that("deteriorated_ds_path returns correct path", {
-  expect_identical(
-    deteriorated_ds_path("base"),
-    file.path("base", "Deteriorated_RMSE_per_usm")
-  )
-})
-
-test_that("comparison_ds_path returns correct path", {
-  expect_identical(
-    comparison_ds_path("base"),
-    file.path("base", "comparison")
-  )
-})
-
-test_that("metadata_ds_path returns correct path", {
-  expect_identical(
-    metadata_ds_path("base"),
-    file.path("base", "metadata.parquet")
-  )
-})
-
-# ===========================================================================
-# Tests: open_parquet_or_null
-# ===========================================================================
-
-test_that("open_parquet_or_null returns NULL when file missing", {
-  mock_warn <- mock(NULL)
-  stub(open_parquet_or_null, "logger::log_warn", mock_warn)
-
-  result <- open_parquet_or_null(
-    "/nonexistent.parquet",
-    collect = FALSE,
-    warn_msg = "missing"
-  )
-
-  expect_null(result)
-  expect_called(mock_warn, 1)
-})
-
-test_that("open_parquet_or_null logs the warn_msg when file missing", {
-  mock_warn <- mock(NULL)
-  stub(open_parquet_or_null, "logger::log_warn", mock_warn)
-
-  open_parquet_or_null(
-    "/nonexistent.parquet",
-    collect = FALSE,
-    warn_msg = "custom warning message"
-  )
-
-  expect_identical(mock_args(mock_warn)[[1]][[1]], "custom warning message")
-})
-
-test_that("open_parquet_or_null returns lazy dataset when collect = FALSE", {
-  base <- make_species_parquet("wheat", "test.parquet")
-  path <- file.path(base, "wheat", "test.parquet")
-
-  result <- open_parquet_or_null(path, collect = FALSE, warn_msg = "")
-  expect_false(is.data.frame(result))
-})
-
-test_that("open_parquet_or_null returns data frame when collect = TRUE", {
-  base <- make_species_parquet("wheat", "test.parquet")
-  path <- file.path(base, "test.parquet")
-
-  result <- open_parquet_or_null(path, collect = TRUE, warn_msg = "")
-  expect_s3_class(result, "data.frame")
-})
-
-test_that("init_eval_workspace creates workspace directory", {
-  base <- file.path(tempdir(), basename(tempfile()))
-  stub(init_eval_workspace, "extract_species_from_usms", mock(
-    data.frame(usm = "usm1", species = "wheat", stringsAsFactors = FALSE)
+test_that("initialize reads last_evaluated version from metadata when version is NULL", {
+  dir <- withr::local_tempdir()
+  write_metadata(dir, list(
+    stics_version = c("v1", "v2"),
+    last_evaluated = c(FALSE, TRUE)
   ))
-  stub(init_eval_workspace, "get_rotation_list", mock(list()))
-  stub(init_eval_workspace, "load_workspace_sim", mock(NULL))
-  stub(init_eval_workspace, "load_workspace_obs", mock(NULL))
-  stub(init_eval_workspace, "load_stics_version", mock(NULL))
-  stub(init_eval_workspace, "remove_init_obs", mock(NULL))
-  stub(init_eval_workspace, "list.dirs", mock("usm1"))
 
-  init_eval_workspace(
-    data_workspace = "/data",
-    eval_workspace = base,
-    metadata_file = "/meta.csv",
-    stics_exe = "/stics",
-    must_run_simulations = FALSE,
-    parallel = FALSE,
-    cores = NA
-  )
-
-  expect_true(dir.exists(base))
+  ws <- make_ws(dir)
+  expect_equal(ws$get_version(), "v2")
 })
 
-test_that("init_eval_workspace throws error when dir cannot be created", {
-  stub(init_eval_workspace, "list.dirs", mock(character(0)))
-
-  expect_error(
-    suppressWarnings(
-      init_eval_workspace(
-        data_workspace = "/data",
-        eval_workspace = "/proc/invalid_path",  # nolint: nonportable_path_linter
-        metadata_file = "/meta.csv",
-        stics_exe = "/stics",
-        must_run_simulations = FALSE,
-        parallel = FALSE,
-        cores = NA
-      )
-    ),
-    regexp = "Can't create evaluation workspace"
-  )
+test_that("initialize sets version to NULL when no metadata exists", {
+  dir <- withr::local_tempdir()
+  ws <- make_ws(dir)
+  expect_null(ws$get_version())
 })
 
-test_that("init_eval_workspace calls load_workspace_sim", {
-  base <- file.path(tempdir(), basename(tempfile()))
-  mock_load_sim <- mock(NULL)
+# ---- with_version ----
 
-  stub(init_eval_workspace, "extract_species_from_usms", mock(
-    data.frame(usm = "usm1", species = "wheat", stringsAsFactors = FALSE)
+test_that("with_version returns a new EvalWorkspace with the given version", {
+  dir <- withr::local_tempdir()
+  ws <- make_ws(dir, version = "v1")
+  ws2 <- ws$with_version("v2")
+
+  expect_s3_class(ws2, "EvalWorkspace")
+  expect_equal(ws2$get_version(), "v2")
+  # original is unchanged
+  expect_equal(ws$get_version(), "v1")
+})
+
+# ---- add_evaluated_version ----
+
+test_that("add_evaluated_version creates metadata when none exists", {
+  dir <- withr::local_tempdir()
+  ws <- make_ws(dir, version = "v1")
+  ws$add_evaluated_version("v1")
+
+  meta <- arrow::read_parquet(metadata_ds_path(dir))
+  expect_equal(meta$stics_version, "v1")
+  expect_true(meta$last_evaluated)
+})
+
+test_that("add_evaluated_version marks only new version as last_evaluated", {
+  dir <- withr::local_tempdir()
+  write_metadata(dir, list(
+    stics_version = c("v1"),
+    last_evaluated = c(TRUE)
   ))
-  stub(init_eval_workspace, "get_rotation_list", mock(list()))
-  stub(init_eval_workspace, "load_workspace_sim", mock_load_sim)
-  stub(init_eval_workspace, "load_workspace_obs", mock(NULL))
-  stub(init_eval_workspace, "load_stics_version", mock(NULL))
-  stub(init_eval_workspace, "remove_init_obs", mock(NULL))
-  stub(init_eval_workspace, "list.dirs", mock("usm1"))
 
-  init_eval_workspace(
-    data_workspace = "/data",
-    eval_workspace = base,
-    metadata_file = "/meta.csv",
-    stics_exe = "/stics",
-    must_run_simulations = TRUE,
-    parallel = FALSE,
-    cores = NA
-  )
+  ws <- make_ws(dir, version = "v2")
+  ws$add_evaluated_version("v2")
 
-  expect_called(mock_load_sim, 1)
+  meta <- arrow::read_parquet(metadata_ds_path(dir))
+  expect_false(meta$last_evaluated[meta$stics_version == "v1"])
+  expect_true(meta$last_evaluated[meta$stics_version == "v2"])
 })
 
-test_that("init_eval_workspace calls load_workspace_obs", {
-  base <- file.path(tempdir(), basename(tempfile()))
-  mock_load_obs <- mock(NULL)
-
-  stub(init_eval_workspace, "extract_species_from_usms", mock(
-    data.frame(usm = "usm1", species = "wheat", stringsAsFactors = FALSE)
+test_that("add_evaluated_version updates existing version instead of duplicating", {
+  dir <- withr::local_tempdir()
+  write_metadata(dir, list(
+    stics_version = c("v1", "v2"),
+    last_evaluated = c(TRUE, FALSE)
   ))
-  stub(init_eval_workspace, "get_rotation_list", mock(list()))
-  stub(init_eval_workspace, "load_workspace_sim", mock(NULL))
-  stub(init_eval_workspace, "load_workspace_obs", mock_load_obs)
-  stub(init_eval_workspace, "load_stics_version", mock(NULL))
-  stub(init_eval_workspace, "remove_init_obs", mock(NULL))
-  stub(init_eval_workspace, "list.dirs", mock("usm1"))
 
-  init_eval_workspace(
-    data_workspace = "/data",
-    eval_workspace = base,
-    metadata_file = "/meta.csv",
-    stics_exe = "/stics",
-    must_run_simulations = FALSE,
-    parallel = FALSE,
-    cores = NA
-  )
+  ws <- make_ws(dir, version = "v1")
+  ws$add_evaluated_version("v1")
 
-  expect_called(mock_load_obs, 1)
+  meta <- arrow::read_parquet(metadata_ds_path(dir))
+  expect_equal(nrow(meta), 2)
+  expect_true(meta$last_evaluated[meta$stics_version == "v1"])
+  expect_false(meta$last_evaluated[meta$stics_version == "v2"])
 })
 
-test_that("init_eval_workspace calls load_stics_version", {
-  base <- file.path(tempdir(), basename(tempfile()))
-  mock_load_stics_version <- mock(NULL)
+# ---- get_all_versions ----
 
-  stub(init_eval_workspace, "extract_species_from_usms", mock(
-    data.frame(usm = "usm1", species = "wheat", stringsAsFactors = FALSE)
+test_that("get_all_versions returns all versions from metadata", {
+  dir <- withr::local_tempdir()
+  write_metadata(dir, list(
+    stics_version = c("v1", "v2"),
+    last_evaluated = c(FALSE, TRUE)
   ))
-  stub(init_eval_workspace, "get_rotation_list", mock(list()))
-  stub(init_eval_workspace, "load_workspace_sim", mock(NULL))
-  stub(init_eval_workspace, "load_workspace_obs", mock(NULL))
-  stub(init_eval_workspace, "load_stics_version", mock_load_stics_version)
-  stub(init_eval_workspace, "remove_init_obs", mock(NULL))
-  stub(init_eval_workspace, "list.dirs", mock("usm1"))
 
-  init_eval_workspace(
-    data_workspace = "/data",
-    eval_workspace = base,
-    metadata_file = "/meta.csv",
-    stics_exe = "/stics",
-    must_run_simulations = TRUE,
-    parallel = FALSE,
-    cores = NA
-  )
-
-  expect_called(mock_load_stics_version, 1)
+  ws <- make_ws(dir, version = "v2")
+  expect_equal(ws$get_all_versions(), c("v1", "v2"))
 })
 
-test_that("init_eval_workspace calls remove_init_obs", {
-  base <- file.path(tempdir(), basename(tempfile()))
-  mock_remove <- mock(NULL)
-
-  stub(init_eval_workspace, "extract_species_from_usms", mock(
-    data.frame(usm = "usm1", species = "wheat", stringsAsFactors = FALSE)
-  ))
-  stub(init_eval_workspace, "get_rotation_list", mock(list()))
-  stub(init_eval_workspace, "load_workspace_sim", mock(NULL))
-  stub(init_eval_workspace, "load_workspace_obs", mock(NULL))
-  stub(init_eval_workspace, "load_stics_version", mock(NULL))
-  stub(init_eval_workspace, "remove_init_obs", mock_remove)
-  stub(init_eval_workspace, "list.dirs", mock("usm1"))
-
-  init_eval_workspace(
-    data_workspace = "/data",
-    eval_workspace = base,
-    metadata_file = "/meta.csv",
-    stics_exe = "/stics",
-    must_run_simulations = FALSE,
-    parallel = FALSE,
-    cores = NA
-  )
-
-  expect_called(mock_remove, 1)
-  expect_identical(mock_args(mock_remove)[[1]][[1]], base)
+test_that("get_all_versions returns NULL when no metadata exists", {
+  dir <- withr::local_tempdir()
+  ws <- make_ws(dir, version = "v1")
+  expect_null(ws$get_all_versions())
 })
 
-# ===========================================================================
-# Tests: get_sim_ds / get_obs_ds # nolint
-# ===========================================================================
+# ---- get_species / get_species_usm ----
 
-test_that("get_sim_ds throws error when sim directory does not exist", {
-  base <- file.path(tempdir(), basename(tempfile()))
-  dir.create(base)
-
-  expect_error(get_sim_ds(base, "1.0.0"), regexp = "does not exist")
-})
-
-test_that("get_obs_ds throws error when obs directory does not exist", {
-  base <- file.path(tempdir(), basename(tempfile()))
-  dir.create(base)
-
-  expect_error(get_obs_ds(base, "1.0.0"), regexp = "does not exist")
-})
-
-test_that("get_sim_ds returns an arrow Dataset when path exists", {
-  base <- file.path(tempdir(), basename(tempfile()))
-  make_parquet(file.path(base, "sim"))
-
-  result <- get_sim_ds(base, "1.0.0")
-  expect_s3_class(result, "arrow_dplyr_query")
-})
-
-test_that("get_obs_ds returns an arrow Dataset when path exists", {
-  base <- file.path(tempdir(), basename(tempfile()))
-  make_parquet(file.path(base, "obs"))
-
-  result <- get_obs_ds(base, "1.0.0")
-  expect_s3_class(result, "arrow_dplyr_query")
-})
-
-# ===========================================================================
-# Tests: save_sim / save_obs # nolint
-# ===========================================================================
-
-test_that("save_sim writes a partitioned parquet dataset", {
-  base <- file.path(tempdir(), basename(tempfile()))
-  dir.create(base)
-  sim <- data.frame(situation = "usm1", LAI = 1.2, stringsAsFactors = FALSE)
-  usms_species <- data.frame(
-    usm = "usm1",
-    species = "wheat",
-    stringsAsFactors = FALSE
-  )
-
-  mock_bind <- mock(sim)
-  mock_join <- mock(sim)
-  mock_write <- mock(NULL)
-
-  stub(save_sim, "CroPlotR::bind_rows", mock_bind)
-  stub(save_sim, "dplyr::inner_join", mock_join)
-  stub(save_sim, "arrow::write_dataset", mock_write)
-
-  save_sim(base, list(usm1 = sim), "1.0.0", usms_species)
-
-  expect_called(mock_write, 1)
-  args <- mock_args(mock_write)[[1]]
-  expect_identical(args$path, sim_ds_path(base))
-  expect_identical(args$partitioning, c("version", "species"))
-})
-
-test_that("save_obs writes a partitioned parquet dataset", {
-  base <- file.path(tempdir(), basename(tempfile()))
-  dir.create(base)
-  obs <- data.frame(situation = "usm1", LAI = 1.0, stringsAsFactors = FALSE)
-  usms_species <- data.frame(
-    usm = "usm1",
-    species = "wheat",
-    stringsAsFactors = FALSE
-  )
-
-  mock_bind <- mock(obs)
-  mock_join <- mock(obs)
-  mock_write <- mock(NULL)
-
-  stub(save_obs, "CroPlotR::bind_rows", mock_bind)
-  stub(save_obs, "dplyr::inner_join", mock_join)
-  stub(save_obs, "arrow::write_dataset", mock_write)
-
-  save_obs(base, list(usm1 = obs), "1.0.0", usms_species)
-
-  expect_called(mock_write, 1)
-  args <- mock_args(mock_write)[[1]]
-  expect_identical(args$path, obs_ds_path(base))
-  expect_identical(args$partitioning, c("version", "species"))
-})
-
-# ===========================================================================
-# Tests: get_species / get_species_usm / get_by_species # nolint
-# ===========================================================================
-
-test_that("get_species returns sorted species names", {
-  base <- file.path(tempdir(), basename(tempfile()))
-  df <- data.frame(
+test_that("get_species returns sorted distinct species from obs dataset", {
+  dir <- withr::local_tempdir()
+  obs <- data.frame(
     situation = c("usm1", "usm2", "usm3"),
-    species = c("wheat", "maize", "soy"),
-    stringsAsFactors = FALSE
+    species   = c("wheat", "barley", "wheat"),
+    version   = "v1",
+    Date      = as.Date("2020-01-01")
   )
-  version <- "1.0.0"
-  make_parquet(file.path(base, "obs"), version = version, df = df)
+  write_parquet_ds(obs, obs_ds_path(dir), partitioning = c("version", "species"))
 
-  result <- get_species(base, version)
-  expect_identical(result, sort(c("wheat", "maize", "soy")))
+  ws <- make_ws(dir, version = "v1")
+  expect_equal(ws$get_species(), c("barley", "wheat"))
 })
 
-test_that("get_species_usm returns USMs for given species", {
-  base <- file.path(tempdir(), basename(tempfile()))
-  version <- "1.0.0"
-  df <- data.frame(
+test_that("get_species_usm returns USMs for a species", {
+  dir <- withr::local_tempdir()
+  obs <- data.frame(
     situation = c("usm1", "usm2", "usm3"),
-    species = c("wheat", "wheat", "maize"),
-    stringsAsFactors = FALSE
+    species   = c("wheat", "wheat", "barley"),
+    version   = "v1",
+    Date      = as.Date("2020-01-01")
   )
-  make_parquet(file.path(base, "obs"), version = version, df = df)
+  write_parquet_ds(obs, obs_ds_path(dir), partitioning = c("version", "species"))
 
-  result <- get_species_usm(base, version, "wheat")
-  expect_setequal(result, c("usm1", "usm2"))
+  ws <- make_ws(dir, version = "v1")
+  expect_setequal(ws$get_species_usm("wheat"), c("usm1", "usm2"))
 })
 
-test_that("get_by_species returns lazy dataset when collect = FALSE", {
-  base <- file.path(tempdir(), basename(tempfile()))
-  version <- "1.0.0"
-  df <- data.frame(
-    situation = "usm1",
-    species = "wheat",
-    LAI = 1.2,
-    stringsAsFactors = FALSE
-  )
-  make_parquet(file.path(base, "sim"), version = version, df = df)
-
-  result <- get_by_species(base, version, "wheat", "sim", collect = FALSE)
-  expect_false(is.data.frame(result))
-})
-
-test_that("get_by_species returns data frame when collect = TRUE", {
-  base <- file.path(tempdir(), basename(tempfile()))
-  version <- "1.0.0"
-  df <- data.frame(
-    situation = c("usm1", "usm2"),
-    species = c("wheat", "wheat"),
-    LAI = c(1.2, 1.5),
-    stringsAsFactors = FALSE
-  )
-  make_parquet(file.path(base, "sim"), version = version, df = df)
-
-  result <- get_by_species(base, version, "wheat", "sim", collect = TRUE)
-  expect_s3_class(result, "data.frame")
-  expect_identical(nrow(result), 2L)
-})
-
-test_that("get_by_species filters by species", {
-  base <- file.path(tempdir(), basename(tempfile()))
-  version <- "1.0.0"
-  df <- data.frame(
-    situation = c("usm1", "usm2"),
-    species = c("wheat", "maize"),
-    LAI = c(1.2, 0.8),
-    stringsAsFactors = FALSE
-  )
-  make_parquet(file.path(base, "obs"), version = version, df = df)
-
-  result <- get_by_species(base, version, "wheat", "obs", collect = TRUE)
-  expect_identical(nrow(result), 1L)
-  expect_identical(result$situation, "usm1")
-})
-
-test_that("get_by_species filters by usms when provided", {
-  base <- file.path(tempdir(), basename(tempfile()))
-  version <- "1.0.0"
-  df <- data.frame(
+test_that("get_species_usm filters by usms when provided", {
+  dir <- withr::local_tempdir()
+  obs <- data.frame(
     situation = c("usm1", "usm2", "usm3"),
-    species = c("wheat", "wheat", "wheat"),
-    LAI = c(1.2, 1.5, 1.8),
-    stringsAsFactors = FALSE
+    species   = c("wheat", "wheat", "wheat"),
+    version   = "v1",
+    Date      = as.Date("2020-01-01")
   )
-  make_parquet(file.path(base, "sim"), version = version, df = df)
-  result <- get_by_species(
-    base, version, NULL, "sim", collect = TRUE, usms = c("usm1", "usm3")
-  )
-  expect_identical(nrow(result), 2L)
-  expect_true(all(result$situation %in% c("usm1", "usm3")))
-  expect_false("usm2" %in% result$situation)
+  write_parquet_ds(obs, obs_ds_path(dir), partitioning = c("version", "species"))
+
+  ws <- make_ws(dir, version = "v1")
+  expect_equal(ws$get_species_usm("wheat", usms = c("usm1")), "usm1")
 })
 
-test_that("get_by_species returns empty data frame when usms matches nothing", {
-  base <- file.path(tempdir(), basename(tempfile()))
-  version <- "1.0.0"
-  df <- data.frame(
+# ---- save_stats / get_stats ----
+
+test_that("save_stats and get_stats round-trip correctly", {
+  dir <- withr::local_tempdir()
+  ws <- make_ws(dir, version = "v1")
+
+  stats <- data.frame(variable = "LAI", RMSE = 0.5)
+  ws$save_stats("wheat", stats)
+
+  result <- ws$get_stats("wheat", collect = TRUE)
+  expect_equal(result$variable, "LAI")
+  expect_equal(result$version, "v1")
+  expect_equal(result$species, "wheat")
+})
+
+test_that("get_stats returns NULL when no stats file exists", {
+  dir <- withr::local_tempdir()
+  ws <- make_ws(dir, version = "v1")
+  expect_null(ws$get_stats("wheat"))
+})
+
+test_that("get_stats filters by version", {
+  dir <- withr::local_tempdir()
+  ws_v1 <- make_ws(dir, version = "v1")
+  ws_v2 <- make_ws(dir, version = "v2")
+
+  ws_v1$save_stats("wheat", data.frame(variable = "LAI", RMSE = 0.5))
+  ws_v2$save_stats("wheat", data.frame(variable = "LAI", RMSE = 1.0))
+
+  result_v1 <- ws_v1$get_stats("wheat", collect = TRUE)
+  expect_equal(result_v1$RMSE, 0.5)
+})
+
+# ---- save_rmse_per_usm / get_rmse_per_usm ----
+
+test_that("save_rmse_per_usm and get_rmse_per_usm round-trip correctly", {
+  dir <- withr::local_tempdir()
+  ws <- make_ws(dir, version = "v1")
+
+  rmse <- data.frame(situation = "usm1", variable = "LAI", rRMSE = 0.1)
+  ws$save_rmse_per_usm("wheat", rmse)
+
+  result <- ws$get_rmse_per_usm("wheat", collect = TRUE)
+  expect_equal(result$situation, "usm1")
+  expect_equal(result$version, "v1")
+})
+
+test_that("get_rmse_per_usm returns NULL when no file exists", {
+  dir <- withr::local_tempdir()
+  ws <- make_ws(dir, version = "v1")
+  expect_null(ws$get_rmse_per_usm("wheat"))
+})
+
+test_that("get_rmse_per_usm filters by usms", {
+  dir <- withr::local_tempdir()
+  ws <- make_ws(dir, version = "v1")
+
+  rmse <- data.frame(
     situation = c("usm1", "usm2"),
-    species = c("wheat", "wheat"),
-    LAI = c(1.2, 1.5),
-    stringsAsFactors = FALSE
+    variable  = "LAI",
+    rRMSE     = c(0.1, 0.9)
   )
-  make_parquet(file.path(base, "sim"), version = version, df = df)
-  result <- get_by_species(
-    base, version, NULL, "sim", collect = TRUE, usms = "usm_inexistant"
-  )
-  expect_identical(nrow(result), 0L)
+  ws$save_rmse_per_usm("wheat", rmse)
+
+  result <- ws$get_rmse_per_usm("wheat", collect = TRUE, usms = "usm1")
+  expect_equal(result$situation, "usm1")
 })
 
-test_that("get_by_species usms filter does not leak across species", {
-  base <- file.path(tempdir(), basename(tempfile()))
-  version <- "1.0.0"
-  df <- data.frame(
-    situation = c("usm1", "usm1"),
-    species = c("wheat", "maize"),
-    LAI = c(1.2, 0.8),
-    stringsAsFactors = FALSE
-  )
-  make_parquet(file.path(base, "sim"), version = version, df)
-  result <- get_by_species(
-    base, version, "wheat", "sim", collect = TRUE, usms = "usm1"
-  )
-  expect_identical(nrow(result), 1L)
-  expect_identical(result$species, "wheat")
-})
+test_that("get_rmse_per_usm excludes variables in var2exclude", {
+  dir <- withr::local_tempdir()
+  ws <- make_ws(dir, version = "v1")
 
-test_that("get_by_species excludes column listed in var2exclude", {
-  base <- file.path(tempdir(), basename(tempfile()))
-  version <- "1.0.0"
-  df <- data.frame(
-    situation = "usm1",
-    species = "wheat",
-    LAI = 1.2,
-    bias = 0.05,
-    stringsAsFactors = FALSE
-  )
-  make_parquet(file.path(base, "sim"), version = version, df = df)
-  result <- get_by_species(
-    base, version, NULL, "sim", collect = TRUE, var2exclude = "bias"
-  )
-  expect_false("bias" %in% names(result))
+  rmse <- data.frame(situation = "usm1", LAI = 0.1, MASEC = 0.5)
+  ws$save_rmse_per_usm("wheat", rmse)
+
+  result <- ws$get_rmse_per_usm("wheat", collect = TRUE, var2exclude = "MASEC")
+  expect_false("MASEC" %in% names(result))
   expect_true("LAI" %in% names(result))
-})
-
-test_that("get_by_species excludes multiple columns listed in var2exclude", {
-  base <- file.path(tempdir(), basename(tempfile()))
-  version <- "1.0.0"
-  df <- data.frame(
-    situation = "usm1",
-    species = "wheat",
-    LAI = 1.2,
-    bias = 0.05,
-    n = 10L,
-    stringsAsFactors = FALSE
-  )
-  make_parquet(file.path(base, "sim"), version = version, df = df)
-  result <- get_by_species(
-    base, version, NULL, "sim", collect = TRUE, var2exclude = c("bias", "n")
-  )
-  expect_false(any(c("bias", "n") %in% names(result)))
-  expect_true(all(c("situation", "LAI") %in% names(result)))
-})
-
-test_that("get_by_species applies both usms and var2exclude together", {
-  base <- file.path(tempdir(), basename(tempfile()))
-  version <- "1.0.0"
-  df <- data.frame(
-    situation = c("usm1", "usm2", "usm3"),
-    species = c("wheat", "wheat", "wheat"),
-    LAI = c(1.2, 1.5, 1.8),
-    bias = c(0.01, 0.02, 0.03),
-    stringsAsFactors = FALSE
-  )
-  make_parquet(file.path(base, "sim"), version = version, df = df)
-  result <- get_by_species(
-    base, version, "wheat", "sim", collect = TRUE,
-    usms = c("usm1", "usm2"),
-    var2exclude = "bias"
-  )
-  expect_identical(nrow(result), 2L)
-  expect_false("usm3" %in% result$situation)
-  expect_false("bias" %in% names(result))
-})
-
-test_that("get_by_species applies usms and var2exclude with obs type", {
-  base <- file.path(tempdir(), basename(tempfile()))
-  version <- "1.0.0"
-  df <- data.frame(
-    situation = c("usm1", "usm2"),
-    species = c("wheat", "wheat"),
-    LAI = c(1.2, 1.5),
-    bias = c(0.01, 0.02),
-    stringsAsFactors = FALSE
-  )
-  make_parquet(file.path(base, "obs"), version = version, df = df)
-  result <- get_by_species(
-    base, version, "wheat", "obs", collect = TRUE,
-    usms = "usm1",
-    var2exclude = "bias"
-  )
-  expect_identical(nrow(result), 1L)
-  expect_false("bias" %in% names(result))
-})
-
-# ===========================================================================
-# Tests: save_stats / get_stats # nolint
-# ===========================================================================
-
-test_that("save_stats writes parquet to correct path", {
-  base <- file.path(tempdir(), basename(tempfile()))
-  dir.create(base, recursive = TRUE)
-  df <- data.frame(var = "LAI", stat = 0.9, stringsAsFactors = FALSE)
-
-  save_stats(base, "1.0.0", "wheat", df)
-
-  expect_true(file.exists(stats_ds_path(base)))
-})
-
-test_that("get_stats delegates to open_parquet_or_null", {
-  mock_open <- mock(NULL)
-  stub(get_stats, "open_parquet_or_null", mock_open)
-
-  get_stats("/base", "1.0.0", "wheat", collect = TRUE)
-
-  expect_called(mock_open, 1)
-  args <- mock_args(mock_open)[[1]]
-  expect_identical(args$path, stats_ds_path("/base"))
-  expect_true(args$collect)
-})
-
-test_that("get_stats returns NULL when file missing", {
-  stub(get_stats, "open_parquet_or_null", mock(NULL))
-  expect_null(get_stats("/base", "1.0.0", "wheat"))
-})
-
-test_that("get_stats returns lazy dataset when collect = FALSE", {
-  base <- make_species_parquet("wheat", "Criteres_stats", "1.0.0")
-  result <- get_stats(base, "1.0.0", "wheat", collect = FALSE)
-  expect_false(is.data.frame(result))
-})
-
-test_that("get_stats returns data frame when collect = TRUE", {
-  base <- make_species_parquet("wheat", "Criteres_stats", "1.0.0")
-  result <- get_stats(base, "1.0.0", "wheat", collect = TRUE)
-  expect_s3_class(result, "data.frame")
-})
-
-# ===========================================================================
-# Tests: save_rmse_per_usm / get_rmse_per_usm # nolint
-# ===========================================================================
-
-test_that("save_rmse_per_usm writes parquet to correct path", {
-  base <- file.path(tempdir(), basename(tempfile()))
-  df <- data.frame(usm = "usm1", rmse = 0.1, stringsAsFactors = FALSE)
-
-  save_rmse_per_usm(base, "1.0.0", "wheat", df)
-
-  expect_true(file.exists(rmse_per_usm_ds_path(base)))
-})
-
-test_that("get_rmse_per_usm delegates to open_parquet_or_null", {
-  mock_open <- mock(NULL)
-  stub(get_rmse_per_usm, "open_parquet_or_null", mock_open)
-
-  get_rmse_per_usm("/base", "1.0.0", "wheat", collect = FALSE)
-
-  expect_called(mock_open, 1)
-  args <- mock_args(mock_open)[[1]]
-  expect_identical(args$path, rmse_per_usm_ds_path("/base"))
-})
-
-test_that("get_rmse_per_usm returns NULL when file missing", {
-  stub(get_rmse_per_usm, "open_parquet_or_null", mock(NULL))
-  expect_null(get_rmse_per_usm("/base", "1.0.0", "wheat"))
-})
-
-test_that("get_rmse_per_usm returns data frame when collect = TRUE", {
-  base <- make_species_parquet("wheat", "RMSE_per_USM", "1.0.0")
-  result <- get_rmse_per_usm(base, "1.0.0", "wheat", collect = TRUE)
-  expect_s3_class(result, "data.frame")
-})
-
-test_that("get_rmse_per_usm filters by usms when provided", {
-  base <- make_species_parquet(
-    "wheat", "RMSE_per_USM", "1.0.0",
-    df = data.frame(
-      situation = c("usm1", "usm2", "usm3"),
-      rmse = c(0.1, 0.2, 0.3),
-      stringsAsFactors = FALSE
-    )
-  )
-  result <- get_rmse_per_usm(
-    base, "1.0.0", "wheat", collect = TRUE, usms = c("usm1", "usm3")
-  )
-  expect_identical(nrow(result), 2L)
-  expect_true(all(result$situation %in% c("usm1", "usm3")))
-  expect_false("usm2" %in% result$situation)
-})
-
-test_that(
-  "get_rmse_per_usm returns empty data frame when usms matches nothing",
-  {
-    base <- make_species_parquet(
-      "wheat", "RMSE_per_USM", "1.0.0",
-      df = data.frame(
-        situation = c("usm1", "usm2"),
-        rmse = c(0.1, 0.2),
-        stringsAsFactors = FALSE
-      )
-    )
-    result <- get_rmse_per_usm(
-      base, "1.0.0", "wheat", collect = TRUE, usms = "usm_inexistant"
-    )
-    expect_identical(nrow(result), 0L)
-  }
-)
-
-test_that("get_rmse_per_usm excludes columns listed in var2exclude", {
-  base <- make_species_parquet(
-    "wheat", "RMSE_per_USM", "1.0.0",
-    df = data.frame(
-      situation = "usm1",
-      rmse = 0.1,
-      bias = 0.05,
-      stringsAsFactors = FALSE
-    )
-  )
-  result <- get_rmse_per_usm(
-    base, "1.0.0", "wheat", collect = TRUE, var2exclude = "bias"
-  )
-  expect_false("bias" %in% names(result))
-  expect_true("rmse" %in% names(result))
-  expect_true("situation" %in% names(result))
-})
-
-test_that("get_rmse_per_usm excludes multiple columns listed in var2exclude", {
-  base <- make_species_parquet(
-    "wheat", "RMSE_per_USM", "1.0.0",
-    df = data.frame(
-      situation = "usm1",
-      rmse = 0.1,
-      bias = 0.05,
-      n = 10L,
-      stringsAsFactors = FALSE
-    )
-  )
-  result <- get_rmse_per_usm(
-    base, "1.0.0", "wheat", collect = TRUE, var2exclude = c("bias", "n")
-  )
-  expect_false(any(c("bias", "n") %in% names(result)))
-  expect_true(all(c("situation", "rmse") %in% names(result)))
-})
-
-test_that("get_rmse_per_usm applies both usms and var2exclude together", {
-  base <- make_species_parquet(
-    "wheat", "RMSE_per_USM", "1.0.0",
-    df = data.frame(
-      situation = c("usm1", "usm2", "usm3"),
-      rmse = c(0.1, 0.2, 0.3),
-      bias = c(0.01, 0.02, 0.03),
-      stringsAsFactors = FALSE
-    )
-  )
-  result <- get_rmse_per_usm(
-    base, "1.0.0", "wheat", collect = TRUE,
-    usms = c("usm1", "usm2"),
-    var2exclude = "bias"
-  )
-  expect_identical(nrow(result), 2L)
-  expect_false("usm3" %in% result$situation)
-  expect_false("bias" %in% names(result))
-})
-
-test_that("get_rmse_per_usm ignores usms and var2exclude when data is NULL", {
-  stub(get_rmse_per_usm, "open_parquet_or_null", mock(NULL))
-  expect_null(get_rmse_per_usm(
-    "/base", "1.0.0", "wheat", usms = "usm1", var2exclude = "bias"
-  ))
-})
-
-# ===========================================================================
-# Tests: save_deteriorated_usm / get_deteriorated_usm # nolint
-# ===========================================================================
-
-test_that("save_deteriorated_usm writes parquet to correct path", {
-  base <- file.path(tempdir(), basename(tempfile()))
-  df <- data.frame(
-    usm = "usm1",
-    species = "wheat",
-    rRMSE = 0.5,
-    stringsAsFactors = FALSE
-  )
-  save_deteriorated_usm(base, "1.0.0", df)
-  expect_true(file.exists(deteriorated_ds_path(base)))
-})
-
-test_that("get_deteriorated_usm delegates to open_parquet_or_null", {
-  mock_open <- mock(NULL)
-  stub(get_deteriorated_usm, "open_parquet_or_null", mock_open)
-
-  get_deteriorated_usm("/base", "1.0.0", "wheat", collect = FALSE)
-
-  expect_called(mock_open, 1)
-  args <- mock_args(mock_open)[[1]]
-  expect_identical(args$path, deteriorated_ds_path("/base"))
-})
-
-test_that("get_deteriorated_usm returns NULL when file missing", {
-  stub(get_deteriorated_usm, "open_parquet_or_null", mock(NULL))
-  expect_null(get_deteriorated_usm("/base", "1.0.0", "wheat"))
-})
-
-test_that("get_deteriorated_usm returns data frame when collect = TRUE", {
-  base <- make_species_parquet(
-    "wheat", "Deteriorated_RMSE_per_usm", "1.0.0"
-  )
-  result <- get_deteriorated_usm(base, "1.0.0", "wheat", collect = TRUE)
-  expect_s3_class(result, "data.frame")
-})
-
-# ===========================================================================
-# Tests: save_species_comparison / get_species_comparison # nolint
-# ===========================================================================
-
-test_that("save_species_comparison writes parquet to correct path", {
-  base <- file.path(tempdir(), basename(tempfile()))
-  df <- data.frame(
-    variable = "LAI",
-    species = "wheat",
-    ratio = 1.1,
-    stringsAsFactors = FALSE
-  )
-  save_species_comparison(base, "1.0.0", df)
-  expect_true(
-    file.exists(comparison_ds_path(base))
-  )
-})
-
-test_that("get_species_comparison delegates to open_parquet_or_null", {
-  mock_open <- mock(NULL)
-  stub(get_species_comparison, "open_parquet_or_null", mock_open)
-
-  get_species_comparison("/base", "1.0.0", "wheat", collect = TRUE)
-
-  expect_called(mock_open, 1)
-  args <- mock_args(mock_open)[[1]]
-  expect_identical(args$path, comparison_ds_path("/base"))
-  expect_true(args$collect)
-})
-
-test_that("get_species_comparison returns NULL when file missing", {
-  stub(get_species_comparison, "open_parquet_or_null", mock(NULL))
-  expect_null(get_species_comparison("/base", "1.0.0", "wheat"))
-})
-
-test_that(
-  "get_species_comparison returns data frame when collect = TRUE",
-  {
-    species <- "wheat"
-    base <- make_species_parquet(species, "comparison", "1.0.0")
-    result <- get_species_comparison(base, "1.0.0", species, collect = TRUE)
-    expect_s3_class(result, "data.frame")
-  }
-)
-
-# ===========================================================================
-# Tests: remove_init_obs
-# ===========================================================================
-
-# Helper to create fake simulation data
-make_sim_data <- function() {
-  data.frame(
-    situation = c("A", "A", "B", "B"),
-    species = c("sp1", "sp1", "sp2", "sp2"),
-    version = c("1.0.0", "1.0.0", "1.0.0", "1.0.0"),
-    Date = as.Date(
-      c("2023-01-01", "2023-01-02", "2023-01-01", "2023-01-03")
-    ),
-    value = c(10, 20, 30, 40),
-    stringsAsFactors = FALSE
-  )
-}
-
-# Helper to create fake observation data
-make_obs_data <- function() {
-  data.frame(
-    situation = c("A", "A", "B", "B"),
-    species = c("sp1", "sp1", "sp2", "sp2"),
-    version = c("1.0.0", "1.0.0", "1.0.0", "1.0.0"),
-    Date = as.Date(
-      c("2023-01-01", "2023-01-02", "2023-01-01", "2023-01-03")
-    ),
-    measure1 = c(1.1, 2.2, 3.3, 4.4),
-    measure2 = c(5.5, 6.6, 7.7, 8.8),
-    stringsAsFactors = FALSE
-  )
-}
-
-test_that("values at init date are replaced with NA", {
-  stub(remove_init_obs, "get_sim_ds", function(...) make_sim_data())
-  stub(remove_init_obs, "get_obs_ds", function(...) make_obs_data())
-  stub(remove_init_obs, "obs_ds_path", function(...) tempdir())
-  stub(remove_init_obs, "arrow::write_dataset", function(data, ...) data)
-
-  result <- remove_init_obs(file.path("fake", "path"))
-
-  # Situation A: init_date = 2023-01-01
-  row_init_a <- result |>
-    dplyr::filter(situation == "A", Date == as.Date("2023-01-01"))
-  expect_true(is.na(row_init_a$measure1))
-  expect_true(is.na(row_init_a$measure2))
-
-  # Situation A: next date is preserved
-  row_next_a <- result |>
-    dplyr::filter(situation == "A", Date == as.Date("2023-01-02"))
-  expect_equal(row_next_a$measure1, 2.2)
-  expect_equal(row_next_a$measure2, 6.6)
-})
-
-test_that("values after init date are unchanged", {
-  stub(remove_init_obs, "get_sim_ds", function(...) make_sim_data())
-  stub(remove_init_obs, "get_obs_ds", function(...) make_obs_data())
-  stub(remove_init_obs, "obs_ds_path", function(...) tempdir())
-  stub(remove_init_obs, "arrow::write_dataset", function(data, ...) data)
-
-  result <- remove_init_obs(file.path("fake", "path"))
-
-  row_b <- result |>
-    dplyr::filter(situation == "B", Date == as.Date("2023-01-03"))
-  expect_equal(row_b$measure1, 4.4)
-  expect_equal(row_b$measure2, 8.8)
-})
-
-test_that("init_date is correctly computed as the minimum date per situation", {
-  sim_data <- data.frame(
-    situation = c("A", "A", "A"),
-    version = c("1.0.0", "1.0.0", "1.0.0"),
-    species = c("sp1", "sp1", "sp1"),
-    Date = as.Date(c("2023-01-03", "2023-01-01", "2023-01-02")),
-    value = c(10, 20, 30),
-    stringsAsFactors = FALSE
-  )
-  obs_data <- data.frame(
-    situation = c("A", "A", "A"),
-    version = c("1.0.0", "1.0.0", "1.0.0"),
-    species = c("sp1", "sp1", "sp1"),
-    Date = as.Date(c("2023-01-03", "2023-01-01", "2023-01-02")),
-    measure1 = c(1.0, 2.0, 3.0),
-    stringsAsFactors = FALSE
-  )
-
-  stub(remove_init_obs, "get_sim_ds", function(...) sim_data)
-  stub(remove_init_obs, "get_obs_ds", function(...) obs_data)
-  stub(remove_init_obs, "obs_ds_path", function(...) tempdir())
-  stub(remove_init_obs, "arrow::write_dataset", function(data, ...) data)
-
-  result <- remove_init_obs(file.path("fake", "path"))
-
-  # Only 2023-01-01 (min) should be NA
-  init_measure1 <- result |>
-    dplyr::filter(Date == as.Date("2023-01-01")) |>
-    dplyr::pull(measure1)
-  expect_true(is.na(init_measure1))
-  next_measure1 <- result |>
-    dplyr::filter(Date == as.Date("2023-01-02")) |>
-    dplyr::pull(measure1)
-  expect_false(is.na(next_measure1))
-  next_measure1 <- result |>
-    dplyr::filter(Date == as.Date("2023-01-03")) |>
-    dplyr::pull(measure1)
-  expect_false(is.na(next_measure1))
-})
-
-test_that("init_date column is absent from the final result", {
-  stub(remove_init_obs, "get_sim_ds", function(...) make_sim_data())
-  stub(remove_init_obs, "get_obs_ds", function(...) make_obs_data())
-  stub(remove_init_obs, "obs_ds_path", function(...) tempdir())
-  stub(remove_init_obs, "arrow::write_dataset", function(data, ...) data)
-
-  result <- remove_init_obs(file.path("fake", "path"))
-  expect_false("init_date" %in% names(result))
-})
-
-test_that("situation, species and Date columns are not modified", {
-  stub(remove_init_obs, "get_sim_ds", function(...) make_sim_data())
-  stub(remove_init_obs, "get_obs_ds", function(...) make_obs_data())
-  stub(remove_init_obs, "obs_ds_path", function(...) tempdir())
-  stub(remove_init_obs, "arrow::write_dataset", function(data, ...) data)
-
-  result <- remove_init_obs(file.path("fake", "path"))
-  obs <- make_obs_data()
-
-  expect_identical(result$situation, obs$situation)
-  expect_identical(result$species, obs$species)
-  expect_identical(result$Date, obs$Date)
-})
-
-test_that(
-  "write_dataset is called with the correct path, format and partitioning",
-  {
-    stub(remove_init_obs, "get_sim_ds", function(...) make_sim_data())
-    stub(remove_init_obs, "get_obs_ds", function(...) make_obs_data())
-    stub(
-      remove_init_obs,
-      "obs_ds_path",
-      function(...) file.path("expected", "path")
-    )
-
-    mock_write <- mock()
-    stub(remove_init_obs, "arrow::write_dataset", mock_write)
-
-    remove_init_obs(file.path("fake", "path"))
-
-    expect_called(mock_write, 1)
-    call_args <- mock_args(mock_write)[[1]]
-    expect_identical(call_args[[2]], file.path("expected", "path"))
-    expect_identical(call_args$format, "parquet")
-    expect_identical(call_args$partitioning, c("version", "species"))
-  }
-)
-
-test_that(
-  "NA dates in simulation data are ignored when computing the minimum",
-  {
-    sim_data <- data.frame(
-      situation = c("A", "A"),
-      species = c("sp1", "sp1"),
-      Date = as.Date(c(NA, "2023-01-05")),
-      value = c(10, 20),
-      version = "1.0.0",
-      stringsAsFactors = FALSE
-    )
-    obs_data <- data.frame(
-      situation = c("A", "A"),
-      species = c("sp1", "sp1"),
-      Date = as.Date(c("2023-01-05", "2023-01-06")),
-      measure1 = c(9.9, 8.8),
-      version = "1.0.0",
-      stringsAsFactors = FALSE
-    )
-
-    stub(remove_init_obs, "get_sim_ds", function(...) sim_data)
-    stub(remove_init_obs, "get_obs_ds", function(...) obs_data)
-    stub(remove_init_obs, "obs_ds_path", function(...) tempdir())
-    stub(remove_init_obs, "arrow::write_dataset", function(data, ...) data)
-
-    result <- remove_init_obs(file.path("fake", "path"))
-
-    init_measure1 <- result |>
-      dplyr::filter(Date == as.Date("2023-01-05")) |>
-      dplyr::pull(measure1)
-    expect_true(is.na(init_measure1))
-    next_measure1 <- result |>
-      dplyr::filter(Date == as.Date("2023-01-06")) |>
-      dplyr::pull(measure1)
-    expect_identical(next_measure1, 8.8)
-  }
-)
-
-# ===========================================================================
-# Tests: get_stics_version
-# ===========================================================================
-
-test_that("get_stics_version returns NULL when no metadata file exists", {
-  base <- file.path(tempdir(), basename(tempfile()))
-  dir.create(base, recursive = TRUE)
-  result <- get_stics_version(base)
-  expect_null(result)
-})
-
-test_that("get_stics_version returns stics_version from metadata dataset", {
-  base <- file.path(tempdir(), basename(tempfile()))
-  dir.create(base, recursive = TRUE)
-  df <- data.frame(
-    stics_version = "b09f41236_2026-02-17",
-    last_evaluated = TRUE,
-    stringsAsFactors = FALSE
-  )
-  arrow::write_parquet(df, metadata_ds_path(base))
-  result <- get_stics_version(base)
-  expect_identical(result, "b09f41236_2026-02-17")
 })

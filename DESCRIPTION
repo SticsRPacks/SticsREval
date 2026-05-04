@@ -15,7 +15,6 @@ Description: Provides a streamlined workflow for evaluating the performance of
 License: LGPL (>= 3) + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.3
 Depends:
     R (>= 4.1.0)
 Imports:
@@ -31,6 +30,7 @@ Imports:
     plotly,
     SticsOnR,
     SticsRFiles,
+    R6,
     readr,
     rlang
 Remotes:
@@ -45,3 +45,4 @@ Config/testthat/edition: 3
 URL: https://github.com/SticsRPacks/SticsREval,
     https://sticsrpacks.github.io/SticsREval/
 BugReports: https://github.com/SticsRPacks/SticsREval/issues
+Config/roxygen2/version: 8.0.0

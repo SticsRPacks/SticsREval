@@ -4,7 +4,14 @@
 \alias{gen_plots}
 \title{Generate comparison and scatter plots for each species}
 \usage{
-gen_plots(config)
+gen_plots(
+  config,
+  workspace = EvalWorkspace$new(config$eval_workspace),
+  backend = ParallelBackend$new(config$parallel, config$cores),
+  scatter_fn = gen_scatter_plot,
+  comparison_fn = function(x, dir) x$plot_comparison(dir),
+  logger_info = logger::log_info
+)
 }
 \arguments{
 \item{config}{List. Configuration object created by \code{make_config()},

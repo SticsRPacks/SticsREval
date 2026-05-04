@@ -1,137 +1,245 @@
-evaluate_species <- function(
-  eval_workspace,
-  species,
-  reference_version,
-  percentage,
-  parallel,
-  cores,
-  usms = NULL,
-  var2exclude = NULL
-) {
-  logger::log_debug("Generating stats for species.")
-  gen_species_stats(
-    eval_workspace, species, parallel, cores,
-    usms = usms, var2exclude = var2exclude
-  )
-  if (is.null(reference_version)) {
-    logger::log_info(
-      "No reference version defined.
-      Skipping deteriorated usm generation and comparison"
-    )
-    return()
-  }
-  logger::log_debug("Computing deteriorated USM for species.")
-  gen_deteriorated_usm(
-    eval_workspace, species, reference_version, percentage,
-    usms = usms, var2exclude = var2exclude
-  )
-  logger::log_debug("Computing species comparison.")
-  gen_species_comparison(
-    eval_workspace, species, reference_version, percentage
-  )
-}
-
+#'
+#' Evaluation class
+#'
 #' Run the evaluation workflow
 #'
-#' This function orchestrates the full evaluation workflow based on a given
-#' configuration object. It initializes logging, optionally prepares the
-#' evaluation workspace, runs the evaluation for all species, and displays
-#' summary information.
+#' @name Evaluation
+#' @docType class
 #'
-#' The total execution time is measured and logged at the end of the process.
-#' Errors occurring during evaluation are caught and logged.
-#'
-#' @param config List. Configuration object created by `make_config()`,
-#' containing all parameters required for the evaluation workflow.
-#'
-#' @return NULL. This function is called for its side effects (running
-#' evaluation and logging results).
-#'
-#' @details
-#' The workflow includes the following steps:
-#' \itemize{
-#'   \item Initializes the logger using the specified verbosity level.
-#'   \item Optionally initializes the evaluation workspace (copying data,
-#'   preparing inputs, and running simulations if required).
-#'   \item Runs evaluation for all species using `evaluate_species()`.
-#'   \item Displays comparison summaries using `display_comparisons_info()`.
-#' }
-#'
-#' Errors occurring during the evaluation phase are captured and logged using
-#' `logger::log_error()`, allowing the process to fail gracefully.
 #'
 #' @examples
 #' \dontrun{
-#' config <- make_config(
+#' config <- Configuration$new(
 #'   stics_exe = "/path/to/stics",
-#'   workspace = "workspace/",
+#'   eval_workspace = "workspace/",
 #'   metadata_file = "metadata.csv"
 #' )
-#'
-#' evaluate(config)
+#' Evaluation$new(config)$run()
 #' }
 #'
 #' @export
-evaluate <- function(config) {
-  on.exit({
-    end_time <- Sys.time()
-    logger::log_info("Evaluation time: ", format_duration(start_time, end_time))
-  }, add = TRUE)
-  start_time <- Sys.time()
-  validate_eval_configuration(config)
-  if (config$init_workspace) {
-    init_eval_workspace(
-      config$usms_workspace,
-      config$eval_workspace,
-      config$metadata_file,
-      config$stics_exe,
-      config$run_simulations,
-      config$parallel,
-      config$cores
-    )
-  }
-  logger::log_info("Starting evaluation...")
-  tryCatch({
-    evaluated_version <- get_stics_version(config$eval_workspace)
-    species <- get_species(config$eval_workspace, evaluated_version)
-    if (!is.null(config$species)) {
-      species <- intersect(config$species, species)
+Evaluation <- R6::R6Class("Evaluation",
+  private = list(
+    config = NULL,
+    backend = NULL,
+    workspace = NULL,
+    logger = NULL,
+    summary_class = NULL,
+
+    get_species_to_evaluate = function() {
+      species <- private$workspace$get_species()
+
+      if (!is.null(private$config$species)) {
+        species <- intersect(private$config$species, species)
+      }
+
+      if (!is.null(private$config$usms)) {
+        species <- species[
+          vapply(species, function(sp) {
+            length(private$workspace$get_species_usm(sp, private$config$usms)) > 0
+          }, FUN.VALUE = logical(1))
+        ]
+      }
+      species
+    },
+
+    gen_species_stats = function(species) {
+      results <- private$backend$run(
+        length(species),
+        function(i) {
+          spec <- species[i]
+          private$logger$info(
+            "Splitting simulations and observations data for species ", spec
+          )
+
+          exclude <- c("version", "species", private$config$var2exclude)
+
+          splited_sim <- CroPlotR::split_df2sim(
+            private$workspace$get_sim(spec, usms = private$config$usms, var2exclude = exclude)
+          )
+          splited_obs <- CroPlotR::split_df2sim(
+            private$workspace$get_obs(spec, usms = private$config$usms, var2exclude = exclude)
+          )
+
+          private$logger$info("Generating statistics for ", spec)
+          loadNamespace("CroPlotR")
+          summary_method <- utils::getS3method("summary", class(splited_sim))
+
+          stats <- run_with_log_control(
+            summary_method(splited_sim, obs = splited_obs)
+          )
+          rmse_per_usm <- run_with_log_control(
+            summary_method(splited_sim, obs = splited_obs,
+              all_situations = FALSE, stats = "rRMSE")
+          )
+          list(species = spec, stats = stats, rmse_per_usm = rmse_per_usm)
+        }
+      )
+
+      for (res in results) {
+        private$logger$info("Saving statistics for ", res$species)
+        private$workspace$save_stats(res$species, res$stats)
+        private$logger$info("Saving RMSE per USM for species ", res$species)
+        private$workspace$save_rmse_per_usm(res$species, res$rmse_per_usm)
+      }
+    },
+
+    gen_deteriorated_usm = function(species) {
+      ref_workspace <- private$workspace$with_version(
+        private$config$reference_version
+      )
+
+      for (spec in species) {
+        private$logger$info("Reading reference RMSE per USM for species ", spec)
+        ref_stats <- ref_workspace$get_rmse_per_usm(
+          spec,
+          usms = private$config$usms,
+          var2exclude = private$config$var2exclude
+        )
+
+        if (is.null(ref_stats)) next
+
+        stats <- private$workspace$get_rmse_per_usm(
+          spec,
+          usms = private$config$usms,
+          var2exclude = private$config$var2exclude
+        )
+        private$logger$info("Comparing RMSE per usm for species ", spec)
+        deteriorated_usm <- DeterioratedUSMComparison$new(
+          species = spec,
+          ref_stats = ref_stats,
+          eval_stats = stats,
+          percentage = private$config$percentage
+        )
+
+        if (is.null(deteriorated_usm$get_data())) next
+
+        private$logger$info("Saving deteriorated USM for species ", spec)
+        private$workspace$save_deteriorated_usm(deteriorated_usm)
+        private$logger$info("Deteriorated USM saved for species ", spec)
+      }
+    },
+
+    gen_species_comparison = function(species) {
+      ref_workspace <- private$workspace$with_version(
+        private$config$reference_version
+      )
+      for (spec in species) {
+        ref_stats <- ref_workspace$get_stats(spec)
+        if (is.null(ref_stats)) {
+          next
+        }
+        private$logger$info("Reading stats file for species ", spec)
+        stats <- private$workspace$get_stats(spec)
+        if (is.null(stats)) {
+          next
+        }
+        private$logger$info("Comparing RMSE for species ", spec)
+        comparison <- RmseComparison$new(
+          species = spec,
+          ref_stats = ref_stats,
+          eval_stats = stats,
+          percentage = private$config$percentage
+        )
+        private$logger$info("Saving RMSE comparison for species ", spec)
+        private$workspace$save_species_comparison(comparison)
+        private$logger$info("Species comparison saved for species ", spec)
+        comparison$log()
+      }
+    },
+
+    evaluate_species = function(species) {
+      private$logger$info("Generating stats for species.")
+      private$gen_species_stats(species)
+
+      if (is.null(private$config$reference_version)) {
+        private$logger$info(
+          "No reference version defined. ",
+          "Skipping deteriorated usm generation and comparison"
+        )
+        return()
+      }
+
+      private$logger$info("Computing deteriorated USM for species.")
+      private$gen_deteriorated_usm(species)
+
+      private$logger$info("Computing species comparison.")
+      private$gen_species_comparison(species)
+    },
+    build_summary = function(species) {
+      private$summary_class$new(
+        workspace = private$workspace,
+        species = species,
+        percentage = private$config$percentage
+      )$display()
     }
-    if (!is.null(config$usms)) {
-      species <- species[
-        vapply(species, function(sp) {
-          length(get_species_usm(
-            config$eval_workspace,
-            evaluated_version,
-            sp,
-            config$usms
-          )) > 0
-        }, FUN.VALUE = logical(1))
-      ]
+  ),
+
+  public = list(
+    #' @description
+    #' Create an evaluation workflow
+    #'
+    #' @param config the configuration of the evaluation workflow
+    #' @param workspace an object of class `EvalWorkspace` to access the evaluation data
+    #' (default: `EvalWorkspace$new(config$eval_workspace)`)
+    #' @param backend an object of class `ParallelBackend` to run parallel computations
+    #' (default: `ParallelBackend$new(config$parallel, config$cores)`)
+    #' @param logger a logger object with `info`, `debug`, `warn` and `error` methods
+    #'  (default: uses the logger package)
+    #' @param summary_class a class to build the summary of the evaluation
+    #'  (default: `ComparisonSummary`)
+    initialize = function(config, workspace = NULL, backend = NULL, logger = default_logger, summary_class = ComparisonSummary) {
+      config$validate_eval()
+      private$config <- config
+      private$backend <- backend %||% ParallelBackend$new(config$parallel, config$cores)
+      private$workspace <- workspace %||% EvalWorkspace$new(config$eval_workspace)
+      private$logger <- logger
+      private$summary_class <- summary_class
+    },
+
+    #' @description
+    #' Run the evaluation workflow
+    #' This function orchestrates the full evaluation workflow based on a given
+    #' configuration object. It initializes logging, optionally prepares the
+    #' evaluation workspace, runs the evaluation for all species, and displays
+    #' summary information.
+    run = function() {
+      on.exit({
+        end_time <- Sys.time()
+        private$logger$info("Evaluation time: ", format_duration(start_time, end_time))
+      }, add = TRUE)
+      start_time <- Sys.time()
+
+      if (private$config$init_workspace) {
+        private$workspace$init(
+          private$config$usms_workspace,
+          private$config$metadata_file,
+          private$config$stics_exe,
+          private$config$run_simulations,
+          private$backend
+        )
+      }
+
+      private$logger$info("Starting evaluation...")
+      tryCatch({
+        species <- private$get_species_to_evaluate()
+
+        if (length(species) == 0) {
+          private$logger$info("No species found to evaluate in the workspace.")
+          return(invisible(NULL))
+        }
+
+        private$logger$info(
+          "Found ", length(species), " species in workspace ",
+          private$config$eval_workspace, ": ", format_species(species)
+        )
+
+        private$evaluate_species(species)
+        private$build_summary(species)
+      }, error = function(e) {
+        private$logger$error(paste(utils::capture.output(print(e)), collapse = "\n"))
+        stop(e)
+      })
     }
-    if (length(species) == 0) {
-      return()
-    }
-    logger::log_debug(
-      "Found {length(species)} species in workspace
-      {config$eval_workspace}: {format_species(species)}"
-    )
-    evaluate_species(
-      config$eval_workspace,
-      species,
-      config$reference_version,
-      config$percentage,
-      config$parallel,
-      config$cores,
-      usms = config$usms,
-      var2exclude = config$var2exclude
-    )
-    display_comparisons_info(
-      config$eval_workspace,
-      species,
-      config$percentage
-    )
-  }, error = function(e) {
-    logger::log_error(paste(utils::capture.output(print(e)), collapse = "\n"))
-  })
-}
+  )
+)
