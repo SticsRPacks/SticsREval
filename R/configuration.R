@@ -62,14 +62,16 @@ validate_nonempty_chr <- function(val) {
 
 #' @keywords internal
 check_init_ws_stics_exe <- function(s) {
-  if (isTRUE(s$init_workspace) &&
-    isTRUE(s$run_simulations) &&
-    is.null(s$stics_exe)
-  )
+  if (
+    isTRUE(s$init_workspace) &&
+      isTRUE(s$run_simulations) &&
+      is.null(s$stics_exe)
+  ) {
     return(
       "stics_exe is required when init_workspace = TRUE and
       run_simulations = TRUE"
     )
+  }
   TRUE
 }
 
@@ -238,7 +240,7 @@ validate_null <- function(field_name, spec) {
 #' @keywords internal
 validate_type <- function(field_name, val, spec) {
   if (is.null(spec$type)) return(NULL)
-  type_ok <- any(vapply(spec$type, function(t) is(val, t), logical(1)))
+  type_ok <- any(vapply(spec$type, function(t) methods::is(val, t), logical(1)))
   if (type_ok) return(NULL)
   sprintf(
     "- %s: expected type [%s], got [%s]",

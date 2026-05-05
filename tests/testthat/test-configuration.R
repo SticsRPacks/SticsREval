@@ -1,12 +1,12 @@
 # ---------------------------------------------------------------------------
-# Helpers / stubs
+# Helpers / stubs # nolint: commented_code_linter
 # ---------------------------------------------------------------------------
 
 # Stub init_logger so tests don't depend on it
 init_logger <- function(verbose) invisible(NULL)
 
 # Stub EvalWorkspace so check_reference_version can be exercised
-EvalWorkspace <- R6::R6Class("EvalWorkspace",
+EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
   public = list(
     path = NULL,
     initialize = function(path) self$path <- path,
@@ -19,9 +19,6 @@ build_metadata_file <- function() {
   file.create(f)
   f
 }
-
-# Source the file under test (adjust path as needed)
-# source("R/configuration.R")
 
 # ---------------------------------------------------------------------------
 # field_spec
@@ -44,22 +41,25 @@ test_that("field_spec stores all arguments correctly", {
     max = 100,
     validator = validator_fn
   )
-  expect_equal(spec$default, 42)
-  expect_equal(spec$type, "numeric")
+  expect_identical(spec$default, 42)
+  expect_identical(spec$type, "numeric")
   expect_false(spec$nullable)
-  expect_equal(spec$choices, c(1, 42, 99))
-  expect_equal(spec$min, 1)
-  expect_equal(spec$max, 100)
+  expect_identical(spec$choices, c(1, 42, 99))
+  expect_identical(spec$min, 1)
+  expect_identical(spec$max, 100)
   expect_identical(spec$validator, validator_fn)
   expect_false(spec$required)
 })
 
-test_that("field_spec with required() sets required = TRUE and nullable = FALSE", {
-  spec <- field_spec(default = required())
-  expect_true(spec$required)
-  expect_false(spec$nullable)
-  expect_null(spec$default)
-})
+test_that(
+  "field_spec with required() sets required = TRUE and nullable = FALSE",
+  {
+    spec <- field_spec(default = required())
+    expect_true(spec$required)
+    expect_false(spec$nullable)
+    expect_null(spec$default)
+  }
+)
 
 test_that("field_spec default nullable is TRUE for non-required fields", {
   spec <- field_spec(default = "hello")
@@ -188,7 +188,7 @@ test_that("validate_choices returns error when value not in choices", {
 })
 
 # ---------------------------------------------------------------------------
-# validate_min / validate_max
+# validate_min / validate_max # nolint: commented_code_linter
 # ---------------------------------------------------------------------------
 
 test_that("validate_min returns NULL when no min", {
@@ -241,21 +241,27 @@ test_that("validate_custom returns NULL when validator returns TRUE", {
   expect_null(validate_custom("f", "val", spec))
 })
 
-test_that("validate_custom returns error string when validator returns message", {
-  spec <- field_spec(validator = function(v) "bad value")
-  result <- validate_custom("f", "val", spec)
-  expect_type(result, "character")
-  expect_match(result, "bad value")
-})
+test_that(
+  "validate_custom returns error string when validator returns message",
+  {
+    spec <- field_spec(validator = function(v) "bad value")
+    result <- validate_custom("f", "val", spec)
+    expect_type(result, "character")
+    expect_match(result, "bad value")
+  }
+)
 
 # ---------------------------------------------------------------------------
 # validate_field
 # ---------------------------------------------------------------------------
 
-test_that("validate_field returns no errors for a valid nullable field with NULL", {
-  spec <- field_spec(nullable = TRUE)
-  expect_length(validate_field("f", NULL, spec), 0)
-})
+test_that(
+  "validate_field returns no errors for a valid nullable field with NULL",
+  {
+    spec <- field_spec(nullable = TRUE)
+    expect_length(validate_field("f", NULL, spec), 0)
+  }
+)
 
 test_that("validate_field returns error for required field with NULL", {
   spec <- field_spec(default = required())
@@ -301,7 +307,7 @@ test_that("check_init_ws_stics_exe passes when init_workspace = FALSE", {
 test_that(
   "check_init_ws_stics_exe passes when init_workspace = TRUE and stics_exe set",
   {
-    s <- make_state(init_workspace = TRUE, stics_exe = "/usr/bin/stics")
+    s <- make_state(init_workspace = TRUE, stics_exe = "exe")
     expect_true(check_init_ws_stics_exe(s))
   }
 )
@@ -343,12 +349,18 @@ test_that("check_init_ws_metadata_file fails when metadata_file is NULL", {
   expect_match(result, "metadata_file")
 })
 
-test_that("check_init_ws_metadata_file fails when metadata_file does not exist", {
-  s <- make_state(init_workspace = TRUE, metadata_file = "/nonexistent/path.csv")
-  result <- check_init_ws_metadata_file(s)
-  expect_type(result, "character")
-  expect_match(result, "not found")
-})
+test_that(
+  "check_init_ws_metadata_file fails when metadata_file does not exist",
+  {
+    s <- make_state(
+      init_workspace = TRUE,
+      metadata_file = file.path("nonexistent", "path.csv")
+    )
+    result <- check_init_ws_metadata_file(s)
+    expect_type(result, "character")
+    expect_match(result, "not found")
+  }
+)
 
 test_that("check_init_ws_metadata_file passes with an existing file", {
   tmp <- tempfile()
@@ -386,7 +398,7 @@ test_that("check_parallel_cores fails when parallel = TRUE and cores is NULL", {
 
 make_valid_list <- function(...) {
   base <- list(
-    eval_workspace = "/some/path",
+    eval_workspace = "ws",
     stics_exe = NULL,
     usms_workspace = NULL,
     metadata_file = NULL,
@@ -428,10 +440,13 @@ test_that("validate_schema stops when percentage out of range", {
   expect_error(validate_schema(cfg), "exceeds the maximum")
 })
 
-test_that("validate_schema reports cross-field error for parallel without cores", {
-  cfg <- make_valid_list(parallel = TRUE, cores = NA)
-  expect_error(validate_schema(cfg), "cores")
-})
+test_that(
+  "validate_schema reports cross-field error for parallel without cores",
+  {
+    cfg <- make_valid_list(parallel = TRUE, cores = NA)
+    expect_error(validate_schema(cfg), "cores")
+  }
+)
 
 test_that("validate_schema collects multiple errors before stopping", {
   cfg <- make_valid_list()
@@ -469,9 +484,9 @@ test_that("schema_initialize applies defaults for unspecified fields", {
     list(eval_workspace = "/path"),
     config_schema
   )
-  expect_equal(obj$run_simulations, FALSE)
-  expect_equal(obj$parallel, FALSE)
-  expect_equal(obj$percentage, 5)
+  expect_false(obj$run_simulations)
+  expect_false(obj$parallel)
+  expect_identical(obj$percentage, 5)
 })
 
 test_that("schema_initialize uses provided values over defaults", {
@@ -481,7 +496,7 @@ test_that("schema_initialize uses provided values over defaults", {
     list(eval_workspace = "/path", percentage = 10),
     config_schema
   )
-  expect_equal(obj$percentage, 10)
+  expect_identical(obj$percentage, 10)
 })
 
 test_that("schema_initialize stops on invalid config", {
@@ -498,20 +513,20 @@ test_that("schema_initialize stops on invalid config", {
 
 test_that("Configuration initializes with minimal required args", {
   cfg <- Configuration$new(
-    eval_workspace = "/some/path",
-    usms_workspace = "ws",
+    eval_workspace = "ws",
+    usms_workspace = "usms_ws",
     metadata_file = build_metadata_file()
   )
   expect_s3_class(cfg, "R6")
-  expect_equal(cfg$eval_workspace, "/some/path")
+  expect_identical(cfg$eval_workspace, "ws")
 })
 
 test_that("Configuration applies defaults correctly", {
   cfg <- Configuration$new(eval_workspace = "ws")
   expect_false(cfg$run_simulations)
   expect_false(cfg$parallel)
-  expect_equal(cfg$percentage, 5)
-  expect_equal(cfg$verbose, 1L)
+  expect_identical(cfg$percentage, 5)
+  expect_identical(cfg$verbose, 1L)
 })
 
 test_that("Configuration raises error when eval_workspace is missing", {
@@ -549,7 +564,7 @@ test_that("Configuration accepts valid cores when parallel = TRUE", {
     parallel = TRUE,
     cores = 2L
   )
-  expect_equal(cfg$cores, 2L)
+  expect_identical(cfg$cores, 2L)
 })
 
 # ---------------------------------------------------------------------------

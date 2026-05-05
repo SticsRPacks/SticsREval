@@ -48,10 +48,23 @@ gen_scatter_plot <- function(output_dir, sim, obs, ref_sim, vars) {
 #'
 #' @param config List. Configuration object created by `make_config()`,
 #'    containing all parameters required for the plots generation
-#'
+#' @param workspace EvalWorkspace. An instance of `EvalWorkspace` to access the
+#'   evaluation data. Defaults to a new instance using the `eval_workspace`
+#'  parameter from the configuration.
+#' @param backend ParallelBackend. An instance of `ParallelBackend` to run
+#'  parallel computations. Defaults to a new instance using the `parallel` and
+#' `cores` parameters from the configuration.
+#' @param scatter_fn Function. A function to generate scatter plots. It should
+#' accept the following arguments: `output_dir`, `sim`, `obs`, `ref_sim`, and `vars`.
+#' Defaults to `gen_scatter_plot()`.
+#' @param comparison_fn Function. A function to generate comparison plots. It should
+#' accept the following arguments: `comparison` and `output_dir`. Defaults to a
+#'  function that calls the `plot_comparison()` method of the comparison object.
+#' @param logger_info Function. A logging function to report progress. It should
+#' accept a single string argument. Defaults to `logger::log_info()`.
 #' @return NULL. This function is called for its side effects (writing plot
 #' files).
-#'
+#' 
 #' @details
 #' For each species:
 #' \itemize{
