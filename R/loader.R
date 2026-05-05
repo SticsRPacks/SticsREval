@@ -1,4 +1,4 @@
-WorkspaceLoader <- R6::R6Class("WorkspaceLoader",
+WorkspaceLoader <- R6::R6Class("WorkspaceLoader", # nolint: object_name_linter
   private = list(
     workspace = NULL,
     backend = NULL,
@@ -33,7 +33,10 @@ WorkspaceLoader <- R6::R6Class("WorkspaceLoader",
       missing_cols <- setdiff(required_cols, names(rotations_data))
 
       if (length(missing_cols) > 0) {
-        stop("Missing columns in metadata file: ", toString(missing_cols), call. = FALSE)
+        stop(
+          "Missing columns in metadata file: ", toString(missing_cols),
+          call. = FALSE
+        )
       }
       if (nrow(rotations_data) == 0) return(list())
 
@@ -44,7 +47,7 @@ WorkspaceLoader <- R6::R6Class("WorkspaceLoader",
           rotation = as.character(.data$rotation)
         )
 
-      if (sum(is.na(rotations_data[["rotation_order"]])) > sum(is.na(original_order))) {
+      if (sum(is.na(rotations_data[["rotation_order"]])) > sum(is.na(original_order))) { # nolint: line_length_linter
         stop("Column must be numeric: rotation_order", call. = FALSE)
       }
 
@@ -60,9 +63,9 @@ WorkspaceLoader <- R6::R6Class("WorkspaceLoader",
     },
 
     load_stics_version = function() {
-      version <- as.character(SticsOnR::get_version_number(private$stics_exe))
-      private$workspace$add_evaluated_version(version)
-      version
+      v <- as.character(SticsOnR::get_version_number(private$stics_exe))
+      private$workspace$add_evaluated_version(v)
+      v
     },
 
     run_simulations = function(usms_species, rotations) {
@@ -75,7 +78,9 @@ WorkspaceLoader <- R6::R6Class("WorkspaceLoader",
         verbose = is_debug(),
         time_display = is_debug()
       )
-      res <- SticsOnR::stics_wrapper(wrapper_options, situation = unique(usms_species$usm))
+      res <- SticsOnR::stics_wrapper(
+        wrapper_options, situation = unique(usms_species$usm)
+      )
       res$sim_list
     },
 
@@ -127,7 +132,9 @@ WorkspaceLoader <- R6::R6Class("WorkspaceLoader",
     },
 
     load = function() {
-      all_usms <- list.dirs(private$usms_workspace, full.names = FALSE, recursive = FALSE)
+      all_usms <- list.dirs(
+        private$usms_workspace, full.names = FALSE, recursive = FALSE
+      )
       usms_species <- private$extract_species_from_usms(all_usms)
       rotations <- private$get_rotation_list()
       stics_version <- private$load_stics_version()

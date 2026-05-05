@@ -336,8 +336,8 @@ the returned RMSE per USM}
     \if{html}{\out{</div>}}
   }
   \subsection{Returns}{
-    the RMSE per USM for a species, as a dataframe if collect is \code{TRUE},
-a lazy arrow data object otherwise
+    the RMSE per USM for a species, as a dataframe if collect is
+\code{TRUE}, a lazy arrow data object otherwise
   }
 }
 

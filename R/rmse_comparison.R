@@ -1,4 +1,4 @@
-RmseComparison <- R6::R6Class("RmseComparison",
+RmseComparison <- R6::R6Class("RmseComparison", # nolint: object_name_linter
   private = list(
     data = NULL,
     percentage = NULL,
@@ -17,12 +17,14 @@ RmseComparison <- R6::R6Class("RmseComparison",
         dplyr::mutate(
           species = species,
           ratio   = round(
-            (abs(.data$rmse_new) - abs(.data$rmse_ref)) / abs(.data$rmse_ref) * 100,
+            (abs(.data$rmse_new) - abs(.data$rmse_ref)) / abs(.data$rmse_ref) * 100, # nolint: line_length_linter
             2
           )
         ) |>
         dplyr::filter(is.finite(.data$ratio)) |>
-        dplyr::select("species", "situation", "variable", "rmse_new", "rmse_ref", "ratio")
+        dplyr::select(
+          "species", "situation", "variable", "rmse_new", "rmse_ref", "ratio"
+        )
     }
   ),
 
@@ -51,17 +53,21 @@ RmseComparison <- R6::R6Class("RmseComparison",
       eval_stats = NULL, data = NULL
     ) {
       private$percentage <- percentage
-      
       if (!is.null(data)) {
         private$data <- data |>
           dplyr::arrange(dplyr::desc(.data$ratio)) |>
           dplyr::collect()
-      } else if (!is.null(species) && !is.null(ref_stats) && !is.null(eval_stats)) {
+      } else if (
+        !is.null(species) && !is.null(ref_stats) && !is.null(eval_stats)
+      ) {
         private$data <- private$compare_rmse(species, ref_stats, eval_stats) |>
           dplyr::arrange(dplyr::desc(.data$ratio)) |>
           dplyr::collect()
       } else {
-        stop("`data`, or `species` + `ref_stats` + `eval_stats` must be defined")
+        stop(
+          "`data`, or `species` + `ref_stats` + `eval_stats` must be defined",
+          call. = FALSE
+        )
       }
     },
 
@@ -70,15 +76,21 @@ RmseComparison <- R6::R6Class("RmseComparison",
       logger::log_info(strrep("-", 65))
       logger::log_info("Species: ", private$data$species[1])
       logger::log_info("Total number of variables: ", nrow(private$data))
-      logger::log_info(length(self$critical_vars),
-        " deteriorated variables (>={private$percentage}%): ")
+      logger::log_info(
+        length(self$critical_vars),
+        " deteriorated variables (>={private$percentage}%): "
+      )
       if (length(self$critical_vars) > 0)
         logger::log_info(toString(self$critical_vars))
-      logger::log_info(length(self$warning_vars),
-        " deteriorated variables (>0%, <{private$percentage}%): ")
+      logger::log_info(
+        length(self$warning_vars),
+        " deteriorated variables (>0%, <{private$percentage}%): "
+      )
       if (length(self$warning_vars) > 0)
         logger::log_info(toString(self$warning_vars))
-      logger::log_info(length(self$improved_vars), " improved variables (<=0%): ")
+      logger::log_info(
+        length(self$improved_vars), " improved variables (<=0%): "
+      )
       if (length(self$improved_vars) > 0)
         logger::log_info(toString(self$improved_vars))
       logger::log_info(strrep("-", 65))
@@ -127,14 +139,13 @@ RmseComparison <- R6::R6Class("RmseComparison",
         ) +
         ggplot2::theme(legend.position = "none") +
         ggplot2::ggtitle("rRMSE New Version vs Ref Version")
-      
       CroPlotR::save_plot_png(p, out_dir = output_dir, suffix = "scatter_")
       invisible(self)
     }
   )
 )
 
-DeterioratedUSMComparison <- R6::R6Class("DeterioratedUSMComparison",
+DeterioratedUSMComparison <- R6::R6Class("DeterioratedUSMComparison", # nolint: object_name_linter
   inherit = RmseComparison,
   public = list(
     initialize = function(

@@ -1,4 +1,4 @@
-ComparisonSummary <- R6::R6Class("ComparisonSummary",
+ComparisonSummary <- R6::R6Class("ComparisonSummary", # nolint: object_name_linter
   private = list(
     workspace = NULL,
     species = NULL,
@@ -11,9 +11,11 @@ ComparisonSummary <- R6::R6Class("ComparisonSummary",
       private$percentage <- percentage
     },
     display = function() {
-      comparisons <- lapply(private$species, function(s) {
-        private$workspace$get_species_comparison(s, private$percentage)
-      })
+      comparisons <- lapply(
+        private$species,
+        private$workspace$get_species_comparison,
+        private$percentage
+      )
       comparisons <- Filter(Negate(is.null), comparisons)
 
       if (length(comparisons) == 0) {

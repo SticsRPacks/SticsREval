@@ -15,7 +15,7 @@ fake_config <- function() {
 }
 
 fake_workspace <- function(species = "wheat") {
-  structure(list(
+  ws <- list(
     get_species = function() species,
 
     get_species_comparison = function(spec, pct) {
@@ -28,11 +28,13 @@ fake_workspace <- function(species = "wheat") {
       )
     },
 
-    get_sim = function(...) data.frame(x = 1),
-    get_obs = function(...) data.frame(x = 2),
+    get_sim = function(...) data.frame(x = 1, stringsAsFactors = FALSE),
+    get_obs = function(...) data.frame(x = 2, stringsAsFactors = FALSE),
 
     with_version = function(...) fake_workspace(species)
-  ), class = "fake_workspace")
+  )
+  class(ws) <- "fake_workspace"
+  ws
 }
 
 fake_backend <- function() {
@@ -50,20 +52,21 @@ test_that("gen_plots calls scatter when deteriorated vars exist", {
   workspace <- fake_workspace("wheat")
   backend <- fake_backend()
 
-  called <- FALSE
+  called <- new.env()
+  called$flag <- FALSE
 
   gen_plots(
     config,
     workspace = workspace,
     backend = backend,
     scatter_fn = function(...) {
-      called <<- TRUE
+      called$flag <- TRUE
     },
     comparison_fn = function(...) NULL,
     logger_info = function(...) NULL
   )
 
-  expect_true(called)
+  expect_true(called$flag)
 })
 
 test_that("gen_plots skips species when comparison is NULL", {
@@ -74,92 +77,103 @@ test_that("gen_plots skips species when comparison is NULL", {
 
   called <- FALSE
 
+  called <- new.env()
+  called$flag <- FALSE
+
   gen_plots(
     config,
     workspace = workspace,
     backend = backend,
     scatter_fn = function(...) {
-      called <<- TRUE
+      called$flag <- TRUE
     },
     comparison_fn = function(...) NULL,
     logger_info = function(...) NULL
   )
 
-  expect_false(called)
+  expect_false(called$flag)
 })
 
 test_that("gen_plots does not call scatter when ref_sim is NULL", {
 
   config <- fake_config()
 
-  workspace <- structure(list(
+  workspace <- list(
     get_species = function() "wheat",
 
-    get_species_comparison = function(...) list(
-      critical_vars = "var1",
-      warning_vars = "var2",
-      plot_comparison = function(...) NULL
-    ),
+    get_species_comparison = function(...) {
+      list(
+        critical_vars = "var1",
+        warning_vars = "var2",
+        plot_comparison = function(...) NULL
+      )
+    },
 
-    get_sim = function(...) NULL,  # <- important
-    get_obs = function(...) data.frame(x = 2),
+    get_sim = function(...) NULL,
+    get_obs = function(...) data.frame(x = 2, stringsAsFactors = FALSE),
 
     with_version = function(...) workspace
-  ), class = "fake_workspace")
+  )
+  class(workspace) <- "fake_workspace"
 
   backend <- fake_backend()
 
-  called <- FALSE
+  called <- new.env()
+  called$flag <- FALSE
 
   gen_plots(
     config,
     workspace = workspace,
     backend = backend,
     scatter_fn = function(...) {
-      called <<- TRUE
+      called$flag <- TRUE
     },
     comparison_fn = function(...) NULL,
     logger_info = function(...) NULL
   )
 
-  expect_false(called)
+  expect_false(called$flag)
 })
 
 test_that("gen_plots skips scatter when no deteriorated vars", {
 
   config <- fake_config()
 
-  workspace <- structure(list(
+  workspace <- list(
     get_species = function() "wheat",
 
-    get_species_comparison = function(...) list(
-      critical_vars = character(0),
-      warning_vars = character(0),
-      plot_comparison = function(...) NULL
-    ),
+    get_species_comparison = function(...) {
+      list(
+        critical_vars = character(0),
+        warning_vars = character(0),
+        plot_comparison = function(...) NULL
+      )
+    },
 
-    get_sim = function(...) data.frame(x = 1),
-    get_obs = function(...) data.frame(x = 2),
+    get_sim = function(...) data.frame(x = 1, stringsAsFactors = FALSE),
+    get_obs = function(...) data.frame(x = 2, stringsAsFactors = FALSE),
 
     with_version = function(...) workspace
-  ), class = "fake_workspace")
+  )
+  class(workspace) <- "fake_workspace"
 
   backend <- fake_backend()
 
-  called <- FALSE
+  called <- new.env()
+  called$flag <- FALSE
 
   gen_plots(
     config,
     workspace = workspace,
     backend = backend,
     scatter_fn = function(...) {
-      called <<- TRUE
+      called$flag <- TRUE
     },
     comparison_fn = function(...) NULL,
     logger_info = function(...) NULL
   )
 
-  expect_false(called)
+  expect_false(called$flag)
 })
 
 test_that("gen_plots calls comparison function", {
@@ -170,16 +184,19 @@ test_that("gen_plots calls comparison function", {
 
   called <- FALSE
 
+  called <- new.env()
+  called$flag <- FALSE
+
   gen_plots(
     config,
     workspace = workspace,
     backend = backend,
     scatter_fn = function(...) NULL,
     comparison_fn = function(...) {
-      called <<- TRUE
+      called$flag <- TRUE
     },
     logger_info = function(...) NULL
   )
 
-  expect_true(called)
+  expect_true(called$flag)
 })

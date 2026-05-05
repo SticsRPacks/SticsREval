@@ -2,12 +2,10 @@ prepare_species_output_dir <- function(output_dir, species) {
   o_dir <- file.path(output_dir, species)
   if (!dir.exists(o_dir) && !dir.create(o_dir, recursive = TRUE)) {
     stop(
-      paste0(
-        "Can't create output directory ",
-        o_dir,
-        " for species ",
-        species
-      ),
+      "Can't create output directory ",
+      o_dir,
+      " for species ",
+      species,
       call. = FALSE
     )
   }
@@ -69,7 +67,9 @@ export_stats_to_csv <- function(config) {
         rmse_per_usm, file.path(o_dir, "RMSE_per_usm.csv")
       )
     }
-    deteriorated_usm <- eval_workspace$get_deteriorated_usm(spec, config$percentage)
+    deteriorated_usm <- eval_workspace$get_deteriorated_usm(
+      spec, config$percentage
+    )
     if (!is.null(deteriorated_usm$get_data())) {
       safe_write_csv(
         deteriorated_usm$get_data(), file.path(o_dir, "Deteriorated_USM.csv")

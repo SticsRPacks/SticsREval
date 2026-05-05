@@ -1,4 +1,4 @@
-ParallelBackend <- R6::R6Class("ParallelBackend",
+ParallelBackend <- R6::R6Class("ParallelBackend", # nolint: object_name_linter
 
   active = list(
     parallel = function() private$.parallel,

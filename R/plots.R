@@ -119,7 +119,9 @@ gen_plots <- function(
 
       var2exclude <- c("version", "species")
 
-      ref_sim <- workspace$with_version(config$reference_version)$get_sim(spec, var2exclude = var2exclude)
+      ref_sim <- workspace$with_version(
+        config$reference_version
+      )$get_sim(spec, var2exclude = var2exclude)
 
       if (is.null(ref_sim)) return(NULL)
 

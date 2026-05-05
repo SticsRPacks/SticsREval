@@ -18,7 +18,7 @@
 #' }
 #'
 #' @export
-Evaluation <- R6::R6Class("Evaluation",
+Evaluation <- R6::R6Class("Evaluation", # nolint: object_name_linter
   private = list(
     config = NULL,
     backend = NULL,
@@ -26,20 +26,42 @@ Evaluation <- R6::R6Class("Evaluation",
     logger = NULL,
     summary_class = NULL,
 
+    filter_species_config = function(species) {
+      if (is.null(private$config$species)) return(species)
+      intersect(species, private$config$species)
+    },
+
+    filter_species_usms = function(species) {
+      if (is.null(private$config$usms)) return(species)
+
+      species <- species[
+        vapply(species, function(sp) {
+          private$logger$debug(sprintf("Checking USMs for species %s...", sp))
+          species_usms <- private$workspace$get_species_usm(
+            sp, private$config$usms
+          )
+          private$logger$debug(sprintf(
+            "Species %s has USMs: %s",
+            sp, toString(species_usms)
+          ))
+          length(species_usms) > 0
+        }, FUN.VALUE = logical(1))
+      ]
+      species
+    },
+
     get_species_to_evaluate = function() {
+      private$logger$debug("Getting species to evaluate...")
       species <- private$workspace$get_species()
 
-      if (!is.null(private$config$species)) {
-        species <- intersect(private$config$species, species)
-      }
+      private$logger$debug("Filtering species based on config...")
+      species <- private$filter_species_config(species)
+      private$logger$debug("Filtering species based on USMs in config...")
+      species <- private$filter_species_usms(species)
 
-      if (!is.null(private$config$usms)) {
-        species <- species[
-          vapply(species, function(sp) {
-            length(private$workspace$get_species_usm(sp, private$config$usms)) > 0
-          }, FUN.VALUE = logical(1))
-        ]
-      }
+      private$logger$debug("Species to evaluate: ")
+      private$logger$debug(toString(species))
+
       species
     },
 
@@ -48,17 +70,21 @@ Evaluation <- R6::R6Class("Evaluation",
         length(species),
         function(i) {
           spec <- species[i]
-          private$logger$info(
+          private$logger$debug(
             "Splitting simulations and observations data for species ", spec
           )
 
           exclude <- c("version", "species", private$config$var2exclude)
 
           splited_sim <- CroPlotR::split_df2sim(
-            private$workspace$get_sim(spec, usms = private$config$usms, var2exclude = exclude)
+            private$workspace$get_sim(
+              spec, usms = private$config$usms, var2exclude = exclude
+            )
           )
           splited_obs <- CroPlotR::split_df2sim(
-            private$workspace$get_obs(spec, usms = private$config$usms, var2exclude = exclude)
+            private$workspace$get_obs(
+              spec, usms = private$config$usms, var2exclude = exclude
+            )
           )
 
           private$logger$info("Generating statistics for ", spec)
@@ -69,8 +95,10 @@ Evaluation <- R6::R6Class("Evaluation",
             summary_method(splited_sim, obs = splited_obs)
           )
           rmse_per_usm <- run_with_log_control(
-            summary_method(splited_sim, obs = splited_obs,
-              all_situations = FALSE, stats = "rRMSE")
+            summary_method(
+              splited_sim, obs = splited_obs,
+              all_situations = FALSE, stats = "rRMSE"
+            )
           )
           list(species = spec, stats = stats, rmse_per_usm = rmse_per_usm)
         }
@@ -180,19 +208,27 @@ Evaluation <- R6::R6Class("Evaluation",
     #' Create an evaluation workflow
     #'
     #' @param config the configuration of the evaluation workflow
-    #' @param workspace an object of class `EvalWorkspace` to access the evaluation data
-    #' (default: `EvalWorkspace$new(config$eval_workspace)`)
-    #' @param backend an object of class `ParallelBackend` to run parallel computations
-    #' (default: `ParallelBackend$new(config$parallel, config$cores)`)
-    #' @param logger a logger object with `info`, `debug`, `warn` and `error` methods
-    #'  (default: uses the logger package)
+    #' @param workspace an object of class `EvalWorkspace` to access the
+    #' evaluation data (default: `EvalWorkspace$new(config$eval_workspace)`)
+    #' @param backend an object of class `ParallelBackend` to run parallel
+    #' computations (default:
+    #' `ParallelBackend$new(config$parallel, config$cores)`)
+    #' @param logger a logger object with `info`, `debug`, `warn` and `error`
+    #' methods (default: uses the logger package)
     #' @param summary_class a class to build the summary of the evaluation
     #'  (default: `ComparisonSummary`)
-    initialize = function(config, workspace = NULL, backend = NULL, logger = default_logger, summary_class = ComparisonSummary) {
+    initialize = function(
+      config, workspace = NULL, backend = NULL, logger = default_logger,
+      summary_class = ComparisonSummary
+    ) {
       config$validate_eval()
       private$config <- config
-      private$backend <- backend %||% ParallelBackend$new(config$parallel, config$cores)
-      private$workspace <- workspace %||% EvalWorkspace$new(config$eval_workspace)
+      private$backend <- backend %||% ParallelBackend$new(
+        config$parallel, config$cores
+      )
+      private$workspace <- workspace %||% EvalWorkspace$new(
+        config$eval_workspace
+      )
       private$logger <- logger
       private$summary_class <- summary_class
     },
@@ -206,7 +242,10 @@ Evaluation <- R6::R6Class("Evaluation",
     run = function() {
       on.exit({
         end_time <- Sys.time()
-        private$logger$info("Evaluation time: ", format_duration(start_time, end_time))
+        private$logger$info(
+          "Evaluation time: ",
+          format_duration(start_time, end_time)
+        )
       }, add = TRUE)
       start_time <- Sys.time()
 
@@ -237,8 +276,11 @@ Evaluation <- R6::R6Class("Evaluation",
         private$evaluate_species(species)
         private$build_summary(species)
       }, error = function(e) {
-        private$logger$error(paste(utils::capture.output(print(e)), collapse = "\n"))
-        stop(e)
+        private$logger$error(conditionMessage(e))
+        private$logger$debug(
+          paste(capture.output(rlang::last_trace()), collapse = "\n")
+        )
+        rlang::abort(conditionMessage(e), parent = e)
       })
     }
   )

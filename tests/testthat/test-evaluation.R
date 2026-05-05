@@ -1,6 +1,7 @@
-library(testthat)
-
 # ---- Helpers ----
+
+format_duration <- function(...) "1s"
+format_species <- function(x) paste(x, collapse = ",")
 
 replace_private <- function(obj, name, fn) {
   env <- obj$.__enclos_env__$private
@@ -20,6 +21,8 @@ make_fake_logger <- function() {
     error = function(...) {
       env$error_calls <- append(env$error_calls, list(list(...)))
     },
+    debug = function(...) {},
+    warn = function(...) {},
     .env = env
   )
 }
@@ -48,7 +51,7 @@ make_fake_workspace <- function() {
   list(
     init = function(...) {},
     get_species = function() c("wheat", "barley"),
-    get_species_usm = function(sp, usms) c("usm1"),
+    get_species_usm = function(sp, usms) "usm1",
     get_sim = function(...) data.frame(),
     get_obs = function(...) data.frame(),
     save_stats = function(...) {},
@@ -77,7 +80,12 @@ make_base_cfg <- function(...) {
   utils::modifyList(defaults, list(...))
 }
 
-make_eval <- function(cfg, workspace = make_fake_workspace(), logger = make_fake_logger(), summary = make_fake_summary()) {
+make_eval <- function(
+  cfg,
+  workspace = make_fake_workspace(),
+  logger = make_fake_logger(),
+  summary = make_fake_summary()
+) {
   Evaluation$new(cfg,
     workspace = workspace,
     backend = fake_backend,
@@ -118,6 +126,11 @@ test_that("get_species_to_evaluate filters by species and usms", {
   workspace <- make_fake_workspace()
   workspace$get_species <- function() c("wheat", "barley", "corn")
 
+  workspace$get_species_usm <- function(sp, usms) {
+    if (sp %in% c("wheat", "corn")) return("usm1")
+    character(0)
+  }
+
   eval <- make_eval(
     make_base_cfg(species = c("wheat", "corn"), usms = "usm1"),
     workspace = workspace
@@ -125,35 +138,46 @@ test_that("get_species_to_evaluate filters by species and usms", {
 
   species <- eval$.__enclos_env__$private$get_species_to_evaluate()
 
-  expect_equal(species, c("wheat", "corn"))
+  expect_identical(species, c("wheat", "corn"))
 })
 
 test_that("run logs and rethrows error", {
   logger <- make_fake_logger()
   workspace <- make_fake_workspace()
-  workspace$get_species <- function() stop("boom")
+  workspace$get_species <- function() stop("fail", call. = FALSE)
 
   eval <- make_eval(make_base_cfg(), workspace = workspace, logger = logger)
 
-  expect_error(eval$run(), "boom")
-  expect_true(length(logger$.env$error_calls) > 0)
+  expect_error(eval$run(), "fail")
+  expect_gt(length(logger$.env$error_calls), 0)
 })
 
 test_that("evaluate_species skips comparison if no reference_version", {
-  called <- FALSE
   eval <- make_eval(make_base_cfg())
   replace_private(eval, "gen_species_stats", function(...) {})
-  replace_private(eval, "gen_deteriorated_usm", function(...) { called <<- TRUE })
+  called <- new.env()
+  called$flag <- FALSE
 
-  eval$.__enclos_env__$private$evaluate_species(c("wheat"))
+  replace_private(
+    eval,
+    "gen_deteriorated_usm",
+    function(...) {
+      called$flag <- TRUE
+    }
+  )
 
-  expect_false(called)
+  eval$.__enclos_env__$private$evaluate_species("wheat")
+
+  expect_false(called$flag)
 })
 
 test_that("workspace init is called when enabled", {
-  called <- FALSE
   workspace <- make_fake_workspace()
-  workspace$init <- function(...) { called <<- TRUE }
+  called <- new.env()
+  called$flag <- FALSE
+  workspace$init <- function(...) {
+    called$flag <- TRUE
+  }
 
   cfg <- make_base_cfg(
     init_workspace = TRUE,
@@ -167,5 +191,5 @@ test_that("workspace init is called when enabled", {
 
   eval$run()
 
-  expect_true(called)
+  expect_true(called$flag)
 })

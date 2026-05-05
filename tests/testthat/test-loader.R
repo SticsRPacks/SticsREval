@@ -29,26 +29,26 @@ make_fake_workspace <- function() {
 
 make_fake_backend <- function() {
   list(
-    run      = function(n, fun) lapply(seq_len(n), fun),
+    run = function(n, fun) lapply(seq_len(n), fun),
     parallel = FALSE,
-    cores    = 1
+    cores = 1
   )
 }
 
 make_loader <- function(
-  workspace      = make_fake_workspace(),
-  backend        = make_fake_backend(),
+  workspace = make_fake_workspace(),
+  backend = make_fake_backend(),
   usms_workspace = withr::local_tempdir(),
-  metadata_file  = tempfile(fileext = ".csv"),
-  stics_exe      = "/stics",
+  metadata_file = tempfile(fileext = ".csv"),
+  stics_exe = "/stics",
   run_simulations = FALSE
 ) {
   WorkspaceLoader$new(
-    workspace       = workspace,
-    backend         = backend,
-    usms_workspace  = usms_workspace,
-    metadata_file   = metadata_file,
-    stics_exe       = stics_exe,
+    workspace = workspace,
+    backend = backend,
+    usms_workspace = usms_workspace,
+    metadata_file = metadata_file,
+    stics_exe = stics_exe,
     run_simulations = run_simulations
   )
 }
@@ -68,7 +68,7 @@ call_private <- function(loader, name, ...) {
 # ---- get_rotation_list ----
 
 test_that("get_rotation_list errors when metadata file does not exist", {
-  loader <- make_loader(metadata_file = "/nonexistent/path.csv")
+  loader <- make_loader(metadata_file = file.path("nonexistent", "path.csv"))
   expect_error(
     call_private(loader, "get_rotation_list"),
     "Metadata file not found"
@@ -103,7 +103,7 @@ test_that("get_rotation_list returns empty list when no rows", {
 
   loader <- make_loader(metadata_file = path)
   result <- call_private(loader, "get_rotation_list")
-  expect_equal(result, list())
+  expect_identical(result, list())
 })
 
 test_that("get_rotation_list excludes rows where rotation is NA or '0'", {
@@ -136,8 +136,8 @@ test_that("get_rotation_list groups USMs by rotation in order", {
   result <- call_private(loader, "get_rotation_list")
 
   expect_length(result, 2)
-  expect_equal(result[[1]], c("usm1", "usm2"))  # rot1, ordered by rotation_order
-  expect_equal(result[[2]], c("usm3"))           # rot2
+  expect_identical(result[[1]], c("usm1", "usm2"))
+  expect_identical(result[[2]], "usm3")
 })
 
 test_that("get_rotation_list handles single-USM rotations", {
@@ -151,7 +151,7 @@ test_that("get_rotation_list handles single-USM rotations", {
   result <- call_private(loader, "get_rotation_list")
 
   expect_length(result, 1)
-  expect_equal(result[[1]], "usm1")
+  expect_identical(result[[1]], "usm1")
 })
 
 # ---- load ----
@@ -167,13 +167,18 @@ test_that("load sets workspace version to stics version", {
   workspace <- make_fake_workspace()
 
   loader <- make_loader(
-    workspace      = workspace,
+    workspace = workspace,
     usms_workspace = ws_dir,
-    metadata_file  = meta_path
+    metadata_file = meta_path
   )
 
   replace_private(loader, "extract_species_from_usms",
-    function(...) data.frame(usm = "usm1", species = "wheat")
+    function(...) {
+      data.frame(
+        usm = "usm1", species = "wheat",
+        stringsAsFactors = FALSE
+      )
+    }
   )
   replace_private(loader, "load_stics_version", function() "v1")
   replace_private(loader, "load_sim", function(...) invisible(NULL))
@@ -181,7 +186,7 @@ test_that("load sets workspace version to stics version", {
 
   loader$load()
 
-  expect_equal(workspace$get_version(), "v1")
+  expect_identical(workspace$get_version(), "v1")
 })
 
 test_that("load discovers USMs from usms_workspace subdirectories", {
@@ -193,20 +198,24 @@ test_that("load discovers USMs from usms_workspace subdirectories", {
   write_metadata(meta_path, "usm;rotation;rotation_order")
 
   seen_usms <- NULL
-  loader    <- make_loader(
+  loader <- make_loader(
     usms_workspace = ws_dir,
-    metadata_file  = meta_path
+    metadata_file = meta_path
   )
 
+  seen_usms <- new.env()
+  seen_usms$value <- NULL
+
   replace_private(loader, "extract_species_from_usms", function(usms) {
-    seen_usms <<- usms
-    data.frame(usm = usms, species = "wheat")
+    seen_usms$value <- usms
+    data.frame(usm = usms, species = "wheat", stringsAsFactors = FALSE)
   })
+
   replace_private(loader, "load_stics_version", function() "v1")
-  replace_private(loader, "load_sim",           function(...) invisible(NULL))
-  replace_private(loader, "load_obs",           function(...) invisible(NULL))
+  replace_private(loader, "load_sim", function(...) invisible(NULL))
+  replace_private(loader, "load_obs", function(...) invisible(NULL))
 
   loader$load()
 
-  expect_setequal(seen_usms, c("usm1", "usm2"))
+  expect_setequal(seen_usms$value, c("usm1", "usm2"))
 })

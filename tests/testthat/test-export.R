@@ -1,32 +1,29 @@
-library(testthat)
-library(mockery)
-library(withr)
-
 # -----------------------------
 # prepare_species_output_dir
 # -----------------------------
 
 test_that("prepare_species_output_dir creates directory when missing", {
-  tmp <- local_tempdir()
+  tmp <- withr::local_tempdir()
 
   out <- prepare_species_output_dir(tmp, "wheat")
 
   expect_true(dir.exists(out))
-  expect_equal(basename(out), "wheat")
+  expect_identical(basename(out), "wheat")
 })
 
 test_that("prepare_species_output_dir returns existing directory", {
-  tmp <- local_tempdir()
+  tmp <- withr::local_tempdir()
   dir.create(file.path(tmp, "barley"))
 
   out <- prepare_species_output_dir(tmp, "barley")
 
   expect_true(dir.exists(out))
-  expect_true(grepl("barley$", out))
+  expect_false(is.na(out))
+  expect_true(endsWith(out, "barley"))
 })
 
 test_that("prepare_species_output_dir fails when dir cannot be created", {
-  tmp <- local_tempdir()
+  tmp <- withr::local_tempdir()
 
   stub(prepare_species_output_dir, "dir.create", function(...) FALSE)
 
@@ -42,7 +39,7 @@ test_that("prepare_species_output_dir fails when dir cannot be created", {
 
 test_that("export_stats_to_csv runs with minimal valid config", {
 
-  tmp <- local_tempdir()
+  tmp <- withr::local_tempdir()
 
   config <- list(
     output_dir = tmp,
@@ -54,9 +51,9 @@ test_that("export_stats_to_csv runs with minimal valid config", {
 
   # ---- Mock EvalWorkspace ----
   ew <- R6::R6Class(
-  "FakeWorkspace",
+    "FakeWorkspace",
     public = list(
-      get_species = function() c("wheat"),
+      get_species = function() "wheat",
       get_stats = function(...) data.frame(a = 1),
       get_rmse_per_usm = function(...) data.frame(b = 2),
       get_deteriorated_usm = function(...) {
@@ -91,7 +88,7 @@ test_that("export_stats_to_csv runs with minimal valid config", {
 
 test_that("export_stats_to_csv skips NULL datasets", {
 
-  tmp <- local_tempdir()
+  tmp <- withr::local_tempdir()
 
   config <- list(
     output_dir = tmp,
@@ -104,7 +101,7 @@ test_that("export_stats_to_csv skips NULL datasets", {
   ew <- R6::R6Class(
     "FakeWorkspace",
     public = list(
-      get_species = function() c("wheat"),
+      get_species = function() "wheat",
       get_stats = function(...) NULL,
       get_rmse_per_usm = function(...) NULL,
       get_deteriorated_usm = function(...) {
@@ -117,7 +114,11 @@ test_that("export_stats_to_csv skips NULL datasets", {
 
   stub(export_stats_to_csv, "logger::log_info", function(...) NULL)
   stub(export_stats_to_csv, "format_duration", function(...) "0s")
-  stub(export_stats_to_csv, "safe_write_csv", function(...) stop("should not be called"))
+  stub(
+    export_stats_to_csv,
+    "safe_write_csv",
+    function(...) stop("should not be called", call. = FALSE)
+  )
 
   expect_silent(export_stats_to_csv(config))
 })

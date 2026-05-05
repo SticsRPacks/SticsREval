@@ -46,12 +46,13 @@ Evaluation$new(config)$run()
     \if{html}{\out{<div class="arguments">}}
     \describe{
       \item{\code{config}}{the configuration of the evaluation workflow}
-      \item{\code{workspace}}{an object of class \code{EvalWorkspace} to access the evaluation data
-(default: \code{EvalWorkspace$new(config$eval_workspace)})}
-      \item{\code{backend}}{an object of class \code{ParallelBackend} to run parallel computations
-(default: \code{ParallelBackend$new(config$parallel, config$cores)})}
-      \item{\code{logger}}{a logger object with \code{info}, \code{debug}, \code{warn} and \code{error} methods
-(default: uses the logger package)}
+      \item{\code{workspace}}{an object of class \code{EvalWorkspace} to access the
+evaluation data (default: \code{EvalWorkspace$new(config$eval_workspace)})}
+      \item{\code{backend}}{an object of class \code{ParallelBackend} to run parallel
+computations (default:
+\code{ParallelBackend$new(config$parallel, config$cores)})}
+      \item{\code{logger}}{a logger object with \code{info}, \code{debug}, \code{warn} and \code{error}
+methods (default: uses the logger package)}
       \item{\code{summary_class}}{a class to build the summary of the evaluation
 (default: \code{ComparisonSummary})}
     }
