@@ -1,3 +1,6 @@
+#' @importFrom rlang .data
+NULL
+
 remove_null_values <- function(l) {
   result <- l[!vapply(l, is.null, logical(1))]
   if (length(result) == 0) list() else result

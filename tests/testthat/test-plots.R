@@ -1,356 +1,202 @@
-# ===========================================================================
-# Tests: gen_scatter_plot
-# ===========================================================================
-
-test_that("gen_scatter_plot calls CroPlotR plot with correct arguments", {
-  fake_ggplot <- list()
-  class(fake_ggplot) <- "ggplot"
-  fake_sim <- list()
-  class(fake_sim) <- "cropr_simulation"
-  fake_obs <- list()
-  fake_ref_sim <- list()
-  class(fake_ref_sim) <- "cropr_simulation"
-  captured_env <- new.env(parent = emptyenv())
-
-  stub(gen_scatter_plot, "getS3method", function(...) {
-    function(...) {
-      assign("captured", list(...), envir = captured_env)
-      list()
-    }
-  })
-  stub(
-    gen_scatter_plot,
-    "CroPlotR::extract_plot",
-    mock(list(fake_ggplot), cycle = TRUE)
-  )
-  stub(gen_scatter_plot, "plotly::ggplotly", mock(list(), cycle = TRUE))
-  stub(gen_scatter_plot, "htmltools::save_html", mock(NULL))
-
-  gen_scatter_plot(
+fake_config <- function() {
+  config <- list(
     output_dir = tempdir(),
-    sim = fake_sim,
-    obs = fake_obs,
-    ref_sim = fake_ref_sim,
-    vars = c("LAI", "MASEC")
-  )
-
-  expect_identical(captured_env$captured$obs, fake_obs)
-  expect_identical(captured_env$captured$type, "scatter")
-  expect_identical(captured_env$captured$select_scat, "sim")
-  expect_identical(captured_env$captured$var, c("LAI", "MASEC"))
-})
-
-test_that("gen_scatter_plot calls extract_plot once per variable", {
-  fake_ggplot <- list()
-  class(fake_ggplot) <- "ggplot"
-  fake_sim <- list()
-  class(fake_sim) <- "cropr_simulation"
-  fake_ref_sim <- list()
-  class(fake_ref_sim) <- "cropr_simulation"
-  mock_extract <- mock(list(fake_ggplot), cycle = TRUE)
-
-  stub(gen_scatter_plot, "getS3method", function(...) function(...) list())
-  stub(gen_scatter_plot, "CroPlotR::extract_plot", mock_extract)
-  stub(gen_scatter_plot, "plotly::ggplotly", mock(list(), cycle = TRUE))
-  stub(gen_scatter_plot, "htmltools::save_html", mock(NULL))
-
-  gen_scatter_plot(
-    tempdir(),
-    sim = fake_sim,
-    obs = list(),
-    ref_sim = fake_ref_sim,
-    vars = c("LAI", "MASEC", "ZRAC")
-  )
-
-  expect_called(mock_extract, 3)
-})
-
-test_that("gen_scatter_plot saves HTML to output_dir/scatter_plots.html", { # nolint: nonportable_path_linter
-  fake_ggplot <- list()
-  class(fake_ggplot) <- "ggplot"
-  fake_sim <- list()
-  class(fake_sim) <- "cropr_simulation"
-  fake_ref_sim <- list()
-  class(fake_ref_sim) <- "cropr_simulation"
-  mock_save_html <- mock(NULL)
-
-  stub(gen_scatter_plot, "getS3method", function(...) function(...) list())
-  stub(
-    gen_scatter_plot,
-    "CroPlotR::extract_plot",
-    mock(list(fake_ggplot), cycle = TRUE)
-  )
-  stub(gen_scatter_plot, "plotly::ggplotly", mock(list(), cycle = TRUE))
-  stub(gen_scatter_plot, "htmltools::save_html", mock_save_html)
-
-  out_dir <- tempdir()
-  gen_scatter_plot(
-    out_dir,
-    sim = fake_sim,
-    obs = list(),
-    ref_sim = fake_ref_sim,
-    vars = "LAI"
-  )
-
-  args <- mock_args(mock_save_html)[[1]]
-  expect_identical(args$file, file.path(out_dir, "scatter_plots.html"))
-})
-
-test_that("gen_scatter_plot returns NULL invisibly", {
-  fake_sim <- list()
-  class(fake_sim) <- "cropr_simulation"
-  fake_ref_sim <- list()
-  class(fake_ref_sim) <- "cropr_simulation"
-
-  stub(gen_scatter_plot, "getS3method", function(...) function(...) list())
-  fake_ggplot <- list()
-  class(fake_ggplot) <- "ggplot"
-  stub(
-    gen_scatter_plot,
-    "CroPlotR::extract_plot",
-    mock(list(fake_ggplot), cycle = TRUE)
-  )
-  stub(gen_scatter_plot, "plotly::ggplotly", mock(list(), cycle = TRUE))
-  stub(gen_scatter_plot, "htmltools::save_html", mock(NULL))
-
-  result <- gen_scatter_plot(
-    tempdir(),
-    sim = fake_sim,
-    obs = list(),
-    ref_sim = fake_ref_sim,
-    vars = "LAI"
-  )
-
-  expect_null(result)
-})
-
-# ===========================================================================
-# Helpers: gen_comparison_plot
-# ===========================================================================
-
-make_comparison_df <- function() {
-  data.frame(
-    variable = c("LAI", "MASEC", "ZRAC"),
-    rmse_ref = c(0.5,   1.0,    0.3),
-    rmse_new = c(0.6,   0.8,    0.5),
-    ratio = c(1.2,   0.8,    1.7),
-    stringsAsFactors = FALSE
-  )
-}
-
-# ===========================================================================
-# Tests: gen_comparison_plot
-# ===========================================================================
-
-test_that("gen_comparison_plot calls CroPlotR::save_plot_png", {
-  mock_save <- mock(NULL)
-  stub(gen_comparison_plot, "CroPlotR::save_plot_png", mock_save)
-
-  gen_comparison_plot(
-    output_dir = tempdir(),
-    comparison = make_comparison_df(),
-    percentage = 20
-  )
-
-  expect_called(mock_save, 1)
-})
-
-test_that("gen_comparison_plot passes output_dir to save_plot_png", {
-  mock_save <- mock(NULL)
-  stub(gen_comparison_plot, "CroPlotR::save_plot_png", mock_save)
-
-  out_dir <- tempdir()
-  gen_comparison_plot(out_dir, make_comparison_df(), percentage = 20)
-
-  args <- mock_args(mock_save)[[1]]
-  expect_identical(args$out_dir, out_dir)
-})
-
-test_that(
-  "gen_comparison_plot assigns correct status based on ratio and percentage",
-  {
-    mock_save <- mock(NULL)
-    captured  <- NULL
-
-    captured_env <- new.env(parent = emptyenv())
-
-    stub(gen_comparison_plot, "CroPlotR::save_plot_png", function(p, ...) {
-      assign("captured", p, envir = captured_env)
-      NULL
-    })
-
-    gen_comparison_plot(
-      output_dir = tempdir(),
-      comparison = make_comparison_df(),
-      percentage = 20
-    )
-
-    expect_s3_class(captured_env$captured, "ggplot")
-  }
-)
-
-test_that("gen_comparison_plot uses suffix 'scatter_' for save_plot_png", {
-  mock_save <- mock(NULL)
-  stub(gen_comparison_plot, "CroPlotR::save_plot_png", mock_save)
-
-  gen_comparison_plot(tempdir(), make_comparison_df(), percentage = 10)
-
-  args <- mock_args(mock_save)[[1]]
-  expect_identical(args$suffix, "scatter_")
-})
-
-# ===========================================================================
-# Tests: gen_plots
-# ===========================================================================
-
-make_fake_config <- function(overrides = list()) {
-  cfg <- list(
-    output_dir = tempdir(),
-    reference_version = "1.0.0",
-    percentage = 20,
+    percentage = 5,
+    reference_version = "v1",
     parallel = FALSE,
-    cores = NA,
-    eval_workspace = list()
+    cores = 1,
+    eval_workspace = "dummy"
   )
-  for (nm in names(overrides)) cfg[[nm]] <- overrides[[nm]]
-  cfg
+
+  config$validate_export <- function() config
+  config$validate_plots <- function() config
+
+  config
 }
 
-test_that("gen_plots calls validate_export_config and validate_plots_config", {
-  mock_validate_export <- mock(NULL)
-  mock_validate_plots <- mock(NULL)
-  mock_species <- mock(character(0))
-  mock_loop <- mock(list())
+fake_workspace <- function(species = "wheat") {
+  ws <- list(
+    get_species = function() species,
 
-  stub(gen_plots, "validate_export_config", mock_validate_export)
-  stub(gen_plots, "validate_plots_config", mock_validate_plots)
-  stub(gen_plots, "get_species", mock_species)
-  stub(gen_plots, "parallelizable_loop", mock_loop)
+    get_species_comparison = function(spec, pct) {
+      if (spec == "empty") return(NULL)
 
-  gen_plots(make_fake_config())
+      list(
+        critical_vars = "var1",
+        warning_vars = "var2",
+        plot_comparison = function(...) NULL
+      )
+    },
 
-  expect_called(mock_validate_export, 1)
-  expect_called(mock_validate_plots,  1)
-})
+    get_sim = function(...) data.frame(x = 1, stringsAsFactors = FALSE),
+    get_obs = function(...) data.frame(x = 2, stringsAsFactors = FALSE),
 
-test_that("gen_plots skips plot generation when spec_comparison is NULL", {
-  mock_loop <- mock(NULL)
-
-  stub(gen_plots, "validate_export_config", mock(NULL))
-  stub(gen_plots, "validate_plots_config", mock(NULL))
-  stub(gen_plots, "get_species", mock("wheat"))
-  stub(gen_plots, "parallelizable_loop", mock_loop)
-  stub(gen_plots, "prepare_species_output_dir", mock(tempdir()))
-  stub(gen_plots, "get_species_comparison", mock(NULL))
-  stub(gen_plots, "gen_comparison_plot", mock(NULL))
-
-  gen_plots(make_fake_config())
-
-  expect_called(mock_loop, 1)
-})
-
-test_that(
-  "gen_plots calls gen_comparison_plot when comparison data is available",
-  {
-    mock_gen_comparison <- mock(NULL)
-    mock_gen_scatter <- mock(NULL)
-
-    stub(gen_plots, "validate_export_config", mock(NULL))
-    stub(gen_plots, "validate_plots_config", mock(NULL))
-    stub(gen_plots, "get_species", mock("wheat"))
-    stub(
-      gen_plots,
-      "parallelizable_loop",
-      function(n, par, cores, fn) lapply(seq_len(n), fn)
-    )
-    stub(gen_plots, "prepare_species_output_dir", mock(tempdir()))
-    stub(gen_plots, "get_species_comparison", mock(make_comparison_df()))
-    stub(gen_plots, "gen_comparison_plot", mock_gen_comparison)
-    stub(gen_plots, "get_crit_vars", mock(character(0)))
-    stub(gen_plots, "get_warn_vars", mock(character(0)))
-
-    gen_plots(make_fake_config())
-
-    expect_called(mock_gen_comparison, 1)
-  }
-)
-
-test_that(
-  "gen_plots calls gen_scatter_plot when deteriorated vars and ref_sim exist",
-  {
-    mock_gen_scatter <- mock(NULL)
-
-    stub(gen_plots, "validate_export_config", mock(NULL))
-    stub(gen_plots, "validate_plots_config", mock(NULL))
-    stub(gen_plots, "get_species", mock("wheat"))
-    stub(
-      gen_plots,
-      "parallelizable_loop",
-      function(n, par, cores, fn) lapply(seq_len(n), fn)
-    )
-    stub(gen_plots, "prepare_species_output_dir", mock(tempdir()))
-    stub(gen_plots, "get_stics_version", mock("1.0.0"))
-    stub(gen_plots, "get_species_comparison", mock(make_comparison_df()))
-    stub(gen_plots, "gen_comparison_plot", mock(NULL))
-    stub(gen_plots, "get_crit_vars", mock("LAI"))
-    stub(gen_plots, "get_warn_vars", mock(character(0)))
-    stub(gen_plots, "get_sim", mock(data.frame(), cycle = TRUE))
-    stub(gen_plots, "get_obs", mock(data.frame(), cycle = TRUE))
-    stub(gen_plots, "CroPlotR::split_df2sim", mock(list(), cycle = TRUE))
-    stub(gen_plots, "gen_scatter_plot", mock_gen_scatter)
-
-    gen_plots(make_fake_config())
-
-    expect_called(mock_gen_scatter, 1)
-  }
-)
-
-test_that(
-  "gen_plots does not call gen_scatter_plot when no deteriorated vars",
-  {
-    mock_gen_scatter <- mock(NULL)
-
-    stub(gen_plots, "validate_export_config", mock(NULL))
-    stub(gen_plots, "validate_plots_config", mock(NULL))
-    stub(gen_plots, "get_species", mock("wheat"))
-    stub(
-      gen_plots,
-      "parallelizable_loop",
-      function(n, par, cores, fn) lapply(seq_len(n), fn)
-    )
-    stub(gen_plots, "prepare_species_output_dir", mock(tempdir()))
-    stub(gen_plots, "get_species_comparison", mock(make_comparison_df()))
-    stub(gen_plots, "gen_comparison_plot", mock(NULL))
-    stub(gen_plots, "get_crit_vars", mock(character(0)))
-    stub(gen_plots, "get_warn_vars", mock(character(0)))
-    stub(gen_plots, "gen_scatter_plot", mock_gen_scatter)
-
-    gen_plots(make_fake_config())
-
-    expect_called(mock_gen_scatter, 0)
-  }
-)
-
-test_that("gen_plots does not call gen_scatter_plot when ref_sim is NULL", {
-  mock_gen_scatter <- mock(NULL)
-
-  stub(gen_plots, "validate_export_config", mock(NULL))
-  stub(gen_plots, "validate_plots_config", mock(NULL))
-  stub(gen_plots, "get_species", mock("wheat"))
-  stub(
-    gen_plots,
-    "parallelizable_loop",
-    function(n, par, cores, fn) lapply(seq_len(n), fn)
+    with_version = function(...) fake_workspace(species)
   )
-  stub(gen_plots, "prepare_species_output_dir", mock(tempdir()))
-  stub(gen_plots, "get_species_comparison", mock(make_comparison_df()))
-  stub(gen_plots, "gen_comparison_plot", mock(NULL))
-  stub(gen_plots, "get_crit_vars", mock("LAI"))
-  stub(gen_plots, "get_warn_vars", mock(character(0)))
-  stub(gen_plots, "get_sim", mock(NULL))
-  stub(gen_plots, "gen_scatter_plot", mock_gen_scatter)
+  class(ws) <- "fake_workspace"
+  ws
+}
 
-  gen_plots(make_fake_config())
+fake_backend <- function() {
+  list(
+    run = function(n, f) {
+      lapply(seq_len(n), f)
+      invisible(NULL)
+    }
+  )
+}
 
-  expect_called(mock_gen_scatter, 0)
+test_that("gen_plots calls scatter when deteriorated vars exist", {
+
+  config <- fake_config()
+  workspace <- fake_workspace("wheat")
+  backend <- fake_backend()
+
+  called <- new.env()
+  called$flag <- FALSE
+
+  gen_plots(
+    config,
+    workspace = workspace,
+    backend = backend,
+    scatter_fn = function(...) {
+      called$flag <- TRUE
+    },
+    comparison_fn = function(...) NULL,
+    logger_info = function(...) NULL
+  )
+
+  expect_true(called$flag)
+})
+
+test_that("gen_plots skips species when comparison is NULL", {
+
+  config <- fake_config()
+  workspace <- fake_workspace("empty")
+  backend <- fake_backend()
+
+  called <- FALSE
+
+  called <- new.env()
+  called$flag <- FALSE
+
+  gen_plots(
+    config,
+    workspace = workspace,
+    backend = backend,
+    scatter_fn = function(...) {
+      called$flag <- TRUE
+    },
+    comparison_fn = function(...) NULL,
+    logger_info = function(...) NULL
+  )
+
+  expect_false(called$flag)
+})
+
+test_that("gen_plots does not call scatter when ref_sim is NULL", {
+
+  config <- fake_config()
+
+  workspace <- list(
+    get_species = function() "wheat",
+
+    get_species_comparison = function(...) {
+      list(
+        critical_vars = "var1",
+        warning_vars = "var2",
+        plot_comparison = function(...) NULL
+      )
+    },
+
+    get_sim = function(...) NULL,
+    get_obs = function(...) data.frame(x = 2, stringsAsFactors = FALSE),
+
+    with_version = function(...) workspace
+  )
+  class(workspace) <- "fake_workspace"
+
+  backend <- fake_backend()
+
+  called <- new.env()
+  called$flag <- FALSE
+
+  gen_plots(
+    config,
+    workspace = workspace,
+    backend = backend,
+    scatter_fn = function(...) {
+      called$flag <- TRUE
+    },
+    comparison_fn = function(...) NULL,
+    logger_info = function(...) NULL
+  )
+
+  expect_false(called$flag)
+})
+
+test_that("gen_plots skips scatter when no deteriorated vars", {
+
+  config <- fake_config()
+
+  workspace <- list(
+    get_species = function() "wheat",
+
+    get_species_comparison = function(...) {
+      list(
+        critical_vars = character(0),
+        warning_vars = character(0),
+        plot_comparison = function(...) NULL
+      )
+    },
+
+    get_sim = function(...) data.frame(x = 1, stringsAsFactors = FALSE),
+    get_obs = function(...) data.frame(x = 2, stringsAsFactors = FALSE),
+
+    with_version = function(...) workspace
+  )
+  class(workspace) <- "fake_workspace"
+
+  backend <- fake_backend()
+
+  called <- new.env()
+  called$flag <- FALSE
+
+  gen_plots(
+    config,
+    workspace = workspace,
+    backend = backend,
+    scatter_fn = function(...) {
+      called$flag <- TRUE
+    },
+    comparison_fn = function(...) NULL,
+    logger_info = function(...) NULL
+  )
+
+  expect_false(called$flag)
+})
+
+test_that("gen_plots calls comparison function", {
+
+  config <- fake_config()
+  workspace <- fake_workspace("wheat")
+  backend <- fake_backend()
+
+  called <- FALSE
+
+  called <- new.env()
+  called$flag <- FALSE
+
+  gen_plots(
+    config,
+    workspace = workspace,
+    backend = backend,
+    scatter_fn = function(...) NULL,
+    comparison_fn = function(...) {
+      called$flag <- TRUE
+    },
+    logger_info = function(...) NULL
+  )
+
+  expect_true(called$flag)
 })

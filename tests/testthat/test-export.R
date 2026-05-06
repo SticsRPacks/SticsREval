@@ -1,235 +1,124 @@
-# ===========================================================================
-# Tests: prepare_species_output_dir
-# ===========================================================================
+# -----------------------------
+# prepare_species_output_dir
+# -----------------------------
 
-test_that(
-  "prepare_species_output_dir creates the directory and returns its path",
-  {
-    base <- file.path(tempdir(), basename(tempfile()))
-    result <- prepare_species_output_dir(base, "wheat")
+test_that("prepare_species_output_dir creates directory when missing", {
+  tmp <- withr::local_tempdir()
 
-    expect_true(dir.exists(result))
-    expect_identical(result, file.path(base, "wheat"))
-  }
-)
+  out <- prepare_species_output_dir(tmp, "wheat")
 
-test_that(
-  "prepare_species_output_dir returns path when directory already exists",
-  {
-    base <- file.path(tempdir(), basename(tempfile()))
-    dir.create(file.path(base, "wheat"), recursive = TRUE)
-
-    result <- prepare_species_output_dir(base, "wheat")
-    expect_identical(result, file.path(base, "wheat"))
-  }
-)
-
-test_that("prepare_species_output_dir creates nested directories recursively", {
-  base <- file.path(tempdir(), basename(tempfile()), "nested")
-  result <- prepare_species_output_dir(base, "maize")
-
-  expect_true(dir.exists(result))
+  expect_true(dir.exists(out))
+  expect_identical(basename(out), "wheat")
 })
 
-test_that(
-  "prepare_species_output_dir throws an error when directory cannot be created",
-  {
-    invalid_path <- if (.Platform$OS.type == "windows") {
-      "C:/invalid:path/test" # nolint: nonportable_path_linter
-    } else {
-      "/proc/invalid_root_path" # nolint: nonportable_path_linter
-    }
-    expect_error(
-      suppressWarnings(
-        prepare_species_output_dir(invalid_path, "wheat")
-      ),
-      regexp = "Can't create output directory"
-    )
-  }
-)
+test_that("prepare_species_output_dir returns existing directory", {
+  tmp <- withr::local_tempdir()
+  dir.create(file.path(tmp, "barley"))
 
-# ===========================================================================
-# Helpers
-# ===========================================================================
+  out <- prepare_species_output_dir(tmp, "barley")
 
-make_export_config <- function(overrides = list()) {
-  cfg <- list(
-    output_dir = file.path(tempdir(), basename(tempfile())),
-    eval_workspace = list()
+  expect_true(dir.exists(out))
+  expect_false(is.na(out))
+  expect_true(endsWith(out, "barley"))
+})
+
+test_that("prepare_species_output_dir fails when dir cannot be created", {
+  tmp <- withr::local_tempdir()
+
+  stub(prepare_species_output_dir, "dir.create", function(...) FALSE)
+
+  expect_error(
+    prepare_species_output_dir(tmp, "maize"),
+    "Can't create output directory"
   )
-  for (nm in names(overrides)) cfg[[nm]] <- overrides[[nm]]
-  cfg
-}
-
-# ===========================================================================
-# Tests: export_stats_to_csv
-# ===========================================================================
-
-test_that("export_stats_to_csv calls validate_export_config", {
-  mock_validate <- mock(NULL)
-
-  stub(export_stats_to_csv, "validate_export_config", mock_validate)
-  stub(export_stats_to_csv, "get_species", mock(character(0)))
-
-  export_stats_to_csv(make_export_config())
-  expect_called(mock_validate, 1)
 })
 
-test_that(
-  "export_stats_to_csv writes Criteres_stats.csv when stats available",
-  {
-    mock_write <- mock(NULL)
-    cfg        <- make_export_config()
+# -----------------------------
+# export_stats_to_csv
+# -----------------------------
 
-    stub(export_stats_to_csv, "validate_export_config", mock(NULL))
-    stub(export_stats_to_csv, "get_species", mock("wheat"))
-    stub(
-      export_stats_to_csv,
-      "prepare_species_output_dir",
-      mock(cfg$output_dir)
+test_that("export_stats_to_csv runs with minimal valid config", {
+
+  tmp <- withr::local_tempdir()
+
+  config <- list(
+    output_dir = tmp,
+    percentage = 10,
+    eval_workspace = "dummy"
+  )
+
+  config$validate_export <- function() NULL
+
+  # ---- Mock EvalWorkspace ----
+  ew <- R6::R6Class(
+    "FakeWorkspace",
+    public = list(
+      get_species = function() "wheat",
+      get_stats = function(...) data.frame(a = 1),
+      get_rmse_per_usm = function(...) data.frame(b = 2),
+      get_deteriorated_usm = function(...) {
+        list(get_data = function() data.frame(c = 3))
+      }
     )
-    stub(export_stats_to_csv, "get_stats", mock(data.frame(x = 1)))
-    stub(export_stats_to_csv, "get_rmse_per_usm", mock(NULL))
-    stub(export_stats_to_csv, "get_deteriorated_usm", mock(NULL))
-    stub(export_stats_to_csv, "safe_write_csv", mock_write)
+  )$new()
 
-    export_stats_to_csv(cfg)
+  stub(export_stats_to_csv, "EvalWorkspace$new", function(...) ew)
 
-    expect_called(mock_write, 1)
-    args <- mock_args(mock_write)[[1]]
-    expect_match(args[[2]], "Criteres_stats\\.csv$") # nolint: nonportable_path_linter
-  }
-)
+  # avoid real logging noise
+  stub(export_stats_to_csv, "logger::log_info", function(...) NULL)
+  stub(export_stats_to_csv, "format_duration", function(...) "0s")
 
-test_that(
-  "export_stats_to_csv does not write Criteres_stats.csv when stats is NULL",
-  {
-    mock_write <- mock(NULL)
-    cfg        <- make_export_config()
+  # avoid real file writing
+  stub(export_stats_to_csv, "safe_write_csv", function(data, path) {
+    # simulate file creation
+    dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
+    write.csv(data, path, row.names = FALSE)
+  })
 
-    stub(export_stats_to_csv, "validate_export_config", mock(NULL))
-    stub(export_stats_to_csv, "get_species", mock("wheat"))
-    stub(
-      export_stats_to_csv,
-      "prepare_species_output_dir",
-      mock(cfg$output_dir)
+  expect_silent(export_stats_to_csv(config))
+
+  expect_true(file.exists(file.path(tmp, "wheat", "Criteres_stats.csv")))
+  expect_true(file.exists(file.path(tmp, "wheat", "RMSE_per_usm.csv")))
+  expect_true(file.exists(file.path(tmp, "wheat", "Deteriorated_USM.csv")))
+})
+
+# -----------------------------
+# export_stats_to_csv: null cases
+# -----------------------------
+
+test_that("export_stats_to_csv skips NULL datasets", {
+
+  tmp <- withr::local_tempdir()
+
+  config <- list(
+    output_dir = tmp,
+    percentage = 10,
+    eval_workspace = "dummy"
+  )
+
+  config$validate_export <- function() NULL
+
+  ew <- R6::R6Class(
+    "FakeWorkspace",
+    public = list(
+      get_species = function() "wheat",
+      get_stats = function(...) NULL,
+      get_rmse_per_usm = function(...) NULL,
+      get_deteriorated_usm = function(...) {
+        list(get_data = function() NULL)
+      }
     )
-    stub(export_stats_to_csv, "get_stats", mock(NULL))
-    stub(export_stats_to_csv, "get_rmse_per_usm", mock(NULL))
-    stub(export_stats_to_csv, "get_deteriorated_usm", mock(NULL))
-    stub(export_stats_to_csv, "safe_write_csv", mock_write)
+  )$new()
 
-    export_stats_to_csv(cfg)
-    expect_called(mock_write, 0)
-  }
-)
+  stub(export_stats_to_csv, "EvalWorkspace$new", function(...) ew)
 
-test_that(
-  "export_stats_to_csv writes RMSE_per_usm.csv when rmse_per_usm available",
-  {
-    mock_write <- mock(NULL, cycle = TRUE)
-    cfg <- make_export_config()
+  stub(export_stats_to_csv, "logger::log_info", function(...) NULL)
+  stub(export_stats_to_csv, "format_duration", function(...) "0s")
+  stub(
+    export_stats_to_csv,
+    "safe_write_csv",
+    function(...) stop("should not be called", call. = FALSE)
+  )
 
-    stub(export_stats_to_csv, "validate_export_config", mock(NULL))
-    stub(export_stats_to_csv, "get_species", mock("wheat"))
-    stub(
-      export_stats_to_csv,
-      "prepare_species_output_dir",
-      mock(cfg$output_dir)
-    )
-    stub(export_stats_to_csv, "get_stats", mock(NULL))
-    stub(
-      export_stats_to_csv,
-      "get_rmse_per_usm",
-      mock(data.frame(usm = "usm1", rmse = 0.1, stringsAsFactors = FALSE))
-    )
-    stub(export_stats_to_csv, "get_deteriorated_usm", mock(NULL))
-    stub(export_stats_to_csv, "safe_write_csv", mock_write)
-
-    export_stats_to_csv(cfg)
-
-    expect_called(mock_write, 1)
-    args <- mock_args(mock_write)[[1]]
-    expect_match(args[[2]], "RMSE_per_usm\\.csv$") # nolint: nonportable_path_linter
-  }
-)
-
-test_that(
-  "export_stats_to_csv writes Deteriorated_USM.csv when deteriorated_usm
-  available",
-  {
-    mock_write <- mock(NULL, cycle = TRUE)
-    cfg <- make_export_config()
-
-    stub(export_stats_to_csv, "validate_export_config", mock(NULL))
-    stub(export_stats_to_csv, "get_species", mock("wheat"))
-    stub(
-      export_stats_to_csv, "prepare_species_output_dir",
-      mock(cfg$output_dir)
-    )
-    stub(export_stats_to_csv, "get_stats", mock(NULL))
-    stub(export_stats_to_csv, "get_rmse_per_usm", mock(NULL))
-    stub(
-      export_stats_to_csv,
-      "get_deteriorated_usm",
-      mock(data.frame(usm = "usm1", stringsAsFactors = FALSE))
-    )
-    stub(export_stats_to_csv, "safe_write_csv", mock_write)
-
-    export_stats_to_csv(cfg)
-
-    expect_called(mock_write, 1)
-    args <- mock_args(mock_write)[[1]]
-    expect_match(args[[2]], "Deteriorated_USM\\.csv$") # nolint: nonportable_path_linter
-  }
-)
-
-test_that(
-  "export_stats_to_csv writes all three files when all data available",
-  {
-    mock_write <- mock(NULL, cycle = TRUE)
-    cfg <- make_export_config()
-
-    stub(export_stats_to_csv, "validate_export_config", mock(NULL))
-    stub(export_stats_to_csv, "get_species", mock("wheat"))
-    stub(
-      export_stats_to_csv,
-      "prepare_species_output_dir",
-      mock(cfg$output_dir)
-    )
-    stub(export_stats_to_csv, "get_stats", mock(data.frame(x = 1)))
-    stub(
-      export_stats_to_csv,
-      "get_rmse_per_usm",
-      mock(data.frame(usm = "usm1", rmse = 0.1, stringsAsFactors = FALSE))
-    )
-    stub(
-      export_stats_to_csv,
-      "get_deteriorated_usm",
-      mock(data.frame(usm = "usm1", stringsAsFactors = FALSE))
-    )
-    stub(export_stats_to_csv, "safe_write_csv", mock_write)
-
-    export_stats_to_csv(cfg)
-    expect_called(mock_write, 3)
-  }
-)
-
-test_that(
-  "export_stats_to_csv calls prepare_species_output_dir once per species",
-  {
-    mock_prepare <- mock(tempdir(), cycle = TRUE)
-    cfg <- make_export_config()
-
-    stub(export_stats_to_csv, "validate_export_config", mock(NULL))
-    stub(export_stats_to_csv, "get_species", mock(c("wheat", "maize", "soy")))
-    stub(export_stats_to_csv, "prepare_species_output_dir", mock_prepare)
-    stub(export_stats_to_csv, "get_stats", mock(NULL, cycle = TRUE))
-    stub(export_stats_to_csv, "get_rmse_per_usm", mock(NULL, cycle = TRUE))
-    stub(export_stats_to_csv, "get_deteriorated_usm", mock(NULL, cycle = TRUE))
-    stub(export_stats_to_csv, "safe_write_csv", mock(NULL))
-
-    export_stats_to_csv(cfg)
-    expect_called(mock_prepare, 3)
-  }
-)
+  expect_silent(export_stats_to_csv(config))
+})
