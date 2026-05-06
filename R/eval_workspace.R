@@ -5,7 +5,9 @@ EvalDataReader <- R6::R6Class("EvalDataReader", # nolint: object_name_linter
 
     open_ds = function(path, warn_msg) {
       if (!file.exists(path) && !dir.exists(path)) {
-        logger::log_warn(warn_msg)
+        if (warn_msg != "") {
+          logger::log_warn(warn_msg)
+        }
         return(NULL)
       }
       arrow::open_dataset(path)
@@ -80,7 +82,9 @@ EvalDataReader <- R6::R6Class("EvalDataReader", # nolint: object_name_linter
           dplyr::collect() |>
           dplyr::pull(n)
         if (n == 0) {
-          logger::log_warn(warn_msg)
+          if (warn_msg != "") {
+            logger::log_warn(warn_msg)
+          }
           return(NULL)
         }
       }
@@ -275,10 +279,12 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
     #' Returns the list of species
     #' @returns a list of species as character list
     get_species = function() {
-      private$.reader$read(
+      res <- private$.reader$read(
         path = obs_ds_path(private$.data_dir),
         collect = TRUE
-      ) |>
+      )
+      if (is.null(res)) return(NULL)
+      res |>
         dplyr::distinct(.data$species) |>
         dplyr::arrange(tolower(.data$species)) |>
         dplyr::pull("species")
