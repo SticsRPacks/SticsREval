@@ -65,15 +65,27 @@ EvalDataReader <- R6::R6Class("EvalDataReader", # nolint: object_name_linter
       warn_msg = "",
       apply_version = TRUE
     ) {
-      logger::log_debug("Reading dataset from", path, "...\n")
+      logger::log_debug("Reading dataset from", path, "...")
       ds <- private$open_ds(path, warn_msg)
-      logger::log_debug("Dataset opened, applying filters...\n")
+      logger::log_debug("Dataset opened, applying filters...")
       if (is.null(ds)) return(NULL)
-      logger::log_debug("Applying version filter...\n")
+      logger::log_debug("Applying version filter...")
       ds <- private$apply_version_if_needed(ds, apply_version)
-      logger::log_debug("Applying species, USMs and variable filters...\n")
+      logger::log_debug("Applying species, USMs and variable filters...")
       ds <- private$apply_filters(ds, species, usms, var2exclude)
-      logger::log_debug("Filters applied, post processing dataset...\n")
+
+      if (!is.null(species)) {
+        n <- ds |>
+          dplyr::summarise(n = dplyr::n()) |>
+          dplyr::collect() |>
+          dplyr::pull(n)
+        if (n == 0) {
+          logger::log_warn(warn_msg)
+          return(NULL)
+        }
+      }
+
+      logger::log_debug("Filters applied, post processing dataset...")
       ds <- private$post_process(ds, collect)
       logger::log_debug("Dataset ready.")
       ds
@@ -279,12 +291,16 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
 
     #' @returns a list of USMs as a character list
     get_species_usm = function(species, usms = NULL) {
-      private$.reader$read(
+      res <- private$.reader$read(
         path = obs_ds_path(private$.data_dir),
         species = species,
         usms = usms,
         collect = TRUE
-      ) |>
+      )
+      if (is.null(res)) {
+        return(NULL)
+      }
+      res |>
         dplyr::distinct(.data$situation) |>
         dplyr::pull("situation")
     },
@@ -429,6 +445,7 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
         collect = TRUE,
         warn_msg = paste("No deteriorated USM for", species)
       )
+      if (is.null(res)) return(NULL)
       DeterioratedUSMComparison$new(data = res, percentage = percentage)
     },
     #' @description
@@ -458,6 +475,7 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
         collect = TRUE,
         warn_msg = paste("No comparison for", species)
       )
+      if (is.null(res)) return(NULL)
       RmseComparison$new(
         data = res,
         percentage = percentage
