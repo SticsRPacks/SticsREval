@@ -27,6 +27,7 @@ Imports:
     ggrepel,
     htmltools,
     logger,
+    methods,
     plotly,
     SticsOnR,
     SticsRFiles,
