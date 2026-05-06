@@ -4,7 +4,7 @@ RUN apt-get update -y && \
     apt-get install -y --no-install-recommends \
       curl ca-certificates git \
       build-essential cmake pkg-config \
-      libcurl4-openssl-dev libssl-dev libxml2-dev libxslt1-dev \
+      libuv1-dev libcurl4-openssl-dev libssl-dev libxml2-dev libxslt1-dev \
       libx11-dev pandoc \
       zlib1g-dev libgit2-dev \
     && rm -rf /var/lib/apt/lists/*
