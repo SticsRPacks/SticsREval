@@ -133,6 +133,15 @@ gen_plots <- function(
 
       var2exclude <- c("version", "species")
 
+      if (is.null(config$reference_version)) {
+        logger_info(sprintf(
+          "No reference version defined. Skipping scatter plot generation for
+          species %s",
+          spec
+        ))
+        return(NULL)
+      }
+
       ref_sim <- workspace$with_version(
         config$reference_version
       )$get_sim(spec, var2exclude = var2exclude)
