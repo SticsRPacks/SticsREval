@@ -70,7 +70,7 @@ export_stats_to_csv <- function(config) {
     deteriorated_usm <- eval_workspace$get_deteriorated_usm(
       spec, config$percentage
     )
-    if (!is.null(deteriorated_usm$get_data())) {
+    if (!is.null(deteriorated_usm) && !is.null(deteriorated_usm$get_data())) {
       safe_write_csv(
         deteriorated_usm$get_data(), file.path(o_dir, "Deteriorated_USM.csv")
       )
