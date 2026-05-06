@@ -16,6 +16,26 @@ gen_plots(
 \arguments{
 \item{config}{List. Configuration object created by \code{make_config()},
 containing all parameters required for the plots generation}
+
+\item{workspace}{EvalWorkspace. An instance of \code{EvalWorkspace} to access the
+evaluation data. Defaults to a new instance using the \code{eval_workspace}
+parameter from the configuration.}
+
+\item{backend}{ParallelBackend. An instance of \code{ParallelBackend} to run
+parallel computations. Defaults to a new instance using the \code{parallel} and
+\code{cores} parameters from the configuration.}
+
+\item{scatter_fn}{Function. A function to generate scatter plots. It should
+accept the following arguments: \code{output_dir}, \code{sim}, \code{obs}, \code{ref_sim}, and
+\code{vars}. Defaults to \code{gen_scatter_plot()}.}
+
+\item{comparison_fn}{Function. A function to generate comparison plots. It
+should accept the following arguments: \code{comparison} and \code{output_dir}.
+Defaults to a function that calls the \code{plot_comparison()} method of the
+comparison object.}
+
+\item{logger_info}{Function. A logging function to report progress. It should
+accept a single string argument. Defaults to \code{logger::log_info()}.}
 }
 \value{
 NULL. This function is called for its side effects (writing plot
