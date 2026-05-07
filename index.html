@@ -102,7 +102,7 @@
 <p>To restore the project environment locally:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># install.packages("renv")</span></span>
-<span><span class="fu">renv</span><span class="fu">::</span><span class="fu">restore</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">renv</span><span class="fu">::</span><span class="fu"><a href="https://rstudio.github.io/renv/reference/restore.html" class="external-link">restore</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p>This will install all required packages at the versions specified in <code>renv.lock</code>. It is recommended to run this after cloning the repository and before running any code.</p>
 <hr>
 </div>
@@ -115,20 +115,20 @@
 <col width="50%">
 <col width="50%">
 </colgroup>
-<thead><tr class="header">
+<thead><tr>
 <th>Package</th>
 <th>Role</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><a href="https://github.com/SticsRPacks/SticsRFiles" class="external-link"><code>SticsRFiles</code></a></td>
 <td>Reading simulated and observed data</td>
 </tr>
-<tr class="even">
+<tr>
 <td><a href="https://github.com/SticsRPacks/SticsOnR" class="external-link"><code>SticsOnR</code></a></td>
 <td>Running STICS simulations (optional)</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><a href="https://github.com/SticsRPacks/CroPlotR" class="external-link"><code>CroPlotR</code></a></td>
 <td>Computing statistical criteria and generating plots</td>
 </tr>
@@ -147,141 +147,153 @@
 <li>
 <strong>Reference version statistics</strong> — to detect regressions relative to a known-good version</li>
 </ul>
-<pre><code>  STICS candidate version          Reference version stats
-  (stics_exe + workspace)          (reference_workspace)
-           │                                │
-           ▼                                │
-     make_config()   ◄──────────────────────┘
+<pre><code>  Configuration$new(...)               ← defines all parameters (paths, options, filters)
            │
            ▼
-      evaluate()     ← runs simulations + compares vs obs &amp; reference → saves .parquet files
+  Evaluation$new(config)$run()         ← runs simulations + compares vs obs &amp; reference → saves .parquet files
            │
-           ├──► export_stats_to_csv()   ← export statistics + deteriorated USMs to CSV
-           └──► gen_plots()             ← comparison plots + scatter plots of regressions</code></pre>
+           ├──► export_stats_to_csv(config)     ← export statistics + deteriorated USMs to CSV
+           └──► gen_plots(config)               ← comparison plots + scatter plots of regressions</code></pre>
+<p>All functions read from and write to an <strong><code>EvalWorkspace</code></strong>, which manages the Parquet datasets on disk.</p>
 <hr>
 </div>
 <div class="section level2">
-<h2 id="main-functions">Main Functions<a class="anchor" aria-label="anchor" href="#main-functions"></a>
+<h2 id="main-classes-and-functions">Main Classes and Functions<a class="anchor" aria-label="anchor" href="#main-classes-and-functions"></a>
 </h2>
 <div class="section level3">
-<h3 id="make_config">
-<code>make_config()</code><a class="anchor" aria-label="anchor" href="#make_config"></a>
+<h3 id="configuration">
+<code>Configuration</code><a class="anchor" aria-label="anchor" href="#configuration"></a>
 </h3>
-<p>Creates and validates the configuration object that is passed to all other functions. All parameters for simulation, evaluation, and export are defined here.</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="fu">library</span>(SticsREval)</span>
-<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a></span>
-<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>config <span class="ot">&lt;-</span> <span class="fu">make_config</span>(</span>
-<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>  <span class="at">stics_exe           =</span> <span class="st">"/path/to/stics"</span>,</span>
-<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>  <span class="at">workspace           =</span> <span class="st">"workspace/"</span>,</span>
-<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>  <span class="at">metadata_file       =</span> <span class="st">"metadata.csv"</span>,</span>
-<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a>  <span class="at">run_simulations     =</span> <span class="cn">TRUE</span>,      <span class="co"># set to FALSE to skip simulations</span></span>
-<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a>  <span class="at">verbose             =</span> <span class="dv">1</span>,</span>
-<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a>  <span class="at">parallel            =</span> <span class="cn">FALSE</span>,</span>
-<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a>  <span class="at">cores               =</span> <span class="cn">NA</span>,</span>
-<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a>  <span class="at">reference_workspace =</span> <span class="cn">NULL</span>,      <span class="co"># path to reference version stats for regression detection</span></span>
-<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a>  <span class="at">percentage          =</span> <span class="dv">5</span>,         <span class="co"># threshold (%) to flag deteriorated variables</span></span>
-<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a>  <span class="at">eval_workspace      =</span> <span class="st">"eval_workspace/"</span>,</span>
-<span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a>  <span class="at">init_workspace      =</span> <span class="cn">TRUE</span>,</span>
-<span id="cb5-15"><a href="#cb5-15" tabindex="-1"></a>  <span class="at">output_dir          =</span> <span class="st">"outputs/"</span>,</span>
-<span id="cb5-16"><a href="#cb5-16" tabindex="-1"></a>  <span class="at">force               =</span> <span class="cn">TRUE</span>,</span>
-<span id="cb5-17"><a href="#cb5-17" tabindex="-1"></a>  <span class="at">species             =</span> <span class="cn">NULL</span></span>
-<span id="cb5-18"><a href="#cb5-18" tabindex="-1"></a>  <span class="at">usms                =</span> <span class="cn">NULL</span>,</span>
-<span id="cb5-19"><a href="#cb5-19" tabindex="-1"></a>  <span class="at">var2exclude         =</span> <span class="cn">NULL</span></span>
-<span id="cb5-20"><a href="#cb5-20" tabindex="-1"></a>)</span></code></pre></div>
+<p>Encapsulates and validates all configuration parameters for the package. The same object is passed to all workflow classes and functions (<code>Evaluation</code>, <code>export_stats_to_csv</code>, <code>gen_plots</code>). Fields are validated against a declarative schema at construction time — all errors are collected and reported together.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/SticsRPacks/SticsREval" class="external-link">SticsREval</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">config</span> <span class="op">&lt;-</span> <span class="va"><a href="reference/Configuration.html">Configuration</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span></span>
+<span>  stics_exe          <span class="op">=</span> <span class="st">"/path/to/stics"</span>,</span>
+<span>  usms_workspace     <span class="op">=</span> <span class="st">"workspace/"</span>,</span>
+<span>  metadata_file      <span class="op">=</span> <span class="st">"metadata.csv"</span>,</span>
+<span>  eval_workspace     <span class="op">=</span> <span class="st">"eval_workspace/"</span>,   <span class="co"># required</span></span>
+<span>  output_dir         <span class="op">=</span> <span class="st">"outputs/"</span>,</span>
+<span>  run_simulations    <span class="op">=</span> <span class="cn">TRUE</span>,                <span class="co"># set to FALSE to skip simulations</span></span>
+<span>  init_workspace     <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  verbose            <span class="op">=</span> <span class="fl">1L</span>,</span>
+<span>  parallel           <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  cores              <span class="op">=</span> <span class="cn">NA</span>,</span>
+<span>  reference_version  <span class="op">=</span> <span class="cn">NULL</span>,               <span class="co"># version string in eval_workspace to use as reference</span></span>
+<span>  percentage         <span class="op">=</span> <span class="fl">5</span>,                  <span class="co"># threshold (%) to flag deteriorated variables</span></span>
+<span>  species            <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  usms               <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  var2exclude        <span class="op">=</span> <span class="cn">NULL</span></span>
+<span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <colgroup>
 <col width="50%">
 <col width="50%">
 </colgroup>
-<thead><tr class="header">
-<th>Argument</th>
+<thead><tr>
+<th>Field</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>stics_exe</code></td>
-<td>Path to the STICS executable</td>
+<td>Path to the STICS executable (required when <code>init_workspace = TRUE</code> and <code>run_simulations = TRUE</code>)</td>
 </tr>
-<tr class="even">
-<td><code>workspace</code></td>
-<td>Path to the simulation input directory</td>
+<tr>
+<td><code>usms_workspace</code></td>
+<td>Path to the USMs input data directory (required when <code>init_workspace = TRUE</code>)</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>metadata_file</code></td>
-<td>Path to the metadata CSV file describing simulations</td>
+<td>Path to the metadata CSV file describing simulations (required when <code>init_workspace = TRUE</code>)</td>
 </tr>
-<tr class="even">
+<tr>
+<td><code>eval_workspace</code></td>
+<td>Path to the evaluation workspace — <strong>required</strong>
+</td>
+</tr>
+<tr>
+<td><code>output_dir</code></td>
+<td>Output directory for CSV exports and plots (required for export and plots workflows)</td>
+</tr>
+<tr>
 <td><code>run_simulations</code></td>
-<td>Whether to run STICS simulations (default: <code>TRUE</code>)</td>
+<td>Whether to run STICS simulations (default: <code>FALSE</code>)</td>
 </tr>
-<tr class="odd">
+<tr>
+<td><code>init_workspace</code></td>
+<td>Whether to initialize the evaluation workspace before running (default: <code>FALSE</code>)</td>
+</tr>
+<tr>
 <td><code>verbose</code></td>
-<td>Logging verbosity level (default: <code>1</code>)</td>
+<td>Logging verbosity level: <code>0</code> = silent, <code>1</code> = info, <code>2</code> = debug (default: <code>1</code>)</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>parallel</code></td>
 <td>Enable parallel execution (default: <code>FALSE</code>)</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>cores</code></td>
-<td>Number of cores for parallel execution (<code>NA</code> = auto)</td>
+<td>Number of cores for parallel execution (<code>NA</code> = auto; required when <code>parallel = TRUE</code>)</td>
 </tr>
-<tr class="even">
-<td><code>reference_workspace</code></td>
-<td>Path to the <strong>reference version</strong> simulation statistics, used to detect regressions</td>
+<tr>
+<td><code>reference_version</code></td>
+<td>Version string present in <code>eval_workspace</code> to use as the reference for regression detection</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>percentage</code></td>
 <td>Threshold (%) above which a variable is flagged as deteriorated vs. the reference (default: <code>5</code>)</td>
 </tr>
-<tr class="even">
-<td><code>eval_workspace</code></td>
-<td>Path to the evaluation workspace</td>
-</tr>
-<tr class="odd">
-<td><code>init_workspace</code></td>
-<td>Whether to initialize the workspace (default: <code>TRUE</code>)</td>
-</tr>
-<tr class="even">
-<td><code>output_dir</code></td>
-<td>Output directory for exports</td>
-</tr>
-<tr class="odd">
-<td><code>force</code></td>
-<td>Whether to overwrite an existing non-empty evaluation workspace without prompting. (default: <code>FALSE</code>)</td>
-</tr>
-<tr class="even">
+<tr>
 <td><code>species</code></td>
-<td>Optional list of species to evaluate. If NULL, all available species are evaluated. (default: <code>NULL</code>)</td>
+<td>Optional character vector of species to evaluate. <code>NULL</code> = all available.</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>usms</code></td>
-<td>Optional list of USMs to evaluate. If NULL, all available USMs are evaluated. (default: <code>NULL</code>)</td>
+<td>Optional character vector of USMs to evaluate. <code>NULL</code> = all available.</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>var2exclude</code></td>
-<td>Optional list of variables to exclude from evaluation. If NULL, all available variables are evaluated. (default: <code>NULL</code>)</td>
+<td>Optional character vector of variables to exclude from evaluation.</td>
 </tr>
 </tbody>
 </table>
+<p><code>Configuration</code> also exposes workflow-specific validation methods called internally by each function:</p>
+<ul>
+<li>
+<code>config$validate_eval()</code> — checks requirements for the evaluation workflow</li>
+<li>
+<code>config$validate_export()</code> — checks that <code>output_dir</code> is set and writable</li>
+<li>
+<code>config$validate_plots()</code> — checks requirements for the plots workflow</li>
+</ul>
 <hr>
 </div>
 <div class="section level3">
-<h3 id="evaluate">
-<code>evaluate()</code><a class="anchor" aria-label="anchor" href="#evaluate"></a>
+<h3 id="evaluation">
+<code>Evaluation</code><a class="anchor" aria-label="anchor" href="#evaluation"></a>
 </h3>
-<p>The <strong>core function</strong> of the package. It orchestrates the full evaluation workflow:</p>
+<p>The <strong>core class</strong> of the package. It orchestrates the full evaluation workflow:</p>
 <ul>
-<li>Runs STICS simulations for the candidate version (via <code>SticsOnR</code>)</li>
-<li>Compares simulation outputs against <strong>field observations</strong> (absolute performance)</li>
-<li>Compares simulation statistics against <strong>reference version statistics</strong> to detect regressions (when <code>reference_workspace</code> is provided)</li>
+<li>Optionally initializes the <code>EvalWorkspace</code> (loading simulations and observations from the USMs workspace)</li>
+<li>Computes statistics per species (RMSE, nRMSE, bias, R², etc.) against <strong>field observations</strong>
+</li>
+<li>When <code>reference_version</code> is set, compares statistics against the <strong>reference version</strong> to detect regressions</li>
 <li>Flags variables and USMs where performance has deteriorated beyond the <code>percentage</code> threshold</li>
 <li>Saves all results as <strong>Arrow/Parquet files</strong> in the <code>eval_workspace</code> directory</li>
 <li>Displays a summary of comparison results</li>
 </ul>
-<p>Errors during evaluation are caught and logged gracefully without stopping the full process.</p>
+<p>Errors during evaluation are caught and logged without stopping the full process.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="reference/evaluate.html">evaluate</a></span><span class="op">(</span><span class="va">config</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va"><a href="reference/Evaluation.html">Evaluation</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">config</span><span class="op">)</span><span class="op">$</span><span class="fu">run</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<p>You can also inject custom dependencies for testing or advanced use:</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va"><a href="reference/Evaluation.html">Evaluation</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span></span>
+<span>  <span class="va">config</span>,</span>
+<span>  workspace <span class="op">=</span> <span class="va"><a href="reference/EvalWorkspace.html">EvalWorkspace</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="st">"eval_workspace/"</span><span class="op">)</span>,  <span class="co"># default</span></span>
+<span>  backend   <span class="op">=</span> <span class="va">ParallelBackend</span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="cn">FALSE</span>, <span class="cn">NA</span><span class="op">)</span>,         <span class="co"># default</span></span>
+<span>  logger    <span class="op">=</span> <span class="va">default_logger</span>                          <span class="co"># default</span></span>
+<span><span class="op">)</span><span class="op">$</span><span class="fu">run</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p>After running, the <code>eval_workspace</code> directory will contain Parquet files with simulated data, observed data, and evaluation statistics per species.</p>
 <hr>
 </div>
@@ -289,32 +301,32 @@
 <h3 id="export_stats_to_csv">
 <code>export_stats_to_csv()</code><a class="anchor" aria-label="anchor" href="#export_stats_to_csv"></a>
 </h3>
-<p>Exports the evaluation statistics per species to CSV files. For each species, three files are produced when available:</p>
+<p>Exports the evaluation statistics per species to CSV files. For each species, a subdirectory is created under <code>output_dir</code> and three files are written when the corresponding data are available:</p>
 <table class="table">
 <colgroup>
 <col width="50%">
 <col width="50%">
 </colgroup>
-<thead><tr class="header">
+<thead><tr>
 <th>File</th>
 <th>Content</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>Criteres_stats.csv</code></td>
 <td>Global statistical criteria (RMSE, nRMSE, bias, R², etc.)</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>RMSE_per_usm.csv</code></td>
 <td>RMSE broken down per USM (simulation unit)</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>Deteriorated_USM.csv</code></td>
-<td>List of USMs with deteriorated performance</td>
+<td>List of USMs with deteriorated performance vs. the reference version</td>
 </tr>
 </tbody>
 </table>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/export_stats_to_csv.html">export_stats_to_csv</a></span><span class="op">(</span><span class="va">config</span><span class="op">)</span></span></code></pre></div>
 <hr>
 </div>
@@ -322,40 +334,116 @@
 <h3 id="gen_plots">
 <code>gen_plots()</code><a class="anchor" aria-label="anchor" href="#gen_plots"></a>
 </h3>
-<p>Generates diagnostic plots for each species:</p>
+<p>Generates diagnostic plots for each species. For each species, a subdirectory is created under <code>output_dir</code> and the following are produced:</p>
 <ul>
 <li>
-<strong>Comparison plots</strong> — observed vs. simulated for all variables, for the candidate version</li>
+<strong>Comparison plots</strong> — observed vs. simulated for all variables</li>
 <li>
-<strong>Scatter plots</strong> — comparing the candidate version against the reference version statistics, highlighting variables that have deteriorated beyond the <code>percentage</code> threshold (only generated when <code>reference_workspace</code> is set in <code><a href="reference/make_config.html">make_config()</a></code> and regressions are detected)</li>
+<strong>Scatter plots</strong> (<code>scatter_plots.html</code>) — comparing the candidate version against the reference version, highlighting deteriorated variables (only generated when <code>reference_version</code> is set and regressions are detected)</li>
 </ul>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/gen_plots.html">gen_plots</a></span><span class="op">(</span><span class="va">config</span><span class="op">)</span></span></code></pre></div>
+<p>For advanced use, injectable parameters allow substituting the workspace, parallel backend, or plot generation functions:</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="reference/gen_plots.html">gen_plots</a></span><span class="op">(</span></span>
+<span>  <span class="va">config</span>,</span>
+<span>  workspace     <span class="op">=</span> <span class="va"><a href="reference/EvalWorkspace.html">EvalWorkspace</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">config</span><span class="op">$</span><span class="va">eval_workspace</span><span class="op">)</span>,  <span class="co"># default</span></span>
+<span>  backend       <span class="op">=</span> <span class="va">ParallelBackend</span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">config</span><span class="op">$</span><span class="va">parallel</span>, <span class="va">config</span><span class="op">$</span><span class="va">cores</span><span class="op">)</span>,  <span class="co"># default</span></span>
+<span>  scatter_fn    <span class="op">=</span> <span class="va">gen_scatter_plot</span>,  <span class="co"># default</span></span>
+<span>  comparison_fn <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span>, <span class="va">dir</span><span class="op">)</span> <span class="va">x</span><span class="op">$</span><span class="fu">plot_comparison</span><span class="op">(</span><span class="va">dir</span><span class="op">)</span>   <span class="co"># default</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<hr>
+</div>
+<div class="section level3">
+<h3 id="evalworkspace">
+<code>EvalWorkspace</code><a class="anchor" aria-label="anchor" href="#evalworkspace"></a>
+</h3>
+<p>Manages reading and writing all evaluation data (simulations, observations, statistics, comparisons) stored as Parquet datasets on disk. It is used internally by <code>Evaluation</code>, <code>export_stats_to_csv</code>, and <code>gen_plots</code>, but can also be used directly to inspect results.</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">ws</span> <span class="op">&lt;-</span> <span class="va"><a href="reference/EvalWorkspace.html">EvalWorkspace</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="st">"eval_workspace/"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Read simulations and observations</span></span>
+<span><span class="va">sim</span> <span class="op">&lt;-</span> <span class="va">ws</span><span class="op">$</span><span class="fu">get_sim</span><span class="op">(</span>species <span class="op">=</span> <span class="st">"wheat"</span><span class="op">)</span></span>
+<span><span class="va">obs</span> <span class="op">&lt;-</span> <span class="va">ws</span><span class="op">$</span><span class="fu">get_obs</span><span class="op">(</span>species <span class="op">=</span> <span class="st">"wheat"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Read statistics</span></span>
+<span><span class="va">stats</span> <span class="op">&lt;-</span> <span class="va">ws</span><span class="op">$</span><span class="fu">get_stats</span><span class="op">(</span>species <span class="op">=</span> <span class="st">"wheat"</span>, collect <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># List all evaluated versions</span></span>
+<span><span class="va">ws</span><span class="op">$</span><span class="fu">get_all_versions</span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Access data for a specific version</span></span>
+<span><span class="va">ws_ref</span> <span class="op">&lt;-</span> <span class="va">ws</span><span class="op">$</span><span class="fu">with_version</span><span class="op">(</span><span class="st">"v10.0"</span><span class="op">)</span></span>
+<span><span class="va">ref_stats</span> <span class="op">&lt;-</span> <span class="va">ws_ref</span><span class="op">$</span><span class="fu">get_stats</span><span class="op">(</span>species <span class="op">=</span> <span class="st">"wheat"</span><span class="op">)</span></span></code></pre></div>
+<p>Key methods:</p>
+<table class="table">
+<colgroup>
+<col width="50%">
+<col width="50%">
+</colgroup>
+<thead><tr>
+<th>Method</th>
+<th>Description</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code>get_sim(species, usms, var2exclude)</code></td>
+<td>Return simulated data</td>
+</tr>
+<tr>
+<td><code>get_obs(species, usms, var2exclude)</code></td>
+<td>Return observed data</td>
+</tr>
+<tr>
+<td><code>get_stats(species)</code></td>
+<td>Return global evaluation statistics</td>
+</tr>
+<tr>
+<td><code>get_rmse_per_usm(species)</code></td>
+<td>Return RMSE broken down per USM</td>
+</tr>
+<tr>
+<td><code>get_deteriorated_usm(species, percentage)</code></td>
+<td>Return deteriorated USM comparison</td>
+</tr>
+<tr>
+<td><code>get_species_comparison(species, percentage)</code></td>
+<td>Return RMSE comparison vs reference</td>
+</tr>
+<tr>
+<td><code>get_all_versions()</code></td>
+<td>List all evaluated STICS versions in the workspace</td>
+</tr>
+<tr>
+<td><code>with_version(version)</code></td>
+<td>Return a new <code>EvalWorkspace</code> scoped to a specific version</td>
+</tr>
+</tbody>
+</table>
 <hr>
 </div>
 </div>
 <div class="section level2">
 <h2 id="complete-example">Complete Example<a class="anchor" aria-label="anchor" href="#complete-example"></a>
 </h2>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/SticsRPacks/SticsREval" class="external-link">SticsREval</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># 1. Configure the evaluation</span></span>
-<span><span class="co">#    - stics_exe points to the candidate version of STICS to evaluate</span></span>
-<span><span class="co">#    - reference_workspace points to the statistics of the reference version</span></span>
-<span><span class="va">config</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/make_config.html">make_config</a></span><span class="op">(</span></span>
-<span>  stics_exe          <span class="op">=</span> <span class="st">"/path/to/stics_candidate"</span>,</span>
-<span>  workspace          <span class="op">=</span> <span class="st">"workspace/"</span>,</span>
-<span>  metadata_file      <span class="op">=</span> <span class="st">"metadata.csv"</span>,</span>
-<span>  run_simulations    <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  reference_workspace <span class="op">=</span> <span class="st">"reference_version_stats/"</span>,  <span class="co"># stats from the reference version</span></span>
-<span>  percentage         <span class="op">=</span> <span class="fl">5</span>,                            <span class="co"># flag variables with &gt;5% deterioration</span></span>
-<span>  eval_workspace     <span class="op">=</span> <span class="st">"eval_workspace/"</span>,</span>
-<span>  output_dir         <span class="op">=</span> <span class="st">"outputs/"</span></span>
+<span><span class="va">config</span> <span class="op">&lt;-</span> <span class="va"><a href="reference/Configuration.html">Configuration</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span></span>
+<span>  stics_exe         <span class="op">=</span> <span class="st">"/path/to/stics_candidate"</span>,</span>
+<span>  usms_workspace    <span class="op">=</span> <span class="st">"workspace/"</span>,</span>
+<span>  metadata_file     <span class="op">=</span> <span class="st">"metadata.csv"</span>,</span>
+<span>  eval_workspace    <span class="op">=</span> <span class="st">"eval_workspace/"</span>,</span>
+<span>  output_dir        <span class="op">=</span> <span class="st">"outputs/"</span>,</span>
+<span>  run_simulations   <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  init_workspace    <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  reference_version <span class="op">=</span> <span class="st">"v10.0"</span>,   <span class="co"># version already in eval_workspace to compare against</span></span>
+<span>  percentage        <span class="op">=</span> <span class="fl">5</span>          <span class="co"># flag variables with &gt;5% deterioration</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># 2. Run simulations + evaluate vs observations and reference version stats</span></span>
-<span><span class="fu"><a href="reference/evaluate.html">evaluate</a></span><span class="op">(</span><span class="va">config</span><span class="op">)</span></span>
+<span><span class="co"># 2. Run simulations + evaluate vs observations and reference version</span></span>
+<span><span class="va"><a href="reference/Evaluation.html">Evaluation</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">config</span><span class="op">)</span><span class="op">$</span><span class="fu">run</span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># 3. Export statistics and deteriorated USMs to CSV</span></span>
 <span><span class="fu"><a href="reference/export_stats_to_csv.html">export_stats_to_csv</a></span><span class="op">(</span><span class="va">config</span><span class="op">)</span></span>
@@ -371,47 +459,50 @@
 <div class="section level3">
 <h3 id="pull-the-image">Pull the image<a class="anchor" aria-label="anchor" href="#pull-the-image"></a>
 </h3>
-<div class="sourceCode" id="cb10"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="ex">docker</span> pull ghcr.io/sticsrpacks/stics-r-eval:latest</span></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="ex">docker</span> pull ghcr.io/sticsrpacks/stics-r-eval:latest</span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="run-an-interactive-r-session">Run an interactive R session<a class="anchor" aria-label="anchor" href="#run-an-interactive-r-session"></a>
 </h3>
-<div class="sourceCode" id="cb11"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">--rm</span> <span class="at">-it</span> <span class="dt">\</span></span>
-<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a>  <span class="at">-v</span> /path/to/your/workspace:/workspace <span class="dt">\</span></span>
-<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a>  ghcr.io/sticsrpacks/stics-r-eval:latest <span class="dt">\</span></span>
-<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a>  R</span></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">--rm</span> <span class="at">-it</span> <span class="dt">\</span></span>
+<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a>  <span class="at">-v</span> /path/to/your/workspace:/workspace <span class="dt">\</span></span>
+<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a>  ghcr.io/sticsrpacks/stics-r-eval:latest <span class="dt">\</span></span>
+<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a>  R</span></code></pre></div>
 <p>Then inside R:</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/SticsRPacks/SticsREval" class="external-link">SticsREval</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">config</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/make_config.html">make_config</a></span><span class="op">(</span></span>
-<span>  stics_exe     <span class="op">=</span> <span class="st">"/path/to/stics"</span>,</span>
-<span>  workspace     <span class="op">=</span> <span class="st">"/workspace/"</span>,</span>
-<span>  metadata_file <span class="op">=</span> <span class="st">"/workspace/metadata.csv"</span>,</span>
-<span>  output_dir    <span class="op">=</span> <span class="st">"/workspace/outputs/"</span></span>
+<span><span class="va">config</span> <span class="op">&lt;-</span> <span class="va"><a href="reference/Configuration.html">Configuration</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span></span>
+<span>  stics_exe      <span class="op">=</span> <span class="st">"/path/to/stics"</span>,</span>
+<span>  usms_workspace <span class="op">=</span> <span class="st">"/workspace/"</span>,</span>
+<span>  metadata_file  <span class="op">=</span> <span class="st">"/workspace/metadata.csv"</span>,</span>
+<span>  eval_workspace <span class="op">=</span> <span class="st">"/workspace/eval_workspace/"</span>,</span>
+<span>  output_dir     <span class="op">=</span> <span class="st">"/workspace/outputs/"</span>,</span>
+<span>  init_workspace <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  run_simulations <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="reference/evaluate.html">evaluate</a></span><span class="op">(</span><span class="va">config</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va"><a href="reference/Evaluation.html">Evaluation</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">config</span><span class="op">)</span><span class="op">$</span><span class="fu">run</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="run-a-script-non-interactively">Run a script non-interactively<a class="anchor" aria-label="anchor" href="#run-a-script-non-interactively"></a>
 </h3>
-<div class="sourceCode" id="cb13"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">--rm</span> <span class="dt">\</span></span>
-<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a>  <span class="at">-v</span> /path/to/your/workspace:/workspace <span class="dt">\</span></span>
-<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a>  <span class="at">-v</span> /path/to/your/script.R:/script.R <span class="dt">\</span></span>
-<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a>  ghcr.io/sticsrpacks/stics-r-eval:latest <span class="dt">\</span></span>
-<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a>  Rscript /script.R</span></code></pre></div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">--rm</span> <span class="dt">\</span></span>
+<span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a>  <span class="at">-v</span> /path/to/your/workspace:/workspace <span class="dt">\</span></span>
+<span id="cb16-3"><a href="#cb16-3" tabindex="-1"></a>  <span class="at">-v</span> /path/to/your/script.R:/script.R <span class="dt">\</span></span>
+<span id="cb16-4"><a href="#cb16-4" tabindex="-1"></a>  ghcr.io/sticsrpacks/stics-r-eval:latest <span class="dt">\</span></span>
+<span id="cb16-5"><a href="#cb16-5" tabindex="-1"></a>  Rscript /script.R</span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="build-the-image-locally">Build the image locally<a class="anchor" aria-label="anchor" href="#build-the-image-locally"></a>
 </h3>
-<div class="sourceCode" id="cb14"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a><span class="co"># Without a GitHub token</span></span>
-<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a><span class="ex">docker</span> build <span class="at">-t</span> stics-r-eval .</span>
-<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a></span>
-<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a><span class="co"># With a GitHub token (needed to install private SticsRPacks dependencies)</span></span>
-<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a><span class="ex">docker</span> build <span class="dt">\</span></span>
-<span id="cb14-6"><a href="#cb14-6" tabindex="-1"></a>  <span class="at">--secret</span> id=GITHUB_TOKEN,src=<span class="op">&lt;(</span><span class="bu">echo</span> <span class="va">$GITHUB_PAT</span><span class="op">)</span> <span class="dt">\</span></span>
-<span id="cb14-7"><a href="#cb14-7" tabindex="-1"></a>  <span class="at">-t</span> stics-r-eval .</span></code></pre></div>
+<div class="sourceCode" id="cb17"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" tabindex="-1"></a><span class="co"># Without a GitHub token</span></span>
+<span id="cb17-2"><a href="#cb17-2" tabindex="-1"></a><span class="ex">docker</span> build <span class="at">-t</span> stics-r-eval .</span>
+<span id="cb17-3"><a href="#cb17-3" tabindex="-1"></a></span>
+<span id="cb17-4"><a href="#cb17-4" tabindex="-1"></a><span class="co"># With a GitHub token (needed to install private SticsRPacks dependencies)</span></span>
+<span id="cb17-5"><a href="#cb17-5" tabindex="-1"></a><span class="ex">docker</span> build <span class="dt">\</span></span>
+<span id="cb17-6"><a href="#cb17-6" tabindex="-1"></a>  <span class="at">--secret</span> id=GITHUB_TOKEN,src=<span class="op">&lt;(</span><span class="bu">echo</span> <span class="va">$GITHUB_PAT</span><span class="op">)</span> <span class="dt">\</span></span>
+<span id="cb17-7"><a href="#cb17-7" tabindex="-1"></a>  <span class="at">-t</span> stics-r-eval .</span></code></pre></div>
 <blockquote>
 <p><strong>Note:</strong> The image is based on <a href="https://rocker-project.org/" class="external-link"><code>rocker/r-ver:4</code></a> and uses <a href="https://rstudio.github.io/renv/" class="external-link"><code>renv</code></a> to ensure reproducible package versions. Dependencies are restored from <code>renv.lock</code> at build time.</p>
 </blockquote>
@@ -435,7 +526,7 @@
 <h2 id="citation">Citation<a class="anchor" aria-label="anchor" href="#citation"></a>
 </h2>
 <p>If you use <code>SticsREval</code> in your work, please cite it as follows:</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/citation.html" class="external-link">citation</a></span><span class="op">(</span><span class="st">"SticsREval"</span><span class="op">)</span></span></code></pre></div>
 <hr>
 </div>
@@ -449,7 +540,6 @@
 <h2 id="code-of-conduct">Code of Conduct<a class="anchor" aria-label="anchor" href="#code-of-conduct"></a>
 </h2>
 <p>Please note that this project is released with a <a href="CODE_OF_CONDUCT.html">Contributor Code of Conduct</a>. By contributing to this project, you agree to abide by its terms.</p>
-<hr>
 </div>
 </div>
   </div>
