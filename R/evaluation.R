@@ -172,7 +172,6 @@ Evaluation <- R6::R6Class("Evaluation", # nolint: object_name_linter
         private$logger$info("Saving RMSE comparison for species ", spec)
         private$workspace$save_species_comparison(comparison)
         private$logger$info("Species comparison saved for species ", spec)
-        comparison$log()
       }
     },
 
@@ -216,10 +215,10 @@ Evaluation <- R6::R6Class("Evaluation", # nolint: object_name_linter
     #' @param logger a logger object with `info`, `debug`, `warn` and `error`
     #' methods (default: uses the logger package)
     #' @param summary_class a class to build the summary of the evaluation
-    #'  (default: `ComparisonSummary`)
+    #'  (default: `EvaluationSummary`)
     initialize = function(
       config, workspace = NULL, backend = NULL, logger = default_logger,
-      summary_class = ComparisonSummary
+      summary_class = EvaluationSummary
     ) {
       config$validate_eval()
       private$config <- config
