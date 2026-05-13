@@ -81,6 +81,12 @@ WorkspaceLoader <- R6::R6Class("WorkspaceLoader", # nolint: object_name_linter
       res <- SticsOnR::stics_wrapper(
         wrapper_options, situation = unique(usms_species$usm)
       )
+      if (res$error) {
+        stop(
+          "Error running simulations. Set verbose = 2L for more details.",
+          call. = FALSE
+        )
+      }
       res$sim_list
     },
 
