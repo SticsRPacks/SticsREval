@@ -68,12 +68,25 @@ test_that("initialize sets version to NULL when no metadata exists", {
 test_that("with_version returns a new EvalWorkspace with the given version", {
   dir <- withr::local_tempdir()
   ws <- make_ws(dir, version = "v1")
+  ws$add_evaluated_version("v1")
+  ws$add_evaluated_version("v2")
   ws2 <- ws$with_version("v2")
 
   expect_s3_class(ws2, "EvalWorkspace")
   expect_identical(ws2$get_version(), "v2")
   # original is unchanged
   expect_identical(ws$get_version(), "v1")
+})
+
+test_that("with_version fails when the given version is not found", {
+  dir <- withr::local_tempdir()
+  ws <- make_ws(dir, version = "v1")
+  ws$add_evaluated_version("v1")
+
+  expect_error(
+    ws$with_version("v2"),
+    "Version v2 not found in the workspace. Available versions: v1"
+  )
 })
 
 # ---- add_evaluated_version ----

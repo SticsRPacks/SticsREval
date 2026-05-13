@@ -574,6 +574,16 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
     #'
     #' @returns an EvalWorkspace object
     with_version = function(version) {
+      all_versions <- self$get_all_versions()
+      if (is.null(all_versions) || !(version %in% all_versions)) {
+        stop(
+          "Version ",
+          version,
+          " not found in the workspace. Available versions: ",
+          toString(all_versions),
+          call. = FALSE
+        )
+      }
       EvalWorkspace$new(private$.data_dir, version)
     },
 
