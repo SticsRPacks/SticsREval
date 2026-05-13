@@ -38,7 +38,7 @@ Evaluation$new(config)$run()
   workspace = NULL,
   backend = NULL,
   logger = default_logger,
-  summary_class = ComparisonSummary
+  summary_class = EvaluationSummary
 )}
     \if{html}{\out{</div>}}
   }
@@ -54,7 +54,7 @@ computations (default:
       \item{\code{logger}}{a logger object with \code{info}, \code{debug}, \code{warn} and \code{error}
 methods (default: uses the logger package)}
       \item{\code{summary_class}}{a class to build the summary of the evaluation
-(default: \code{ComparisonSummary})}
+(default: \code{EvaluationSummary})}
     }
     \if{html}{\out{</div>}}
   }

@@ -1,4 +1,4 @@
-ComparisonSummary <- R6::R6Class("ComparisonSummary", # nolint: object_name_linter
+EvaluationSummary <- R6::R6Class("EvaluationSummary", # nolint: object_name_linter
   private = list(
     workspace = NULL,
     species = NULL,
@@ -34,6 +34,8 @@ ComparisonSummary <- R6::R6Class("ComparisonSummary", # nolint: object_name_lint
           c$get_data()$species[1]
         }
       })))
+
+      for (comp in comparisons) comp$log()
 
       logger::log_info(strrep("=", 58))
       logger::log_info("Summary:")

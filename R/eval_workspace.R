@@ -174,13 +174,17 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
         dplyr::group_by(.data$situation) |>
         dplyr::summarise(init_date = min(.data$Date, na.rm = TRUE))
 
-      exclude_cols <- c("situation", "species", "version", "Date", "init_date")
+      include_cols <- c(
+        "HR_1", "HR_2", "HR_3", "HR_4", "HR_5",
+        "AZnit_1", "AZnit_2", "AZnit_3", "AZnit_4", "AZnit_5",
+        "resmes", "azomes"
+      )
 
       obs |>
         dplyr::left_join(init_dates, by = "situation") |>
         dplyr::mutate(
           dplyr::across(
-            -dplyr::all_of(exclude_cols),
+            dplyr::all_of(include_cols),
             ~ dplyr::if_else(.data$Date == .data$init_date, NA_real_, .x)
           )
         ) |>
@@ -570,6 +574,16 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
     #'
     #' @returns an EvalWorkspace object
     with_version = function(version) {
+      all_versions <- self$get_all_versions()
+      if (is.null(all_versions) || !(version %in% all_versions)) {
+        stop(
+          "Version ",
+          version,
+          " not found in the workspace. Available versions: ",
+          toString(all_versions),
+          call. = FALSE
+        )
+      }
       EvalWorkspace$new(private$.data_dir, version)
     },
 
