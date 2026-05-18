@@ -247,15 +247,21 @@ Evaluation <- R6::R6Class("Evaluation", # nolint: object_name_linter
         )
       }, add = TRUE)
       start_time <- Sys.time()
-
       if (private$config$init_workspace) {
-        private$workspace$init(
-          private$config$usms_workspace,
-          private$config$metadata_file,
-          private$config$stics_exe,
-          private$config$run_simulations,
-          private$backend
+        logger::log_info(
+          "Initializing workspace {private$config$eval_workspace}
+          for evaluation..."
         )
+        if (!dir.exists(private$config$eval_workspace) &&
+            !dir.create(private$config$eval_workspace, recursive = TRUE)
+        ) {
+          stop("Can't create evaluation workspace", call. = FALSE)
+        }
+        WorkspaceLoader$new(
+          workspace = private$workspace,
+          backend =  private$backend,
+          config = private$config
+        )$load()
       }
 
       private$logger$info("Starting evaluation...")

@@ -19,7 +19,6 @@ ws <- EvalWorkspace$new(
 \subsection{Public methods}{
   \itemize{
     \item \href{#method-EvalWorkspace-initialize}{\code{EvalWorkspace$new()}}
-    \item \href{#method-EvalWorkspace-init}{\code{EvalWorkspace$init()}}
     \item \href{#method-EvalWorkspace-save_sim}{\code{EvalWorkspace$save_sim()}}
     \item \href{#method-EvalWorkspace-save_obs}{\code{EvalWorkspace$save_obs()}}
     \item \href{#method-EvalWorkspace-get_species}{\code{EvalWorkspace$get_species()}}
@@ -41,6 +40,7 @@ ws <- EvalWorkspace$new(
     \item \href{#method-EvalWorkspace-with_version}{\code{EvalWorkspace$with_version()}}
     \item \href{#method-EvalWorkspace-set_version}{\code{EvalWorkspace$set_version()}}
     \item \href{#method-EvalWorkspace-get_version}{\code{EvalWorkspace$get_version()}}
+    \item \href{#method-EvalWorkspace-remove_init_obs}{\code{EvalWorkspace$remove_init_obs()}}
     \item \href{#method-EvalWorkspace-clone}{\code{EvalWorkspace$clone()}}
   }
 }
@@ -60,37 +60,6 @@ ws <- EvalWorkspace$new(
       \item{\code{data_dir}}{Path to the evaluation workspace}
       \item{\code{version}}{Optional, the version of STICS to use for the data
 extraction. If not defined the last evaluated version will be used.}
-    }
-    \if{html}{\out{</div>}}
-  }
-}
-
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-EvalWorkspace-init"></a>}}
-\if{latex}{\out{\hypertarget{method-EvalWorkspace-init}{}}}
-\subsection{\code{EvalWorkspace$init()}}{
-  Initialize the evaluation workspace
-  \subsection{Usage}{
-    \if{html}{\out{<div class="r">}}
-    \preformatted{EvalWorkspace$init(
-  data_workspace,
-  metadata_file,
-  stics_exe,
-  must_run_simulations,
-  parallel_backend
-)}
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Arguments}{
-    \if{html}{\out{<div class="arguments">}}
-    \describe{
-      \item{\code{data_workspace}}{Path to the USMs data workspace}
-      \item{\code{metadata_file}}{Path to the metadata file}
-      \item{\code{stics_exe}}{Patht to the STICS executable}
-      \item{\code{must_run_simulations}}{Run the simulations before loading
-simulations data ?}
-      \item{\code{parallel_backend}}{a parallel backend which contains the parallelism
-configuration}
     }
     \if{html}{\out{</div>}}
   }
@@ -546,6 +515,26 @@ the returned RMSE per USM}
   }
   \subsection{Returns}{
     the current version of the evaluation workspace
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-EvalWorkspace-remove_init_obs"></a>}}
+\if{latex}{\out{\hypertarget{method-EvalWorkspace-remove_init_obs}{}}}
+\subsection{\code{EvalWorkspace$remove_init_obs()}}{
+  Remove the initial observations (HR_1 to HR_5, AZnit_1
+to AZnit_5, resmes and azomes) from the observations dataset
+This function is used to remove the initial observations from the
+dataset, which are not relevant for the evaluation and can bias the
+results.
+The initial observations are defined as the observations of the first
+date of each situation (USM) for the variables HR_1 to HR_5
+and AZnit_1 to AZnit_5, resmes and azomes.
+This function will replace the initial observations by NA in the dataset.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{EvalWorkspace$remove_init_obs()}
+    \if{html}{\out{</div>}}
   }
 }
 
