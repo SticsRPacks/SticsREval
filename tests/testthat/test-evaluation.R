@@ -170,26 +170,3 @@ test_that("evaluate_species skips comparison if no reference_version", {
 
   expect_false(called$flag)
 })
-
-test_that("workspace init is called when enabled", {
-  workspace <- make_fake_workspace()
-  called <- new.env()
-  called$flag <- FALSE
-  workspace$init <- function(...) {
-    called$flag <- TRUE
-  }
-
-  cfg <- make_base_cfg(
-    init_workspace = TRUE,
-    usms_workspace = "x",
-    metadata_file = "y",
-    stics_exe = "z",
-    run_simulations = TRUE
-  )
-  eval <- make_eval(cfg, workspace = workspace)
-  replace_private(eval, "evaluate_species", function(...) {})
-
-  eval$run()
-
-  expect_true(called$flag)
-})

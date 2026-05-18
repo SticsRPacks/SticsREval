@@ -151,50 +151,7 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
     .data_dir = NULL,
     .version  = NULL,
     .reader = NULL,
-    .writer = NULL,
-
-    remove_init_obs = function() {
-      sim <- private$.reader$read(
-        path = sim_ds_path(private$.data_dir),
-        collect = FALSE
-      )
-
-      obs <- private$.reader$read(
-        path = obs_ds_path(private$.data_dir),
-        collect = FALSE
-      )
-      if (is.null(sim) || is.null(obs)) {
-        logger::log_warn(
-          "Missing sim or obs dataset, skipping init obs removal"
-        )
-        return(invisible(NULL))
-      }
-
-      init_dates <- sim |>
-        dplyr::group_by(.data$situation) |>
-        dplyr::summarise(init_date = min(.data$Date, na.rm = TRUE))
-
-      include_cols <- c(
-        "HR_1", "HR_2", "HR_3", "HR_4", "HR_5",
-        "AZnit_1", "AZnit_2", "AZnit_3", "AZnit_4", "AZnit_5",
-        "resmes", "azomes"
-      )
-
-      obs |>
-        dplyr::left_join(init_dates, by = "situation") |>
-        dplyr::mutate(
-          dplyr::across(
-            dplyr::all_of(include_cols),
-            ~ dplyr::if_else(.data$Date == .data$init_date, NA_real_, .x)
-          )
-        ) |>
-        dplyr::select(-"init_date") |>
-        arrow::write_dataset(
-          obs_ds_path(private$.data_dir),
-          format = "parquet",
-          partitioning = c("version", "species")
-        )
-    }
+    .writer = NULL
   ),
   public = list(
     #' @description Create an evaluation workspace manager
@@ -216,41 +173,6 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
 
     },
 
-    #' @description
-    #' Initialize the evaluation workspace
-    #'
-    #' @param data_workspace Path to the USMs data workspace
-    #' @param metadata_file Path to the metadata file
-    #' @param stics_exe Patht to the STICS executable
-    #' @param must_run_simulations Run the simulations before loading
-    #'  simulations data ?
-    #' @param parallel_backend a parallel backend which contains the parallelism
-    #'  configuration
-    init = function(
-      data_workspace,
-      metadata_file,
-      stics_exe,
-      must_run_simulations,
-      parallel_backend
-    ) {
-      logger::log_info(
-        "Initializing workspace {private$.data_dir} for evaluation..."
-      )
-      if (!dir.exists(private$.data_dir) &&
-          !dir.create(private$.data_dir)
-      ) {
-        stop("Can't create evaluation workspace", call. = FALSE)
-      }
-      WorkspaceLoader$new(
-        workspace = self,
-        backend = parallel_backend,
-        usms_workspace = data_workspace,
-        metadata_file = metadata_file,
-        stics_exe = stics_exe,
-        run_simulations = must_run_simulations
-      )$load()
-      private$remove_init_obs()
-    },
     #' @description
     #' Save simulations
     #' @param sim the list of simulations
@@ -602,6 +524,59 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
     #' @returns the current version of the evaluation workspace
     get_version = function() {
       private$.version
+    },
+
+    #' @description
+    #' Remove the initial observations (HR_1 to HR_5, AZnit_1
+    #' to AZnit_5, resmes and azomes) from the observations dataset
+    #' This function is used to remove the initial observations from the
+    #' dataset, which are not relevant for the evaluation and can bias the
+    #' results.
+    #' The initial observations are defined as the observations of the first
+    #' date of each situation (USM) for the variables HR_1 to HR_5
+    #' and AZnit_1 to AZnit_5, resmes and azomes.
+    #' This function will replace the initial observations by NA in the dataset.
+    remove_init_obs = function() {
+      sim <- private$.reader$read(
+        path = sim_ds_path(private$.data_dir),
+        collect = FALSE
+      )
+
+      obs <- private$.reader$read(
+        path = obs_ds_path(private$.data_dir),
+        collect = FALSE
+      )
+      if (is.null(sim) || is.null(obs)) {
+        logger::log_warn(
+          "Missing sim or obs dataset, skipping init obs removal"
+        )
+        return(invisible(NULL))
+      }
+
+      init_dates <- sim |>
+        dplyr::group_by(.data$situation) |>
+        dplyr::summarise(init_date = min(.data$Date, na.rm = TRUE))
+
+      include_cols <- c(
+        "HR_1", "HR_2", "HR_3", "HR_4", "HR_5",
+        "AZnit_1", "AZnit_2", "AZnit_3", "AZnit_4", "AZnit_5",
+        "resmes", "azomes"
+      )
+
+      obs |>
+        dplyr::left_join(init_dates, by = "situation") |>
+        dplyr::mutate(
+          dplyr::across(
+            dplyr::all_of(include_cols),
+            ~ dplyr::if_else(.data$Date == .data$init_date, NA_real_, .x)
+          )
+        ) |>
+        dplyr::select(-"init_date") |>
+        arrow::write_dataset(
+          obs_ds_path(private$.data_dir),
+          format = "parquet",
+          partitioning = c("version", "species")
+        )
     }
   )
 )

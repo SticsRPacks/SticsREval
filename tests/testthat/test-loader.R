@@ -35,21 +35,32 @@ make_fake_backend <- function() {
   )
 }
 
-make_loader <- function(
-  workspace = make_fake_workspace(),
-  backend = make_fake_backend(),
+make_fake_config <- function(
   usms_workspace = withr::local_tempdir(),
   metadata_file = tempfile(fileext = ".csv"),
   stics_exe = "/stics",
   run_simulations = FALSE
 ) {
-  WorkspaceLoader$new(
-    workspace = workspace,
-    backend = backend,
+  SticsREval::Configuration$new(
+    eval_workspace = withr::local_tempdir(),
     usms_workspace = usms_workspace,
     metadata_file = metadata_file,
     stics_exe = stics_exe,
-    run_simulations = run_simulations
+    run_simulations = run_simulations,
+    usms = NULL
+  )
+}
+
+make_loader <- function(
+  workspace = make_fake_workspace(),
+  backend = make_fake_backend(),
+  config = make_fake_config()
+
+) {
+  WorkspaceLoader$new(
+    workspace = workspace,
+    backend = backend,
+    config = config
   )
 }
 
@@ -68,7 +79,10 @@ call_private <- function(loader, name, ...) {
 # ---- get_rotation_list ----
 
 test_that("get_rotation_list errors when metadata file does not exist", {
-  loader <- make_loader(metadata_file = file.path("nonexistent", "path.csv"))
+  config <- make_fake_config(
+    metadata_file = file.path("nonexistent", "path.csv")
+  )
+  loader <- make_loader(config = config)
   expect_error(
     call_private(loader, "get_rotation_list"),
     "Metadata file not found"
@@ -79,7 +93,9 @@ test_that("get_rotation_list errors on missing required columns", {
   path <- withr::local_tempfile(fileext = ".csv")
   write_metadata(path, "usm;other_col\nusm1;val")
 
-  loader <- make_loader(metadata_file = path)
+  config <- make_fake_config(metadata_file = path)
+
+  loader <- make_loader(config = config)
   expect_error(
     call_private(loader, "get_rotation_list"),
     "Missing columns in metadata file"
@@ -90,7 +106,9 @@ test_that("get_rotation_list errors when rotation_order is non-numeric", {
   path <- withr::local_tempfile(fileext = ".csv")
   write_metadata(path, "usm;rotation;rotation_order\nusm1;rot1;abc")
 
-  loader <- make_loader(metadata_file = path)
+  config <- make_fake_config(metadata_file = path)
+
+  loader <- make_loader(config = config)
   expect_error(
     call_private(loader, "get_rotation_list"),
     "Column must be numeric: rotation_order"
@@ -101,7 +119,9 @@ test_that("get_rotation_list returns empty list when no rows", {
   path <- withr::local_tempfile(fileext = ".csv")
   write_metadata(path, "usm;rotation;rotation_order")
 
-  loader <- make_loader(metadata_file = path)
+  config <- make_fake_config(metadata_file = path)
+
+  loader <- make_loader(config = config)
   result <- call_private(loader, "get_rotation_list")
   expect_identical(result, list())
 })
@@ -115,7 +135,9 @@ test_that("get_rotation_list excludes rows where rotation is NA or '0'", {
     "usm3;;3"
   ))
 
-  loader <- make_loader(metadata_file = path)
+  config <- make_fake_config(metadata_file = path)
+
+  loader <- make_loader(config = config)
   result <- call_private(loader, "get_rotation_list")
 
   usms_in_rotations <- unlist(result)
@@ -132,7 +154,9 @@ test_that("get_rotation_list groups USMs by rotation in order", {
     "usm3;rot2;1"
   ))
 
-  loader <- make_loader(metadata_file = path)
+  config <- make_fake_config(metadata_file = path)
+
+  loader <- make_loader(config = config)
   result <- call_private(loader, "get_rotation_list")
 
   expect_length(result, 2)
@@ -147,7 +171,9 @@ test_that("get_rotation_list handles single-USM rotations", {
     "usm1;rot1;1"
   ))
 
-  loader <- make_loader(metadata_file = path)
+  config <- make_fake_config(metadata_file = path)
+
+  loader <- make_loader(config = config)
   result <- call_private(loader, "get_rotation_list")
 
   expect_length(result, 1)
@@ -165,13 +191,14 @@ test_that("load sets workspace version to stics version", {
   write_metadata(meta_path, "usm;rotation;rotation_order")
 
   workspace <- make_fake_workspace()
+  workspace$remove_init_obs <- function() {}
+
+  config <- make_fake_config(metadata_file = meta_path, usms_workspace = ws_dir)
 
   loader <- make_loader(
     workspace = workspace,
-    usms_workspace = ws_dir,
-    metadata_file = meta_path
+    config = config
   )
-
   replace_private(loader, "extract_species_from_usms",
     function(...) {
       data.frame(
@@ -198,9 +225,12 @@ test_that("load discovers USMs from usms_workspace subdirectories", {
   write_metadata(meta_path, "usm;rotation;rotation_order")
 
   seen_usms <- NULL
+  config <- make_fake_config(usms_workspace = ws_dir, metadata_file = meta_path)
+  workspace <- make_fake_workspace()
+  workspace$remove_init_obs <- function() {}
   loader <- make_loader(
-    usms_workspace = ws_dir,
-    metadata_file = meta_path
+    config = config,
+    workspace = workspace
   )
 
   seen_usms <- new.env()

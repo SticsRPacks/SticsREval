@@ -2,10 +2,7 @@ WorkspaceLoader <- R6::R6Class("WorkspaceLoader", # nolint: object_name_linter
   private = list(
     workspace = NULL,
     backend = NULL,
-    usms_workspace = NULL,
-    metadata_file = NULL,
-    stics_exe = NULL,
-    run_sims = NULL,
+    config = NULL,
 
     extract_species_from_usms = function(usms) {
       logger::log_debug("Extracting species from USMs...")
@@ -14,7 +11,7 @@ WorkspaceLoader <- R6::R6Class("WorkspaceLoader", # nolint: object_name_linter
         function(i) {
           usm <- usms[i]
           species <- SticsRFiles::get_plant_txt(
-            workspace = file.path(private$usms_workspace, usm)
+            workspace = file.path(private$config$usms_workspace, usm)
           )
           list(species = species$codeplante, usm = usm)
         }
@@ -25,10 +22,14 @@ WorkspaceLoader <- R6::R6Class("WorkspaceLoader", # nolint: object_name_linter
     },
 
     get_rotation_list = function() {
-      if (!file.exists(private$metadata_file)) {
-        stop("Metadata file not found: ", private$metadata_file, call. = FALSE)
+      if (!file.exists(private$config$metadata_file)) {
+        stop(
+          "Metadata file not found: ",
+          private$config$metadata_file,
+          call. = FALSE
+        )
       }
-      rotations_data <- read_csv(private$metadata_file, delimiter = ";")
+      rotations_data <- read_csv(private$config$metadata_file, delimiter = ";")
       required_cols  <- c("usm", "rotation", "rotation_order")
       missing_cols <- setdiff(required_cols, names(rotations_data))
 
@@ -63,15 +64,15 @@ WorkspaceLoader <- R6::R6Class("WorkspaceLoader", # nolint: object_name_linter
     },
 
     load_stics_version = function() {
-      v <- as.character(SticsOnR::get_version_number(private$stics_exe))
+      v <- as.character(SticsOnR::get_version_number(private$config$stics_exe))
       private$workspace$add_evaluated_version(v)
       v
     },
 
     run_simulations = function(usms_species, rotations) {
       wrapper_options <- SticsOnR::stics_wrapper_options(
-        stics_exe = private$stics_exe,
-        workspace = private$usms_workspace,
+        stics_exe = private$config$stics_exe,
+        workspace = private$config$usms_workspace,
         parallel = private$backend$parallel,
         cores = private$backend$cores,
         successive = rotations,
@@ -91,13 +92,13 @@ WorkspaceLoader <- R6::R6Class("WorkspaceLoader", # nolint: object_name_linter
     },
 
     load_sim = function(usms_species, rotations, stics_version) {
-      if (private$run_sims) {
+      if (private$config$run_simulations) {
         logger::log_info("Running simulations...")
         sim <- private$run_simulations(usms_species, rotations)
       } else {
         logger::log_info("Loading simulations data...")
         sim <- SticsRFiles::get_sim(
-          workspace = private$usms_workspace,
+          workspace = private$config$usms_workspace,
           usm = unique(usms_species$usm),
           verbose = is_debug(),
           parallel = private$backend$parallel,
@@ -112,7 +113,7 @@ WorkspaceLoader <- R6::R6Class("WorkspaceLoader", # nolint: object_name_linter
     load_obs = function(usms_species) {
       logger::log_info("Loading observations data...")
       obs <- SticsRFiles::get_obs(
-        workspace = private$usms_workspace,
+        workspace = private$config$usms_workspace,
         usm = unique(usms_species$usm),
         verbose = is_debug(),
         parallel = private$backend$parallel,
@@ -126,21 +127,27 @@ WorkspaceLoader <- R6::R6Class("WorkspaceLoader", # nolint: object_name_linter
 
   public = list(
     initialize = function(
-      workspace, backend, usms_workspace, metadata_file, stics_exe,
-      run_simulations
+      workspace, backend, config
     ) {
       private$workspace <- workspace
       private$backend <- backend
-      private$usms_workspace <- usms_workspace
-      private$metadata_file  <- metadata_file
-      private$stics_exe <- stics_exe
-      private$run_sims <- run_simulations
+      private$config <- config
     },
 
     load = function() {
       all_usms <- list.dirs(
-        private$usms_workspace, full.names = FALSE, recursive = FALSE
+        private$config$usms_workspace, full.names = FALSE, recursive = FALSE
       )
+      if (!is.null(private$config$usms)) {
+        missing_usms <- setdiff(private$config$usms, all_usms)
+        if (length(missing_usms) > 0) {
+          stop(
+            "The following USMs are not found in the workspace: ",
+            toString(missing_usms), call. = FALSE
+          )
+        }
+        all_usms <- private$config$usms
+      }
       usms_species <- private$extract_species_from_usms(all_usms)
       rotations <- private$get_rotation_list()
       stics_version <- private$load_stics_version()
@@ -148,6 +155,7 @@ WorkspaceLoader <- R6::R6Class("WorkspaceLoader", # nolint: object_name_linter
 
       private$load_sim(usms_species, rotations, stics_version)
       private$load_obs(usms_species)
+      private$workspace$remove_init_obs()
       invisible(private$workspace)
     }
   )
