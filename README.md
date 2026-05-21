@@ -116,7 +116,7 @@ config <- Configuration$new(
 
 | Field | Description |
 |---|---|
-| `stics_exe` | Path to the STICS executable (required when `init_workspace = TRUE` and `run_simulations = TRUE`) |
+| `stics_exe` | Path to the STICS executable (required when `run_simulations = TRUE`) |
 | `usms_workspace` | Path to the USMs input data directory (required when `init_workspace = TRUE`) |
 | `metadata_file` | Path to the metadata CSV file describing simulations (required when `init_workspace = TRUE`) |
 | `eval_workspace` | Path to the evaluation workspace — **required** |
@@ -174,11 +174,12 @@ After running, the `eval_workspace` directory will contain Parquet files with si
 
 ### `export_stats_to_csv()`
 
-Exports the evaluation statistics per species to CSV files. For each species, a subdirectory is created under `output_dir` and three files are written when the corresponding data are available:
+Exports the evaluation statistics to CSV files. Files are written to `output_dir` when the corresponding data are available:
 
 | File | Content |
 |---|---|
-| `Criteres_stats.csv` | Global statistical criteria (RMSE, nRMSE, bias, R², etc.) |
+| `species_stats.csv` | Statistical metrics per species |
+| `global_stats.csv` | Global statistical criteria (RMSE, nRMSE, bias, R², etc.) |
 | `RMSE_per_usm.csv` | RMSE broken down per USM (simulation unit) |
 | `Deteriorated_USM.csv` | List of USMs with deteriorated performance vs. the reference version |
 

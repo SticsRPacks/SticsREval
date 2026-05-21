@@ -14,14 +14,14 @@ containing all parameters required for the export.}
 NULL. This function is called for its side effects (writing files).
 }
 \description{
-This function exports different evaluation metrics for each species found
-in the evaluation workspace into CSV files. For every species, it creates
-an output directory (if needed) and writes the following datasets when
-available:
+This function exports different evaluation metrics from the evaluation
+workspace into CSV files. It retrieves data from the workspace and writes
+the following datasets when available:
 }
 \details{
 \itemize{
-\item Global statistics (\code{Criteres_stats.csv})
+\item Species statistics (\code{species_stats.csv})
+\item Global statistics (\code{global_stats.csv})
 \item RMSE per USM (\code{RMSE_per_usm.csv})
 \item List of deteriorated USMs (\code{Deteriorated_USM.csv})
 }
@@ -29,10 +29,12 @@ available:
 The data are retrieved from the evaluation workspace using dedicated helper
 functions. Files are written safely using \code{safe_write_csv()}.
 
-For each species:
+The function:
 \itemize{
-\item Creates a species-specific output directory.
-\item Exports statistics if available.
+\item Validates the configuration for export.
+\item Creates the output directory if needed.
+\item Exports species statistics if available.
+\item Exports global statistics if available.
 \item Exports RMSE per USM if available.
 \item Exports deteriorated USM information if available.
 }

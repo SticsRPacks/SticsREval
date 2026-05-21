@@ -67,8 +67,8 @@ methods (default: uses the logger package)}
   Run the evaluation workflow
 This function orchestrates the full evaluation workflow based on a given
 configuration object. It initializes logging, optionally prepares the
-evaluation workspace, runs the evaluation for all species, and displays
-summary information.
+evaluation workspace, runs the evaluation globally and then for all
+species, and displays summary information.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{Evaluation$run()}

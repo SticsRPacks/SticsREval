@@ -4,7 +4,7 @@ RmseComparison <- R6::R6Class("RmseComparison", # nolint: object_name_linter
     percentage = NULL,
 
     compare_rmse = function(species, ref_stats, new_stats) {
-      new_stats |>
+      res <- new_stats |>
         dplyr::left_join(ref_stats, by = c("situation", "variable")) |>
         dplyr::mutate(
           rmse_new = as.numeric(.data$rRMSE.x),
@@ -15,7 +15,6 @@ RmseComparison <- R6::R6Class("RmseComparison", # nolint: object_name_linter
           !is.na(.data$variable), !is.na(.data$situation)
         ) |>
         dplyr::mutate(
-          species = species,
           ratio   = round(
             (abs(.data$rmse_new) - abs(.data$rmse_ref)) / abs(.data$rmse_ref) * 100, # nolint: line_length_linter
             2
@@ -23,8 +22,12 @@ RmseComparison <- R6::R6Class("RmseComparison", # nolint: object_name_linter
         ) |>
         dplyr::filter(is.finite(.data$ratio)) |>
         dplyr::select(
-          "species", "situation", "variable", "rmse_new", "rmse_ref", "ratio"
+          "situation", "variable", "rmse_new", "rmse_ref", "ratio"
         )
+      if (!is.null(species)) {
+        res <- dplyr::mutate(res, species = species)
+      }
+      res
     }
   ),
 
@@ -58,14 +61,14 @@ RmseComparison <- R6::R6Class("RmseComparison", # nolint: object_name_linter
           dplyr::arrange(dplyr::desc(.data$ratio)) |>
           dplyr::collect()
       } else if (
-        !is.null(species) && !is.null(ref_stats) && !is.null(eval_stats)
+        !is.null(ref_stats) && !is.null(eval_stats)
       ) {
         private$data <- private$compare_rmse(species, ref_stats, eval_stats) |>
           dplyr::arrange(dplyr::desc(.data$ratio)) |>
           dplyr::collect()
       } else {
         stop(
-          "`data`, or `species` + `ref_stats` + `eval_stats` must be defined",
+          "`data`, or `ref_stats` + `eval_stats` must be defined",
           call. = FALSE
         )
       }
@@ -74,7 +77,9 @@ RmseComparison <- R6::R6Class("RmseComparison", # nolint: object_name_linter
     log = function() {
       if (self$is_empty) return(invisible(self))
       logger::log_info(strrep("-", 65))
-      logger::log_info("Species: ", private$data$species[1])
+      if (!is.null(private$data$species[1])) {
+        logger::log_info("Species: ", private$data$species[1])
+      }
       logger::log_info("Total number of variables: ", nrow(private$data))
       logger::log_info(
         length(self$critical_vars),
