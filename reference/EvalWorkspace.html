@@ -56,7 +56,6 @@
 <div class="section">
 <h3 id="public-methods">Public methods<a class="anchor" aria-label="anchor" href="#public-methods"></a></h3>
 <p></p><ul><li><p><a href="#method-EvalWorkspace-initialize"><code>EvalWorkspace$new()</code></a></p></li>
-<li><p><a href="#method-EvalWorkspace-init"><code>EvalWorkspace$init()</code></a></p></li>
 <li><p><a href="#method-EvalWorkspace-save_sim"><code>EvalWorkspace$save_sim()</code></a></p></li>
 <li><p><a href="#method-EvalWorkspace-save_obs"><code>EvalWorkspace$save_obs()</code></a></p></li>
 <li><p><a href="#method-EvalWorkspace-get_species"><code>EvalWorkspace$get_species()</code></a></p></li>
@@ -64,13 +63,17 @@
 <li><p><a href="#method-EvalWorkspace-get_sim"><code>EvalWorkspace$get_sim()</code></a></p></li>
 <li><p><a href="#method-EvalWorkspace-get_obs"><code>EvalWorkspace$get_obs()</code></a></p></li>
 <li><p><a href="#method-EvalWorkspace-save_stats"><code>EvalWorkspace$save_stats()</code></a></p></li>
+<li><p><a href="#method-EvalWorkspace-save_global_stats"><code>EvalWorkspace$save_global_stats()</code></a></p></li>
 <li><p><a href="#method-EvalWorkspace-get_stats"><code>EvalWorkspace$get_stats()</code></a></p></li>
+<li><p><a href="#method-EvalWorkspace-get_global_stats"><code>EvalWorkspace$get_global_stats()</code></a></p></li>
 <li><p><a href="#method-EvalWorkspace-save_rmse_per_usm"><code>EvalWorkspace$save_rmse_per_usm()</code></a></p></li>
 <li><p><a href="#method-EvalWorkspace-get_rmse_per_usm"><code>EvalWorkspace$get_rmse_per_usm()</code></a></p></li>
 <li><p><a href="#method-EvalWorkspace-save_deteriorated_usm"><code>EvalWorkspace$save_deteriorated_usm()</code></a></p></li>
 <li><p><a href="#method-EvalWorkspace-get_deteriorated_usm"><code>EvalWorkspace$get_deteriorated_usm()</code></a></p></li>
 <li><p><a href="#method-EvalWorkspace-save_species_comparison"><code>EvalWorkspace$save_species_comparison()</code></a></p></li>
+<li><p><a href="#method-EvalWorkspace-save_global_comparison"><code>EvalWorkspace$save_global_comparison()</code></a></p></li>
 <li><p><a href="#method-EvalWorkspace-get_species_comparison"><code>EvalWorkspace$get_species_comparison()</code></a></p></li>
+<li><p><a href="#method-EvalWorkspace-get_global_comparison"><code>EvalWorkspace$get_global_comparison()</code></a></p></li>
 <li><p><a href="#method-EvalWorkspace-save_metadata"><code>EvalWorkspace$save_metadata()</code></a></p></li>
 <li><p><a href="#method-EvalWorkspace-add_evaluated_version"><code>EvalWorkspace$add_evaluated_version()</code></a></p></li>
 <li><p><a href="#method-EvalWorkspace-get_all_versions"><code>EvalWorkspace$get_all_versions()</code></a></p></li>
@@ -78,6 +81,7 @@
 <li><p><a href="#method-EvalWorkspace-with_version"><code>EvalWorkspace$with_version()</code></a></p></li>
 <li><p><a href="#method-EvalWorkspace-set_version"><code>EvalWorkspace$set_version()</code></a></p></li>
 <li><p><a href="#method-EvalWorkspace-get_version"><code>EvalWorkspace$get_version()</code></a></p></li>
+<li><p><a href="#method-EvalWorkspace-remove_init_obs"><code>EvalWorkspace$remove_init_obs()</code></a></p></li>
 <li><p><a href="#method-EvalWorkspace-clone"><code>EvalWorkspace$clone()</code></a></p></li>
 </ul></div><p></p><hr><a id="method-EvalWorkspace-initialize"></a><div class="section">
 <h3 id="evalworkspace-new-"><code>EvalWorkspace$new()</code><a class="anchor" aria-label="anchor" href="#evalworkspace-new-"></a></h3>
@@ -99,49 +103,13 @@ extraction. If not defined the last evaluated version will be used.</p></dd>
 
 </div>
 
-<p></p><hr><a id="method-EvalWorkspace-init"></a><div class="section">
-<h3 id="evalworkspace-init-"><code>EvalWorkspace$init()</code><a class="anchor" aria-label="anchor" href="#evalworkspace-init-"></a></h3>
-<p>Initialize the evaluation workspace</p><div class="section">
-<h4 id="usage-1">Usage<a class="anchor" aria-label="anchor" href="#usage-1"></a></h4>
-<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">EvalWorkspace</span><span class="op">$</span><span class="fu">init</span><span class="op">(</span></span>
-<span>  <span class="va">data_workspace</span>,</span>
-<span>  <span class="va">metadata_file</span>,</span>
-<span>  <span class="va">stics_exe</span>,</span>
-<span>  <span class="va">must_run_simulations</span>,</span>
-<span>  <span class="va">parallel_backend</span></span>
-<span><span class="op">)</span></span></code></pre></div><p></p></div>
-</div><p></p><div class="section">
-<h4 id="arguments-1">Arguments<a class="anchor" aria-label="anchor" href="#arguments-1"></a></h4>
-<p></p><div class="arguments"><dl><dt><code>data_workspace</code></dt>
-<dd><p>Path to the USMs data workspace</p></dd>
-
-      <dt><code>metadata_file</code></dt>
-<dd><p>Path to the metadata file</p></dd>
-
-      <dt><code>stics_exe</code></dt>
-<dd><p>Patht to the STICS executable</p></dd>
-
-      <dt><code>must_run_simulations</code></dt>
-<dd><p>Run the simulations before loading
-simulations data ?</p></dd>
-
-      <dt><code>parallel_backend</code></dt>
-<dd><p>a parallel backend which contains the parallelism
-configuration</p></dd>
-
-
-</dl><p></p></div>
-</div>
-
-</div>
-
 <p></p><hr><a id="method-EvalWorkspace-save_sim"></a><div class="section">
 <h3 id="evalworkspace-save-sim-"><code>EvalWorkspace$save_sim()</code><a class="anchor" aria-label="anchor" href="#evalworkspace-save-sim-"></a></h3>
 <p>Save simulations</p><div class="section">
-<h4 id="usage-2">Usage<a class="anchor" aria-label="anchor" href="#usage-2"></a></h4>
+<h4 id="usage-1">Usage<a class="anchor" aria-label="anchor" href="#usage-1"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">EvalWorkspace</span><span class="op">$</span><span class="fu">save_sim</span><span class="op">(</span><span class="va">sim</span>, <span class="va">usms_species</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div><p></p><div class="section">
-<h4 id="arguments-2">Arguments<a class="anchor" aria-label="anchor" href="#arguments-2"></a></h4>
+<h4 id="arguments-1">Arguments<a class="anchor" aria-label="anchor" href="#arguments-1"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>sim</code></dt>
 <dd><p>the list of simulations</p></dd>
 
@@ -157,10 +125,10 @@ configuration</p></dd>
 <p></p><hr><a id="method-EvalWorkspace-save_obs"></a><div class="section">
 <h3 id="evalworkspace-save-obs-"><code>EvalWorkspace$save_obs()</code><a class="anchor" aria-label="anchor" href="#evalworkspace-save-obs-"></a></h3>
 <p>Save observations</p><div class="section">
-<h4 id="usage-3">Usage<a class="anchor" aria-label="anchor" href="#usage-3"></a></h4>
+<h4 id="usage-2">Usage<a class="anchor" aria-label="anchor" href="#usage-2"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">EvalWorkspace</span><span class="op">$</span><span class="fu">save_obs</span><span class="op">(</span><span class="va">obs</span>, <span class="va">usms_species</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div><p></p><div class="section">
-<h4 id="arguments-3">Arguments<a class="anchor" aria-label="anchor" href="#arguments-3"></a></h4>
+<h4 id="arguments-2">Arguments<a class="anchor" aria-label="anchor" href="#arguments-2"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>obs</code></dt>
 <dd><p>the list of observations</p></dd>
 
@@ -176,7 +144,7 @@ configuration</p></dd>
 <p></p><hr><a id="method-EvalWorkspace-get_species"></a><div class="section">
 <h3 id="evalworkspace-get-species-"><code>EvalWorkspace$get_species()</code><a class="anchor" aria-label="anchor" href="#evalworkspace-get-species-"></a></h3>
 <p>Returns the list of species</p><div class="section">
-<h4 id="usage-4">Usage<a class="anchor" aria-label="anchor" href="#usage-4"></a></h4>
+<h4 id="usage-3">Usage<a class="anchor" aria-label="anchor" href="#usage-3"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">EvalWorkspace</span><span class="op">$</span><span class="fu">get_species</span><span class="op">(</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div><p></p><div class="section">
 <h4 id="returns">Returns<a class="anchor" aria-label="anchor" href="#returns"></a></h4>
@@ -188,10 +156,10 @@ configuration</p></dd>
 <p></p><hr><a id="method-EvalWorkspace-get_species_usm"></a><div class="section">
 <h3 id="evalworkspace-get-species-usm-"><code>EvalWorkspace$get_species_usm()</code><a class="anchor" aria-label="anchor" href="#evalworkspace-get-species-usm-"></a></h3>
 <p>Returns the list of USMs of a species</p><div class="section">
-<h4 id="usage-5">Usage<a class="anchor" aria-label="anchor" href="#usage-5"></a></h4>
+<h4 id="usage-4">Usage<a class="anchor" aria-label="anchor" href="#usage-4"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">EvalWorkspace</span><span class="op">$</span><span class="fu">get_species_usm</span><span class="op">(</span><span class="va">species</span>, usms <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div><p></p><div class="section">
-<h4 id="arguments-4">Arguments<a class="anchor" aria-label="anchor" href="#arguments-4"></a></h4>
+<h4 id="arguments-3">Arguments<a class="anchor" aria-label="anchor" href="#arguments-3"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>species</code></dt>
 <dd><p>the species to search for</p></dd>
 
@@ -210,7 +178,7 @@ configuration</p></dd>
 <p></p><hr><a id="method-EvalWorkspace-get_sim"></a><div class="section">
 <h3 id="evalworkspace-get-sim-"><code>EvalWorkspace$get_sim()</code><a class="anchor" aria-label="anchor" href="#evalworkspace-get-sim-"></a></h3>
 <p>Return the simulation</p><div class="section">
-<h4 id="usage-6">Usage<a class="anchor" aria-label="anchor" href="#usage-6"></a></h4>
+<h4 id="usage-5">Usage<a class="anchor" aria-label="anchor" href="#usage-5"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">EvalWorkspace</span><span class="op">$</span><span class="fu">get_sim</span><span class="op">(</span></span>
 <span>  species <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  usms <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -218,7 +186,7 @@ configuration</p></dd>
 <span>  collect <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div><p></p><div class="section">
-<h4 id="arguments-5">Arguments<a class="anchor" aria-label="anchor" href="#arguments-5"></a></h4>
+<h4 id="arguments-4">Arguments<a class="anchor" aria-label="anchor" href="#arguments-4"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>species</code></dt>
 <dd><p>Optional, if defined filter the simulations with this
 species</p></dd>
@@ -247,7 +215,7 @@ otherwise the lazy arrow data object will be returned</p></dd>
 <p></p><hr><a id="method-EvalWorkspace-get_obs"></a><div class="section">
 <h3 id="evalworkspace-get-obs-"><code>EvalWorkspace$get_obs()</code><a class="anchor" aria-label="anchor" href="#evalworkspace-get-obs-"></a></h3>
 <p>Return the observation</p><div class="section">
-<h4 id="usage-7">Usage<a class="anchor" aria-label="anchor" href="#usage-7"></a></h4>
+<h4 id="usage-6">Usage<a class="anchor" aria-label="anchor" href="#usage-6"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">EvalWorkspace</span><span class="op">$</span><span class="fu">get_obs</span><span class="op">(</span></span>
 <span>  species <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  usms <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -255,7 +223,7 @@ otherwise the lazy arrow data object will be returned</p></dd>
 <span>  collect <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div><p></p><div class="section">
-<h4 id="arguments-6">Arguments<a class="anchor" aria-label="anchor" href="#arguments-6"></a></h4>
+<h4 id="arguments-5">Arguments<a class="anchor" aria-label="anchor" href="#arguments-5"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>species</code></dt>
 <dd><p>Optional, if defined filter the observations with this
 species</p></dd>
@@ -284,15 +252,31 @@ otherwise the lazy arrow data object will be returned</p></dd>
 <p></p><hr><a id="method-EvalWorkspace-save_stats"></a><div class="section">
 <h3 id="evalworkspace-save-stats-"><code>EvalWorkspace$save_stats()</code><a class="anchor" aria-label="anchor" href="#evalworkspace-save-stats-"></a></h3>
 <p>Save a species statistics</p><div class="section">
-<h4 id="usage-8">Usage<a class="anchor" aria-label="anchor" href="#usage-8"></a></h4>
+<h4 id="usage-7">Usage<a class="anchor" aria-label="anchor" href="#usage-7"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">EvalWorkspace</span><span class="op">$</span><span class="fu">save_stats</span><span class="op">(</span><span class="va">species</span>, <span class="va">stats</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div><p></p><div class="section">
-<h4 id="arguments-7">Arguments<a class="anchor" aria-label="anchor" href="#arguments-7"></a></h4>
+<h4 id="arguments-6">Arguments<a class="anchor" aria-label="anchor" href="#arguments-6"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>species</code></dt>
 <dd><p>the species</p></dd>
 
       <dt><code>stats</code></dt>
 <dd><p>the statistics as a dataframe</p></dd>
+
+
+</dl><p></p></div>
+</div>
+
+</div>
+
+<p></p><hr><a id="method-EvalWorkspace-save_global_stats"></a><div class="section">
+<h3 id="evalworkspace-save-global-stats-"><code>EvalWorkspace$save_global_stats()</code><a class="anchor" aria-label="anchor" href="#evalworkspace-save-global-stats-"></a></h3>
+<p>Save global statistics</p><div class="section">
+<h4 id="usage-8">Usage<a class="anchor" aria-label="anchor" href="#usage-8"></a></h4>
+<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">EvalWorkspace</span><span class="op">$</span><span class="fu">save_global_stats</span><span class="op">(</span><span class="va">stats</span><span class="op">)</span></span></code></pre></div><p></p></div>
+</div><p></p><div class="section">
+<h4 id="arguments-7">Arguments<a class="anchor" aria-label="anchor" href="#arguments-7"></a></h4>
+<p></p><div class="arguments"><dl><dt><code>stats</code></dt>
+<dd><p>the global statistics as a dataframe</p></dd>
 
 
 </dl><p></p></div>
@@ -324,13 +308,34 @@ a lazy arrow data object otherwise</p>
 
 </div>
 
+<p></p><hr><a id="method-EvalWorkspace-get_global_stats"></a><div class="section">
+<h3 id="evalworkspace-get-global-stats-"><code>EvalWorkspace$get_global_stats()</code><a class="anchor" aria-label="anchor" href="#evalworkspace-get-global-stats-"></a></h3>
+<p>Return global statistics</p><div class="section">
+<h4 id="usage-10">Usage<a class="anchor" aria-label="anchor" href="#usage-10"></a></h4>
+<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">EvalWorkspace</span><span class="op">$</span><span class="fu">get_global_stats</span><span class="op">(</span>collect <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div><p></p></div>
+</div><p></p><div class="section">
+<h4 id="arguments-9">Arguments<a class="anchor" aria-label="anchor" href="#arguments-9"></a></h4>
+<p></p><div class="arguments"><dl><dt><code>collect</code></dt>
+<dd><p>Optional, if <code>TRUE</code> returns a dataframe,
+otherwise a lazy arrow data object will be returned</p></dd>
+
+
+</dl><p></p></div>
+</div><p></p><div class="section">
+<h4 id="returns-5">Returns<a class="anchor" aria-label="anchor" href="#returns-5"></a></h4>
+<p>the global statistics, as a dataframe if collect is <code>TRUE</code>,
+a lazy arrow data object otherwise</p>
+</div>
+
+</div>
+
 <p></p><hr><a id="method-EvalWorkspace-save_rmse_per_usm"></a><div class="section">
 <h3 id="evalworkspace-save-rmse-per-usm-"><code>EvalWorkspace$save_rmse_per_usm()</code><a class="anchor" aria-label="anchor" href="#evalworkspace-save-rmse-per-usm-"></a></h3>
 <p>Save the RMSE per USM</p><div class="section">
-<h4 id="usage-10">Usage<a class="anchor" aria-label="anchor" href="#usage-10"></a></h4>
+<h4 id="usage-11">Usage<a class="anchor" aria-label="anchor" href="#usage-11"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">EvalWorkspace</span><span class="op">$</span><span class="fu">save_rmse_per_usm</span><span class="op">(</span><span class="va">species</span>, <span class="va">rmse_per_usm</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div><p></p><div class="section">
-<h4 id="arguments-9">Arguments<a class="anchor" aria-label="anchor" href="#arguments-9"></a></h4>
+<h4 id="arguments-10">Arguments<a class="anchor" aria-label="anchor" href="#arguments-10"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>species</code></dt>
 <dd><p>the species</p></dd>
 
@@ -346,17 +351,17 @@ a lazy arrow data object otherwise</p>
 <p></p><hr><a id="method-EvalWorkspace-get_rmse_per_usm"></a><div class="section">
 <h3 id="evalworkspace-get-rmse-per-usm-"><code>EvalWorkspace$get_rmse_per_usm()</code><a class="anchor" aria-label="anchor" href="#evalworkspace-get-rmse-per-usm-"></a></h3>
 <p>Return the RMSE per USM for a species</p><div class="section">
-<h4 id="usage-11">Usage<a class="anchor" aria-label="anchor" href="#usage-11"></a></h4>
+<h4 id="usage-12">Usage<a class="anchor" aria-label="anchor" href="#usage-12"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">EvalWorkspace</span><span class="op">$</span><span class="fu">get_rmse_per_usm</span><span class="op">(</span></span>
-<span>  <span class="va">species</span>,</span>
+<span>  species <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  collect <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  usms <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  var2exclude <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div><p></p><div class="section">
-<h4 id="arguments-10">Arguments<a class="anchor" aria-label="anchor" href="#arguments-10"></a></h4>
+<h4 id="arguments-11">Arguments<a class="anchor" aria-label="anchor" href="#arguments-11"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>species</code></dt>
-<dd><p>the species</p></dd>
+<dd><p>Optional, the species</p></dd>
 
       <dt><code>collect</code></dt>
 <dd><p>Optional, if <code>TRUE</code> a dataframe will be returned,
@@ -373,7 +378,7 @@ the returned RMSE per USM</p></dd>
 
 </dl><p></p></div>
 </div><p></p><div class="section">
-<h4 id="returns-5">Returns<a class="anchor" aria-label="anchor" href="#returns-5"></a></h4>
+<h4 id="returns-6">Returns<a class="anchor" aria-label="anchor" href="#returns-6"></a></h4>
 <p>the RMSE per USM for a species, as a dataframe if collect is
 <code>TRUE</code>, a lazy arrow data object otherwise</p>
 </div>
@@ -383,10 +388,10 @@ the returned RMSE per USM</p></dd>
 <p></p><hr><a id="method-EvalWorkspace-save_deteriorated_usm"></a><div class="section">
 <h3 id="evalworkspace-save-deteriorated-usm-"><code>EvalWorkspace$save_deteriorated_usm()</code><a class="anchor" aria-label="anchor" href="#evalworkspace-save-deteriorated-usm-"></a></h3>
 <p>Save the deteriorated USM</p><div class="section">
-<h4 id="usage-12">Usage<a class="anchor" aria-label="anchor" href="#usage-12"></a></h4>
+<h4 id="usage-13">Usage<a class="anchor" aria-label="anchor" href="#usage-13"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">EvalWorkspace</span><span class="op">$</span><span class="fu">save_deteriorated_usm</span><span class="op">(</span><span class="va">deteriorated</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div><p></p><div class="section">
-<h4 id="arguments-11">Arguments<a class="anchor" aria-label="anchor" href="#arguments-11"></a></h4>
+<h4 id="arguments-12">Arguments<a class="anchor" aria-label="anchor" href="#arguments-12"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>deteriorated</code></dt>
 <dd><p>the deteriorated USM object</p></dd>
 
@@ -399,48 +404,10 @@ the returned RMSE per USM</p></dd>
 <p></p><hr><a id="method-EvalWorkspace-get_deteriorated_usm"></a><div class="section">
 <h3 id="evalworkspace-get-deteriorated-usm-"><code>EvalWorkspace$get_deteriorated_usm()</code><a class="anchor" aria-label="anchor" href="#evalworkspace-get-deteriorated-usm-"></a></h3>
 <p>Get the deteriorated USM comparison for a species</p><div class="section">
-<h4 id="usage-13">Usage<a class="anchor" aria-label="anchor" href="#usage-13"></a></h4>
+<h4 id="usage-14">Usage<a class="anchor" aria-label="anchor" href="#usage-14"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">EvalWorkspace</span><span class="op">$</span><span class="fu">get_deteriorated_usm</span><span class="op">(</span><span class="va">species</span>, <span class="va">percentage</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div><p></p><div class="section">
-<h4 id="arguments-12">Arguments<a class="anchor" aria-label="anchor" href="#arguments-12"></a></h4>
-<p></p><div class="arguments"><dl><dt><code>species</code></dt>
-<dd><p>the species</p></dd>
-
-      <dt><code>percentage</code></dt>
-<dd><p>the percentage</p></dd>
-
-
-</dl><p></p></div>
-</div><p></p><div class="section">
-<h4 id="returns-6">Returns<a class="anchor" aria-label="anchor" href="#returns-6"></a></h4>
-<p>a DeterioratedUSMComparison object</p>
-</div>
-
-</div>
-
-<p></p><hr><a id="method-EvalWorkspace-save_species_comparison"></a><div class="section">
-<h3 id="evalworkspace-save-species-comparison-"><code>EvalWorkspace$save_species_comparison()</code><a class="anchor" aria-label="anchor" href="#evalworkspace-save-species-comparison-"></a></h3>
-<p>Save the species comparison</p><div class="section">
-<h4 id="usage-14">Usage<a class="anchor" aria-label="anchor" href="#usage-14"></a></h4>
-<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">EvalWorkspace</span><span class="op">$</span><span class="fu">save_species_comparison</span><span class="op">(</span><span class="va">spec_comparison</span><span class="op">)</span></span></code></pre></div><p></p></div>
-</div><p></p><div class="section">
 <h4 id="arguments-13">Arguments<a class="anchor" aria-label="anchor" href="#arguments-13"></a></h4>
-<p></p><div class="arguments"><dl><dt><code>spec_comparison</code></dt>
-<dd><p>the species comparison object</p></dd>
-
-
-</dl><p></p></div>
-</div>
-
-</div>
-
-<p></p><hr><a id="method-EvalWorkspace-get_species_comparison"></a><div class="section">
-<h3 id="evalworkspace-get-species-comparison-"><code>EvalWorkspace$get_species_comparison()</code><a class="anchor" aria-label="anchor" href="#evalworkspace-get-species-comparison-"></a></h3>
-<p>Get the species comparison for a species</p><div class="section">
-<h4 id="usage-15">Usage<a class="anchor" aria-label="anchor" href="#usage-15"></a></h4>
-<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">EvalWorkspace</span><span class="op">$</span><span class="fu">get_species_comparison</span><span class="op">(</span><span class="va">species</span>, <span class="va">percentage</span><span class="op">)</span></span></code></pre></div><p></p></div>
-</div><p></p><div class="section">
-<h4 id="arguments-14">Arguments<a class="anchor" aria-label="anchor" href="#arguments-14"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>species</code></dt>
 <dd><p>the species</p></dd>
 
@@ -451,6 +418,79 @@ the returned RMSE per USM</p></dd>
 </dl><p></p></div>
 </div><p></p><div class="section">
 <h4 id="returns-7">Returns<a class="anchor" aria-label="anchor" href="#returns-7"></a></h4>
+<p>a DeterioratedUSMComparison object</p>
+</div>
+
+</div>
+
+<p></p><hr><a id="method-EvalWorkspace-save_species_comparison"></a><div class="section">
+<h3 id="evalworkspace-save-species-comparison-"><code>EvalWorkspace$save_species_comparison()</code><a class="anchor" aria-label="anchor" href="#evalworkspace-save-species-comparison-"></a></h3>
+<p>Save the species comparison</p><div class="section">
+<h4 id="usage-15">Usage<a class="anchor" aria-label="anchor" href="#usage-15"></a></h4>
+<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">EvalWorkspace</span><span class="op">$</span><span class="fu">save_species_comparison</span><span class="op">(</span><span class="va">spec_comparison</span><span class="op">)</span></span></code></pre></div><p></p></div>
+</div><p></p><div class="section">
+<h4 id="arguments-14">Arguments<a class="anchor" aria-label="anchor" href="#arguments-14"></a></h4>
+<p></p><div class="arguments"><dl><dt><code>spec_comparison</code></dt>
+<dd><p>the species comparison object</p></dd>
+
+
+</dl><p></p></div>
+</div>
+
+</div>
+
+<p></p><hr><a id="method-EvalWorkspace-save_global_comparison"></a><div class="section">
+<h3 id="evalworkspace-save-global-comparison-"><code>EvalWorkspace$save_global_comparison()</code><a class="anchor" aria-label="anchor" href="#evalworkspace-save-global-comparison-"></a></h3>
+<p>Save the global comparison</p><div class="section">
+<h4 id="usage-16">Usage<a class="anchor" aria-label="anchor" href="#usage-16"></a></h4>
+<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">EvalWorkspace</span><span class="op">$</span><span class="fu">save_global_comparison</span><span class="op">(</span><span class="va">spec_comparison</span><span class="op">)</span></span></code></pre></div><p></p></div>
+</div><p></p><div class="section">
+<h4 id="arguments-15">Arguments<a class="anchor" aria-label="anchor" href="#arguments-15"></a></h4>
+<p></p><div class="arguments"><dl><dt><code>spec_comparison</code></dt>
+<dd><p>the global comparison object</p></dd>
+
+
+</dl><p></p></div>
+</div>
+
+</div>
+
+<p></p><hr><a id="method-EvalWorkspace-get_species_comparison"></a><div class="section">
+<h3 id="evalworkspace-get-species-comparison-"><code>EvalWorkspace$get_species_comparison()</code><a class="anchor" aria-label="anchor" href="#evalworkspace-get-species-comparison-"></a></h3>
+<p>Get the species comparison for a species</p><div class="section">
+<h4 id="usage-17">Usage<a class="anchor" aria-label="anchor" href="#usage-17"></a></h4>
+<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">EvalWorkspace</span><span class="op">$</span><span class="fu">get_species_comparison</span><span class="op">(</span><span class="va">species</span>, <span class="va">percentage</span><span class="op">)</span></span></code></pre></div><p></p></div>
+</div><p></p><div class="section">
+<h4 id="arguments-16">Arguments<a class="anchor" aria-label="anchor" href="#arguments-16"></a></h4>
+<p></p><div class="arguments"><dl><dt><code>species</code></dt>
+<dd><p>the species</p></dd>
+
+      <dt><code>percentage</code></dt>
+<dd><p>the percentage</p></dd>
+
+
+</dl><p></p></div>
+</div><p></p><div class="section">
+<h4 id="returns-8">Returns<a class="anchor" aria-label="anchor" href="#returns-8"></a></h4>
+<p>an RmseComparison object</p>
+</div>
+
+</div>
+
+<p></p><hr><a id="method-EvalWorkspace-get_global_comparison"></a><div class="section">
+<h3 id="evalworkspace-get-global-comparison-"><code>EvalWorkspace$get_global_comparison()</code><a class="anchor" aria-label="anchor" href="#evalworkspace-get-global-comparison-"></a></h3>
+<p>Get the global comparison</p><div class="section">
+<h4 id="usage-18">Usage<a class="anchor" aria-label="anchor" href="#usage-18"></a></h4>
+<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">EvalWorkspace</span><span class="op">$</span><span class="fu">get_global_comparison</span><span class="op">(</span><span class="va">percentage</span><span class="op">)</span></span></code></pre></div><p></p></div>
+</div><p></p><div class="section">
+<h4 id="arguments-17">Arguments<a class="anchor" aria-label="anchor" href="#arguments-17"></a></h4>
+<p></p><div class="arguments"><dl><dt><code>percentage</code></dt>
+<dd><p>the percentage</p></dd>
+
+
+</dl><p></p></div>
+</div><p></p><div class="section">
+<h4 id="returns-9">Returns<a class="anchor" aria-label="anchor" href="#returns-9"></a></h4>
 <p>an RmseComparison object</p>
 </div>
 
@@ -459,10 +499,10 @@ the returned RMSE per USM</p></dd>
 <p></p><hr><a id="method-EvalWorkspace-save_metadata"></a><div class="section">
 <h3 id="evalworkspace-save-metadata-"><code>EvalWorkspace$save_metadata()</code><a class="anchor" aria-label="anchor" href="#evalworkspace-save-metadata-"></a></h3>
 <p>Save the metadata</p><div class="section">
-<h4 id="usage-16">Usage<a class="anchor" aria-label="anchor" href="#usage-16"></a></h4>
+<h4 id="usage-19">Usage<a class="anchor" aria-label="anchor" href="#usage-19"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">EvalWorkspace</span><span class="op">$</span><span class="fu">save_metadata</span><span class="op">(</span><span class="va">metadata</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div><p></p><div class="section">
-<h4 id="arguments-15">Arguments<a class="anchor" aria-label="anchor" href="#arguments-15"></a></h4>
+<h4 id="arguments-18">Arguments<a class="anchor" aria-label="anchor" href="#arguments-18"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>metadata</code></dt>
 <dd><p>the metadata dataframe</p></dd>
 
@@ -475,10 +515,10 @@ the returned RMSE per USM</p></dd>
 <p></p><hr><a id="method-EvalWorkspace-add_evaluated_version"></a><div class="section">
 <h3 id="evalworkspace-add-evaluated-version-"><code>EvalWorkspace$add_evaluated_version()</code><a class="anchor" aria-label="anchor" href="#evalworkspace-add-evaluated-version-"></a></h3>
 <p>Add an evaluated version to the metadata</p><div class="section">
-<h4 id="usage-17">Usage<a class="anchor" aria-label="anchor" href="#usage-17"></a></h4>
+<h4 id="usage-20">Usage<a class="anchor" aria-label="anchor" href="#usage-20"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">EvalWorkspace</span><span class="op">$</span><span class="fu">add_evaluated_version</span><span class="op">(</span><span class="va">version</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div><p></p><div class="section">
-<h4 id="arguments-16">Arguments<a class="anchor" aria-label="anchor" href="#arguments-16"></a></h4>
+<h4 id="arguments-19">Arguments<a class="anchor" aria-label="anchor" href="#arguments-19"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>version</code></dt>
 <dd><p>the STICS version</p></dd>
 
@@ -491,10 +531,10 @@ the returned RMSE per USM</p></dd>
 <p></p><hr><a id="method-EvalWorkspace-get_all_versions"></a><div class="section">
 <h3 id="evalworkspace-get-all-versions-"><code>EvalWorkspace$get_all_versions()</code><a class="anchor" aria-label="anchor" href="#evalworkspace-get-all-versions-"></a></h3>
 <p>Get all evaluated versions</p><div class="section">
-<h4 id="usage-18">Usage<a class="anchor" aria-label="anchor" href="#usage-18"></a></h4>
+<h4 id="usage-21">Usage<a class="anchor" aria-label="anchor" href="#usage-21"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">EvalWorkspace</span><span class="op">$</span><span class="fu">get_all_versions</span><span class="op">(</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div><p></p><div class="section">
-<h4 id="returns-8">Returns<a class="anchor" aria-label="anchor" href="#returns-8"></a></h4>
+<h4 id="returns-10">Returns<a class="anchor" aria-label="anchor" href="#returns-10"></a></h4>
 <p>a list of versions</p>
 </div>
 
@@ -503,10 +543,10 @@ the returned RMSE per USM</p></dd>
 <p></p><hr><a id="method-EvalWorkspace-get_stics_version"></a><div class="section">
 <h3 id="evalworkspace-get-stics-version-"><code>EvalWorkspace$get_stics_version()</code><a class="anchor" aria-label="anchor" href="#evalworkspace-get-stics-version-"></a></h3>
 <p>Get the last evaluated STICS version</p><div class="section">
-<h4 id="usage-19">Usage<a class="anchor" aria-label="anchor" href="#usage-19"></a></h4>
+<h4 id="usage-22">Usage<a class="anchor" aria-label="anchor" href="#usage-22"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">EvalWorkspace</span><span class="op">$</span><span class="fu">get_stics_version</span><span class="op">(</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div><p></p><div class="section">
-<h4 id="returns-9">Returns<a class="anchor" aria-label="anchor" href="#returns-9"></a></h4>
+<h4 id="returns-11">Returns<a class="anchor" aria-label="anchor" href="#returns-11"></a></h4>
 <p>the STICS version</p>
 </div>
 
@@ -515,17 +555,17 @@ the returned RMSE per USM</p></dd>
 <p></p><hr><a id="method-EvalWorkspace-with_version"></a><div class="section">
 <h3 id="evalworkspace-with-version-"><code>EvalWorkspace$with_version()</code><a class="anchor" aria-label="anchor" href="#evalworkspace-with-version-"></a></h3>
 <p>Create a new EvalWorkspace with a specific version</p><div class="section">
-<h4 id="usage-20">Usage<a class="anchor" aria-label="anchor" href="#usage-20"></a></h4>
+<h4 id="usage-23">Usage<a class="anchor" aria-label="anchor" href="#usage-23"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">EvalWorkspace</span><span class="op">$</span><span class="fu">with_version</span><span class="op">(</span><span class="va">version</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div><p></p><div class="section">
-<h4 id="arguments-17">Arguments<a class="anchor" aria-label="anchor" href="#arguments-17"></a></h4>
+<h4 id="arguments-20">Arguments<a class="anchor" aria-label="anchor" href="#arguments-20"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>version</code></dt>
 <dd><p>the version</p></dd>
 
 
 </dl><p></p></div>
 </div><p></p><div class="section">
-<h4 id="returns-10">Returns<a class="anchor" aria-label="anchor" href="#returns-10"></a></h4>
+<h4 id="returns-12">Returns<a class="anchor" aria-label="anchor" href="#returns-12"></a></h4>
 <p>an EvalWorkspace object</p>
 </div>
 
@@ -534,10 +574,10 @@ the returned RMSE per USM</p></dd>
 <p></p><hr><a id="method-EvalWorkspace-set_version"></a><div class="section">
 <h3 id="evalworkspace-set-version-"><code>EvalWorkspace$set_version()</code><a class="anchor" aria-label="anchor" href="#evalworkspace-set-version-"></a></h3>
 <p>Set the version of the evaluation workspace</p><div class="section">
-<h4 id="usage-21">Usage<a class="anchor" aria-label="anchor" href="#usage-21"></a></h4>
+<h4 id="usage-24">Usage<a class="anchor" aria-label="anchor" href="#usage-24"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">EvalWorkspace</span><span class="op">$</span><span class="fu">set_version</span><span class="op">(</span><span class="va">v</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div><p></p><div class="section">
-<h4 id="arguments-18">Arguments<a class="anchor" aria-label="anchor" href="#arguments-18"></a></h4>
+<h4 id="arguments-21">Arguments<a class="anchor" aria-label="anchor" href="#arguments-21"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>v</code></dt>
 <dd><p>the version to set</p></dd>
 
@@ -550,11 +590,28 @@ the returned RMSE per USM</p></dd>
 <p></p><hr><a id="method-EvalWorkspace-get_version"></a><div class="section">
 <h3 id="evalworkspace-get-version-"><code>EvalWorkspace$get_version()</code><a class="anchor" aria-label="anchor" href="#evalworkspace-get-version-"></a></h3>
 <p>Get the current version of the evaluation workspace</p><div class="section">
-<h4 id="usage-22">Usage<a class="anchor" aria-label="anchor" href="#usage-22"></a></h4>
+<h4 id="usage-25">Usage<a class="anchor" aria-label="anchor" href="#usage-25"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">EvalWorkspace</span><span class="op">$</span><span class="fu">get_version</span><span class="op">(</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div><p></p><div class="section">
-<h4 id="returns-11">Returns<a class="anchor" aria-label="anchor" href="#returns-11"></a></h4>
+<h4 id="returns-13">Returns<a class="anchor" aria-label="anchor" href="#returns-13"></a></h4>
 <p>the current version of the evaluation workspace</p>
+</div>
+
+</div>
+
+<p></p><hr><a id="method-EvalWorkspace-remove_init_obs"></a><div class="section">
+<h3 id="evalworkspace-remove-init-obs-"><code>EvalWorkspace$remove_init_obs()</code><a class="anchor" aria-label="anchor" href="#evalworkspace-remove-init-obs-"></a></h3>
+<p>Remove the initial observations (HR_1 to HR_5, AZnit_1
+to AZnit_5, resmes and azomes) from the observations dataset
+This function is used to remove the initial observations from the
+dataset, which are not relevant for the evaluation and can bias the
+results.
+The initial observations are defined as the observations of the first
+date of each situation (USM) for the variables HR_1 to HR_5
+and AZnit_1 to AZnit_5, resmes and azomes.
+This function will replace the initial observations by NA in the dataset.</p><div class="section">
+<h4 id="usage-26">Usage<a class="anchor" aria-label="anchor" href="#usage-26"></a></h4>
+<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">EvalWorkspace</span><span class="op">$</span><span class="fu">remove_init_obs</span><span class="op">(</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div>
 
 </div>
@@ -562,10 +619,10 @@ the returned RMSE per USM</p></dd>
 <p></p><hr><a id="method-EvalWorkspace-clone"></a><div class="section">
 <h3 id="evalworkspace-clone-"><code>EvalWorkspace$clone()</code><a class="anchor" aria-label="anchor" href="#evalworkspace-clone-"></a></h3>
 <p>The objects of this class are cloneable with this method.</p><div class="section">
-<h4 id="usage-23">Usage<a class="anchor" aria-label="anchor" href="#usage-23"></a></h4>
+<h4 id="usage-27">Usage<a class="anchor" aria-label="anchor" href="#usage-27"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">EvalWorkspace</span><span class="op">$</span><span class="fu">clone</span><span class="op">(</span>deep <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div><p></p><div class="section">
-<h4 id="arguments-19">Arguments<a class="anchor" aria-label="anchor" href="#arguments-19"></a></h4>
+<h4 id="arguments-22">Arguments<a class="anchor" aria-label="anchor" href="#arguments-22"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>deep</code></dt>
 <dd><p>Whether to make a deep clone.</p></dd>
 

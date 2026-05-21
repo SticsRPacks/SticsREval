@@ -67,7 +67,7 @@
 <span>  workspace <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  backend <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  logger <span class="op">=</span> <span class="va">default_logger</span>,</span>
-<span>  summary_class <span class="op">=</span> <span class="va">ComparisonSummary</span></span>
+<span>  summary_class <span class="op">=</span> <span class="va">EvaluationSummary</span></span>
 <span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div><p></p><div class="section">
 <h4 id="arguments">Arguments<a class="anchor" aria-label="anchor" href="#arguments"></a></h4>
@@ -89,7 +89,7 @@ methods (default: uses the logger package)</p></dd>
 
       <dt><code>summary_class</code></dt>
 <dd><p>a class to build the summary of the evaluation
-(default: <code>ComparisonSummary</code>)</p></dd>
+(default: <code>EvaluationSummary</code>)</p></dd>
 
 
 </dl><p></p></div>
@@ -102,8 +102,8 @@ methods (default: uses the logger package)</p></dd>
 <p>Run the evaluation workflow
 This function orchestrates the full evaluation workflow based on a given
 configuration object. It initializes logging, optionally prepares the
-evaluation workspace, runs the evaluation for all species, and displays
-summary information.</p><div class="section">
+evaluation workspace, runs the evaluation globally and then for all
+species, and displays summary information.</p><div class="section">
 <h4 id="usage-1">Usage<a class="anchor" aria-label="anchor" href="#usage-1"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">Evaluation</span><span class="op">$</span><span class="fu">run</span><span class="op">(</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div>

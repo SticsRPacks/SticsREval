@@ -197,7 +197,7 @@
 <tbody>
 <tr>
 <td><code>stics_exe</code></td>
-<td>Path to the STICS executable (required when <code>init_workspace = TRUE</code> and <code>run_simulations = TRUE</code>)</td>
+<td>Path to the STICS executable (required when <code>run_simulations = TRUE</code>)</td>
 </tr>
 <tr>
 <td><code>usms_workspace</code></td>
@@ -301,7 +301,7 @@
 <h3 id="export_stats_to_csv">
 <code>export_stats_to_csv()</code><a class="anchor" aria-label="anchor" href="#export_stats_to_csv"></a>
 </h3>
-<p>Exports the evaluation statistics per species to CSV files. For each species, a subdirectory is created under <code>output_dir</code> and three files are written when the corresponding data are available:</p>
+<p>Exports the evaluation statistics to CSV files. Files are written to <code>output_dir</code> when the corresponding data are available:</p>
 <table class="table">
 <colgroup>
 <col width="50%">
@@ -313,7 +313,11 @@
 </tr></thead>
 <tbody>
 <tr>
-<td><code>Criteres_stats.csv</code></td>
+<td><code>species_stats.csv</code></td>
+<td>Statistical metrics per species</td>
+</tr>
+<tr>
+<td><code>global_stats.csv</code></td>
 <td>Global statistical criteria (RMSE, nRMSE, bias, R², etc.)</td>
 </tr>
 <tr>
