@@ -54,7 +54,7 @@ test_that("initializes from precomputed data", {
 test_that("errors when neither data nor species/ref/eval provided", { # nolint: nonportable_path_linter
   expect_error(
     RmseComparison$new(percentage = 10),
-    "`data`, or `species` \\+ `ref_stats` \\+ `eval_stats` must be defined" # nolint: nonportable_path_linter
+    "`data`, or `ref_stats` \\+ `eval_stats` must be defined" # nolint: nonportable_path_linter
   )
 })
 
@@ -162,7 +162,7 @@ test_that("is_empty returns FALSE when rows exist", {
 test_that("get_data returns expected columns", {
   cmp <- make_comparison()
   expected_cols <- c(
-    "species", "situation", "variable", "rmse_new", "rmse_ref", "ratio"
+    "situation", "variable", "rmse_new", "rmse_ref", "ratio", "species"
   )
   expect_named(cmp$get_data(), expected_cols)
 })

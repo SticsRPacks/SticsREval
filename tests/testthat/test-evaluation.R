@@ -102,24 +102,12 @@ test_that("run executes full workflow", {
     make_base_cfg(reference_version = "v1"),
     summary = summary
   )
+  replace_private(eval, "evaluate_global", function() {})
   replace_private(eval, "evaluate_species", function(...) {})
 
   eval$run()
 
   expect_true(summary$.env$called)
-})
-
-test_that("run stops when no species", {
-  summary <- make_fake_summary()
-  workspace <- make_fake_workspace()
-  workspace$get_species <- function() character(0)
-
-  eval <- make_eval(make_base_cfg(), workspace = workspace, summary = summary)
-
-  res <- eval$run()
-
-  expect_null(res)
-  expect_false(summary$.env$called)
 })
 
 test_that("get_species_to_evaluate filters by species and usms", {
@@ -144,7 +132,7 @@ test_that("get_species_to_evaluate filters by species and usms", {
 test_that("run logs and rethrows error", {
   logger <- make_fake_logger()
   workspace <- make_fake_workspace()
-  workspace$get_species <- function() stop("fail", call. = FALSE)
+  workspace$get_sim <- function(...) stop("fail", call. = FALSE)
 
   eval <- make_eval(make_base_cfg(), workspace = workspace, logger = logger)
 
@@ -160,7 +148,7 @@ test_that("evaluate_species skips comparison if no reference_version", {
 
   replace_private(
     eval,
-    "gen_deteriorated_usm",
+    "gen_species_deteriorated_usm",
     function(...) {
       called$flag <- TRUE
     }

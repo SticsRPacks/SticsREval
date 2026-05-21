@@ -26,13 +26,17 @@ ws <- EvalWorkspace$new(
     \item \href{#method-EvalWorkspace-get_sim}{\code{EvalWorkspace$get_sim()}}
     \item \href{#method-EvalWorkspace-get_obs}{\code{EvalWorkspace$get_obs()}}
     \item \href{#method-EvalWorkspace-save_stats}{\code{EvalWorkspace$save_stats()}}
+    \item \href{#method-EvalWorkspace-save_global_stats}{\code{EvalWorkspace$save_global_stats()}}
     \item \href{#method-EvalWorkspace-get_stats}{\code{EvalWorkspace$get_stats()}}
+    \item \href{#method-EvalWorkspace-get_global_stats}{\code{EvalWorkspace$get_global_stats()}}
     \item \href{#method-EvalWorkspace-save_rmse_per_usm}{\code{EvalWorkspace$save_rmse_per_usm()}}
     \item \href{#method-EvalWorkspace-get_rmse_per_usm}{\code{EvalWorkspace$get_rmse_per_usm()}}
     \item \href{#method-EvalWorkspace-save_deteriorated_usm}{\code{EvalWorkspace$save_deteriorated_usm()}}
     \item \href{#method-EvalWorkspace-get_deteriorated_usm}{\code{EvalWorkspace$get_deteriorated_usm()}}
     \item \href{#method-EvalWorkspace-save_species_comparison}{\code{EvalWorkspace$save_species_comparison()}}
+    \item \href{#method-EvalWorkspace-save_global_comparison}{\code{EvalWorkspace$save_global_comparison()}}
     \item \href{#method-EvalWorkspace-get_species_comparison}{\code{EvalWorkspace$get_species_comparison()}}
+    \item \href{#method-EvalWorkspace-get_global_comparison}{\code{EvalWorkspace$get_global_comparison()}}
     \item \href{#method-EvalWorkspace-save_metadata}{\code{EvalWorkspace$save_metadata()}}
     \item \href{#method-EvalWorkspace-add_evaluated_version}{\code{EvalWorkspace$add_evaluated_version()}}
     \item \href{#method-EvalWorkspace-get_all_versions}{\code{EvalWorkspace$get_all_versions()}}
@@ -232,6 +236,25 @@ otherwise the lazy arrow data object will be returned}
 }
 
 \if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-EvalWorkspace-save_global_stats"></a>}}
+\if{latex}{\out{\hypertarget{method-EvalWorkspace-save_global_stats}{}}}
+\subsection{\code{EvalWorkspace$save_global_stats()}}{
+  Save global statistics
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{EvalWorkspace$save_global_stats(stats)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{stats}}{the global statistics as a dataframe}
+    }
+    \if{html}{\out{</div>}}
+  }
+}
+
+\if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-EvalWorkspace-get_stats"></a>}}
 \if{latex}{\out{\hypertarget{method-EvalWorkspace-get_stats}{}}}
 \subsection{\code{EvalWorkspace$get_stats()}}{
@@ -252,6 +275,30 @@ otherwise a lazy arrow data object will be returned}
   }
   \subsection{Returns}{
     the statistics, as a dataframe if collect is \code{TRUE},
+a lazy arrow data object otherwise
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-EvalWorkspace-get_global_stats"></a>}}
+\if{latex}{\out{\hypertarget{method-EvalWorkspace-get_global_stats}{}}}
+\subsection{\code{EvalWorkspace$get_global_stats()}}{
+  Return global statistics
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{EvalWorkspace$get_global_stats(collect = FALSE)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{collect}}{Optional, if \code{TRUE} returns a dataframe,
+otherwise a lazy arrow data object will be returned}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    the global statistics, as a dataframe if collect is \code{TRUE},
 a lazy arrow data object otherwise
   }
 }
@@ -284,7 +331,7 @@ a lazy arrow data object otherwise
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{EvalWorkspace$get_rmse_per_usm(
-  species,
+  species = NULL,
   collect = FALSE,
   usms = NULL,
   var2exclude = NULL
@@ -294,7 +341,7 @@ a lazy arrow data object otherwise
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
-      \item{\code{species}}{the species}
+      \item{\code{species}}{Optional, the species}
       \item{\code{collect}}{Optional, if \code{TRUE} a dataframe will be returned,
 otherwise a lazy arrow data object will be returned}
       \item{\code{usms}}{Optional, if defined filter the RMSE per USM with these
@@ -372,6 +419,25 @@ the returned RMSE per USM}
 }
 
 \if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-EvalWorkspace-save_global_comparison"></a>}}
+\if{latex}{\out{\hypertarget{method-EvalWorkspace-save_global_comparison}{}}}
+\subsection{\code{EvalWorkspace$save_global_comparison()}}{
+  Save the global comparison
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{EvalWorkspace$save_global_comparison(spec_comparison)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{spec_comparison}}{the global comparison object}
+    }
+    \if{html}{\out{</div>}}
+  }
+}
+
+\if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-EvalWorkspace-get_species_comparison"></a>}}
 \if{latex}{\out{\hypertarget{method-EvalWorkspace-get_species_comparison}{}}}
 \subsection{\code{EvalWorkspace$get_species_comparison()}}{
@@ -385,6 +451,28 @@ the returned RMSE per USM}
     \if{html}{\out{<div class="arguments">}}
     \describe{
       \item{\code{species}}{the species}
+      \item{\code{percentage}}{the percentage}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    an RmseComparison object
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-EvalWorkspace-get_global_comparison"></a>}}
+\if{latex}{\out{\hypertarget{method-EvalWorkspace-get_global_comparison}{}}}
+\subsection{\code{EvalWorkspace$get_global_comparison()}}{
+  Get the global comparison
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{EvalWorkspace$get_global_comparison(percentage)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
       \item{\code{percentage}}{the percentage}
     }
     \if{html}{\out{</div>}}

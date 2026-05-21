@@ -112,7 +112,32 @@ Evaluation <- R6::R6Class("Evaluation", # nolint: object_name_linter
       }
     },
 
-    gen_deteriorated_usm = function(species) {
+    gen_global_stats = function() {
+      exclude <- c("version", "species", private$config$var2exclude)
+
+      splited_sim <- CroPlotR::split_df2sim(
+        private$workspace$get_sim(
+          species = NULL, usms = private$config$usms, var2exclude = exclude
+        )
+      )
+      splited_obs <- CroPlotR::split_df2sim(
+        private$workspace$get_obs(
+          species = NULL, usms = private$config$usms, var2exclude = exclude
+        )
+      )
+
+      private$logger$info("Generating global statistics")
+      loadNamespace("CroPlotR")
+      summary_method <- utils::getS3method("summary", class(splited_sim))
+
+      stats <- run_with_log_control(
+        summary_method(splited_sim, obs = splited_obs)
+      )
+      private$logger$info("Saving global statistics")
+      private$workspace$save_global_stats(stats)
+    },
+
+    gen_species_deteriorated_usm = function(species) {
       ref_workspace <- private$workspace$with_version(
         private$config$reference_version
       )
@@ -175,6 +200,30 @@ Evaluation <- R6::R6Class("Evaluation", # nolint: object_name_linter
       }
     },
 
+    gen_global_comparison = function() {
+      ref_workspace <- private$workspace$with_version(
+        private$config$reference_version
+      )
+      ref_stats <- ref_workspace$get_global_stats()
+      if (is.null(ref_stats)) {
+        return(invisible(NULL))
+      }
+      private$logger$info("Reading global stats file")
+      stats <- private$workspace$get_global_stats()
+      if (is.null(stats)) {
+        return(invisible(NULL))
+      }
+      private$logger$info("Comparing global RMSE")
+      comparison <- RmseComparison$new(
+        ref_stats = ref_stats,
+        eval_stats = stats,
+        percentage = private$config$percentage
+      )
+      private$logger$info("Saving global RMSE comparison")
+      private$workspace$save_global_comparison(comparison)
+      private$logger$info("Global comparison saved")
+    },
+
     evaluate_species = function(species) {
       private$logger$info("Generating stats for species.")
       private$gen_species_stats(species)
@@ -188,11 +237,29 @@ Evaluation <- R6::R6Class("Evaluation", # nolint: object_name_linter
       }
 
       private$logger$info("Computing deteriorated USM for species.")
-      private$gen_deteriorated_usm(species)
+      private$gen_species_deteriorated_usm(species)
 
       private$logger$info("Computing species comparison.")
       private$gen_species_comparison(species)
     },
+
+    evaluate_global = function() {
+      private$logger$info("Generating global stats.")
+      private$gen_global_stats()
+      if (!is.null(private$config$reference_version)) {
+        private$logger$info(
+          "Reference version defined: ", private$config$reference_version,
+          ". Starting deteriorated USM generation and comparison..."
+        )
+        private$gen_global_comparison()
+      } else {
+        private$logger$info(
+          "No reference version defined. ",
+          "Skipping global deteriorated usm generation and comparison"
+        )
+      }
+    },
+
     build_summary = function(species) {
       private$summary_class$new(
         workspace = private$workspace,
@@ -236,8 +303,8 @@ Evaluation <- R6::R6Class("Evaluation", # nolint: object_name_linter
     #' Run the evaluation workflow
     #' This function orchestrates the full evaluation workflow based on a given
     #' configuration object. It initializes logging, optionally prepares the
-    #' evaluation workspace, runs the evaluation for all species, and displays
-    #' summary information.
+    #' evaluation workspace, runs the evaluation globally and then for all
+    #' species, and displays summary information.
     run = function() {
       on.exit({
         end_time <- Sys.time()
@@ -266,6 +333,8 @@ Evaluation <- R6::R6Class("Evaluation", # nolint: object_name_linter
 
       private$logger$info("Starting evaluation...")
       tryCatch({
+        private$evaluate_global()
+
         species <- private$get_species_to_evaluate()
 
         if (length(species) == 0) {

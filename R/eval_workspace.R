@@ -299,6 +299,17 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
       )
     },
     #' @description
+    #' Save global statistics
+    #'
+    #' @param stats the global statistics as a dataframe
+    save_global_stats = function(stats) {
+      private$.writer$write_dataset(
+        data = stats,
+        path = global_stats_ds_path(private$.data_dir),
+        partitioning = "version"
+      )
+    },
+    #' @description
     #' Return statistics for a species
     #'
     #' @param species the species
@@ -316,6 +327,20 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
       )
     },
     #' @description
+    #' Return global statistics
+    #'
+    #' @param collect Optional, if `TRUE` returns a dataframe,
+    #'  otherwise a lazy arrow data object will be returned
+    #' @returns the global statistics, as a dataframe if collect is `TRUE`,
+    #'  a lazy arrow data object otherwise
+    get_global_stats = function(collect = FALSE) {
+      private$.reader$read(
+        path = global_stats_ds_path(private$.data_dir),
+        collect = collect,
+        warn_msg = "No global stats found"
+      )
+    },
+    #' @description
     #' Save the RMSE per USM
     #'
     #' @param species the species
@@ -330,7 +355,7 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
     #' @description
     #' Return the RMSE per USM for a species
     #'
-    #' @param species the species
+    #' @param species Optional, the species
     #' @param collect Optional, if `TRUE` a dataframe will be returned,
     #'  otherwise a lazy arrow data object will be returned
     #' @param usms Optional, if defined filter the RMSE per USM with these
@@ -341,7 +366,7 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
     #' @returns the RMSE per USM for a species, as a dataframe if collect is
     #'  `TRUE`, a lazy arrow data object otherwise
     get_rmse_per_usm = function(
-      species, collect = FALSE, usms = NULL, var2exclude = NULL
+      species = NULL, collect = FALSE, usms = NULL, var2exclude = NULL
     ) {
       private$.reader$read(
         path = rmse_per_usm_ds_path(private$.data_dir),
@@ -392,6 +417,17 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
       )
     },
     #' @description
+    #' Save the global comparison
+    #'
+    #' @param spec_comparison the global comparison object
+    save_global_comparison = function(spec_comparison) {
+      private$.writer$write_dataset(
+        data = spec_comparison$get_data(),
+        path = global_comparison_ds_path(private$.data_dir),
+        partitioning = "version"
+      )
+    },
+    #' @description
     #' Get the species comparison for a species
     #'
     #' @param species the species
@@ -406,6 +442,24 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
         species = species,
         collect = TRUE,
         warn_msg = paste("No comparison for", species)
+      )
+      if (is.null(res)) return(NULL)
+      RmseComparison$new(
+        data = res,
+        percentage = percentage
+      )
+    },
+    #' @description
+    #' Get the global comparison
+    #'
+    #' @param percentage the percentage
+    #'
+    #' @returns an RmseComparison object
+    get_global_comparison = function(percentage) {
+      res <- private$.reader$read(
+        path = global_comparison_ds_path(private$.data_dir),
+        collect = TRUE,
+        warn_msg = "No global comparison found"
       )
       if (is.null(res)) return(NULL)
       RmseComparison$new(
@@ -589,8 +643,12 @@ obs_ds_path <- function(data_dir) {
   file.path(data_dir, "obs")
 }
 
+global_stats_ds_path <- function(data_dir) {
+  file.path(data_dir, "global_stats")
+}
+
 stats_ds_path <- function(data_dir) {
-  file.path(data_dir, "Criteres_stats")
+  file.path(data_dir, "stats")
 }
 
 rmse_per_usm_ds_path <- function(data_dir) {
@@ -599,6 +657,10 @@ rmse_per_usm_ds_path <- function(data_dir) {
 
 deteriorated_ds_path <- function(data_dir) {
   file.path(data_dir, "Deteriorated_RMSE_per_usm")
+}
+
+global_comparison_ds_path <- function(data_dir) {
+  file.path(data_dir, "Global_Comparison")
 }
 
 comparison_ds_path <- function(data_dir) {

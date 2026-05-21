@@ -11,6 +11,15 @@ EvaluationSummary <- R6::R6Class("EvaluationSummary", # nolint: object_name_lint
       private$percentage <- percentage
     },
     display = function() {
+      global_comparison <- private$workspace$get_global_comparison(
+        private$percentage
+      )
+      if (!is.null(global_comparison)) {
+        logger::log_info(strrep("=", 58))
+        logger::log_info("Global comparison:")
+        logger::log_info(strrep("=", 58))
+        global_comparison$log()
+      }
       comparisons <- lapply(
         private$species,
         private$workspace$get_species_comparison,
@@ -22,6 +31,10 @@ EvaluationSummary <- R6::R6Class("EvaluationSummary", # nolint: object_name_lint
         logger::log_warn("No comparison done.")
         return(invisible(self))
       }
+
+      logger::log_info(strrep("=", 58))
+      logger::log_info("Species comparisons:")
+      logger::log_info(strrep("=", 58))
 
       all_crit <- unique(unlist(lapply(comparisons, function(c) {
         if (length(c$critical_vars) > 0) c$get_data()$species[1]

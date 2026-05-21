@@ -1,25 +1,22 @@
-prepare_species_output_dir <- function(output_dir, species) {
-  o_dir <- file.path(output_dir, species)
+prepare_output_dir <- function(output_dir) {
+  o_dir <- file.path(output_dir)
   if (!dir.exists(o_dir) && !dir.create(o_dir, recursive = TRUE)) {
     stop(
       "Can't create output directory ",
       o_dir,
-      " for species ",
-      species,
       call. = FALSE
     )
   }
-  o_dir
 }
 
 #' Export evaluation statistics to CSV files
 #'
-#' This function exports different evaluation metrics for each species found
-#' in the evaluation workspace into CSV files. For every species, it creates
-#' an output directory (if needed) and writes the following datasets when
-#' available:
+#' This function exports different evaluation metrics from the evaluation
+#' workspace into CSV files. It retrieves data from the workspace and writes
+#' the following datasets when available:
 #'
-#' - Global statistics (`Criteres_stats.csv`)
+#' - Species statistics (`species_stats.csv`)
+#' - Global statistics (`global_stats.csv`)
 #' - RMSE per USM (`RMSE_per_usm.csv`)
 #' - List of deteriorated USMs (`Deteriorated_USM.csv`)
 #'
@@ -32,10 +29,12 @@ prepare_species_output_dir <- function(output_dir, species) {
 #' @return NULL. This function is called for its side effects (writing files).
 #'
 #' @details
-#' For each species:
+#' The function:
 #' \itemize{
-#'   \item Creates a species-specific output directory.
-#'   \item Exports statistics if available.
+#'   \item Validates the configuration for export.
+#'   \item Creates the output directory if needed.
+#'   \item Exports species statistics if available.
+#'   \item Exports global statistics if available.
 #'   \item Exports RMSE per USM if available.
 #'   \item Exports deteriorated USM information if available.
 #' }
@@ -52,29 +51,35 @@ prepare_species_output_dir <- function(output_dir, species) {
 export_stats_to_csv <- function(config) {
   start_time <- Sys.time()
   config$validate_export()
+  prepare_output_dir(config$output_dir)
   eval_workspace <- EvalWorkspace$new(config$eval_workspace)
   species <- eval_workspace$get_species()
-  for (spec in species) {
-    logger::log_info("Exporting stats data for species {spec}")
-    o_dir <- prepare_species_output_dir(config$output_dir, spec)
-    stats <- eval_workspace$get_stats(spec, TRUE)
-    if (!is.null(stats)) {
-      safe_write_csv(stats, file.path(o_dir, "Criteres_stats.csv"))
-    }
-    rmse_per_usm <- eval_workspace$get_rmse_per_usm(spec, TRUE)
-    if (!is.null(rmse_per_usm)) {
-      safe_write_csv(
-        rmse_per_usm, file.path(o_dir, "RMSE_per_usm.csv")
-      )
-    }
-    deteriorated_usm <- eval_workspace$get_deteriorated_usm(
-      spec, config$percentage
+  logger::log_info("Exporting stats data")
+  stats <- eval_workspace$get_stats(species, TRUE)
+  if (!is.null(stats)) {
+    safe_write_csv(stats, file.path(config$output_dir, "species_stats.csv"))
+  }
+  global_stats <- eval_workspace$get_global_stats(collect = TRUE)
+  if (!is.null(global_stats)) {
+    safe_write_csv(
+      global_stats,
+      file.path(config$output_dir, "global_stats.csv")
     )
-    if (!is.null(deteriorated_usm) && !is.null(deteriorated_usm$get_data())) {
-      safe_write_csv(
-        deteriorated_usm$get_data(), file.path(o_dir, "Deteriorated_USM.csv")
-      )
-    }
+  }
+  rmse_per_usm <- eval_workspace$get_rmse_per_usm(species, TRUE)
+  if (!is.null(rmse_per_usm)) {
+    safe_write_csv(
+      rmse_per_usm, file.path(config$output_dir, "RMSE_per_usm.csv")
+    )
+  }
+  deteriorated_usms <- eval_workspace$get_deteriorated_usm(
+    species, config$percentage
+  )
+  if (!is.null(deteriorated_usms) && !is.null(deteriorated_usms$get_data())) {
+    safe_write_csv(
+      deteriorated_usms$get_data(),
+      file.path(config$output_dir, "Deteriorated_USM.csv")
+    )
   }
   logger::log_info(paste0("Stats export time: ", format_duration(start_time)))
 }

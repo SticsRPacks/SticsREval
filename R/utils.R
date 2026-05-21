@@ -61,3 +61,17 @@ read_csv <- function(filepath, delimiter = ",") {
   names(csv_data) <- trimws(names(csv_data))
   csv_data
 }
+
+prepare_species_output_dir <- function(output_dir, species) {
+  o_dir <- file.path(output_dir, species)
+  if (!dir.exists(o_dir) && !dir.create(o_dir, recursive = TRUE)) {
+    stop(
+      "Can't create output directory ",
+      o_dir,
+      " for species ",
+      species,
+      call. = FALSE
+    )
+  }
+  o_dir
+}
