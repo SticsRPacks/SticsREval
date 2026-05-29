@@ -18,20 +18,28 @@ BalanceClosureTest <- R6::R6Class("BalanceClosureTest",  # nolint: object_name_l
         " USMs..."
       )
       error_usms <- NULL
-      logger::log_debug("Loading simulations data for balance closure test...")
-      sim_list <- SticsRFiles::get_sim(
-        workspace = private$config$usms_workspace,
-        usm = usms,
-        verbose = is_debug(),
+      backend <- ParallelBackend$new(
         parallel = private$config$parallel,
         cores = private$config$cores
       )
+      loader <- WorkspaceLoader$new(
+        workspace = private$config$usms_workspace,
+        backend = backend,
+        config = private$config
+      )
+      balances <- c(
+        "H2O_balance", "plant_N_balance", "soil_mineral_N_balance",
+        "soil_organic_N_balance", "soil_organic_C_balance"
+      )
+      logger::log_debug("Loading simulations data for balance closure test...")
+      sim_list <- loader$run_simulations(
+        usms = usms,
+        rotations = NULL,
+        var = c(paste0("init_", balances), paste0("final_", balances))
+      )
+      logger::log_debug("Loading simulations data for balance closure test...")
       for (usm in names(sim_list)) {
         sim <- sim_list[[usm]]
-        balances <- c(
-          "H2O_balance", "plant_N_balance", "soil_mineral_N_balance",
-          "soil_organic_N_balance", "soil_organic_C_balance"
-        )
         for (balance in balances) {
           balance_fields <- c(
             paste0("init_", balance), paste0("final_", balance)
@@ -64,6 +72,17 @@ BalanceClosureTest <- R6::R6Class("BalanceClosureTest",  # nolint: object_name_l
             }
           }
         }
+      }
+      logger::log_info(
+        "Balance closure test completed with ",
+        length(unique(error_usms)),
+        " USMs with balance closure issues."
+      )
+      if (length(unique(error_usms)) > 0) {
+        logger::log_info(
+          "USMs with balance closure issues: ",
+          toString(unique(error_usms))
+        )
       }
     }
   )
