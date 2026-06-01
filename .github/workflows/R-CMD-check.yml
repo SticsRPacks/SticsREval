@@ -42,6 +42,8 @@ jobs:
       - uses: r-lib/actions/setup-renv@v2
         with:
           cache-version: 1
+        env:
+          RENV_CONFIG_CACHE_SYMLINKS: "TRUE"
 
       - name: Install CI deps
         shell: Rscript {0}
