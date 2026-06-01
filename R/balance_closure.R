@@ -21,8 +21,9 @@
 BalanceClosureTest <- R6::R6Class("BalanceClosureTest",  # nolint: object_name_linter
   private = list(
     config = NULL,
+    loader = NULL,
 
-    check_usm_balances = function(sim, usm, balances) {
+    check_usm_balances = function(usm, sim, balances) {
 
       latest_sim <- sim[order(sim$Date, decreasing = TRUE)[1], ]
       vapply(balances, function(balance) {
@@ -77,6 +78,14 @@ BalanceClosureTest <- R6::R6Class("BalanceClosureTest",  # nolint: object_name_l
     #' for the test.
     initialize = function(config) {
       private$config <- config
+      private$loader <- WorkspaceLoader$new(
+        workspace = private$config$usms_workspace,
+        backend = ParallelBackend$new(
+          parallel = private$config$parallel,
+          cores = private$config$cores
+        ),
+        config = private$config
+      )
     },
     #' @description
     #' Run the balance closure test on the simulations.
@@ -99,29 +108,22 @@ BalanceClosureTest <- R6::R6Class("BalanceClosureTest",  # nolint: object_name_l
         " USMs..."
       )
       logger::log_debug("Loading simulations data for balance closure test...")
-      loader <- WorkspaceLoader$new(
-        workspace = private$config$usms_workspace,
-        backend = ParallelBackend$new(
-          parallel = private$config$parallel,
-          cores = private$config$cores
-        ),
-        config = private$config
-      )
+
       balances <- c(
         "H2O_balance", "plant_N_balance", "soil_mineral_N_balance",
         "soil_organic_N_balance", "soil_organic_C_balance"
       )
-      sim_list <- loader$run_simulations(
+      sim_list <- private$loader$run_simulations(
         usms = usms,
         rotations = NULL,
         var = c(paste0("init_", balances), paste0("final_", balances))
       )
       errors <- Map(
-        function(sim, usm) {
-          !private$check_usm_balances(sim, usm, balances)
+        function(usm, sim) {
+          !private$check_usm_balances(usm, sim, balances)
         },
-        sim_list,
-        names(sim_list)
+        names(sim_list),
+        sim_list
       )
       errors <- unlist(errors)
       logger::log_info(

@@ -594,3 +594,20 @@ test_that("validate_plots passes when eval_workspace is set", {
   cfg <- Configuration$new(eval_workspace = "ws")
   expect_r6_class(cfg$validate_plots(), "Configuration")
 })
+
+# ---------------------------------------------------------------------------
+# validate_balance_closure
+# ---------------------------------------------------------------------------
+
+test_that("validate_balance_closure stops when usms_workspace is NULL", {
+  cfg <- Configuration$new(eval_workspace = "ws")
+  expect_error(cfg$validate_balance_closure(), "USMs workspace")
+})
+
+test_that("validate_balance_closure stops when stics_exe is NULL", {
+  cfg <- Configuration$new(
+    eval_workspace = "ws",
+    usms_workspace = "usms_ws"
+  )
+  expect_error(cfg$validate_balance_closure(), "STICS executable")
+})
