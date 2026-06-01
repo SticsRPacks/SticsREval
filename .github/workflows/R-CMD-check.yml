@@ -39,6 +39,8 @@ jobs:
           path: |
             ~/.local/share/r-lib
             ~/.cache/R/pkgcache
+            ~/Library/R
+            C:/Users/runneradmin/AppData/Local/R/cache
           key: ${{ runner.os }}-r-check-${{ hashFiles('DESCRIPTION') }}
           restore-keys: |
             ${{ runner.os }}-r-check-
