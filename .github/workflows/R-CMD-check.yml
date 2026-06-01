@@ -39,10 +39,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y cmake libcurl4-openssl-dev libx11-dev libxslt-dev
       
-      - uses: r-lib/actions/setup-r-dependencies@v2
+      - uses: r-lib/actions/setup-renv@v2
         with:
           cache-version: 1
-          extra-packages: any::rcmdcheck, any::mockery, any::testthat, any::withr
 
       - uses: r-lib/actions/check-r-package@v2
         with:
