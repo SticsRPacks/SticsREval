@@ -32,18 +32,6 @@ jobs:
         with:
           r-version: ${{ matrix.config.r }}
           use-public-rspm: true
-      
-      - name: Cache R packages
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.local/share/r-lib
-            ~/.cache/R/pkgcache
-            ~/Library/R
-            C:/Users/runneradmin/AppData/Local/R/cache
-          key: ${{ runner.os }}-r-check-${{ hashFiles('DESCRIPTION') }}
-          restore-keys: |
-            ${{ runner.os }}-r-check-
 
       - name: Install system dependencies
         if: runner.os == 'Linux'
@@ -51,13 +39,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y cmake libcurl4-openssl-dev libx11-dev libxslt-dev
       
-      - name: Install dependencies
-        run: |
-          install.packages("pak")
-          install.packages(c("rcmdcheck", "mockery", "testthat", "withr"))
-          pak::local_install_deps()
-          pak::local_install()
-        shell: Rscript {0}
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::rcmdcheck, any::mockery, any::testthat, any::withr
+          needs: check
 
       - uses: r-lib/actions/check-r-package@v2
         with:
