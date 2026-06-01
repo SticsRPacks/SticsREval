@@ -1,3 +1,22 @@
+#' Balance Closure Test
+#'
+#' This class implements a test to check the balance closure of water and
+#' nitrogen in the simulations. It checks if the initial and final
+#' balances of water and nitrogen are equal (or NA) for each USM.
+#' If there are discrepancies, it logs a warning with the details of the issue.
+#'
+#' @name BalanceClosureTest
+#' @docType class
+#'
+#' @examples
+#' \dontrun{
+#' config <- Configuration$new(
+#'   stics_exe = "/path/to/stics",
+#'   metadata_file = "metadata.csv",
+#'   usms_workspace = "path/to/usms_workspace"
+#' )
+#' BalanceClosureTest$new(config)$run()
+#' }
 #' @export
 BalanceClosureTest <- R6::R6Class("BalanceClosureTest",  # nolint: object_name_linter
   private = list(
@@ -52,9 +71,18 @@ BalanceClosureTest <- R6::R6Class("BalanceClosureTest",  # nolint: object_name_l
     }
   ),
   public = list(
+    #' @description
+    #' Create a new BalanceClosureTest object.
+    #' @param config A Configuration object containing the necessary parameters
+    #' for the test.
     initialize = function(config) {
       private$config <- config
     },
+    #' @description
+    #' Run the balance closure test on the simulations.
+    #' This method loads the simulations data for the specified USMs and checks
+    #' the balance closure for each USM. It logs the results of the test,
+    #' including any USMs that have balance closure issues.
     run = function() {
       usms <- list.files(private$config$usms_workspace)
       if (!is.null(private$config$usms)) {
@@ -65,21 +93,19 @@ BalanceClosureTest <- R6::R6Class("BalanceClosureTest",  # nolint: object_name_l
         length(usms),
         " USMs..."
       )
-      error_usms <- NULL
-      backend <- ParallelBackend$new(
-        parallel = private$config$parallel,
-        cores = private$config$cores
-      )
+      logger::log_debug("Loading simulations data for balance closure test...")
       loader <- WorkspaceLoader$new(
         workspace = private$config$usms_workspace,
-        backend = backend,
+        backend = ParallelBackend$new(
+          parallel = private$config$parallel,
+          cores = private$config$cores
+        ),
         config = private$config
       )
       balances <- c(
         "H2O_balance", "plant_N_balance", "soil_mineral_N_balance",
         "soil_organic_N_balance", "soil_organic_C_balance"
       )
-      logger::log_debug("Loading simulations data for balance closure test...")
       sim_list <- loader$run_simulations(
         usms = usms,
         rotations = NULL,
