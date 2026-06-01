@@ -43,6 +43,11 @@ jobs:
         with:
           cache-version: 1
 
+      - name: Install CI deps
+        shell: Rscript {0}
+        run: |
+          install.packages(c("rcmdcheck", "testthat", "mockery", "withr"))
+
       - uses: r-lib/actions/check-r-package@v2
         with:
           upload-snapshots: true
