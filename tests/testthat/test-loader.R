@@ -1,12 +1,5 @@
 # ---- Helpers ----
 
-replace_private <- function(obj, name, fn) {
-  env <- obj$.__enclos_env__$private
-  unlockBinding(name, env)
-  env[[name]] <- fn
-}
-
-
 make_fake_workspace <- function() {
 
   env <- new.env()
@@ -35,26 +28,10 @@ make_fake_backend <- function() {
   )
 }
 
-make_fake_config <- function(
-  usms_workspace = withr::local_tempdir(),
-  metadata_file = tempfile(fileext = ".csv"),
-  stics_exe = "/stics",
-  run_simulations = FALSE
-) {
-  SticsREval::Configuration$new(
-    eval_workspace = withr::local_tempdir(),
-    usms_workspace = usms_workspace,
-    metadata_file = metadata_file,
-    stics_exe = stics_exe,
-    run_simulations = run_simulations,
-    usms = NULL
-  )
-}
-
 make_loader <- function(
   workspace = make_fake_workspace(),
   backend = make_fake_backend(),
-  config = make_fake_config()
+  config = make_base_cfg()
 
 ) {
   WorkspaceLoader$new(
@@ -79,7 +56,7 @@ call_private <- function(loader, name, ...) {
 # ---- get_rotation_list ----
 
 test_that("get_rotation_list errors when metadata file does not exist", {
-  config <- make_fake_config(
+  config <- make_base_cfg(
     metadata_file = file.path("nonexistent", "path.csv")
   )
   loader <- make_loader(config = config)
@@ -93,7 +70,7 @@ test_that("get_rotation_list errors on missing required columns", {
   path <- withr::local_tempfile(fileext = ".csv")
   write_metadata(path, "usm;other_col\nusm1;val")
 
-  config <- make_fake_config(metadata_file = path)
+  config <- make_base_cfg(metadata_file = path)
 
   loader <- make_loader(config = config)
   expect_error(
@@ -106,7 +83,7 @@ test_that("get_rotation_list errors when rotation_order is non-numeric", {
   path <- withr::local_tempfile(fileext = ".csv")
   write_metadata(path, "usm;rotation;rotation_order\nusm1;rot1;abc")
 
-  config <- make_fake_config(metadata_file = path)
+  config <- make_base_cfg(metadata_file = path)
 
   loader <- make_loader(config = config)
   expect_error(
@@ -119,7 +96,7 @@ test_that("get_rotation_list returns empty list when no rows", {
   path <- withr::local_tempfile(fileext = ".csv")
   write_metadata(path, "usm;rotation;rotation_order")
 
-  config <- make_fake_config(metadata_file = path)
+  config <- make_base_cfg(metadata_file = path)
 
   loader <- make_loader(config = config)
   result <- call_private(loader, "get_rotation_list")
@@ -135,7 +112,7 @@ test_that("get_rotation_list excludes rows where rotation is NA or '0'", {
     "usm3;;3"
   ))
 
-  config <- make_fake_config(metadata_file = path)
+  config <- make_base_cfg(metadata_file = path)
 
   loader <- make_loader(config = config)
   result <- call_private(loader, "get_rotation_list")
@@ -154,7 +131,7 @@ test_that("get_rotation_list groups USMs by rotation in order", {
     "usm3;rot2;1"
   ))
 
-  config <- make_fake_config(metadata_file = path)
+  config <- make_base_cfg(metadata_file = path)
 
   loader <- make_loader(config = config)
   result <- call_private(loader, "get_rotation_list")
@@ -171,7 +148,7 @@ test_that("get_rotation_list handles single-USM rotations", {
     "usm1;rot1;1"
   ))
 
-  config <- make_fake_config(metadata_file = path)
+  config <- make_base_cfg(metadata_file = path)
 
   loader <- make_loader(config = config)
   result <- call_private(loader, "get_rotation_list")
@@ -193,7 +170,7 @@ test_that("load sets workspace version to stics version", {
   workspace <- make_fake_workspace()
   workspace$remove_init_obs <- function() {}
 
-  config <- make_fake_config(metadata_file = meta_path, usms_workspace = ws_dir)
+  config <- make_base_cfg(metadata_file = meta_path, usms_workspace = ws_dir)
 
   loader <- make_loader(
     workspace = workspace,
@@ -225,7 +202,7 @@ test_that("load discovers USMs from usms_workspace subdirectories", {
   write_metadata(meta_path, "usm;rotation;rotation_order")
 
   seen_usms <- NULL
-  config <- make_fake_config(usms_workspace = ws_dir, metadata_file = meta_path)
+  config <- make_base_cfg(usms_workspace = ws_dir, metadata_file = meta_path)
   workspace <- make_fake_workspace()
   workspace$remove_init_obs <- function() {}
   loader <- make_loader(

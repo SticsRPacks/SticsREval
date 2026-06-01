@@ -3,12 +3,6 @@
 format_duration <- function(...) "1s"
 format_species <- function(x) paste(x, collapse = ",")
 
-replace_private <- function(obj, name, fn) {
-  env <- obj$.__enclos_env__$private
-  unlockBinding(name, env)
-  env[[name]] <- fn
-}
-
 make_fake_logger <- function() {
   env <- new.env()
   env$info_calls <- list()
@@ -62,22 +56,6 @@ make_fake_workspace <- function() {
     save_deteriorated_usm = function(...) {},
     save_species_comparison = function(...) {}
   )
-}
-
-make_base_cfg <- function(...) {
-  defaults <- list(
-    validate_eval = function() {},
-    init_workspace = FALSE,
-    species = NULL,
-    usms = NULL,
-    var2exclude = NULL,
-    reference_version = NULL,
-    percentage = 5,
-    parallel = FALSE,
-    cores = 1,
-    eval_workspace = "ws"
-  )
-  utils::modifyList(defaults, list(...))
 }
 
 make_eval <- function(

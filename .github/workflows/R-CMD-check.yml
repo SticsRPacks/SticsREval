@@ -38,11 +38,17 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake libcurl4-openssl-dev libx11-dev libxslt-dev
-
-      - uses: r-lib/actions/setup-r-dependencies@v2
+      
+      - uses: r-lib/actions/setup-renv@v2
         with:
-          extra-packages: any::rcmdcheck, any::mockery, any::testthat, any::withr
-          needs: check
+          cache-version: 1
+        env:
+          RENV_CONFIG_CACHE_SYMLINKS: "TRUE"
+
+      - name: Install CI deps
+        shell: Rscript {0}
+        run: |
+          install.packages(c("rcmdcheck", "testthat", "mockery", "withr"))
 
       - uses: r-lib/actions/check-r-package@v2
         with:

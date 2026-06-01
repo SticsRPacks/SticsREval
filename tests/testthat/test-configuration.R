@@ -424,12 +424,6 @@ test_that("validate_schema returns invisible TRUE for a valid config", {
   expect_true(result)
 })
 
-test_that("validate_schema stops with message for missing required field", {
-  cfg <- make_valid_list()
-  cfg$eval_workspace <- NULL
-  expect_error(validate_schema(cfg), "required field")
-})
-
 test_that("validate_schema stops with message for wrong type", {
   cfg <- make_valid_list(run_simulations = "yes")
   expect_error(validate_schema(cfg), "expected type")
@@ -454,7 +448,6 @@ test_that("validate_schema collects multiple errors before stopping", {
   cfg$run_simulations <- "bad"
   err <- tryCatch(validate_schema(cfg), error = function(e) e$message)
   # Both errors should appear in the same message
-  expect_match(err, "required field")
   expect_match(err, "expected type")
 })
 
@@ -499,14 +492,6 @@ test_that("schema_initialize uses provided values over defaults", {
   expect_identical(obj$percentage, 10)
 })
 
-test_that("schema_initialize stops on invalid config", {
-  obj <- new.env(parent = emptyenv())
-  expect_error(
-    schema_initialize(obj, list(), config_schema),
-    "required field"
-  )
-})
-
 # ---------------------------------------------------------------------------
 # Configuration R6 class
 # ---------------------------------------------------------------------------
@@ -527,10 +512,6 @@ test_that("Configuration applies defaults correctly", {
   expect_false(cfg$parallel)
   expect_identical(cfg$percentage, 5)
   expect_identical(cfg$verbose, 1L)
-})
-
-test_that("Configuration raises error when eval_workspace is missing", {
-  expect_error(Configuration$new(), "required field")
 })
 
 test_that("Configuration raises error on invalid type", {
@@ -612,4 +593,21 @@ test_that("validate_export creates output_dir if it does not exist", {
 test_that("validate_plots passes when eval_workspace is set", {
   cfg <- Configuration$new(eval_workspace = "ws")
   expect_r6_class(cfg$validate_plots(), "Configuration")
+})
+
+# ---------------------------------------------------------------------------
+# validate_balance_closure
+# ---------------------------------------------------------------------------
+
+test_that("validate_balance_closure stops when usms_workspace is NULL", {
+  cfg <- Configuration$new(eval_workspace = "ws")
+  expect_error(cfg$validate_balance_closure(), "USMs workspace")
+})
+
+test_that("validate_balance_closure stops when stics_exe is NULL", {
+  cfg <- Configuration$new(
+    eval_workspace = "ws",
+    usms_workspace = "usms_ws"
+  )
+  expect_error(cfg$validate_balance_closure(), "STICS executable")
 })

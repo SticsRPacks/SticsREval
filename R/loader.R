@@ -69,32 +69,10 @@ WorkspaceLoader <- R6::R6Class("WorkspaceLoader", # nolint: object_name_linter
       v
     },
 
-    run_simulations = function(usms_species, rotations) {
-      wrapper_options <- SticsOnR::stics_wrapper_options(
-        stics_exe = private$config$stics_exe,
-        workspace = private$config$usms_workspace,
-        parallel = private$backend$parallel,
-        cores = private$backend$cores,
-        successive = rotations,
-        verbose = is_debug(),
-        time_display = is_debug()
-      )
-      res <- SticsOnR::stics_wrapper(
-        wrapper_options, situation = unique(usms_species$usm)
-      )
-      if (res$error) {
-        stop(
-          "Error running simulations. Set verbose = 2L for more details.",
-          call. = FALSE
-        )
-      }
-      res$sim_list
-    },
-
     load_sim = function(usms_species, rotations, stics_version) {
       if (private$config$run_simulations) {
         logger::log_info("Running simulations...")
-        sim <- private$run_simulations(usms_species, rotations)
+        sim <- self$run_simulations(usms_species$usm, rotations)
       } else {
         logger::log_info("Loading simulations data...")
         sim <- SticsRFiles::get_sim(
@@ -122,6 +100,15 @@ WorkspaceLoader <- R6::R6Class("WorkspaceLoader", # nolint: object_name_linter
       private$workspace$save_obs(obs, usms_species)
       rm(obs)
       gc()
+    },
+
+    get_var_from_obs = function() {
+      var2exclude <- c("Date", "situation", "species", "version", "Plant")
+      obs <- private$workspace$get_obs(var2exclude = var2exclude)
+      if (is.null(obs)) {
+        stop("Observations data not found in workspace.", call. = FALSE)
+      }
+      names(obs)
     }
   ),
 
@@ -132,6 +119,31 @@ WorkspaceLoader <- R6::R6Class("WorkspaceLoader", # nolint: object_name_linter
       private$workspace <- workspace
       private$backend <- backend
       private$config <- config
+    },
+
+    run_simulations = function(usms, rotations, var = NULL) {
+      if (is.null(var)) {
+        var <- private$get_var_from_obs()
+      }
+      wrapper_options <- SticsOnR::stics_wrapper_options(
+        stics_exe = private$config$stics_exe,
+        workspace = private$config$usms_workspace,
+        parallel = private$backend$parallel,
+        cores = private$backend$cores,
+        successive = rotations,
+        verbose = is_debug(),
+        time_display = is_debug()
+      )
+      res <- SticsOnR::stics_wrapper(
+        wrapper_options, situation = unique(usms), var = var
+      )
+      if (res$error) {
+        stop(
+          "Error running simulations. Set verbose = 2L for more details.",
+          call. = FALSE
+        )
+      }
+      res$sim_list
     },
 
     load = function() {
@@ -153,8 +165,8 @@ WorkspaceLoader <- R6::R6Class("WorkspaceLoader", # nolint: object_name_linter
       stics_version <- private$load_stics_version()
       private$workspace$set_version(stics_version)
 
-      private$load_sim(usms_species, rotations, stics_version)
       private$load_obs(usms_species)
+      private$load_sim(usms_species, rotations, stics_version)
       private$workspace$remove_init_obs()
       invisible(private$workspace)
     }

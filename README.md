@@ -10,15 +10,12 @@
 
 ## Overview
 
-`SticsREval` is an R package for **evaluating and comparing versions of the STICS crop model**. The core idea is to assess whether a new version of STICS performs better, equally, or worse than a **reference version**, both against field observations and against the reference simulation outputs.
+`SticsREval` is an R package for **evaluating and comparing versions of the STICS crop model**. It supports multiple types of evaluation, each implemented as an independent class sharing the same `Configuration` object. Tests can be run individually or combined into a custom pipeline.
 
-The workflow:
+The package currently provides two types of evaluation:
 
-1. Runs STICS simulations for the version under evaluation via [`SticsOnR`](https://github.com/SticsRPacks/SticsOnR)
-2. Compares the resulting outputs against **field observations** and against **reference simulation statistics** from a previous model version
-3. Computes statistical evaluation criteria (RMSE, nRMSE, bias, R², etc.) using [`CroPlotR`](https://github.com/SticsRPacks/CroPlotR)
-4. Flags variables and USMs where performance has **deteriorated** relative to the reference, using a configurable threshold
-5. Stores all results in [Apache Arrow / Parquet](https://arrow.apache.org/) format and exports them as CSV files and diagnostic plots
+- **Statistical Evaluation** — assesses whether a new version of STICS performs better, equally, or worse than a reference version, both against field observations and against reference simulation outputs
+- **Balance Closure Test** — checks the internal consistency of water and nitrogen balances in the simulations
 
 ---
 
@@ -67,30 +64,28 @@ This will install all required packages at the versions specified in `renv.lock`
 
 ## Workflow
 
-`SticsREval` evaluates a **candidate version** of STICS by running it and comparing its outputs against two sources:
-
-- **Field observations** — to assess absolute model performance
-- **Reference version statistics** — to detect regressions relative to a known-good version
+`Configuration` is the single entry point for all parameters. Once defined, it is passed to any combination of evaluation classes and export functions:
 
 ```
-  Configuration$new(...)               ← defines all parameters (paths, options, filters)
+  Configuration$new(...)                         ← defines all parameters (paths, options, filters)
            │
-           ▼
-  Evaluation$new(config)$run()         ← runs simulations + compares vs obs & reference → saves .parquet files
+           ├──► Evaluation$new(config)$run()                  ← statistical evaluation vs obs & reference
+           │         │
+           │         ├──► export_stats_to_csv(config)         ← export statistics + deteriorated USMs to CSV
+           │         └──► gen_plots(config)                   ← comparison plots + regression scatter plots
            │
-           ├──► export_stats_to_csv(config)     ← export statistics + deteriorated USMs to CSV
-           └──► gen_plots(config)               ← comparison plots + scatter plots of regressions
+           └──► BalanceClosureTest$new(config)$run()          ← water & nitrogen balance closure check
 ```
 
-All functions read from and write to an **`EvalWorkspace`**, which manages the Parquet datasets on disk.
+All evaluation results are stored in an **`EvalWorkspace`**, which manages Parquet datasets on disk.
 
 ---
 
-## Main Classes and Functions
+## Configuration
 
 ### `Configuration`
 
-Encapsulates and validates all configuration parameters for the package. The same object is passed to all workflow classes and functions (`Evaluation`, `export_stats_to_csv`, `gen_plots`). Fields are validated against a declarative schema at construction time — all errors are collected and reported together.
+Encapsulates and validates all configuration parameters for the package. The same object is passed to all workflow classes and functions. Fields are validated against a declarative schema at construction time — all errors are collected and reported together.
 
 ```r
 library(SticsREval)
@@ -99,15 +94,15 @@ config <- Configuration$new(
   stics_exe          = "/path/to/stics",
   usms_workspace     = "workspace/",
   metadata_file      = "metadata.csv",
-  eval_workspace     = "eval_workspace/",   # required
+  eval_workspace     = "eval_workspace/",
   output_dir         = "outputs/",
-  run_simulations    = TRUE,                # set to FALSE to skip simulations
+  run_simulations    = TRUE,
   init_workspace     = TRUE,
   verbose            = 1L,
   parallel           = FALSE,
   cores              = NA,
-  reference_version  = NULL,               # version string in eval_workspace to use as reference
-  percentage         = 5,                  # threshold (%) to flag deteriorated variables
+  reference_version  = NULL,
+  percentage         = 5,
   species            = NULL,
   usms               = NULL,
   var2exclude        = NULL
@@ -134,15 +129,19 @@ config <- Configuration$new(
 
 `Configuration` also exposes workflow-specific validation methods called internally by each function:
 
-- `config$validate_eval()` — checks requirements for the evaluation workflow
+- `config$validate_eval()` — checks requirements for the statistical evaluation workflow
 - `config$validate_export()` — checks that `output_dir` is set and writable
 - `config$validate_plots()` — checks requirements for the plots workflow
 
 ---
 
-### `Evaluation`
+## Tests and Evaluations
 
-The **core class** of the package. It orchestrates the full evaluation workflow:
+### Statistical Evaluation
+
+#### `Evaluation`
+
+The core statistical evaluation class. It orchestrates the full evaluation workflow:
 
 - Optionally initializes the `EvalWorkspace` (loading simulations and observations from the USMs workspace)
 - Computes statistics per species (RMSE, nRMSE, bias, R², etc.) against **field observations**
@@ -150,8 +149,6 @@ The **core class** of the package. It orchestrates the full evaluation workflow:
 - Flags variables and USMs where performance has deteriorated beyond the `percentage` threshold
 - Saves all results as **Arrow/Parquet files** in the `eval_workspace` directory
 - Displays a summary of comparison results
-
-Errors during evaluation are caught and logged without stopping the full process.
 
 ```r
 Evaluation$new(config)$run()
@@ -162,26 +159,24 @@ You can also inject custom dependencies for testing or advanced use:
 ```r
 Evaluation$new(
   config,
-  workspace = EvalWorkspace$new("eval_workspace/"),  # default
-  backend   = ParallelBackend$new(FALSE, NA),         # default
-  logger    = default_logger                          # default
+  workspace = EvalWorkspace$new("eval_workspace/"),
+  backend   = ParallelBackend$new(FALSE, NA),
+  logger    = default_logger
 )$run()
 ```
 
-After running, the `eval_workspace` directory will contain Parquet files with simulated data, observed data, and evaluation statistics per species.
-
 ---
 
-### `export_stats_to_csv()`
+#### `export_stats_to_csv()`
 
-Exports the evaluation statistics to CSV files. Files are written to `output_dir` when the corresponding data are available:
+Exports the evaluation statistics to CSV files in `output_dir`:
 
 | File | Content |
 |---|---|
 | `species_stats.csv` | Statistical metrics per species |
 | `global_stats.csv` | Global statistical criteria (RMSE, nRMSE, bias, R², etc.) |
-| `RMSE_per_usm.csv` | RMSE broken down per USM (simulation unit) |
-| `Deteriorated_USM.csv` | List of USMs with deteriorated performance vs. the reference version |
+| `RMSE_per_usm.csv` | RMSE broken down per USM |
+| `Deteriorated_USM.csv` | USMs with deteriorated performance vs. the reference version |
 
 ```r
 export_stats_to_csv(config)
@@ -189,12 +184,12 @@ export_stats_to_csv(config)
 
 ---
 
-### `gen_plots()`
+#### `gen_plots()`
 
-Generates diagnostic plots for each species. For each species, a subdirectory is created under `output_dir` and the following are produced:
+Generates diagnostic plots for each species under `output_dir`:
 
 - **Comparison plots** — observed vs. simulated for all variables
-- **Scatter plots** (`scatter_plots.html`) — comparing the candidate version against the reference version, highlighting deteriorated variables (only generated when `reference_version` is set and regressions are detected)
+- **Scatter plots** (`scatter_plots.html`) — candidate version vs. reference version, highlighting deteriorated variables (only generated when `reference_version` is set and regressions are detected)
 
 ```r
 gen_plots(config)
@@ -205,18 +200,46 @@ For advanced use, injectable parameters allow substituting the workspace, parall
 ```r
 gen_plots(
   config,
-  workspace     = EvalWorkspace$new(config$eval_workspace),  # default
-  backend       = ParallelBackend$new(config$parallel, config$cores),  # default
-  scatter_fn    = gen_scatter_plot,  # default
-  comparison_fn = function(x, dir) x$plot_comparison(dir)   # default
+  workspace     = EvalWorkspace$new(config$eval_workspace),
+  backend       = ParallelBackend$new(config$parallel, config$cores),
+  scatter_fn    = gen_scatter_plot,
+  comparison_fn = function(x, dir) x$plot_comparison(dir)
 )
 ```
 
 ---
 
-### `EvalWorkspace`
+### `BalanceClosureTest`
 
-Manages reading and writing all evaluation data (simulations, observations, statistics, comparisons) stored as Parquet datasets on disk. It is used internally by `Evaluation`, `export_stats_to_csv`, and `gen_plots`, but can also be used directly to inspect results.
+Checks the **water and nitrogen balance closure** for each simulated USM. For each USM, the class compares the initial and final values of the following five balances:
+
+| Balance | Checked fields |
+|---|---|
+| Water | `init_H2O_balance` / `final_H2O_balance` |
+| Plant nitrogen | `init_plant_N_balance` / `final_plant_N_balance` |
+| Soil mineral nitrogen | `init_soil_mineral_N_balance` / `final_soil_mineral_N_balance` |
+| Soil organic nitrogen | `init_soil_organic_N_balance` / `final_soil_organic_N_balance` |
+| Soil organic carbon | `init_soil_organic_C_balance` / `final_soil_organic_C_balance` |
+
+A USM is flagged if its rounded initial and final values differ. USMs with missing fields or fully `NA` values are silently skipped.
+
+```r
+config <- Configuration$new(
+  stics_exe      = "/path/to/stics",
+  metadata_file  = "metadata.csv",
+  usms_workspace = "path/to/usms_workspace"
+)
+
+BalanceClosureTest$new(config)$run()
+```
+
+The `run()` method logs a summary of the test and lists any USMs with balance closure issues. It respects the `usms`, `parallel`, and `cores` filters defined in the `Configuration`.
+
+---
+
+## `EvalWorkspace`
+
+Manages reading and writing all evaluation data (simulations, observations, statistics, comparisons) stored as Parquet datasets on disk. Used internally by `Evaluation`, `export_stats_to_csv`, and `gen_plots`, but can also be used directly to inspect results.
 
 ```r
 ws <- EvalWorkspace$new("eval_workspace/")
@@ -235,8 +258,6 @@ ws$get_all_versions()
 ws_ref <- ws$with_version("v10.0")
 ref_stats <- ws_ref$get_stats(species = "wheat")
 ```
-
-Key methods:
 
 | Method | Description |
 |---|---|
@@ -265,11 +286,11 @@ config <- Configuration$new(
   output_dir        = "outputs/",
   run_simulations   = TRUE,
   init_workspace    = TRUE,
-  reference_version = "v10.0",   # version already in eval_workspace to compare against
-  percentage        = 5          # flag variables with >5% deterioration
+  reference_version = "v10.0",
+  percentage        = 5
 )
 
-# 2. Run simulations + evaluate vs observations and reference version
+# 2. Run statistical evaluation vs observations and reference version
 Evaluation$new(config)$run()
 
 # 3. Export statistics and deteriorated USMs to CSV
@@ -277,6 +298,9 @@ export_stats_to_csv(config)
 
 # 4. Generate comparison and regression scatter plots
 gen_plots(config)
+
+# 5. Check water and nitrogen balance closure
+BalanceClosureTest$new(config)$run()
 ```
 
 ---
@@ -306,16 +330,17 @@ Then inside R:
 library(SticsREval)
 
 config <- Configuration$new(
-  stics_exe      = "/path/to/stics",
-  usms_workspace = "/workspace/",
-  metadata_file  = "/workspace/metadata.csv",
-  eval_workspace = "/workspace/eval_workspace/",
-  output_dir     = "/workspace/outputs/",
-  init_workspace = TRUE,
+  stics_exe       = "/path/to/stics",
+  usms_workspace  = "/workspace/",
+  metadata_file   = "/workspace/metadata.csv",
+  eval_workspace  = "/workspace/eval_workspace/",
+  output_dir      = "/workspace/outputs/",
+  init_workspace  = TRUE,
   run_simulations = TRUE
 )
 
 Evaluation$new(config)$run()
+BalanceClosureTest$new(config)$run()
 ```
 
 ### Run a script non-interactively
