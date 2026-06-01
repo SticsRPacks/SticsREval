@@ -1,7 +1,44 @@
 #' @export
 BalanceClosureTest <- R6::R6Class("BalanceClosureTest",  # nolint: object_name_linter
   private = list(
-    config = NULL
+    config = NULL,
+
+    check_balance_closure = function(balance, sim) {
+      balance_fields <- c(
+        paste0("init_", balance), paste0("final_", balance)
+      )
+      if (!all(balance_fields %in% names(sim))) {
+        logger::log_debug(
+          "USM ", usm, ": balance fields are missing, skipping..."
+        )
+        return(TRUE)
+      }
+      latest_sim <- sim[which.max(sim$Date), ]
+      if (all(is.na(latest_sim[balance_fields]))) {
+        logger::log_debug(
+          "USM ", usm,
+          ": balance fields are present but empty, skipping..."
+        )
+        return(TRUE)
+      }
+      init_balance <- round(latest_sim[[paste0("init_", balance)]])
+      final_balance <- round(latest_sim[[paste0("final_", balance)]])
+      if (
+        !is.na(init_balance) && !is.na(final_balance) &&
+          init_balance != final_balance
+      ) {
+        logger::log_warn(
+          "USM ", usm, ": ", balance, " balance closure failed (init: ",
+          init_balance, ", final: ", final_balance, ")"
+        )
+        return(FALSE)
+      }
+      logger::log_debug(
+        "USM ", usm, ": ", balance, " balance closure passed (init: ",
+        init_balance, ", final: ", final_balance, ")"
+      )
+      TRUE
+    }
   ),
   public = list(
     initialize = function(config) {
@@ -41,35 +78,8 @@ BalanceClosureTest <- R6::R6Class("BalanceClosureTest",  # nolint: object_name_l
       for (usm in names(sim_list)) {
         sim <- sim_list[[usm]]
         for (balance in balances) {
-          balance_fields <- c(
-            paste0("init_", balance), paste0("final_", balance)
-          )
-          if (all(balance_fields %in% names(sim))) {
-            latest_sim <- sim[which.max(sim$Date), ]
-            if (all(is.na(latest_sim[balance_fields]))) {
-              logger::log_debug(
-                "USM ", usm,
-                ": balance fields are present but empty, skipping..."
-              )
-              next
-            }
-            init_balance <- round(latest_sim[[paste0("init_", balance)]])
-            final_balance <- round(latest_sim[[paste0("final_", balance)]])
-            if (
-              !is.na(init_balance) && !is.na(final_balance) &&
-                init_balance != final_balance
-            ) {
-              logger::log_warn(
-                "USM ", usm, ": ", balance, " balance closure failed (init: ",
-                init_balance, ", final: ", final_balance, ")"
-              )
-              error_usms <- c(error_usms, usm)
-            } else {
-              logger::log_debug(
-                "USM ", usm, ": ", balance, " balance closure passed (init: ",
-                init_balance, ", final: ", final_balance, ")"
-              )
-            }
+          if (!private$check_balance_closure(balance, sim)) {
+            error_usms <- c(error_usms, usm)
           }
         }
       }
