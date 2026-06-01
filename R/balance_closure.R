@@ -89,6 +89,10 @@ BalanceClosureTest <- R6::R6Class("BalanceClosureTest",  # nolint: object_name_l
       if (!is.null(private$config$usms)) {
         usms <- intersect(usms, private$config$usms)
       }
+      if (length(usms) == 0) {
+        logger::log_info("No USMs to test for balance closure.")
+        return(invisible(self))
+      }
       logger::log_info(
         "Running balance closure test on ",
         length(usms),
