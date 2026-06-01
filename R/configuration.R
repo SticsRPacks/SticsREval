@@ -126,8 +126,9 @@ config_schema <- list(
     ),
 
     eval_workspace = field_spec(
-      default = required(),
-      type = "character"
+      default = NULL,
+      type = "character",
+      nullable = TRUE
     ),
 
     output_dir = field_spec(
@@ -458,6 +459,15 @@ Configuration <- R6::R6Class("Configuration", # nolint: object_name_linter
           private$check_reference_version()
         if (is.null(self$eval_workspace))
           stop("Eval workspace path must be defined", call. = FALSE)
+        invisible(self)
+      },
+
+      #' @description Validate configuration for balance closure test
+      validate_balance_closure = function() {
+        if (is.null(self$usms_workspace))
+          stop("USMs workspace path must be defined", call. = FALSE)
+        if (is.null(self$stics_exe))
+          stop("STICS executable path must be defined", call. = FALSE)
         invisible(self)
       }
     )

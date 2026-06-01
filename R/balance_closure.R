@@ -84,6 +84,7 @@ BalanceClosureTest <- R6::R6Class("BalanceClosureTest",  # nolint: object_name_l
     #' the balance closure for each USM. It logs the results of the test,
     #' including any USMs that have balance closure issues.
     run = function() {
+      private$config$validate_balance_closure()
       usms <- list.files(private$config$usms_workspace)
       if (!is.null(private$config$usms)) {
         usms <- intersect(usms, private$config$usms)
