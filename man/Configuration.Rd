@@ -67,6 +67,7 @@ will be excluded from export and plots.}
     \item \href{#method-Configuration-validate_eval}{\code{Configuration$validate_eval()}}
     \item \href{#method-Configuration-validate_export}{\code{Configuration$validate_export()}}
     \item \href{#method-Configuration-validate_plots}{\code{Configuration$validate_plots()}}
+    \item \href{#method-Configuration-validate_balance_closure}{\code{Configuration$validate_balance_closure()}}
     \item \href{#method-Configuration-clone}{\code{Configuration$clone()}}
   }
 }
@@ -124,6 +125,18 @@ Invalid or unknown fields will trigger validation errors.}
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{Configuration$validate_plots()}
+    \if{html}{\out{</div>}}
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Configuration-validate_balance_closure"></a>}}
+\if{latex}{\out{\hypertarget{method-Configuration-validate_balance_closure}{}}}
+\subsection{\code{Configuration$validate_balance_closure()}}{
+  Validate configuration for balance closure test
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Configuration$validate_balance_closure()}
     \if{html}{\out{</div>}}
   }
 }
