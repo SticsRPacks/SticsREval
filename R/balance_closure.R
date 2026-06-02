@@ -115,7 +115,6 @@ BalanceClosureTest <- R6::R6Class("BalanceClosureTest",  # nolint: object_name_l
       )
       sim_list <- private$loader$run_simulations(
         usms = usms,
-        rotations = NULL,
         var = c(paste0("init_", balances), paste0("final_", balances))
       )
       errors <- Map(
@@ -135,6 +134,10 @@ BalanceClosureTest <- R6::R6Class("BalanceClosureTest",  # nolint: object_name_l
         logger::log_info(
           "USMs with balance closure issues: ",
           toString(unique(names(sim_list)[errors]))
+        )
+        stop(
+          "Balance closure test failed for some USMs. Check logs for details.",
+          call. = FALSE
         )
       }
     }
