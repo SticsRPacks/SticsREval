@@ -69,10 +69,10 @@ WorkspaceLoader <- R6::R6Class("WorkspaceLoader", # nolint: object_name_linter
       v
     },
 
-    load_sim = function(usms_species, rotations, stics_version) {
+    load_sim = function(usms_species, stics_version) {
       if (private$config$run_simulations) {
         logger::log_info("Running simulations...")
-        sim <- self$run_simulations(usms_species$usm, rotations)
+        sim <- self$run_simulations(usms_species$usm)
       } else {
         logger::log_info("Loading simulations data...")
         sim <- SticsRFiles::get_sim(
@@ -121,10 +121,11 @@ WorkspaceLoader <- R6::R6Class("WorkspaceLoader", # nolint: object_name_linter
       private$config <- config
     },
 
-    run_simulations = function(usms, rotations, var = NULL) {
+    run_simulations = function(usms, var = NULL) {
       if (is.null(var)) {
         var <- private$get_var_from_obs()
       }
+      rotations <- private$get_rotation_list()
       wrapper_options <- SticsOnR::stics_wrapper_options(
         stics_exe = private$config$stics_exe,
         workspace = private$config$usms_workspace,
@@ -161,12 +162,11 @@ WorkspaceLoader <- R6::R6Class("WorkspaceLoader", # nolint: object_name_linter
         all_usms <- private$config$usms
       }
       usms_species <- private$extract_species_from_usms(all_usms)
-      rotations <- private$get_rotation_list()
       stics_version <- private$load_stics_version()
       private$workspace$set_version(stics_version)
 
       private$load_obs(usms_species)
-      private$load_sim(usms_species, rotations, stics_version)
+      private$load_sim(usms_species, stics_version)
       private$workspace$remove_init_obs()
       invisible(private$workspace)
     }

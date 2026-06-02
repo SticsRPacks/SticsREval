@@ -49,11 +49,15 @@ test_that("BalanceClosureTest logs balance closure issues", {
 
   bc_test <- BalanceClosureTest$new(config)
   replace_private(bc_test, "loader", list(
-    run_simulations = function(usms, rotations, var) {
+    run_simulations = function(usms, var) {
       list(usm1 = sim_data)
     }
   ))
-  bc_test$run()
+
+  expect_error(
+    bc_test$run(),
+    "Balance closure test failed for some USMs. Check logs for details."
+  )
 
   expect_match(
     log_env$logs,
@@ -87,7 +91,7 @@ test_that("BalanceClosureTest handles USMs with missing or NA fields", {
 
   bc_test <- BalanceClosureTest$new(config)
   replace_private(bc_test, "loader", list(
-    run_simulations = function(usms, rotations, var) {
+    run_simulations = function(usms, var) {
       list(usm1 = sim_data)
     }
   ))
@@ -123,7 +127,7 @@ test_that("BalanceClosureTest runs without errors when all USMs pass", {
 
   bc_test <- BalanceClosureTest$new(config)
   replace_private(bc_test, "loader", list(
-    run_simulations = function(usms, rotations, var) {
+    run_simulations = function(usms, var) {
       list(usm1 = sim_data)
     }
   ))
