@@ -71,8 +71,7 @@ This will install all required packages at the versions specified in `renv.lock`
            │
            ├──► Evaluation$new(config)$run()                  ← statistical evaluation vs obs & reference
            │         │
-           │         ├──► export_stats_to_csv(config)         ← export statistics + deteriorated USMs to CSV
-           │         └──► gen_plots(config)                   ← comparison plots + regression scatter plots
+           │         └──► export_stats_to_csv(config)         ← export statistics + deteriorated USMs to CSV
            │
            └──► BalanceClosureTest$new(config)$run()          ← water & nitrogen balance closure check
 ```
@@ -97,7 +96,6 @@ config <- Configuration$new(
   eval_workspace     = "eval_workspace/",
   output_dir         = "outputs/",
   run_simulations    = TRUE,
-  init_workspace     = TRUE,
   verbose            = 1L,
   parallel           = FALSE,
   cores              = NA,
@@ -111,13 +109,12 @@ config <- Configuration$new(
 
 | Field | Description |
 |---|---|
-| `stics_exe` | Path to the STICS executable (required when `run_simulations = TRUE`) |
-| `usms_workspace` | Path to the USMs input data directory (required when `init_workspace = TRUE`) |
-| `metadata_file` | Path to the metadata CSV file describing simulations (required when `init_workspace = TRUE`) |
-| `eval_workspace` | Path to the evaluation workspace — **required** |
+| `stics_exe` | Path to the STICS executable (required) |
+| `usms_workspace` | Path to the USMs input data directory (required) |
+| `metadata_file` | Path to the metadata CSV file describing simulations (required when `run_simulations = TRUE`) |
+| `eval_workspace` | Path to the evaluation workspace — (required for evaluation) |
 | `output_dir` | Output directory for CSV exports and plots (required for export and plots workflows) |
 | `run_simulations` | Whether to run STICS simulations (default: `FALSE`) |
-| `init_workspace` | Whether to initialize the evaluation workspace before running (default: `FALSE`) |
 | `verbose` | Logging verbosity level: `0` = silent, `1` = info, `2` = debug (default: `1`) |
 | `parallel` | Enable parallel execution (default: `FALSE`) |
 | `cores` | Number of cores for parallel execution (`NA` = auto; required when `parallel = TRUE`) |
@@ -131,7 +128,6 @@ config <- Configuration$new(
 
 - `config$validate_eval()` — checks requirements for the statistical evaluation workflow
 - `config$validate_export()` — checks that `output_dir` is set and writable
-- `config$validate_plots()` — checks requirements for the plots workflow
 
 ---
 
@@ -167,6 +163,29 @@ Evaluation$new(
 
 ---
 
+#### `plot_comparison()`
+
+Generates a scatter plot comparing the **rRMSE of the new version vs. the reference version**, one point per variable × USM combination. Points are colour-coded by regression status:
+
+| Colour | Status | Condition |
+|--------|--------|-----------|
+| 🔴 Red | Critical | ratio ≥ `percentage` % |
+| 🟠 Orange | Warning | 0 % < ratio < `percentage` % |
+| 🟢 Green | Improved | ratio ≤ 0 % |
+
+A diagonal line (slope = 1) marks perfect parity; a dashed line (slope = 1 + `percentage`/100) marks the deterioration threshold. Variable names are displayed as repelled labels.
+
+```r
+ws <- EvalWorkspace$new("eval_workspace/")
+
+ws$get_species_comparison(species = "wheat", percentage = 5)$
+  plot_comparison("outputs/rmse_comparison_wheat.png")
+```
+
+The plot is saved as a PNG file at the path provided to `output_path`. `get_species_comparison()` returns `NULL` if no comparison data is available for the requested species (i.e. no reference version was set during evaluation).
+
+---
+
 #### `export_stats_to_csv()`
 
 Exports the evaluation statistics to CSV files in `output_dir`:
@@ -180,31 +199,6 @@ Exports the evaluation statistics to CSV files in `output_dir`:
 
 ```r
 export_stats_to_csv(config)
-```
-
----
-
-#### `gen_plots()`
-
-Generates diagnostic plots for each species under `output_dir`:
-
-- **Comparison plots** — observed vs. simulated for all variables
-- **Scatter plots** (`scatter_plots.html`) — candidate version vs. reference version, highlighting deteriorated variables (only generated when `reference_version` is set and regressions are detected)
-
-```r
-gen_plots(config)
-```
-
-For advanced use, injectable parameters allow substituting the workspace, parallel backend, or plot generation functions:
-
-```r
-gen_plots(
-  config,
-  workspace     = EvalWorkspace$new(config$eval_workspace),
-  backend       = ParallelBackend$new(config$parallel, config$cores),
-  scatter_fn    = gen_scatter_plot,
-  comparison_fn = function(x, dir) x$plot_comparison(dir)
-)
 ```
 
 ---
@@ -239,7 +233,7 @@ The `run()` method logs a summary of the test and lists any USMs with balance cl
 
 ## `EvalWorkspace`
 
-Manages reading and writing all evaluation data (simulations, observations, statistics, comparisons) stored as Parquet datasets on disk. Used internally by `Evaluation`, `export_stats_to_csv`, and `gen_plots`, but can also be used directly to inspect results.
+Manages reading and writing all evaluation data (simulations, observations, statistics, comparisons) stored as Parquet datasets on disk. Used internally by `Evaluation` and `export_stats_to_csv` but can also be used directly to inspect results.
 
 ```r
 ws <- EvalWorkspace$new("eval_workspace/")
@@ -285,7 +279,6 @@ config <- Configuration$new(
   eval_workspace    = "eval_workspace/",
   output_dir        = "outputs/",
   run_simulations   = TRUE,
-  init_workspace    = TRUE,
   reference_version = "v10.0",
   percentage        = 5
 )
@@ -296,10 +289,7 @@ Evaluation$new(config)$run()
 # 3. Export statistics and deteriorated USMs to CSV
 export_stats_to_csv(config)
 
-# 4. Generate comparison and regression scatter plots
-gen_plots(config)
-
-# 5. Check water and nitrogen balance closure
+# 4. Check water and nitrogen balance closure
 BalanceClosureTest$new(config)$run()
 ```
 
@@ -335,7 +325,6 @@ config <- Configuration$new(
   metadata_file   = "/workspace/metadata.csv",
   eval_workspace  = "/workspace/eval_workspace/",
   output_dir      = "/workspace/outputs/",
-  init_workspace  = TRUE,
   run_simulations = TRUE
 )
 

@@ -78,7 +78,7 @@ BalanceClosureTest <- R6::R6Class("BalanceClosureTest",  # nolint: object_name_l
     #' for the test.
     initialize = function(config) {
       private$config <- config
-      private$loader <- WorkspaceLoader$new(
+      private$loader <- USMSWorkspace$new(
         workspace = private$config$usms_workspace,
         backend = ParallelBackend$new(
           parallel = private$config$parallel,

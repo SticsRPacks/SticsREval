@@ -23,6 +23,7 @@ ws <- EvalWorkspace$new(
     \item \href{#method-EvalWorkspace-save_obs}{\code{EvalWorkspace$save_obs()}}
     \item \href{#method-EvalWorkspace-get_species}{\code{EvalWorkspace$get_species()}}
     \item \href{#method-EvalWorkspace-get_species_usm}{\code{EvalWorkspace$get_species_usm()}}
+    \item \href{#method-EvalWorkspace-save_species_usm}{\code{EvalWorkspace$save_species_usm()}}
     \item \href{#method-EvalWorkspace-get_sim}{\code{EvalWorkspace$get_sim()}}
     \item \href{#method-EvalWorkspace-get_obs}{\code{EvalWorkspace$get_obs()}}
     \item \href{#method-EvalWorkspace-save_stats}{\code{EvalWorkspace$save_stats()}}
@@ -45,6 +46,7 @@ ws <- EvalWorkspace$new(
     \item \href{#method-EvalWorkspace-set_version}{\code{EvalWorkspace$set_version()}}
     \item \href{#method-EvalWorkspace-get_version}{\code{EvalWorkspace$get_version()}}
     \item \href{#method-EvalWorkspace-remove_init_obs}{\code{EvalWorkspace$remove_init_obs()}}
+    \item \href{#method-EvalWorkspace-cleanup}{\code{EvalWorkspace$cleanup()}}
     \item \href{#method-EvalWorkspace-clone}{\code{EvalWorkspace$clone()}}
   }
 }
@@ -144,6 +146,27 @@ extraction. If not defined the last evaluated version will be used.}
   }
   \subsection{Returns}{
     a list of USMs as a character list
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-EvalWorkspace-save_species_usm"></a>}}
+\if{latex}{\out{\hypertarget{method-EvalWorkspace-save_species_usm}{}}}
+\subsection{\code{EvalWorkspace$save_species_usm()}}{
+  Save the association between species and USMs
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{EvalWorkspace$save_species_usm(species_usms)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{species_usms}}{a dataframe with two columns: situation and species
+the situation column should contain the USM and the species column should
+contain the associated species}
+    }
+    \if{html}{\out{</div>}}
   }
 }
 
@@ -622,6 +645,23 @@ This function will replace the initial observations by NA in the dataset.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{EvalWorkspace$remove_init_obs()}
+    \if{html}{\out{</div>}}
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-EvalWorkspace-cleanup"></a>}}
+\if{latex}{\out{\hypertarget{method-EvalWorkspace-cleanup}{}}}
+\subsection{\code{EvalWorkspace$cleanup()}}{
+  Clean up the evaluation workspace by removing the sim and obs datasets.
+This function is used to clean up the evaluation workspace after the
+evaluation is done, to free up space. This function will remove the sim and
+obs datasets from the evaluation workspace, but will keep the statistics and
+comparison datasets, as well as the metadata. This allows to keep the results
+of the evaluation, while freeing up space by removing the sim and obs datasets.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{EvalWorkspace$cleanup()}
     \if{html}{\out{</div>}}
   }
 }

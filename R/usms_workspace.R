@@ -1,4 +1,4 @@
-WorkspaceLoader <- R6::R6Class("WorkspaceLoader", # nolint: object_name_linter
+USMSWorkspace <- R6::R6Class("USMSWorkspace", # nolint: object_name_linter
   private = list(
     workspace = NULL,
     backend = NULL,
@@ -13,7 +13,7 @@ WorkspaceLoader <- R6::R6Class("WorkspaceLoader", # nolint: object_name_linter
           species <- SticsRFiles::get_plant_txt(
             workspace = file.path(private$config$usms_workspace, usm)
           )
-          list(species = species$codeplante, usm = usm)
+          list(species = species$codeplante, situation = usm)
         }
       )
       sorted <- dplyr::bind_rows(result)
@@ -69,15 +69,15 @@ WorkspaceLoader <- R6::R6Class("WorkspaceLoader", # nolint: object_name_linter
       v
     },
 
-    load_sim = function(usms_species, stics_version) {
+    load_sim = function(usms_species) {
       if (private$config$run_simulations) {
         logger::log_info("Running simulations...")
-        sim <- self$run_simulations(usms_species$usm)
+        sim <- self$run_simulations(usms_species$situation)
       } else {
         logger::log_info("Loading simulations data...")
         sim <- SticsRFiles::get_sim(
           workspace = private$config$usms_workspace,
-          usm = unique(usms_species$usm),
+          usm = unique(usms_species$situation),
           verbose = is_debug(),
           parallel = private$backend$parallel,
           cores = private$backend$cores
@@ -92,7 +92,7 @@ WorkspaceLoader <- R6::R6Class("WorkspaceLoader", # nolint: object_name_linter
       logger::log_info("Loading observations data...")
       obs <- SticsRFiles::get_obs(
         workspace = private$config$usms_workspace,
-        usm = unique(usms_species$usm),
+        usm = unique(usms_species$situation),
         verbose = is_debug(),
         parallel = private$backend$parallel,
         cores = private$backend$cores
@@ -162,11 +162,12 @@ WorkspaceLoader <- R6::R6Class("WorkspaceLoader", # nolint: object_name_linter
         all_usms <- private$config$usms
       }
       usms_species <- private$extract_species_from_usms(all_usms)
+      private$workspace$save_species_usm(usms_species)
       stics_version <- private$load_stics_version()
       private$workspace$set_version(stics_version)
 
       private$load_obs(usms_species)
-      private$load_sim(usms_species, stics_version)
+      private$load_sim(usms_species)
       private$workspace$remove_init_obs()
       invisible(private$workspace)
     }

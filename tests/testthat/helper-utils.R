@@ -2,7 +2,6 @@ make_base_cfg <- function(...) {
   defaults <- list(
     validate_eval = function() {},
     validate_balance_closure = function() {},
-    init_workspace = FALSE,
     species = NULL,
     usms = NULL,
     var2exclude = NULL,

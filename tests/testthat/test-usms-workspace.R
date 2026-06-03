@@ -16,6 +16,8 @@ make_fake_workspace <- function() {
     get_sim_saved = function() env$sim_saved,
     get_obs_saved = function() env$obs_saved,
 
+    save_species_usm = function(...) env$species_usm_saved <- TRUE,
+
     .env = env
   )
 }
@@ -34,7 +36,7 @@ make_loader <- function(
   config = make_base_cfg()
 
 ) {
-  WorkspaceLoader$new(
+  USMSWorkspace$new(
     workspace = workspace,
     backend = backend,
     config = config

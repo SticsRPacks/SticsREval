@@ -15,13 +15,12 @@ workflow-specific validation methods.
 \section{Public fields}{
   \if{html}{\out{<div class="r6-fields">}}
   \describe{
-    \item{\code{stics_exe}}{Path to STICS executable (required if init_workspace = TRUE)}
+    \item{\code{stics_exe}}{Path to STICS executable (required)}
 
-    \item{\code{usms_workspace}}{Path to USMs workspace (required
-if init_workspace = TRUE)}
+    \item{\code{usms_workspace}}{Path to USMs workspace (required)}
 
     \item{\code{metadata_file}}{Path to metadata file (required if
-init_workspace = TRUE)}
+run_simulations = TRUE)}
 
     \item{\code{eval_workspace}}{Path to evaluation workspace (required)}
 
@@ -31,11 +30,7 @@ export)}
     \item{\code{run_simulations}}{Logical. Whether to run simulations or just prepare
 the workspace.}
 
-    \item{\code{init_workspace}}{Logical. Whether to initialize the evaluation workspace
-(run simulations, prepare metadata, etc.) or assume it's already set up.}
-
-    \item{\code{parallel}}{Logical. Whether to run simulations in parallel (only if
-init_workspace = TRUE).}
+    \item{\code{parallel}}{Logical. Whether to run workflow in parallel.}
 
     \item{\code{verbose}}{Integer. Verbosity level (0 = silent, 1 = info, 2 = debug).}
 
@@ -66,7 +61,6 @@ will be excluded from export and plots.}
     \item \href{#method-Configuration-initialize}{\code{Configuration$new()}}
     \item \href{#method-Configuration-validate_eval}{\code{Configuration$validate_eval()}}
     \item \href{#method-Configuration-validate_export}{\code{Configuration$validate_export()}}
-    \item \href{#method-Configuration-validate_plots}{\code{Configuration$validate_plots()}}
     \item \href{#method-Configuration-validate_balance_closure}{\code{Configuration$validate_balance_closure()}}
     \item \href{#method-Configuration-clone}{\code{Configuration$clone()}}
   }
@@ -113,18 +107,6 @@ Invalid or unknown fields will trigger validation errors.}
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{Configuration$validate_export()}
-    \if{html}{\out{</div>}}
-  }
-}
-
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-Configuration-validate_plots"></a>}}
-\if{latex}{\out{\hypertarget{method-Configuration-validate_plots}{}}}
-\subsection{\code{Configuration$validate_plots()}}{
-  Validate configuration for plots
-  \subsection{Usage}{
-    \if{html}{\out{<div class="r">}}
-    \preformatted{Configuration$validate_plots()}
     \if{html}{\out{</div>}}
   }
 }

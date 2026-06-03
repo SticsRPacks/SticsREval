@@ -158,52 +158,46 @@ test_that("get_all_versions returns NULL when no metadata exists", {
 
 test_that("get_species returns sorted distinct species from obs dataset", {
   dir <- withr::local_tempdir()
-  obs <- data.frame(
+  species_usm <- data.frame(
     situation = c("usm1", "usm2", "usm3"),
-    species = c("wheat", "barley", "wheat"),
-    version = "v1",
-    Date = as.Date("2020-01-01"),
+    species = c("wheat", "wheat", "barley"),
     stringsAsFactors = FALSE
   )
   write_parquet_ds(
-    obs, obs_ds_path(dir), partitioning = c("version", "species")
+    species_usm, species_usm_ds_path(dir), partitioning = "species"
   )
 
-  ws <- make_ws(dir, version = "v1")
+  ws <- make_ws(dir)
   expect_identical(ws$get_species(), c("barley", "wheat"))
 })
 
 test_that("get_species_usm returns USMs for a species", {
   dir <- withr::local_tempdir()
-  obs <- data.frame(
+  species_usm <- data.frame(
     situation = c("usm1", "usm2", "usm3"),
     species = c("wheat", "wheat", "barley"),
-    version = "v1",
-    Date = as.Date("2020-01-01"),
     stringsAsFactors = FALSE
   )
   write_parquet_ds(
-    obs, obs_ds_path(dir), partitioning = c("version", "species")
+    species_usm, species_usm_ds_path(dir), partitioning = "species"
   )
 
-  ws <- make_ws(dir, version = "v1")
+  ws <- make_ws(dir)
   expect_setequal(ws$get_species_usm("wheat"), c("usm1", "usm2"))
 })
 
 test_that("get_species_usm filters by usms when provided", {
   dir <- withr::local_tempdir()
-  obs <- data.frame(
+  species_usm <- data.frame(
     situation = c("usm1", "usm2", "usm3"),
-    species = c("wheat", "wheat", "wheat"),
-    version = "v1",
-    Date = as.Date("2020-01-01"),
+    species = c("wheat", "wheat", "barley"),
     stringsAsFactors = FALSE
   )
   write_parquet_ds(
-    obs, obs_ds_path(dir), partitioning = c("version", "species")
+    species_usm, species_usm_ds_path(dir), partitioning = "species"
   )
 
-  ws <- make_ws(dir, version = "v1")
+  ws <- make_ws(dir)
   expect_identical(ws$get_species_usm("wheat", usms = "usm1"), "usm1")
 })
 

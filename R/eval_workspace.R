@@ -179,7 +179,7 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
     #' @param usms_species a dataframe which associates a USM to its species
     save_sim = function(sim, usms_species) {
       sim_data <- CroPlotR::bind_rows(sim) |>
-        dplyr::inner_join(usms_species, by = c(situation = "usm"))
+        dplyr::inner_join(usms_species, by = "situation")
 
       private$.writer$write_dataset(
         sim_data,
@@ -193,7 +193,7 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
     #' @param usms_species a dataframe which associates a USM to its species
     save_obs = function(obs, usms_species) {
       obs_data <- CroPlotR::bind_rows(obs, .id = "situation") |>
-        dplyr::inner_join(usms_species, by = c(situation = "usm"))
+        dplyr::inner_join(usms_species, by = "situation")
 
       private$.writer$write_dataset(
         obs_data,
@@ -206,8 +206,9 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
     #' @returns a list of species as character list
     get_species = function() {
       res <- private$.reader$read(
-        path = obs_ds_path(private$.data_dir),
-        collect = TRUE
+        path = species_usm_ds_path(private$.data_dir),
+        collect = TRUE,
+        apply_version = FALSE
       )
       if (is.null(res)) return(NULL)
       res |>
@@ -224,10 +225,11 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
     #' @returns a list of USMs as a character list
     get_species_usm = function(species, usms = NULL) {
       res <- private$.reader$read(
-        path = obs_ds_path(private$.data_dir),
+        path = species_usm_ds_path(private$.data_dir),
         species = species,
         usms = usms,
-        collect = TRUE
+        collect = TRUE,
+        apply_version = FALSE
       )
       if (is.null(res)) {
         return(NULL)
@@ -235,6 +237,18 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
       res |>
         dplyr::distinct(.data$situation) |>
         dplyr::pull("situation")
+    },
+    #' @description
+    #' Save the association between species and USMs
+    #' @param species_usms a dataframe with two columns: situation and species
+    #' the situation column should contain the USM and the species column should
+    #' contain the associated species
+    save_species_usm = function(species_usms) {
+      private$.writer$write_dataset(
+        species_usms,
+        path = species_usm_ds_path(private$.data_dir),
+        partitioning = "species"
+      )
     },
     #' @description
     #' Return the simulation
@@ -273,7 +287,6 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
     #'  otherwise the lazy arrow data object will be returned
     #'
     #' @returns a dataframe if collect is `TRUE`, a lazy arrow data object
-
     get_obs = function(
       species = NULL, usms = NULL, var2exclude = NULL, collect = TRUE
     ) {
@@ -631,6 +644,23 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
           format = "parquet",
           partitioning = c("version", "species")
         )
+    },
+    #' @description
+    #' Clean up the evaluation workspace by removing the sim and obs datasets.
+    #' This function is used to clean up the evaluation workspace after the
+    #' evaluation is done, to free up space. This function will remove the sim
+    #' and obs datasets from the evaluation workspace, but will keep the
+    #' statistics and comparison datasets, as well as the metadata. This allows
+    #' to keep the results of the evaluation, while freeing up space by removing
+    #' the sim and obs datasets.
+    cleanup = function() {
+      if (dir.exists(sim_ds_path(private$.data_dir))) {
+        unlink(sim_ds_path(private$.data_dir), recursive = TRUE)
+      }
+      if (dir.exists(obs_ds_path(private$.data_dir))) {
+        unlink(obs_ds_path(private$.data_dir), recursive = TRUE)
+      }
+      invisible(NULL)
     }
   )
 )
@@ -669,4 +699,8 @@ comparison_ds_path <- function(data_dir) {
 
 metadata_ds_path <- function(data_dir) {
   file.path(data_dir, "metadata.parquet")
+}
+
+species_usm_ds_path <- function(data_dir) {
+  file.path(data_dir, "species_usm")
 }
