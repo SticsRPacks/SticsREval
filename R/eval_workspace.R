@@ -207,7 +207,8 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
     get_species = function() {
       res <- private$.reader$read(
         path = species_usm_ds_path(private$.data_dir),
-        collect = TRUE
+        collect = TRUE,
+        apply_version = FALSE
       )
       if (is.null(res)) return(NULL)
       res |>
