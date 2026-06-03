@@ -61,32 +61,10 @@ validate_nonempty_chr <- function(val) {
 # Cross-field constraint checkers
 
 #' @keywords internal
-check_init_ws_stics_exe <- function(s) {
-  if (
-    isTRUE(s$init_workspace) &&
-      isTRUE(s$run_simulations) &&
-      is.null(s$stics_exe)
-  ) {
-    return(
-      "stics_exe is required when init_workspace = TRUE and
-      run_simulations = TRUE"
-    )
-  }
-  TRUE
-}
-
-#' @keywords internal
-check_init_ws_usms_workspace <- function(s) {
-  if (isTRUE(s$init_workspace) && is.null(s$usms_workspace))
-    return("usms_workspace is required when init_workspace = TRUE")
-  TRUE
-}
-
-#' @keywords internal
-check_init_ws_metadata_file <- function(s) {
-  if (!isTRUE(s$init_workspace)) return(TRUE)
+check_metadata_file <- function(s) {
+  if (!s$run_simulations) return(TRUE)
   if (is.null(s$metadata_file))
-    return("metadata_file is required when init_workspace = TRUE")
+    return("metadata_file is required")
   if (!file.exists(s$metadata_file))
     return(paste0("metadata_file not found: ", s$metadata_file))
   TRUE
@@ -138,12 +116,6 @@ config_schema <- list(
     ),
 
     run_simulations = field_spec(
-      default = FALSE,
-      type = "logical",
-      nullable = FALSE
-    ),
-
-    init_workspace = field_spec(
       default = FALSE,
       type = "logical",
       nullable = FALSE
@@ -206,17 +178,8 @@ config_schema <- list(
 
   cross_validators = list(
     list(
-      desc = "If init_workspace = TRUE and run_simulations = TRUE,
-        stics_exe must be defined",
-      check = check_init_ws_stics_exe
-    ),
-    list(
-      desc = "If init_workspace = TRUE, usms_workspace must be defined",
-      check = check_init_ws_usms_workspace
-    ),
-    list(
-      desc = "If init_workspace = TRUE, metadata_file must be a valid path",
-      check = check_init_ws_metadata_file
+      desc = "If run_simulations = TRUE, metadata_file must be a valid path",
+      check = check_metadata_file
     ),
     list(
       desc = "If parallel = TRUE, cores must be an integer >= 1",
@@ -384,20 +347,16 @@ schema_initialize <- function(self, args, schema = config_schema) {
 #' The same object is used for all workflows (evaluation, export, plots), with
 #' workflow-specific validation methods.
 #'
-#' @field stics_exe Path to STICS executable (required if init_workspace = TRUE)
-#' @field usms_workspace Path to USMs workspace (required
-#'  if init_workspace = TRUE)
+#' @field stics_exe Path to STICS executable (required)
+#' @field usms_workspace Path to USMs workspace (required)
 #' @field metadata_file Path to metadata file (required if
-#'  init_workspace = TRUE)
+#'  run_simulations = TRUE)
 #' @field eval_workspace Path to evaluation workspace (required)
 #' @field output_dir Path to output directory for export workflow (required for
 #'  export)
 #' @field run_simulations Logical. Whether to run simulations or just prepare
 #'  the workspace.
-#' @field init_workspace Logical. Whether to initialize the evaluation workspace
-#'  (run simulations, prepare metadata, etc.) or assume it's already set up.
-#' @field parallel Logical. Whether to run simulations in parallel (only if
-#'  init_workspace = TRUE).
+#' @field parallel Logical. Whether to run workflow in parallel.
 #' @field verbose Integer. Verbosity level (0 = silent, 1 = info, 2 = debug).
 #' @field cores Integer or NA. Number of CPU cores to use for parallel
 #'  processing (only if parallel = TRUE). NA means auto-detect.
@@ -437,6 +396,10 @@ Configuration <- R6::R6Class("Configuration", # nolint: object_name_linter
       validate_eval = function() {
         if (is.null(self$eval_workspace))
           stop("Eval workspace path must be defined", call. = FALSE)
+        if (is.null(self$stics_exe))
+          stop("STICS executable path must be defined", call. = FALSE)
+        if (is.null(self$usms_workspace))
+          stop("USMs workspace path must be defined", call. = FALSE)
         if (!is.null(self$reference_version))
           private$check_reference_version()
         invisible(self)
@@ -448,15 +411,6 @@ Configuration <- R6::R6Class("Configuration", # nolint: object_name_linter
           stop("Output dir path must be defined", call. = FALSE)
         if (!dir.exists(self$output_dir) && !dir.create(self$output_dir))
           stop("Can't create ", self$output_dir, " directory", call. = FALSE)
-        if (is.null(self$eval_workspace))
-          stop("Eval workspace path must be defined", call. = FALSE)
-        invisible(self)
-      },
-
-      #' @description Validate configuration for plots
-      validate_plots = function() {
-        if (!is.null(self$reference_version))
-          private$check_reference_version()
         if (is.null(self$eval_workspace))
           stop("Eval workspace path must be defined", call. = FALSE)
         invisible(self)

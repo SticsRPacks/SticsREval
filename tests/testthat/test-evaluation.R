@@ -54,7 +54,8 @@ make_fake_workspace <- function() {
     get_rmse_per_usm = function(...) data.frame(),
     get_stats = function(...) data.frame(),
     save_deteriorated_usm = function(...) {},
-    save_species_comparison = function(...) {}
+    save_species_comparison = function(...) {},
+    cleanup = function(...) {}
   )
 }
 
@@ -80,6 +81,7 @@ test_that("run executes full workflow", {
     make_base_cfg(reference_version = "v1"),
     summary = summary
   )
+  replace_private(eval, "init_workspace", function() {})
   replace_private(eval, "evaluate_global", function() {})
   replace_private(eval, "evaluate_species", function(...) {})
 
@@ -110,9 +112,9 @@ test_that("get_species_to_evaluate filters by species and usms", {
 test_that("run logs and rethrows error", {
   logger <- make_fake_logger()
   workspace <- make_fake_workspace()
-  workspace$get_sim <- function(...) stop("fail", call. = FALSE)
 
   eval <- make_eval(make_base_cfg(), workspace = workspace, logger = logger)
+  replace_private(eval, "init_workspace", function() stop("fail", call. = FALSE))
 
   expect_error(eval$run(), "fail")
   expect_gt(length(logger$.env$error_calls), 0)

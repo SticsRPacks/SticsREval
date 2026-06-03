@@ -15,6 +15,7 @@ ws <- EvalWorkspace$new(
 }
 
 }
+\keyword{internal}
 \section{Methods}{
 \subsection{Public methods}{
   \itemize{
@@ -46,6 +47,7 @@ ws <- EvalWorkspace$new(
     \item \href{#method-EvalWorkspace-set_version}{\code{EvalWorkspace$set_version()}}
     \item \href{#method-EvalWorkspace-get_version}{\code{EvalWorkspace$get_version()}}
     \item \href{#method-EvalWorkspace-remove_init_obs}{\code{EvalWorkspace$remove_init_obs()}}
+    \item \href{#method-EvalWorkspace-cleanup}{\code{EvalWorkspace$cleanup()}}
     \item \href{#method-EvalWorkspace-clone}{\code{EvalWorkspace$clone()}}
   }
 }
@@ -634,6 +636,17 @@ This function will replace the initial observations by NA in the dataset.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{EvalWorkspace$remove_init_obs()}
+    \if{html}{\out{</div>}}
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-EvalWorkspace-cleanup"></a>}}
+\if{latex}{\out{\hypertarget{method-EvalWorkspace-cleanup}{}}}
+\subsection{\code{EvalWorkspace$cleanup()}}{
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{EvalWorkspace$cleanup()}
     \if{html}{\out{</div>}}
   }
 }

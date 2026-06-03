@@ -300,74 +300,36 @@ make_state <- function(...) {
   defaults
 }
 
-test_that("check_init_ws_stics_exe passes when init_workspace = FALSE", {
-  expect_true(check_init_ws_stics_exe(make_state(init_workspace = FALSE)))
+test_that("check_metadata_file passes when run_simulations = FALSE", {
+  expect_true(check_metadata_file(make_state(run_simulations = FALSE)))
 })
 
-test_that(
-  "check_init_ws_stics_exe passes when init_workspace = TRUE and stics_exe set",
-  {
-    s <- make_state(init_workspace = TRUE, stics_exe = "exe")
-    expect_true(check_init_ws_stics_exe(s))
-  }
-)
-
-test_that(
-  "check_init_ws_stics_exe fails when init_workspace = TRUE and
-  run_simulations = TRUE and stics_exe is NULL",
-  {
-    s <- make_state(
-      init_workspace = TRUE,
-      run_simulations = TRUE,
-      stics_exe = NULL
-    )
-    result <- check_init_ws_stics_exe(s)
-    expect_type(result, "character")
-    expect_match(result, "stics_exe")
-  }
-)
-
-test_that("check_init_ws_usms_workspace passes when init_workspace = FALSE", {
-  expect_true(check_init_ws_usms_workspace(make_state()))
-})
-
-test_that("check_init_ws_usms_workspace fails when workspace missing", {
-  s <- make_state(init_workspace = TRUE, usms_workspace = NULL)
-  result <- check_init_ws_usms_workspace(s)
-  expect_type(result, "character")
-  expect_match(result, "usms_workspace")
-})
-
-test_that("check_init_ws_metadata_file passes when init_workspace = FALSE", {
-  expect_true(check_init_ws_metadata_file(make_state(init_workspace = FALSE)))
-})
-
-test_that("check_init_ws_metadata_file fails when metadata_file is NULL", {
-  s <- make_state(init_workspace = TRUE, metadata_file = NULL)
-  result <- check_init_ws_metadata_file(s)
+test_that("check_metadata_file fails when metadata_file is NULL", {
+  s <- make_state(run_simulations = TRUE, metadata_file = NULL)
+  result <- check_metadata_file(s)
   expect_type(result, "character")
   expect_match(result, "metadata_file")
 })
 
 test_that(
-  "check_init_ws_metadata_file fails when metadata_file does not exist",
+  "check_metadata_file fails when metadata_file does not exist",
   {
     s <- make_state(
-      init_workspace = TRUE,
+      run_simulations = TRUE,
       metadata_file = file.path("nonexistent", "path.csv")
     )
-    result <- check_init_ws_metadata_file(s)
+    result <- check_metadata_file(s)
     expect_type(result, "character")
     expect_match(result, "not found")
   }
 )
 
-test_that("check_init_ws_metadata_file passes with an existing file", {
+test_that("check_metadata_file passes with an existing file", {
   tmp <- tempfile()
   file.create(tmp)
   on.exit(unlink(tmp))
-  s <- make_state(init_workspace = TRUE, metadata_file = tmp)
-  expect_true(check_init_ws_metadata_file(s))
+  s <- make_state(run_simulations = TRUE, metadata_file = tmp)
+  expect_true(check_metadata_file(s))
 })
 
 test_that("check_parallel_cores passes when parallel = FALSE", {
@@ -403,7 +365,7 @@ make_valid_list <- function(...) {
     usms_workspace = NULL,
     metadata_file = NULL,
     output_dir = NULL,
-    run_simulations = TRUE,
+    run_simulations = FALSE,
     init_workspace = FALSE,
     parallel = FALSE,
     verbose = 1L,
@@ -426,7 +388,7 @@ test_that("validate_schema returns invisible TRUE for a valid config", {
 
 test_that("validate_schema stops with message for wrong type", {
   cfg <- make_valid_list(run_simulations = "yes")
-  expect_error(validate_schema(cfg), "expected type")
+  expect_error(validate_schema(cfg), "invalid argument type")
 })
 
 test_that("validate_schema stops when percentage out of range", {
@@ -448,7 +410,7 @@ test_that("validate_schema collects multiple errors before stopping", {
   cfg$run_simulations <- "bad"
   err <- tryCatch(validate_schema(cfg), error = function(e) e$message)
   # Both errors should appear in the same message
-  expect_match(err, "expected type")
+  expect_match(err, "invalid argument type")
 })
 
 # ---------------------------------------------------------------------------
@@ -552,10 +514,13 @@ test_that("Configuration accepts valid cores when parallel = TRUE", {
 # validate_eval
 # ---------------------------------------------------------------------------
 
-test_that("validate_eval passes when eval_workspace is set", {
-  cfg <- Configuration$new(eval_workspace = "ws")
-  expect_r6_class(cfg$validate_eval(), "Configuration")
-})
+test_that(
+  "validate_eval passes when eval_workspace, stics_exe and usms_workspace is set",
+  {
+    cfg <- Configuration$new(eval_workspace = "ws", stics_exe = "stics", usms_workspace = "usms_ws")
+    expect_r6_class(cfg$validate_eval(), "Configuration")
+  }
+)
 
 # ---------------------------------------------------------------------------
 # validate_export
@@ -584,15 +549,6 @@ test_that("validate_export creates output_dir if it does not exist", {
   )
   cfg$validate_export()
   expect_true(dir.exists(tmp))
-})
-
-# ---------------------------------------------------------------------------
-# validate_plots
-# ---------------------------------------------------------------------------
-
-test_that("validate_plots passes when eval_workspace is set", {
-  cfg <- Configuration$new(eval_workspace = "ws")
-  expect_r6_class(cfg$validate_plots(), "Configuration")
 })
 
 # ---------------------------------------------------------------------------

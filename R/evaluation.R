@@ -266,6 +266,23 @@ Evaluation <- R6::R6Class("Evaluation", # nolint: object_name_linter
         species = species,
         percentage = private$config$percentage
       )$display()
+    },
+
+    init_workspace = function() {
+      logger::log_info(
+        "Initializing workspace {private$config$eval_workspace}
+        for evaluation..."
+      )
+      if (!dir.exists(private$config$eval_workspace) &&
+          !dir.create(private$config$eval_workspace, recursive = TRUE)
+      ) {
+        stop("Can't create evaluation workspace", call. = FALSE)
+      }
+      USMSWorkspace$new(
+        workspace = private$workspace,
+        backend = private$backend,
+        config = private$config
+      )$load()
     }
   ),
 
@@ -315,25 +332,11 @@ Evaluation <- R6::R6Class("Evaluation", # nolint: object_name_linter
         )
       }, add = TRUE)
       start_time <- Sys.time()
-      if (private$config$init_workspace) {
-        logger::log_info(
-          "Initializing workspace {private$config$eval_workspace}
-          for evaluation..."
-        )
-        if (!dir.exists(private$config$eval_workspace) &&
-            !dir.create(private$config$eval_workspace, recursive = TRUE)
-        ) {
-          stop("Can't create evaluation workspace", call. = FALSE)
-        }
-        USMSWorkspace$new(
-          workspace = private$workspace,
-          backend = private$backend,
-          config = private$config
-        )$load()
-      }
-
-      private$logger$info("Starting evaluation...")
       tryCatch({
+        private$logger$info("Starting evaluation...")
+
+        private$init_workspace()
+
         private$evaluate_global()
 
         species <- private$get_species_to_evaluate()

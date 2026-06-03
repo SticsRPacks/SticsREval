@@ -256,6 +256,8 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
     #'  otherwise the lazy arrow data object will be returned
     #'
     #' @returns a dataframe if collect is `TRUE`, a lazy arrow data object
+    #' 
+    #' @keywords internal
     get_sim = function(
       species = NULL, usms = NULL, var2exclude = NULL, collect = TRUE
     ) {

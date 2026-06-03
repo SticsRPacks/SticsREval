@@ -69,7 +69,7 @@ USMSWorkspace <- R6::R6Class("USMSWorkspace", # nolint: object_name_linter
       v
     },
 
-    load_sim = function(usms_species, stics_version) {
+    load_sim = function(usms_species) {
       if (private$config$run_simulations) {
         logger::log_info("Running simulations...")
         sim <- self$run_simulations(usms_species$situation)
@@ -167,7 +167,7 @@ USMSWorkspace <- R6::R6Class("USMSWorkspace", # nolint: object_name_linter
       private$workspace$set_version(stics_version)
 
       private$load_obs(usms_species)
-      private$load_sim(usms_species, stics_version)
+      private$load_sim(usms_species)
       private$workspace$remove_init_obs()
       invisible(private$workspace)
     }
