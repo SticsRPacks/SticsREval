@@ -23,6 +23,7 @@ ws <- EvalWorkspace$new(
     \item \href{#method-EvalWorkspace-save_obs}{\code{EvalWorkspace$save_obs()}}
     \item \href{#method-EvalWorkspace-get_species}{\code{EvalWorkspace$get_species()}}
     \item \href{#method-EvalWorkspace-get_species_usm}{\code{EvalWorkspace$get_species_usm()}}
+    \item \href{#method-EvalWorkspace-save_species_usm}{\code{EvalWorkspace$save_species_usm()}}
     \item \href{#method-EvalWorkspace-get_sim}{\code{EvalWorkspace$get_sim()}}
     \item \href{#method-EvalWorkspace-get_obs}{\code{EvalWorkspace$get_obs()}}
     \item \href{#method-EvalWorkspace-save_stats}{\code{EvalWorkspace$save_stats()}}
@@ -144,6 +145,17 @@ extraction. If not defined the last evaluated version will be used.}
   }
   \subsection{Returns}{
     a list of USMs as a character list
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-EvalWorkspace-save_species_usm"></a>}}
+\if{latex}{\out{\hypertarget{method-EvalWorkspace-save_species_usm}{}}}
+\subsection{\code{EvalWorkspace$save_species_usm()}}{
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{EvalWorkspace$save_species_usm(species_usms)}
+    \if{html}{\out{</div>}}
   }
 }
 

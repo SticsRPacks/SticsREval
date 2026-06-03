@@ -324,7 +324,7 @@ Evaluation <- R6::R6Class("Evaluation", # nolint: object_name_linter
         ) {
           stop("Can't create evaluation workspace", call. = FALSE)
         }
-        WorkspaceLoader$new(
+        USMSWorkspace$new(
           workspace = private$workspace,
           backend =  private$backend,
           config = private$config

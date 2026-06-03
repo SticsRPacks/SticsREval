@@ -179,7 +179,7 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
     #' @param usms_species a dataframe which associates a USM to its species
     save_sim = function(sim, usms_species) {
       sim_data <- CroPlotR::bind_rows(sim) |>
-        dplyr::inner_join(usms_species, by = c(situation = "usm"))
+        dplyr::inner_join(usms_species, by = "situation")
 
       private$.writer$write_dataset(
         sim_data,
@@ -193,7 +193,7 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
     #' @param usms_species a dataframe which associates a USM to its species
     save_obs = function(obs, usms_species) {
       obs_data <- CroPlotR::bind_rows(obs, .id = "situation") |>
-        dplyr::inner_join(usms_species, by = c(situation = "usm"))
+        dplyr::inner_join(usms_species, by = "situation")
 
       private$.writer$write_dataset(
         obs_data,
@@ -206,7 +206,7 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
     #' @returns a list of species as character list
     get_species = function() {
       res <- private$.reader$read(
-        path = obs_ds_path(private$.data_dir),
+        path = species_usm_ds_path(private$.data_dir),
         collect = TRUE
       )
       if (is.null(res)) return(NULL)
@@ -224,10 +224,11 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
     #' @returns a list of USMs as a character list
     get_species_usm = function(species, usms = NULL) {
       res <- private$.reader$read(
-        path = obs_ds_path(private$.data_dir),
+        path = species_usm_ds_path(private$.data_dir),
         species = species,
         usms = usms,
-        collect = TRUE
+        collect = TRUE,
+        apply_version = FALSE
       )
       if (is.null(res)) {
         return(NULL)
@@ -235,6 +236,13 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
       res |>
         dplyr::distinct(.data$situation) |>
         dplyr::pull("situation")
+    },
+    save_species_usm = function(species_usms) {
+      private$.writer$write_dataset(
+        species_usms,
+        path = species_usm_ds_path(private$.data_dir),
+        partitioning = "species"
+      )
     },
     #' @description
     #' Return the simulation
@@ -669,4 +677,8 @@ comparison_ds_path <- function(data_dir) {
 
 metadata_ds_path <- function(data_dir) {
   file.path(data_dir, "metadata.parquet")
+}
+
+species_usm_ds_path <- function(data_dir) {
+  file.path(data_dir, "species_usm")
 }

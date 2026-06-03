@@ -104,7 +104,7 @@ RmseComparison <- R6::R6Class("RmseComparison", # nolint: object_name_linter
 
     get_data = function() private$data,
 
-    plot_comparison = function(output_dir) {
+    plot_comparison = function(output_path) {
       p <- private$data |>
         dplyr::mutate(
           status = dplyr::case_when(
@@ -144,7 +144,15 @@ RmseComparison <- R6::R6Class("RmseComparison", # nolint: object_name_linter
         ) +
         ggplot2::theme(legend.position = "none") +
         ggplot2::ggtitle("rRMSE New Version vs Ref Version")
-      CroPlotR::save_plot_png(p, out_dir = output_dir, suffix = "scatter_")
+      ggplot2::ggsave(
+        filename = output_path,
+        plot = p,
+        width = 17,
+        height = 12,
+        units = "cm",
+        dpi = 200,
+        scale = 1.5
+      )
       invisible(self)
     }
   )
