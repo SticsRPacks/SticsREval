@@ -114,7 +114,11 @@ test_that("run logs and rethrows error", {
   workspace <- make_fake_workspace()
 
   eval <- make_eval(make_base_cfg(), workspace = workspace, logger = logger)
-  replace_private(eval, "init_workspace", function() stop("fail", call. = FALSE))
+  replace_private(
+    eval,
+    "init_workspace",
+    function() stop("fail", call. = FALSE)
+  )
 
   expect_error(eval$run(), "fail")
   expect_gt(length(logger$.env$error_calls), 0)

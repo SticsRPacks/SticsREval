@@ -515,9 +515,14 @@ test_that("Configuration accepts valid cores when parallel = TRUE", {
 # ---------------------------------------------------------------------------
 
 test_that(
-  "validate_eval passes when eval_workspace, stics_exe and usms_workspace is set",
+  "validate_eval passes when eval_workspace, stics_exe and usms_workspace is
+  set",
   {
-    cfg <- Configuration$new(eval_workspace = "ws", stics_exe = "stics", usms_workspace = "usms_ws")
+    cfg <- Configuration$new(
+      eval_workspace = "ws",
+      stics_exe = "stics",
+      usms_workspace = "usms_ws"
+    )
     expect_r6_class(cfg$validate_eval(), "Configuration")
   }
 )
