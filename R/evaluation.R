@@ -307,6 +307,7 @@ Evaluation <- R6::R6Class("Evaluation", # nolint: object_name_linter
     #' species, and displays summary information.
     run = function() {
       on.exit({
+        private$workspace$cleanup()
         end_time <- Sys.time()
         private$logger$info(
           "Evaluation time: ",
@@ -326,7 +327,7 @@ Evaluation <- R6::R6Class("Evaluation", # nolint: object_name_linter
         }
         USMSWorkspace$new(
           workspace = private$workspace,
-          backend =  private$backend,
+          backend = private$backend,
           config = private$config
         )$load()
       }

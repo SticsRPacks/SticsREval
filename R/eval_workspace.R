@@ -639,6 +639,15 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
           format = "parquet",
           partitioning = c("version", "species")
         )
+    },
+    cleanup = function() {
+      if (dir.exists(sim_ds_path(private$.data_dir))) {
+        unlink(sim_ds_path(private$.data_dir), recursive = TRUE)
+      }
+      if (dir.exists(obs_ds_path(private$.data_dir))) {
+        unlink(obs_ds_path(private$.data_dir), recursive = TRUE)
+      }
+      invisible(NULL)
     }
   )
 )
