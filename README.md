@@ -163,6 +163,29 @@ Evaluation$new(
 
 ---
 
+#### `plot_comparison()`
+
+Generates a scatter plot comparing the **rRMSE of the new version vs. the reference version**, one point per variable × USM combination. Points are colour-coded by regression status:
+
+| Colour | Status | Condition |
+|--------|--------|-----------|
+| 🔴 Red | Critical | ratio ≥ `percentage` % |
+| 🟠 Orange | Warning | 0 % < ratio < `percentage` % |
+| 🟢 Green | Improved | ratio ≤ 0 % |
+
+A diagonal line (slope = 1) marks perfect parity; a dashed line (slope = 1 + `percentage`/100) marks the deterioration threshold. Variable names are displayed as repelled labels.
+
+```r
+ws <- EvalWorkspace$new("eval_workspace/")
+
+ws$get_species_comparison(species = "wheat", percentage = 5)$
+  plot_comparison("outputs/rmse_comparison_wheat.png")
+```
+
+The plot is saved as a PNG file at the path provided to `output_path`. `get_species_comparison()` returns `NULL` if no comparison data is available for the requested species (i.e. no reference version was set during evaluation).
+
+---
+
 #### `export_stats_to_csv()`
 
 Exports the evaluation statistics to CSV files in `output_dir`:
@@ -266,7 +289,7 @@ Evaluation$new(config)$run()
 # 3. Export statistics and deteriorated USMs to CSV
 export_stats_to_csv(config)
 
-# 5. Check water and nitrogen balance closure
+# 4. Check water and nitrogen balance closure
 BalanceClosureTest$new(config)$run()
 ```
 
