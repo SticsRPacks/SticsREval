@@ -238,6 +238,11 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
         dplyr::distinct(.data$situation) |>
         dplyr::pull("situation")
     },
+    #' @description
+    #' Save the association between species and USMs
+    #' @param species_usms a dataframe with two columns: situation and species
+    #' the situation column should contain the USM and the species column should
+    #' contain the associated species
     save_species_usm = function(species_usms) {
       private$.writer$write_dataset(
         species_usms,
@@ -640,6 +645,13 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
           partitioning = c("version", "species")
         )
     },
+    #' @description
+    #' Clean up the evaluation workspace by removing the sim and obs datasets.
+    #' This function is used to clean up the evaluation workspace after the
+    #' evaluation is done, to free up space. This function will remove the sim and
+    #' obs datasets from the evaluation workspace, but will keep the statistics and
+    #' comparison datasets, as well as the metadata. This allows to keep the results
+    #' of the evaluation, while freeing up space by removing the sim and obs datasets.
     cleanup = function() {
       if (dir.exists(sim_ds_path(private$.data_dir))) {
         unlink(sim_ds_path(private$.data_dir), recursive = TRUE)
