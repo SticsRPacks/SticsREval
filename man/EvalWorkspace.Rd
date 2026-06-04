@@ -46,7 +46,8 @@ ws <- EvalWorkspace$new(
     \item \href{#method-EvalWorkspace-set_version}{\code{EvalWorkspace$set_version()}}
     \item \href{#method-EvalWorkspace-get_version}{\code{EvalWorkspace$get_version()}}
     \item \href{#method-EvalWorkspace-remove_init_obs}{\code{EvalWorkspace$remove_init_obs()}}
-    \item \href{#method-EvalWorkspace-cleanup}{\code{EvalWorkspace$cleanup()}}
+    \item \href{#method-EvalWorkspace-remove_all_sim}{\code{EvalWorkspace$remove_all_sim()}}
+    \item \href{#method-EvalWorkspace-remove_all_obs}{\code{EvalWorkspace$remove_all_obs()}}
     \item \href{#method-EvalWorkspace-clone}{\code{EvalWorkspace$clone()}}
   }
 }
@@ -650,18 +651,25 @@ This function will replace the initial observations by NA in the dataset.
 }
 
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-EvalWorkspace-cleanup"></a>}}
-\if{latex}{\out{\hypertarget{method-EvalWorkspace-cleanup}{}}}
-\subsection{\code{EvalWorkspace$cleanup()}}{
-  Clean up the evaluation workspace by removing the sim and obs datasets.
-This function is used to clean up the evaluation workspace after the
-evaluation is done, to free up space. This function will remove the sim and
-obs datasets from the evaluation workspace, but will keep the statistics and
-comparison datasets, as well as the metadata. This allows to keep the results
-of the evaluation, while freeing up space by removing the sim and obs datasets.
+\if{html}{\out{<a id="method-EvalWorkspace-remove_all_sim"></a>}}
+\if{latex}{\out{\hypertarget{method-EvalWorkspace-remove_all_sim}{}}}
+\subsection{\code{EvalWorkspace$remove_all_sim()}}{
+  Remove all the simulations from the evaluation workspace
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
-    \preformatted{EvalWorkspace$cleanup()}
+    \preformatted{EvalWorkspace$remove_all_sim()}
+    \if{html}{\out{</div>}}
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-EvalWorkspace-remove_all_obs"></a>}}
+\if{latex}{\out{\hypertarget{method-EvalWorkspace-remove_all_obs}{}}}
+\subsection{\code{EvalWorkspace$remove_all_obs()}}{
+  Remove all the observations from the evaluation workspace
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{EvalWorkspace$remove_all_obs()}
     \if{html}{\out{</div>}}
   }
 }

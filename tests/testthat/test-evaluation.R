@@ -54,8 +54,7 @@ make_fake_workspace <- function() {
     get_rmse_per_usm = function(...) data.frame(),
     get_stats = function(...) data.frame(),
     save_deteriorated_usm = function(...) {},
-    save_species_comparison = function(...) {},
-    cleanup = function(...) {}
+    save_species_comparison = function(...) {}
   )
 }
 
