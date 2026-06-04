@@ -646,17 +646,16 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
         )
     },
     #' @description
-    #' Clean up the evaluation workspace by removing the sim and obs datasets.
-    #' This function is used to clean up the evaluation workspace after the
-    #' evaluation is done, to free up space. This function will remove the sim
-    #' and obs datasets from the evaluation workspace, but will keep the
-    #' statistics and comparison datasets, as well as the metadata. This allows
-    #' to keep the results of the evaluation, while freeing up space by removing
-    #' the sim and obs datasets.
-    cleanup = function() {
+    #' Remove all the simulations from the evaluation workspace
+    remove_all_sim = function() {
       if (dir.exists(sim_ds_path(private$.data_dir))) {
         unlink(sim_ds_path(private$.data_dir), recursive = TRUE)
       }
+      invisible(NULL)
+    },
+    #' @description
+    #' Remove all the observations from the evaluation workspace
+    remove_all_obs = function() {
       if (dir.exists(obs_ds_path(private$.data_dir))) {
         unlink(obs_ds_path(private$.data_dir), recursive = TRUE)
       }
