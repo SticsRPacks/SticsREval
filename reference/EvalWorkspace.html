@@ -83,7 +83,8 @@
 <li><p><a href="#method-EvalWorkspace-set_version"><code>EvalWorkspace$set_version()</code></a></p></li>
 <li><p><a href="#method-EvalWorkspace-get_version"><code>EvalWorkspace$get_version()</code></a></p></li>
 <li><p><a href="#method-EvalWorkspace-remove_init_obs"><code>EvalWorkspace$remove_init_obs()</code></a></p></li>
-<li><p><a href="#method-EvalWorkspace-cleanup"><code>EvalWorkspace$cleanup()</code></a></p></li>
+<li><p><a href="#method-EvalWorkspace-remove_all_sim"><code>EvalWorkspace$remove_all_sim()</code></a></p></li>
+<li><p><a href="#method-EvalWorkspace-remove_all_obs"><code>EvalWorkspace$remove_all_obs()</code></a></p></li>
 <li><p><a href="#method-EvalWorkspace-clone"><code>EvalWorkspace$clone()</code></a></p></li>
 </ul></div><p></p><hr><a id="method-EvalWorkspace-initialize"></a><div class="section">
 <h3 id="evalworkspace-new-"><code>EvalWorkspace$new()</code><a class="anchor" aria-label="anchor" href="#evalworkspace-new-"></a></h3>
@@ -636,16 +637,20 @@ This function will replace the initial observations by NA in the dataset.</p><di
 
 </div>
 
-<p></p><hr><a id="method-EvalWorkspace-cleanup"></a><div class="section">
-<h3 id="evalworkspace-cleanup-"><code>EvalWorkspace$cleanup()</code><a class="anchor" aria-label="anchor" href="#evalworkspace-cleanup-"></a></h3>
-<p>Clean up the evaluation workspace by removing the sim and obs datasets.
-This function is used to clean up the evaluation workspace after the
-evaluation is done, to free up space. This function will remove the sim and
-obs datasets from the evaluation workspace, but will keep the statistics and
-comparison datasets, as well as the metadata. This allows to keep the results
-of the evaluation, while freeing up space by removing the sim and obs datasets.</p><div class="section">
+<p></p><hr><a id="method-EvalWorkspace-remove_all_sim"></a><div class="section">
+<h3 id="evalworkspace-remove-all-sim-"><code>EvalWorkspace$remove_all_sim()</code><a class="anchor" aria-label="anchor" href="#evalworkspace-remove-all-sim-"></a></h3>
+<p>Remove all the simulations from the evaluation workspace</p><div class="section">
 <h4 id="usage-28">Usage<a class="anchor" aria-label="anchor" href="#usage-28"></a></h4>
-<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">EvalWorkspace</span><span class="op">$</span><span class="fu">cleanup</span><span class="op">(</span><span class="op">)</span></span></code></pre></div><p></p></div>
+<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">EvalWorkspace</span><span class="op">$</span><span class="fu">remove_all_sim</span><span class="op">(</span><span class="op">)</span></span></code></pre></div><p></p></div>
+</div>
+
+</div>
+
+<p></p><hr><a id="method-EvalWorkspace-remove_all_obs"></a><div class="section">
+<h3 id="evalworkspace-remove-all-obs-"><code>EvalWorkspace$remove_all_obs()</code><a class="anchor" aria-label="anchor" href="#evalworkspace-remove-all-obs-"></a></h3>
+<p>Remove all the observations from the evaluation workspace</p><div class="section">
+<h4 id="usage-29">Usage<a class="anchor" aria-label="anchor" href="#usage-29"></a></h4>
+<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">EvalWorkspace</span><span class="op">$</span><span class="fu">remove_all_obs</span><span class="op">(</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div>
 
 </div>
@@ -653,7 +658,7 @@ of the evaluation, while freeing up space by removing the sim and obs datasets.<
 <p></p><hr><a id="method-EvalWorkspace-clone"></a><div class="section">
 <h3 id="evalworkspace-clone-"><code>EvalWorkspace$clone()</code><a class="anchor" aria-label="anchor" href="#evalworkspace-clone-"></a></h3>
 <p>The objects of this class are cloneable with this method.</p><div class="section">
-<h4 id="usage-29">Usage<a class="anchor" aria-label="anchor" href="#usage-29"></a></h4>
+<h4 id="usage-30">Usage<a class="anchor" aria-label="anchor" href="#usage-30"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">EvalWorkspace</span><span class="op">$</span><span class="fu">clone</span><span class="op">(</span>deep <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div><p></p><div class="section">
 <h4 id="arguments-23">Arguments<a class="anchor" aria-label="anchor" href="#arguments-23"></a></h4>
