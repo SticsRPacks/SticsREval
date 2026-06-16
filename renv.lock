@@ -222,11 +222,11 @@
       "Author": "Patrice Lecharpentier [aut, cre] (ORCID: <https://orcid.org/0000-0002-4044-4322>), Remi Vezy [aut] (ORCID: <https://orcid.org/0000-0002-0808-1461>), Samuel Buis [aut] (ORCID: <https://orcid.org/0000-0002-8676-5447>), Michel Giner [aut] (ORCID: <https://orcid.org/0000-0002-9310-2377>), Julie Constantin [rev], Dominique Ripoche [rev], Marie Launay [rev], Christine Le Bas [rev], Alain Mollier [rev]",
       "Maintainer": "Patrice Lecharpentier <patrice.lecharpentier@inrae.fr>",
       "RemoteType": "github",
-      "RemoteHost": "api.github.com",
       "RemoteUsername": "SticsRPacks",
       "RemoteRepo": "SticsOnR",
       "RemoteRef": "main",
-      "RemoteSha": "bfc45b0c0823244422ed29b3da38f0dc9cf15d8f"
+      "RemoteSha": "33f630fb09d6998416283c4dafa3fb1591423edf",
+      "RemoteHost": "api.github.com"
     },
     "SticsRFiles": {
       "Package": "SticsRFiles",
@@ -658,7 +658,7 @@
     },
     "clipr": {
       "Package": "clipr",
-      "Version": "0.8.0",
+      "Version": "0.8.1",
       "Source": "Repository",
       "Type": "Package",
       "Title": "Read and Write from the System Clipboard",
@@ -680,10 +680,10 @@
       "VignetteBuilder": "knitr",
       "Encoding": "UTF-8",
       "Language": "en-US",
-      "RoxygenNote": "7.1.2",
+      "RoxygenNote": "7.3.3",
       "SystemRequirements": "xclip (https://github.com/astrand/xclip) or xsel (http://www.vergenet.net/~conrad/software/xsel/) for accessing the X11 clipboard, or wl-clipboard (https://github.com/bugaevc/wl-clipboard) for systems using Wayland.",
       "NeedsCompilation": "no",
-      "Author": "Matthew Lincoln [aut, cre] (<https://orcid.org/0000-0002-4387-3384>), Louis Maddox [ctb], Steve Simpson [ctb], Jennifer Bryan [ctb]",
+      "Author": "Matthew Lincoln [aut, cre] (ORCID: <https://orcid.org/0000-0002-4387-3384>), Louis Maddox [ctb], Steve Simpson [ctb], Jennifer Bryan [ctb]",
       "Maintainer": "Matthew Lincoln <matthew.d.lincoln@gmail.com>",
       "Repository": "CRAN"
     },
@@ -2314,7 +2314,7 @@
     },
     "openssl": {
       "Package": "openssl",
-      "Version": "2.4.1",
+      "Version": "2.4.2",
       "Source": "Repository",
       "Type": "Package",
       "Title": "Toolkit for Encryption, Signatures and Certificates Based on OpenSSL",
@@ -2338,8 +2338,8 @@
         "jose",
         "sodium"
       ],
-      "RoxygenNote": "7.3.2",
       "Encoding": "UTF-8",
+      "Config/roxygen2/version": "8.0.0",
       "NeedsCompilation": "yes",
       "Author": "Jeroen Ooms [aut, cre] (ORCID: <https://orcid.org/0000-0002-4035-0289>), Oliver Keyes [ctb]",
       "Maintainer": "Jeroen Ooms <jeroenooms@gmail.com>",
@@ -3048,7 +3048,7 @@
     },
     "rstudioapi": {
       "Package": "rstudioapi",
-      "Version": "0.18.0",
+      "Version": "0.19.0",
       "Source": "Repository",
       "Title": "Safely Access the RStudio API",
       "Description": "Access the RStudio API (if available) and provide informative error messages when it's not.",
@@ -3057,7 +3057,6 @@
       "License": "MIT + file LICENSE",
       "URL": "https://rstudio.github.io/rstudioapi/, https://github.com/rstudio/rstudioapi",
       "BugReports": "https://github.com/rstudio/rstudioapi/issues",
-      "RoxygenNote": "7.3.3",
       "Suggests": [
         "testthat",
         "knitr",
@@ -3066,10 +3065,12 @@
         "covr",
         "curl",
         "jsonlite",
+        "R6",
         "withr"
       ],
       "VignetteBuilder": "knitr",
       "Encoding": "UTF-8",
+      "Config/roxygen2/version": "8.0.0",
       "NeedsCompilation": "no",
       "Author": "Kevin Ushey [aut, cre], JJ Allaire [aut], Hadley Wickham [aut], Gary Ritchie [aut], RStudio [cph]",
       "Repository": "CRAN"
@@ -3476,7 +3477,7 @@
     },
     "tinytex": {
       "Package": "tinytex",
-      "Version": "0.59",
+      "Version": "0.60",
       "Source": "Repository",
       "Type": "Package",
       "Title": "Helper Functions to Install and Maintain TeX Live, and Compile LaTeX Documents",
@@ -3750,7 +3751,7 @@
     },
     "xfun": {
       "Package": "xfun",
-      "Version": "0.57",
+      "Version": "0.58",
       "Source": "Repository",
       "Type": "Package",
       "Title": "Supporting Functions for Packages Maintained by 'Yihui Xie'",
@@ -3789,8 +3790,8 @@
       "URL": "https://github.com/yihui/xfun",
       "BugReports": "https://github.com/yihui/xfun/issues",
       "Encoding": "UTF-8",
-      "RoxygenNote": "7.3.3",
       "VignetteBuilder": "litedown",
+      "Config/roxygen2/version": "8.0.0",
       "NeedsCompilation": "yes",
       "Author": "Yihui Xie [aut, cre, cph] (ORCID: <https://orcid.org/0000-0003-0645-5666>, URL: https://yihui.org), Wush Wu [ctb], Daijiang Li [ctb], Xianying Tan [ctb], Salim Brüggemann [ctb] (ORCID: <https://orcid.org/0000-0002-5329-5987>), Christophe Dervieux [ctb]",
       "Maintainer": "Yihui Xie <xie@yihui.name>",
