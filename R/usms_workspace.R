@@ -64,8 +64,11 @@ USMSWorkspace <- R6::R6Class("USMSWorkspace", # nolint: object_name_linter
     },
 
     load_stics_version = function() {
-      v <- as.character(SticsOnR::get_version_number(private$config$stics_exe))
-      private$workspace$add_evaluated_version(v)
+      v <- SticsOnR::get_version_number(private$config$stics_exe)
+      if (is.na(v)) {
+        stop("Can't detect STICS version", call. = FALSE)
+      }
+      private$workspace$add_evaluated_version(as.character(v))
       v
     },
 
