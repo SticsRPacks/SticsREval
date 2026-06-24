@@ -22,7 +22,7 @@ the following datasets when available:
 \itemize{
 \item Species statistics (\code{species_stats.csv})
 \item Global statistics (\code{global_stats.csv})
-\item RMSE per USM (\code{RMSE_per_usm.csv})
+\item rRMSE per USM (\code{rRMSE_per_usm.csv})
 \item List of deteriorated USMs (\code{Deteriorated_USM.csv})
 }
 
@@ -35,7 +35,7 @@ The function:
 \item Creates the output directory if needed.
 \item Exports species statistics if available.
 \item Exports global statistics if available.
-\item Exports RMSE per USM if available.
+\item Exports rRMSE per USM if available.
 \item Exports deteriorated USM information if available.
 }
 }

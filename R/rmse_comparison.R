@@ -1,28 +1,28 @@
-RmseComparison <- R6::R6Class("RmseComparison", # nolint: object_name_linter
+RRmseComparison <- R6::R6Class("RRmseComparison", # nolint: object_name_linter
   private = list(
     data = NULL,
     percentage = NULL,
 
-    compare_rmse = function(species, ref_stats, new_stats) {
+    compare_rrmse = function(species, ref_stats, new_stats) {
       res <- new_stats |>
         dplyr::left_join(ref_stats, by = c("situation", "variable")) |>
         dplyr::mutate(
-          rmse_new = as.numeric(.data$rRMSE.x),
-          rmse_ref = as.numeric(.data$rRMSE.y)
+          rrmse_new = as.numeric(.data$rRMSE.x),
+          rrmse_ref = as.numeric(.data$rRMSE.y)
         ) |>
         dplyr::filter(
-          is.finite(.data$rmse_new), is.finite(.data$rmse_ref),
+          is.finite(.data$rrmse_new), is.finite(.data$rrmse_ref),
           !is.na(.data$variable), !is.na(.data$situation)
         ) |>
         dplyr::mutate(
           ratio   = round(
-            (abs(.data$rmse_new) - abs(.data$rmse_ref)) / abs(.data$rmse_ref) * 100, # nolint: line_length_linter
+            (abs(.data$rrmse_new) - abs(.data$rrmse_ref)) / abs(.data$rrmse_ref) * 100, # nolint: line_length_linter
             2
           )
         ) |>
         dplyr::filter(is.finite(.data$ratio)) |>
         dplyr::select(
-          "situation", "variable", "rmse_new", "rmse_ref", "ratio"
+          "situation", "variable", "rrmse_new", "rrmse_ref", "ratio"
         )
       if (!is.null(species)) {
         res <- dplyr::mutate(res, species = species)
@@ -63,7 +63,7 @@ RmseComparison <- R6::R6Class("RmseComparison", # nolint: object_name_linter
       } else if (
         !is.null(ref_stats) && !is.null(eval_stats)
       ) {
-        private$data <- private$compare_rmse(species, ref_stats, eval_stats) |>
+        private$data <- private$compare_rrmse(species, ref_stats, eval_stats) |>
           dplyr::arrange(dplyr::desc(.data$ratio)) |>
           dplyr::collect()
       } else {
@@ -116,12 +116,12 @@ RmseComparison <- R6::R6Class("RmseComparison", # nolint: object_name_linter
         ) |>
         ggplot2::ggplot(
           ggplot2::aes(
-            x = .data$rmse_ref,
-            y = .data$rmse_new,
+            x = .data$rrmse_ref,
+            y = .data$rrmse_new,
             color = .data$status,
             text = .data$variable
           ),
-          ggplot2::labs(x = "Ref RMSE", y = "New RMSE", color = "Status")
+          ggplot2::labs(x = "Ref rRMSE", y = "New rRMSE", color = "Status")
         ) +
         ggplot2::geom_point() +
         ggplot2::scale_color_manual(values = c(
@@ -159,7 +159,7 @@ RmseComparison <- R6::R6Class("RmseComparison", # nolint: object_name_linter
 )
 
 DeterioratedUSMComparison <- R6::R6Class("DeterioratedUSMComparison", # nolint: object_name_linter
-  inherit = RmseComparison,
+  inherit = RRmseComparison,
   public = list(
     initialize = function(
       percentage,

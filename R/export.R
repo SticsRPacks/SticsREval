@@ -17,7 +17,7 @@ prepare_output_dir <- function(output_dir) {
 #'
 #' - Species statistics (`species_stats.csv`)
 #' - Global statistics (`global_stats.csv`)
-#' - RMSE per USM (`RMSE_per_usm.csv`)
+#' - rRMSE per USM (`rRMSE_per_usm.csv`)
 #' - List of deteriorated USMs (`Deteriorated_USM.csv`)
 #'
 #' The data are retrieved from the evaluation workspace using dedicated helper
@@ -35,7 +35,7 @@ prepare_output_dir <- function(output_dir) {
 #'   \item Creates the output directory if needed.
 #'   \item Exports species statistics if available.
 #'   \item Exports global statistics if available.
-#'   \item Exports RMSE per USM if available.
+#'   \item Exports rRMSE per USM if available.
 #'   \item Exports deteriorated USM information if available.
 #' }
 #'
@@ -66,10 +66,10 @@ export_stats_to_csv <- function(config) {
       file.path(config$output_dir, "global_stats.csv")
     )
   }
-  rmse_per_usm <- eval_workspace$get_rmse_per_usm(species, TRUE)
-  if (!is.null(rmse_per_usm)) {
+  rrmse_per_usm <- eval_workspace$get_rrmse_per_usm(species, TRUE)
+  if (!is.null(rrmse_per_usm)) {
     safe_write_csv(
-      rmse_per_usm, file.path(config$output_dir, "RMSE_per_usm.csv")
+      rrmse_per_usm, file.path(config$output_dir, "rRMSE_per_usm.csv")
     )
   }
   deteriorated_usms <- eval_workspace$get_deteriorated_usm(

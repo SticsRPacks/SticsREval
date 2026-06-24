@@ -94,21 +94,21 @@ Evaluation <- R6::R6Class("Evaluation", # nolint: object_name_linter
           stats <- run_with_log_control(
             summary_method(splited_sim, obs = splited_obs)
           )
-          rmse_per_usm <- run_with_log_control(
+          rrmse_per_usm <- run_with_log_control(
             summary_method(
               splited_sim, obs = splited_obs,
               all_situations = FALSE, stats = "rRMSE"
             )
           )
-          list(species = spec, stats = stats, rmse_per_usm = rmse_per_usm)
+          list(species = spec, stats = stats, rrmse_per_usm = rrmse_per_usm)
         }
       )
 
       for (res in results) {
         private$logger$info("Saving statistics for ", res$species)
         private$workspace$save_stats(res$species, res$stats)
-        private$logger$info("Saving RMSE per USM for species ", res$species)
-        private$workspace$save_rmse_per_usm(res$species, res$rmse_per_usm)
+        private$logger$info("Saving rRMSE per USM for species ", res$species)
+        private$workspace$save_rrmse_per_usm(res$species, res$rrmse_per_usm)
       }
     },
 
@@ -143,8 +143,11 @@ Evaluation <- R6::R6Class("Evaluation", # nolint: object_name_linter
       )
 
       for (spec in species) {
-        private$logger$info("Reading reference RMSE per USM for species ", spec)
-        ref_stats <- ref_workspace$get_rmse_per_usm(
+        private$logger$info(
+          "Reading reference rRMSE per USM for species ",
+          spec
+        )
+        ref_stats <- ref_workspace$get_rrmse_per_usm(
           spec,
           usms = private$config$usms,
           var2exclude = private$config$var2exclude
@@ -152,12 +155,12 @@ Evaluation <- R6::R6Class("Evaluation", # nolint: object_name_linter
 
         if (is.null(ref_stats)) next
 
-        stats <- private$workspace$get_rmse_per_usm(
+        stats <- private$workspace$get_rrmse_per_usm(
           spec,
           usms = private$config$usms,
           var2exclude = private$config$var2exclude
         )
-        private$logger$info("Comparing RMSE per usm for species ", spec)
+        private$logger$info("Comparing rRMSE per usm for species ", spec)
         deteriorated_usm <- DeterioratedUSMComparison$new(
           species = spec,
           ref_stats = ref_stats,
@@ -187,14 +190,14 @@ Evaluation <- R6::R6Class("Evaluation", # nolint: object_name_linter
         if (is.null(stats)) {
           next
         }
-        private$logger$info("Comparing RMSE for species ", spec)
-        comparison <- RmseComparison$new(
+        private$logger$info("Comparing rRMSE for species ", spec)
+        comparison <- RRmseComparison$new(
           species = spec,
           ref_stats = ref_stats,
           eval_stats = stats,
           percentage = private$config$percentage
         )
-        private$logger$info("Saving RMSE comparison for species ", spec)
+        private$logger$info("Saving rRMSE comparison for species ", spec)
         private$workspace$save_species_comparison(comparison)
         private$logger$info("Species comparison saved for species ", spec)
       }
@@ -213,13 +216,13 @@ Evaluation <- R6::R6Class("Evaluation", # nolint: object_name_linter
       if (is.null(stats)) {
         return(invisible(NULL))
       }
-      private$logger$info("Comparing global RMSE")
-      comparison <- RmseComparison$new(
+      private$logger$info("Comparing global rRMSE")
+      comparison <- RRmseComparison$new(
         ref_stats = ref_stats,
         eval_stats = stats,
         percentage = private$config$percentage
       )
-      private$logger$info("Saving global RMSE comparison")
+      private$logger$info("Saving global rRMSE comparison")
       private$workspace$save_global_comparison(comparison)
       private$logger$info("Global comparison saved")
     },

@@ -26,10 +26,13 @@ test_that("path helpers return correct subpaths", {
   expect_identical(sim_ds_path("ws"), file.path("ws", "sim"))
   expect_identical(obs_ds_path("ws"), file.path("ws", "obs"))
   expect_identical(stats_ds_path("ws"), file.path("ws", "stats"))
-  expect_identical(rmse_per_usm_ds_path("ws"), file.path("ws", "RMSE_per_USM"))
+  expect_identical(
+    rrmse_per_usm_ds_path("ws"),
+    file.path("ws", "rRMSE_per_USM")
+  )
   expect_identical(
     deteriorated_ds_path("ws"),
-    file.path("ws", "Deteriorated_RMSE_per_usm")
+    file.path("ws", "Deteriorated_rRMSE_per_usm")
   )
   expect_identical(comparison_ds_path("ws"), file.path("ws", "comparison"))
   expect_identical(metadata_ds_path("ws"), file.path("ws", "metadata.parquet"))
@@ -240,56 +243,56 @@ test_that("get_stats filters by version", {
   expect_identical(result_v1$RMSE, 0.5)
 })
 
-# ---- save_rmse_per_usm / get_rmse_per_usm ----
+# ---- save_rrmse_per_usm / get_rrmse_per_usm ----
 
-test_that("save_rmse_per_usm and get_rmse_per_usm round-trip correctly", {
+test_that("save_rrmse_per_usm and get_rrmse_per_usm round-trip correctly", {
   dir <- withr::local_tempdir()
   ws <- make_ws(dir, version = "v1")
 
-  rmse <- data.frame(
+  rrmse <- data.frame(
     situation = "usm1", variable = "LAI", rRMSE = 0.1,
     stringsAsFactors = FALSE
   )
-  ws$save_rmse_per_usm("wheat", rmse)
+  ws$save_rrmse_per_usm("wheat", rrmse)
 
-  result <- ws$get_rmse_per_usm("wheat", collect = TRUE)
+  result <- ws$get_rrmse_per_usm("wheat", collect = TRUE)
   expect_identical(result$situation, "usm1")
   expect_identical(result$version, "v1")
 })
 
-test_that("get_rmse_per_usm returns NULL when no file exists", {
+test_that("get_rrmse_per_usm returns NULL when no file exists", {
   dir <- withr::local_tempdir()
   ws <- make_ws(dir, version = "v1")
-  expect_null(ws$get_rmse_per_usm("wheat"))
+  expect_null(ws$get_rrmse_per_usm("wheat"))
 })
 
-test_that("get_rmse_per_usm filters by usms", {
+test_that("get_rrmse_per_usm filters by usms", {
   dir <- withr::local_tempdir()
   ws <- make_ws(dir, version = "v1")
 
-  rmse <- data.frame(
+  rrmse <- data.frame(
     situation = c("usm1", "usm2"),
     variable = "LAI",
     rRMSE = c(0.1, 0.9),
     stringsAsFactors = FALSE
   )
-  ws$save_rmse_per_usm("wheat", rmse)
+  ws$save_rrmse_per_usm("wheat", rrmse)
 
-  result <- ws$get_rmse_per_usm("wheat", collect = TRUE, usms = "usm1")
+  result <- ws$get_rrmse_per_usm("wheat", collect = TRUE, usms = "usm1")
   expect_identical(result$situation, "usm1")
 })
 
-test_that("get_rmse_per_usm excludes variables in var2exclude", {
+test_that("get_rrmse_per_usm excludes variables in var2exclude", {
   dir <- withr::local_tempdir()
   ws <- make_ws(dir, version = "v1")
 
-  rmse <- data.frame(
+  rrmse <- data.frame(
     situation = "usm1", LAI = 0.1, MASEC = 0.5,
     stringsAsFactors = FALSE
   )
-  ws$save_rmse_per_usm("wheat", rmse)
+  ws$save_rrmse_per_usm("wheat", rrmse)
 
-  result <- ws$get_rmse_per_usm("wheat", collect = TRUE, var2exclude = "MASEC")
+  result <- ws$get_rrmse_per_usm("wheat", collect = TRUE, var2exclude = "MASEC")
   expect_false("MASEC" %in% names(result))
   expect_true("LAI" %in% names(result))
 })
