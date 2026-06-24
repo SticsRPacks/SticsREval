@@ -354,40 +354,40 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
       )
     },
     #' @description
-    #' Save the RMSE per USM
+    #' Save the rRMSE per USM
     #'
     #' @param species the species
-    #' @param rmse_per_usm the RMSE per USMs
-    save_rmse_per_usm = function(species, rmse_per_usm) {
+    #' @param rrmse_per_usm the rRMSE per USMs
+    save_rrmse_per_usm = function(species, rrmse_per_usm) {
       private$.writer$write_dataset(
-        data = dplyr::mutate(rmse_per_usm, species = species),
-        path = rmse_per_usm_ds_path(private$.data_dir),
+        data = dplyr::mutate(rrmse_per_usm, species = species),
+        path = rrmse_per_usm_ds_path(private$.data_dir),
         partitioning = c("version", "species")
       )
     },
     #' @description
-    #' Return the RMSE per USM for a species
+    #' Return the rRMSE per USM for a species
     #'
     #' @param species Optional, the species
     #' @param collect Optional, if `TRUE` a dataframe will be returned,
     #'  otherwise a lazy arrow data object will be returned
-    #' @param usms Optional, if defined filter the RMSE per USM with these
+    #' @param usms Optional, if defined filter the rRMSE per USM with these
     #'  USMs
     #' @param var2exclude Optional, if defined remove the variables from
-    #'  the returned RMSE per USM
+    #'  the returned rRMSE per USM
     #'
-    #' @returns the RMSE per USM for a species, as a dataframe if collect is
+    #' @returns the rRMSE per USM for a species, as a dataframe if collect is
     #'  `TRUE`, a lazy arrow data object otherwise
-    get_rmse_per_usm = function(
+    get_rrmse_per_usm = function(
       species = NULL, collect = FALSE, usms = NULL, var2exclude = NULL
     ) {
       private$.reader$read(
-        path = rmse_per_usm_ds_path(private$.data_dir),
+        path = rrmse_per_usm_ds_path(private$.data_dir),
         species = species,
         usms = usms,
         var2exclude = var2exclude,
         collect = collect,
-        warn_msg = paste("No RMSE for", species)
+        warn_msg = paste("No rRMSE for", species)
       )
     },
     #' @description
@@ -446,7 +446,7 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
     #' @param species the species
     #' @param percentage the percentage
     #'
-    #' @returns an RmseComparison object
+    #' @returns an RRmseComparison object
     get_species_comparison = function(
       species, percentage
     ) {
@@ -457,7 +457,7 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
         warn_msg = paste("No comparison for", species)
       )
       if (is.null(res)) return(NULL)
-      RmseComparison$new(
+      RRmseComparison$new(
         data = res,
         percentage = percentage
       )
@@ -467,7 +467,7 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
     #'
     #' @param percentage the percentage
     #'
-    #' @returns an RmseComparison object
+    #' @returns an RRmseComparison object
     get_global_comparison = function(percentage) {
       res <- private$.reader$read(
         path = global_comparison_ds_path(private$.data_dir),
@@ -475,7 +475,7 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
         warn_msg = "No global comparison found"
       )
       if (is.null(res)) return(NULL)
-      RmseComparison$new(
+      RRmseComparison$new(
         data = res,
         percentage = percentage
       )
@@ -680,12 +680,12 @@ stats_ds_path <- function(data_dir) {
   file.path(data_dir, "stats")
 }
 
-rmse_per_usm_ds_path <- function(data_dir) {
-  file.path(data_dir, "RMSE_per_USM")
+rrmse_per_usm_ds_path <- function(data_dir) {
+  file.path(data_dir, "rRMSE_per_USM")
 }
 
 deteriorated_ds_path <- function(data_dir) {
-  file.path(data_dir, "Deteriorated_RMSE_per_usm")
+  file.path(data_dir, "Deteriorated_rRMSE_per_usm")
 }
 
 global_comparison_ds_path <- function(data_dir) {

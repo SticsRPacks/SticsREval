@@ -22,7 +22,7 @@ make_comparison <- function(
   percentage = 10, species = "wheat",
   ref = make_ref_stats(), eval = make_eval_stats()
 ) {
-  RmseComparison$new(
+  RRmseComparison$new(
     percentage = percentage,
     species = species,
     ref_stats = ref,
@@ -42,18 +42,18 @@ test_that("initializes from precomputed data", {
     species = "wheat",
     situation = "usm1",
     variable = "LAI",
-    rmse_new = 0.12,
-    rmse_ref = 0.10,
+    rrmse_new = 0.12,
+    rrmse_ref = 0.10,
     ratio = 20.0,
     stringsAsFactors = FALSE
   )
-  cmp <- RmseComparison$new(percentage = 10, data = data)
+  cmp <- RRmseComparison$new(percentage = 10, data = data)
   expect_equal(cmp$get_data()$ratio, 20.0)
 })
 
 test_that("errors when neither data nor species/ref/eval provided", { # nolint: nonportable_path_linter
   expect_error(
-    RmseComparison$new(percentage = 10),
+    RRmseComparison$new(percentage = 10),
     "`data`, or `ref_stats` \\+ `eval_stats` must be defined" # nolint: nonportable_path_linter
   )
 })
@@ -76,7 +76,7 @@ test_that("computes ratio correctly", {
     stringsAsFactors = FALSE
   )
 
-  cmp <- RmseComparison$new(
+  cmp <- RRmseComparison$new(
     percentage = 10, species = "wheat",
     ref_stats = ref, eval_stats = eval
   )
@@ -96,7 +96,7 @@ test_that("filters out non-finite and NA rows", {
     rRMSE = c(0.12, 0.20, 0.15),
     stringsAsFactors = FALSE
   )
-  cmp <- RmseComparison$new(
+  cmp <- RRmseComparison$new(
     percentage = 10, species = "wheat",
     ref_stats = ref, eval_stats = eval
   )
@@ -121,7 +121,7 @@ test_that("warning_vars returns variables between 0 and percentage", {
     situation = "usm1", variable = "LAI", rRMSE = 0.105,
     stringsAsFactors = FALSE
   )
-  cmp <- RmseComparison$new(
+  cmp <- RRmseComparison$new(
     percentage = 10, species = "wheat",
     ref_stats = ref, eval_stats = eval
   )
@@ -145,7 +145,7 @@ test_that("is_empty returns TRUE when no rows", {
     situation = "usm2", variable = "LAI", rRMSE = 0.12,
     stringsAsFactors = FALSE
   )
-  cmp <- RmseComparison$new(
+  cmp <- RRmseComparison$new(
     percentage = 10, species = "wheat",
     ref_stats = ref, eval_stats = eval
   )
@@ -162,7 +162,7 @@ test_that("is_empty returns FALSE when rows exist", {
 test_that("get_data returns expected columns", {
   cmp <- make_comparison()
   expected_cols <- c(
-    "situation", "variable", "rmse_new", "rmse_ref", "ratio", "species"
+    "situation", "variable", "rrmse_new", "rrmse_ref", "ratio", "species"
   )
   expect_named(cmp$get_data(), expected_cols)
 })

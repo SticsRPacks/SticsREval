@@ -30,8 +30,8 @@ ws <- EvalWorkspace$new(
     \item \href{#method-EvalWorkspace-save_global_stats}{\code{EvalWorkspace$save_global_stats()}}
     \item \href{#method-EvalWorkspace-get_stats}{\code{EvalWorkspace$get_stats()}}
     \item \href{#method-EvalWorkspace-get_global_stats}{\code{EvalWorkspace$get_global_stats()}}
-    \item \href{#method-EvalWorkspace-save_rmse_per_usm}{\code{EvalWorkspace$save_rmse_per_usm()}}
-    \item \href{#method-EvalWorkspace-get_rmse_per_usm}{\code{EvalWorkspace$get_rmse_per_usm()}}
+    \item \href{#method-EvalWorkspace-save_rrmse_per_usm}{\code{EvalWorkspace$save_rrmse_per_usm()}}
+    \item \href{#method-EvalWorkspace-get_rrmse_per_usm}{\code{EvalWorkspace$get_rrmse_per_usm()}}
     \item \href{#method-EvalWorkspace-save_deteriorated_usm}{\code{EvalWorkspace$save_deteriorated_usm()}}
     \item \href{#method-EvalWorkspace-get_deteriorated_usm}{\code{EvalWorkspace$get_deteriorated_usm()}}
     \item \href{#method-EvalWorkspace-save_species_comparison}{\code{EvalWorkspace$save_species_comparison()}}
@@ -328,33 +328,33 @@ a lazy arrow data object otherwise
 }
 
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-EvalWorkspace-save_rmse_per_usm"></a>}}
-\if{latex}{\out{\hypertarget{method-EvalWorkspace-save_rmse_per_usm}{}}}
-\subsection{\code{EvalWorkspace$save_rmse_per_usm()}}{
-  Save the RMSE per USM
+\if{html}{\out{<a id="method-EvalWorkspace-save_rrmse_per_usm"></a>}}
+\if{latex}{\out{\hypertarget{method-EvalWorkspace-save_rrmse_per_usm}{}}}
+\subsection{\code{EvalWorkspace$save_rrmse_per_usm()}}{
+  Save the rRMSE per USM
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
-    \preformatted{EvalWorkspace$save_rmse_per_usm(species, rmse_per_usm)}
+    \preformatted{EvalWorkspace$save_rrmse_per_usm(species, rrmse_per_usm)}
     \if{html}{\out{</div>}}
   }
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
       \item{\code{species}}{the species}
-      \item{\code{rmse_per_usm}}{the RMSE per USMs}
+      \item{\code{rrmse_per_usm}}{the rRMSE per USMs}
     }
     \if{html}{\out{</div>}}
   }
 }
 
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-EvalWorkspace-get_rmse_per_usm"></a>}}
-\if{latex}{\out{\hypertarget{method-EvalWorkspace-get_rmse_per_usm}{}}}
-\subsection{\code{EvalWorkspace$get_rmse_per_usm()}}{
-  Return the RMSE per USM for a species
+\if{html}{\out{<a id="method-EvalWorkspace-get_rrmse_per_usm"></a>}}
+\if{latex}{\out{\hypertarget{method-EvalWorkspace-get_rrmse_per_usm}{}}}
+\subsection{\code{EvalWorkspace$get_rrmse_per_usm()}}{
+  Return the rRMSE per USM for a species
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
-    \preformatted{EvalWorkspace$get_rmse_per_usm(
+    \preformatted{EvalWorkspace$get_rrmse_per_usm(
   species = NULL,
   collect = FALSE,
   usms = NULL,
@@ -368,15 +368,15 @@ a lazy arrow data object otherwise
       \item{\code{species}}{Optional, the species}
       \item{\code{collect}}{Optional, if \code{TRUE} a dataframe will be returned,
 otherwise a lazy arrow data object will be returned}
-      \item{\code{usms}}{Optional, if defined filter the RMSE per USM with these
+      \item{\code{usms}}{Optional, if defined filter the rRMSE per USM with these
 USMs}
       \item{\code{var2exclude}}{Optional, if defined remove the variables from
-the returned RMSE per USM}
+the returned rRMSE per USM}
     }
     \if{html}{\out{</div>}}
   }
   \subsection{Returns}{
-    the RMSE per USM for a species, as a dataframe if collect is
+    the rRMSE per USM for a species, as a dataframe if collect is
 \code{TRUE}, a lazy arrow data object otherwise
   }
 }
@@ -480,7 +480,7 @@ the returned RMSE per USM}
     \if{html}{\out{</div>}}
   }
   \subsection{Returns}{
-    an RmseComparison object
+    an RRmseComparison object
   }
 }
 
@@ -502,7 +502,7 @@ the returned RMSE per USM}
     \if{html}{\out{</div>}}
   }
   \subsection{Returns}{
-    an RmseComparison object
+    an RRmseComparison object
   }
 }
 

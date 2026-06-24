@@ -56,7 +56,7 @@ test_that("export_stats_to_csv runs with minimal valid config", {
       get_species = function() "wheat",
       get_stats = function(...) data.frame(a = 1),
       get_global_stats = function(...) data.frame(a = 100),
-      get_rmse_per_usm = function(...) data.frame(b = 2),
+      get_rrmse_per_usm = function(...) data.frame(b = 2),
       get_deteriorated_usm = function(...) {
         list(get_data = function() data.frame(c = 3))
       }
@@ -80,7 +80,7 @@ test_that("export_stats_to_csv runs with minimal valid config", {
 
   expect_true(file.exists(file.path(tmp, "species_stats.csv")))
   expect_true(file.exists(file.path(tmp, "global_stats.csv")))
-  expect_true(file.exists(file.path(tmp, "RMSE_per_usm.csv")))
+  expect_true(file.exists(file.path(tmp, "rRMSE_per_usm.csv")))
   expect_true(file.exists(file.path(tmp, "Deteriorated_USM.csv")))
 })
 
@@ -106,7 +106,7 @@ test_that("export_stats_to_csv skips NULL datasets", {
       get_species = function() "wheat",
       get_stats = function(...) NULL,
       get_global_stats = function(...) NULL,
-      get_rmse_per_usm = function(...) NULL,
+      get_rrmse_per_usm = function(...) NULL,
       get_deteriorated_usm = function(...) {
         list(get_data = function() NULL)
       }

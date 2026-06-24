@@ -179,7 +179,7 @@ A diagonal line (slope = 1) marks perfect parity; a dashed line (slope = 1 + `pe
 ws <- EvalWorkspace$new("eval_workspace/")
 
 ws$get_species_comparison(species = "wheat", percentage = 5)$
-  plot_comparison("outputs/rmse_comparison_wheat.png")
+  plot_comparison("outputs/rrmse_comparison_wheat.png")
 ```
 
 The plot is saved as a PNG file at the path provided to `output_path`. `get_species_comparison()` returns `NULL` if no comparison data is available for the requested species (i.e. no reference version was set during evaluation).
@@ -194,7 +194,7 @@ Exports the evaluation statistics to CSV files in `output_dir`:
 |---|---|
 | `species_stats.csv` | Statistical metrics per species |
 | `global_stats.csv` | Global statistical criteria (RMSE, nRMSE, bias, R², etc.) |
-| `RMSE_per_usm.csv` | RMSE broken down per USM |
+| `rRMSE_per_usm.csv` | rRMSE broken down per USM |
 | `Deteriorated_USM.csv` | USMs with deteriorated performance vs. the reference version |
 
 ```r
@@ -258,9 +258,9 @@ ref_stats <- ws_ref$get_stats(species = "wheat")
 | `get_sim(species, usms, var2exclude)` | Return simulated data |
 | `get_obs(species, usms, var2exclude)` | Return observed data |
 | `get_stats(species)` | Return global evaluation statistics |
-| `get_rmse_per_usm(species)` | Return RMSE broken down per USM |
+| `get_rrmse_per_usm(species)` | Return rRMSE broken down per USM |
 | `get_deteriorated_usm(species, percentage)` | Return deteriorated USM comparison |
-| `get_species_comparison(species, percentage)` | Return RMSE comparison vs reference |
+| `get_species_comparison(species, percentage)` | Return rRMSE comparison vs reference |
 | `get_all_versions()` | List all evaluated STICS versions in the workspace |
 | `with_version(version)` | Return a new `EvalWorkspace` scoped to a specific version |
 
