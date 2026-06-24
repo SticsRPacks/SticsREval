@@ -26,7 +26,10 @@ test_that("path helpers return correct subpaths", {
   expect_identical(sim_ds_path("ws"), file.path("ws", "sim"))
   expect_identical(obs_ds_path("ws"), file.path("ws", "obs"))
   expect_identical(stats_ds_path("ws"), file.path("ws", "stats"))
-  expect_identical(rrmse_per_usm_ds_path("ws"), file.path("ws", "rRMSE_per_USM"))
+  expect_identical(
+    rrmse_per_usm_ds_path("ws"),
+    file.path("ws", "rRMSE_per_USM")
+  )
   expect_identical(
     deteriorated_ds_path("ws"),
     file.path("ws", "Deteriorated_rRMSE_per_usm")

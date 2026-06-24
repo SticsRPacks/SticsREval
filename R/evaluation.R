@@ -143,7 +143,10 @@ Evaluation <- R6::R6Class("Evaluation", # nolint: object_name_linter
       )
 
       for (spec in species) {
-        private$logger$info("Reading reference rRMSE per USM for species ", spec)
+        private$logger$info(
+          "Reading reference rRMSE per USM for species ",
+          spec
+        )
         ref_stats <- ref_workspace$get_rrmse_per_usm(
           spec,
           usms = private$config$usms,
