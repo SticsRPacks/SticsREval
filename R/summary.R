@@ -42,6 +42,7 @@ EvaluationSummary <- R6::R6Class("EvaluationSummary", # nolint: object_name_lint
       all_warn <- unique(unlist(lapply(comparisons, function(c) {
         if (length(c$warning_vars) > 0) c$get_data()$species[1]
       })))
+      all_warn <- setdiff(all_warn, all_crit)
       all_ok <- unique(unlist(lapply(comparisons, function(c) {
         if (length(c$critical_vars) == 0 && length(c$warning_vars) == 0) {
           c$get_data()$species[1]
