@@ -8,21 +8,22 @@ RRmseComparison <- R6::R6Class("RRmseComparison", # nolint: object_name_linter
         dplyr::left_join(ref_stats, by = c("situation", "variable")) |>
         dplyr::mutate(
           rrmse_new = as.numeric(.data$rRMSE.x),
-          rrmse_ref = as.numeric(.data$rRMSE.y)
+          rrmse_ref = as.numeric(.data$rRMSE.y),
+          n_obs = as.numeric(.data$n_obs.y)
         ) |>
         dplyr::filter(
           is.finite(.data$rrmse_new), is.finite(.data$rrmse_ref),
           !is.na(.data$variable), !is.na(.data$situation)
         ) |>
         dplyr::mutate(
-          ratio   = round(
+          ratio = round(
             (abs(.data$rrmse_new) - abs(.data$rrmse_ref)) / abs(.data$rrmse_ref) * 100, # nolint: line_length_linter
             2
           )
         ) |>
         dplyr::filter(is.finite(.data$ratio)) |>
         dplyr::select(
-          "situation", "variable", "rrmse_new", "rrmse_ref", "ratio"
+          "situation", "variable", "rrmse_new", "rrmse_ref", "ratio", "n_obs"
         )
       if (!is.null(species)) {
         res <- dplyr::mutate(res, species = species)
@@ -34,17 +35,20 @@ RRmseComparison <- R6::R6Class("RRmseComparison", # nolint: object_name_linter
   active = list(
     critical_vars = function() {
       private$data |>
-        dplyr::filter(.data$ratio >= private$percentage) |>
+        dplyr::filter(.data$ratio >= private$percentage, .data$n_obs > 10) |>
         dplyr::pull("variable")
     },
     warning_vars = function() {
       private$data |>
-        dplyr::filter(.data$ratio < private$percentage, .data$ratio > 0) |>
+        dplyr::filter(
+          .data$ratio < private$percentage, .data$ratio > 0,
+          .data$n_obs > 10
+        ) |>
         dplyr::pull("variable")
     },
     improved_vars = function() {
       private$data |>
-        dplyr::filter(.data$ratio <= 0) |>
+        dplyr::filter(.data$ratio <= 0, .data$n_obs > 10) |>
         dplyr::pull("variable")
     },
     is_empty = function() isTRUE(nrow(private$data) == 0)
