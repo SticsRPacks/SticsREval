@@ -76,29 +76,32 @@ RRmseComparison <- R6::R6Class("RRmseComparison", # nolint: object_name_linter
 
     log = function() {
       if (self$is_empty) return(invisible(self))
-      logger::log_info(strrep("-", 65))
+
       if (!is.null(private$data$species[1])) {
-        logger::log_info("Species: ", private$data$species[1])
+        cli::cli_rule(left = "Species: {private$data$species[1]}")
       }
-      logger::log_info("Total number of variables: ", nrow(private$data))
-      logger::log_info(
-        length(self$critical_vars),
-        " deteriorated variables (>={private$percentage}%): "
-      )
-      if (length(self$critical_vars) > 0)
-        logger::log_info(toString(self$critical_vars))
-      logger::log_info(
-        length(self$warning_vars),
-        " deteriorated variables (>0%, <{private$percentage}%): "
-      )
-      if (length(self$warning_vars) > 0)
-        logger::log_info(toString(self$warning_vars))
-      logger::log_info(
-        length(self$improved_vars), " improved variables (<=0%): "
-      )
-      if (length(self$improved_vars) > 0)
-        logger::log_info(toString(self$improved_vars))
-      logger::log_info(strrep("-", 65))
+
+      cli::cli_dl(c(
+        "Total variables" = "{nrow(private$data)}"
+      ))
+
+      n_crit <- length(self$critical_vars)
+      cli::cli_li("{.strong {n_crit} critical} (>= {private$percentage}%)")
+      if (n_crit > 0) {
+        cli::cli_text(cli::col_red("  {toString(self$critical_vars)}"))
+      }
+      n_warn <- length(self$warning_vars)
+      cli::cli_li("{.strong {n_warn} warning} (> 0%, < {private$percentage}%)")
+      if (n_warn > 0) {
+        cli::cli_text(cli::col_yellow("  {toString(self$warning_vars)}"))
+      }
+
+      n_imp <- length(self$improved_vars)
+      cli::cli_li("{.strong {n_imp} improved} (<= 0%)")
+      if (n_imp > 0) {
+        cli::cli_text(cli::col_green("  {toString(self$improved_vars)}"))
+      }
+
       invisible(self)
     },
 

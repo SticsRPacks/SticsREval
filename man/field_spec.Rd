@@ -37,3 +37,4 @@ A list of class "field_spec"
 \description{
 Describe a configuration field
 }
+\keyword{internal}

@@ -10,6 +10,8 @@
 #' @param validator Function. Custom validation: function(val) returns
 #'   TRUE if valid, or a character error message otherwise.
 #' @return A list of class "field_spec"
+#'
+#' @keywords internal
 field_spec <- function(
   default = NULL,
   type = NULL,
@@ -38,6 +40,8 @@ field_spec <- function(
 
 #' Sentinel for fields with no default value
 #' @return An object of class "required_field"
+#'
+#' @keywords internal
 required <- function() {
   req <- list()
   class(req) <- "required_field"
