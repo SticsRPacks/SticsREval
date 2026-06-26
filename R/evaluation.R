@@ -299,7 +299,7 @@ SpeciesEvaluation <- R6::R6Class("SpeciesEvaluation", # nolint: object_name_lint
           rrmse_per_usm <- run_with_log_control(
             summary_method(
               splited_sim, obs = splited_obs,
-              all_situations = FALSE, stats = "rRMSE"
+              all_situations = FALSE, stats = c("rRMSE", "n_obs")
             )
           )
           list(species = spec, stats = stats, rrmse_per_usm = rrmse_per_usm)
