@@ -58,36 +58,20 @@ make_fake_workspace <- function() {
   )
 }
 
-make_eval <- function(
+make_species_eval <- function(
   cfg,
   workspace = make_fake_workspace(),
   logger = make_fake_logger(),
   summary = make_fake_summary()
 ) {
-  Evaluation$new(cfg,
+  SpeciesEvaluation$new(cfg,
     workspace = workspace,
     backend = fake_backend,
-    logger = logger,
-    summary_class = summary
+    logger = logger
   )
 }
 
 # ---- Tests ----
-
-test_that("run executes full workflow", {
-  summary <- make_fake_summary()
-  eval <- make_eval(
-    make_base_cfg(reference_version = "v1"),
-    summary = summary
-  )
-  replace_private(eval, "init_workspace", function() {})
-  replace_private(eval, "evaluate_global", function() {})
-  replace_private(eval, "evaluate_species", function(...) {})
-
-  eval$run()
-
-  expect_true(summary$.env$called)
-})
 
 test_that("get_species_to_evaluate filters by species and usms", {
   workspace <- make_fake_workspace()
@@ -98,7 +82,7 @@ test_that("get_species_to_evaluate filters by species and usms", {
     character(0)
   }
 
-  eval <- make_eval(
+  eval <- make_species_eval(
     make_base_cfg(species = c("wheat", "corn"), usms = "usm1"),
     workspace = workspace
   )
@@ -112,19 +96,24 @@ test_that("run logs and rethrows error", {
   logger <- make_fake_logger()
   workspace <- make_fake_workspace()
 
-  eval <- make_eval(make_base_cfg(), workspace = workspace, logger = logger)
+  eval <- make_species_eval(
+    make_base_cfg(),
+    workspace = workspace,
+    logger = logger
+  )
   replace_private(
     eval,
-    "init_workspace",
-    function() stop("fail", call. = FALSE)
+    "get_species_to_evaluate",
+    function(...) {
+      stop("fail", call. = FALSE)
+    }
   )
-
   expect_error(eval$run(), "fail")
   expect_gt(length(logger$.env$error_calls), 0)
 })
 
 test_that("evaluate_species skips comparison if no reference_version", {
-  eval <- make_eval(make_base_cfg())
+  eval <- make_species_eval(make_base_cfg())
   replace_private(eval, "gen_species_stats", function(...) {})
   called <- new.env()
   called$flag <- FALSE

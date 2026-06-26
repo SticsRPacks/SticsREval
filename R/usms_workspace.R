@@ -120,10 +120,14 @@ USMSWorkspace <- R6::R6Class("USMSWorkspace", # nolint: object_name_linter
 
   public = list(
     initialize = function(
-      workspace, backend, config
+      config, workspace = NULL, backend = NULL
     ) {
-      private$workspace <- workspace
-      private$backend <- backend
+      private$backend <- backend %||% ParallelBackend$new(
+        config$parallel, config$cores
+      )
+      private$workspace <- workspace %||% EvalWorkspace$new(
+        config$eval_workspace
+      )
       private$config <- config
     },
 
