@@ -274,10 +274,10 @@
 <li>Displays a summary of comparison results</li>
 </ul>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va"><a href="reference/Evaluation.html">Evaluation</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">config</span><span class="op">)</span><span class="op">$</span><span class="fu">run</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">Evaluation</span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">config</span><span class="op">)</span><span class="op">$</span><span class="fu">run</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p>You can also inject custom dependencies for testing or advanced use:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va"><a href="reference/Evaluation.html">Evaluation</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">Evaluation</span><span class="op">$</span><span class="fu">new</span><span class="op">(</span></span>
 <span>  <span class="va">config</span>,</span>
 <span>  workspace <span class="op">=</span> <span class="va"><a href="reference/EvalWorkspace.html">EvalWorkspace</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="st">"eval_workspace/"</span><span class="op">)</span>,</span>
 <span>  backend   <span class="op">=</span> <span class="va">ParallelBackend</span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="cn">FALSE</span>, <span class="cn">NA</span><span class="op">)</span>,</span>
@@ -319,7 +319,7 @@
 <code class="sourceCode R"><span><span class="va">ws</span> <span class="op">&lt;-</span> <span class="va"><a href="reference/EvalWorkspace.html">EvalWorkspace</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="st">"eval_workspace/"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">ws</span><span class="op">$</span><span class="fu">get_species_comparison</span><span class="op">(</span>species <span class="op">=</span> <span class="st">"wheat"</span>, percentage <span class="op">=</span> <span class="fl">5</span><span class="op">)</span><span class="op">$</span></span>
-<span>  <span class="fu">plot_comparison</span><span class="op">(</span><span class="st">"outputs/rmse_comparison_wheat.png"</span><span class="op">)</span></span></code></pre></div>
+<span>  <span class="fu">plot_comparison</span><span class="op">(</span><span class="st">"outputs/rrmse_comparison_wheat.png"</span><span class="op">)</span></span></code></pre></div>
 <p>The plot is saved as a PNG file at the path provided to <code>output_path</code>. <code>get_species_comparison()</code> returns <code>NULL</code> if no comparison data is available for the requested species (i.e. no reference version was set during evaluation).</p>
 <hr>
 </div>
@@ -347,8 +347,8 @@
 <td>Global statistical criteria (RMSE, nRMSE, bias, R², etc.)</td>
 </tr>
 <tr>
-<td><code>RMSE_per_usm.csv</code></td>
-<td>RMSE broken down per USM</td>
+<td><code>rRMSE_per_usm.csv</code></td>
+<td>rRMSE broken down per USM</td>
 </tr>
 <tr>
 <td><code>Deteriorated_USM.csv</code></td>
@@ -465,8 +465,8 @@
 <td>Return global evaluation statistics</td>
 </tr>
 <tr>
-<td><code>get_rmse_per_usm(species)</code></td>
-<td>Return RMSE broken down per USM</td>
+<td><code>get_rrmse_per_usm(species)</code></td>
+<td>Return rRMSE broken down per USM</td>
 </tr>
 <tr>
 <td><code>get_deteriorated_usm(species, percentage)</code></td>
@@ -474,7 +474,7 @@
 </tr>
 <tr>
 <td><code>get_species_comparison(species, percentage)</code></td>
-<td>Return RMSE comparison vs reference</td>
+<td>Return rRMSE comparison vs reference</td>
 </tr>
 <tr>
 <td><code>get_all_versions()</code></td>
@@ -507,7 +507,7 @@
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># 2. Run statistical evaluation vs observations and reference version</span></span>
-<span><span class="va"><a href="reference/Evaluation.html">Evaluation</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">config</span><span class="op">)</span><span class="op">$</span><span class="fu">run</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">Evaluation</span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">config</span><span class="op">)</span><span class="op">$</span><span class="fu">run</span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># 3. Export statistics and deteriorated USMs to CSV</span></span>
 <span><span class="fu"><a href="reference/export_stats_to_csv.html">export_stats_to_csv</a></span><span class="op">(</span><span class="va">config</span><span class="op">)</span></span>
@@ -545,7 +545,7 @@
 <span>  run_simulations <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va"><a href="reference/Evaluation.html">Evaluation</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">config</span><span class="op">)</span><span class="op">$</span><span class="fu">run</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">Evaluation</span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">config</span><span class="op">)</span><span class="op">$</span><span class="fu">run</span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va"><a href="reference/BalanceClosureTest.html">BalanceClosureTest</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">config</span><span class="op">)</span><span class="op">$</span><span class="fu">run</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">

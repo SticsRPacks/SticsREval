@@ -59,7 +59,7 @@
 <li><p><a href="#method-EvalWorkspace-save_sim"><code>EvalWorkspace$save_sim()</code></a></p></li>
 <li><p><a href="#method-EvalWorkspace-save_obs"><code>EvalWorkspace$save_obs()</code></a></p></li>
 <li><p><a href="#method-EvalWorkspace-get_species"><code>EvalWorkspace$get_species()</code></a></p></li>
-<li><p><a href="#method-EvalWorkspace-get_species_usm"><code>EvalWorkspace$get_species_usm()</code></a></p></li>
+<li><p><a href="#method-EvalWorkspace-get_species_situations"><code>EvalWorkspace$get_species_situations()</code></a></p></li>
 <li><p><a href="#method-EvalWorkspace-save_species_usm"><code>EvalWorkspace$save_species_usm()</code></a></p></li>
 <li><p><a href="#method-EvalWorkspace-get_sim"><code>EvalWorkspace$get_sim()</code></a></p></li>
 <li><p><a href="#method-EvalWorkspace-get_obs"><code>EvalWorkspace$get_obs()</code></a></p></li>
@@ -67,8 +67,8 @@
 <li><p><a href="#method-EvalWorkspace-save_global_stats"><code>EvalWorkspace$save_global_stats()</code></a></p></li>
 <li><p><a href="#method-EvalWorkspace-get_stats"><code>EvalWorkspace$get_stats()</code></a></p></li>
 <li><p><a href="#method-EvalWorkspace-get_global_stats"><code>EvalWorkspace$get_global_stats()</code></a></p></li>
-<li><p><a href="#method-EvalWorkspace-save_rmse_per_usm"><code>EvalWorkspace$save_rmse_per_usm()</code></a></p></li>
-<li><p><a href="#method-EvalWorkspace-get_rmse_per_usm"><code>EvalWorkspace$get_rmse_per_usm()</code></a></p></li>
+<li><p><a href="#method-EvalWorkspace-save_rrmse_per_usm"><code>EvalWorkspace$save_rrmse_per_usm()</code></a></p></li>
+<li><p><a href="#method-EvalWorkspace-get_rrmse_per_usm"><code>EvalWorkspace$get_rrmse_per_usm()</code></a></p></li>
 <li><p><a href="#method-EvalWorkspace-save_deteriorated_usm"><code>EvalWorkspace$save_deteriorated_usm()</code></a></p></li>
 <li><p><a href="#method-EvalWorkspace-get_deteriorated_usm"><code>EvalWorkspace$get_deteriorated_usm()</code></a></p></li>
 <li><p><a href="#method-EvalWorkspace-save_species_comparison"><code>EvalWorkspace$save_species_comparison()</code></a></p></li>
@@ -156,11 +156,11 @@ extraction. If not defined the last evaluated version will be used.</p></dd>
 
 </div>
 
-<p></p><hr><a id="method-EvalWorkspace-get_species_usm"></a><div class="section">
-<h3 id="evalworkspace-get-species-usm-"><code>EvalWorkspace$get_species_usm()</code><a class="anchor" aria-label="anchor" href="#evalworkspace-get-species-usm-"></a></h3>
+<p></p><hr><a id="method-EvalWorkspace-get_species_situations"></a><div class="section">
+<h3 id="evalworkspace-get-species-situations-"><code>EvalWorkspace$get_species_situations()</code><a class="anchor" aria-label="anchor" href="#evalworkspace-get-species-situations-"></a></h3>
 <p>Returns the list of USMs of a species</p><div class="section">
 <h4 id="usage-4">Usage<a class="anchor" aria-label="anchor" href="#usage-4"></a></h4>
-<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">EvalWorkspace</span><span class="op">$</span><span class="fu">get_species_usm</span><span class="op">(</span><span class="va">species</span>, usms <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div><p></p></div>
+<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">EvalWorkspace</span><span class="op">$</span><span class="fu">get_species_situations</span><span class="op">(</span><span class="va">species</span>, usms <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div><p></p><div class="section">
 <h4 id="arguments-3">Arguments<a class="anchor" aria-label="anchor" href="#arguments-3"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>species</code></dt>
@@ -350,18 +350,18 @@ a lazy arrow data object otherwise</p>
 
 </div>
 
-<p></p><hr><a id="method-EvalWorkspace-save_rmse_per_usm"></a><div class="section">
-<h3 id="evalworkspace-save-rmse-per-usm-"><code>EvalWorkspace$save_rmse_per_usm()</code><a class="anchor" aria-label="anchor" href="#evalworkspace-save-rmse-per-usm-"></a></h3>
-<p>Save the RMSE per USM</p><div class="section">
+<p></p><hr><a id="method-EvalWorkspace-save_rrmse_per_usm"></a><div class="section">
+<h3 id="evalworkspace-save-rrmse-per-usm-"><code>EvalWorkspace$save_rrmse_per_usm()</code><a class="anchor" aria-label="anchor" href="#evalworkspace-save-rrmse-per-usm-"></a></h3>
+<p>Save the rRMSE per USM</p><div class="section">
 <h4 id="usage-12">Usage<a class="anchor" aria-label="anchor" href="#usage-12"></a></h4>
-<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">EvalWorkspace</span><span class="op">$</span><span class="fu">save_rmse_per_usm</span><span class="op">(</span><span class="va">species</span>, <span class="va">rmse_per_usm</span><span class="op">)</span></span></code></pre></div><p></p></div>
+<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">EvalWorkspace</span><span class="op">$</span><span class="fu">save_rrmse_per_usm</span><span class="op">(</span><span class="va">species</span>, <span class="va">rrmse_per_usm</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div><p></p><div class="section">
 <h4 id="arguments-11">Arguments<a class="anchor" aria-label="anchor" href="#arguments-11"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>species</code></dt>
 <dd><p>the species</p></dd>
 
-      <dt><code>rmse_per_usm</code></dt>
-<dd><p>the RMSE per USMs</p></dd>
+      <dt><code>rrmse_per_usm</code></dt>
+<dd><p>the rRMSE per USMs</p></dd>
 
 
 </dl><p></p></div>
@@ -369,11 +369,11 @@ a lazy arrow data object otherwise</p>
 
 </div>
 
-<p></p><hr><a id="method-EvalWorkspace-get_rmse_per_usm"></a><div class="section">
-<h3 id="evalworkspace-get-rmse-per-usm-"><code>EvalWorkspace$get_rmse_per_usm()</code><a class="anchor" aria-label="anchor" href="#evalworkspace-get-rmse-per-usm-"></a></h3>
-<p>Return the RMSE per USM for a species</p><div class="section">
+<p></p><hr><a id="method-EvalWorkspace-get_rrmse_per_usm"></a><div class="section">
+<h3 id="evalworkspace-get-rrmse-per-usm-"><code>EvalWorkspace$get_rrmse_per_usm()</code><a class="anchor" aria-label="anchor" href="#evalworkspace-get-rrmse-per-usm-"></a></h3>
+<p>Return the rRMSE per USM for a species</p><div class="section">
 <h4 id="usage-13">Usage<a class="anchor" aria-label="anchor" href="#usage-13"></a></h4>
-<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">EvalWorkspace</span><span class="op">$</span><span class="fu">get_rmse_per_usm</span><span class="op">(</span></span>
+<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">EvalWorkspace</span><span class="op">$</span><span class="fu">get_rrmse_per_usm</span><span class="op">(</span></span>
 <span>  species <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  collect <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  usms <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -389,18 +389,18 @@ a lazy arrow data object otherwise</p>
 otherwise a lazy arrow data object will be returned</p></dd>
 
       <dt><code>usms</code></dt>
-<dd><p>Optional, if defined filter the RMSE per USM with these
+<dd><p>Optional, if defined filter the rRMSE per USM with these
 USMs</p></dd>
 
       <dt><code>var2exclude</code></dt>
 <dd><p>Optional, if defined remove the variables from
-the returned RMSE per USM</p></dd>
+the returned rRMSE per USM</p></dd>
 
 
 </dl><p></p></div>
 </div><p></p><div class="section">
 <h4 id="returns-6">Returns<a class="anchor" aria-label="anchor" href="#returns-6"></a></h4>
-<p>the RMSE per USM for a species, as a dataframe if collect is
+<p>the rRMSE per USM for a species, as a dataframe if collect is
 <code>TRUE</code>, a lazy arrow data object otherwise</p>
 </div>
 
@@ -493,7 +493,7 @@ the returned RMSE per USM</p></dd>
 </dl><p></p></div>
 </div><p></p><div class="section">
 <h4 id="returns-8">Returns<a class="anchor" aria-label="anchor" href="#returns-8"></a></h4>
-<p>an RmseComparison object</p>
+<p>an RRmseComparison object</p>
 </div>
 
 </div>
@@ -512,7 +512,7 @@ the returned RMSE per USM</p></dd>
 </dl><p></p></div>
 </div><p></p><div class="section">
 <h4 id="returns-9">Returns<a class="anchor" aria-label="anchor" href="#returns-9"></a></h4>
-<p>an RmseComparison object</p>
+<p>an RRmseComparison object</p>
 </div>
 
 </div>

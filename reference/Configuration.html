@@ -124,6 +124,18 @@ be included in export and plots.</p></dd>
 will be excluded from export and plots.</p></dd>
 
 
+    <dt><code>sim_rds</code></dt>
+<dd><p>Character or NULL. Path to an .rds file containing
+pre-computed simulation results. If supplied, bypasses the need to
+run simulations (see <code>validate_eval()</code>). Independent of <code>obs_rds</code>.</p></dd>
+
+
+    <dt><code>obs_rds</code></dt>
+<dd><p>Character or NULL. Path to an .rds file containing
+observation data used as reference for evaluation, plots and balance
+closure. Independent of <code>sim_rds</code> — has no effect on required fields.</p></dd>
+
+
 </dl><p></p></div>
     </div>
     <div id="methods">
@@ -135,6 +147,7 @@ will be excluded from export and plots.</p></dd>
 <li><p><a href="#method-Configuration-validate_eval"><code>Configuration$validate_eval()</code></a></p></li>
 <li><p><a href="#method-Configuration-validate_export"><code>Configuration$validate_export()</code></a></p></li>
 <li><p><a href="#method-Configuration-validate_balance_closure"><code>Configuration$validate_balance_closure()</code></a></p></li>
+<li><p><a href="#method-Configuration-print"><code>Configuration$print()</code></a></p></li>
 <li><p><a href="#method-Configuration-clone"><code>Configuration$clone()</code></a></p></li>
 </ul></div><p></p><hr><a id="method-Configuration-initialize"></a><div class="section">
 <h3 id="configuration-new-"><code>Configuration$new()</code><a class="anchor" aria-label="anchor" href="#configuration-new-"></a></h3>
@@ -157,7 +170,11 @@ Invalid or unknown fields will trigger validation errors.</p></dd>
 
 <p></p><hr><a id="method-Configuration-validate_eval"></a><div class="section">
 <h3 id="configuration-validate-eval-"><code>Configuration$validate_eval()</code><a class="anchor" aria-label="anchor" href="#configuration-validate-eval-"></a></h3>
-<p>Validate configuration for evaluation workflow</p><div class="section">
+<p>Validate configuration for evaluation workflow.
+Note: if <code>sim_rds</code> is supplied, it bypasses the need to run
+simulations (see <code>check_metadata_file</code>). <code>obs_rds</code> is independent
+and has no effect on required fields. <code>usms_workspace</code> remains
+required for eval regardless of <code>sim_rds</code>/<code>obs_rds</code>.</p><div class="section">
 <h4 id="usage-1">Usage<a class="anchor" aria-label="anchor" href="#usage-1"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">Configuration</span><span class="op">$</span><span class="fu">validate_eval</span><span class="op">(</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div>
@@ -182,13 +199,31 @@ Invalid or unknown fields will trigger validation errors.</p></dd>
 
 </div>
 
+<p></p><hr><a id="method-Configuration-print"></a><div class="section">
+<h3 id="configuration-print-"><code>Configuration$print()</code><a class="anchor" aria-label="anchor" href="#configuration-print-"></a></h3>
+<p>Print the configuration, with fields grouped by theme (paths,
+execution, filtering, ...) rather than as a flat list. Makes it
+much easier to eyeball the current state of a large Configuration.</p><div class="section">
+<h4 id="usage-4">Usage<a class="anchor" aria-label="anchor" href="#usage-4"></a></h4>
+<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">Configuration</span><span class="op">$</span><span class="fu">print</span><span class="op">(</span><span class="va">...</span><span class="op">)</span></span></code></pre></div><p></p></div>
+</div><p></p><div class="section">
+<h4 id="arguments-1">Arguments<a class="anchor" aria-label="anchor" href="#arguments-1"></a></h4>
+<p></p><div class="arguments"><dl><dt><code>...</code></dt>
+<dd><p>Ignored. For compatibility with R6 print() generic.</p></dd>
+
+
+</dl><p></p></div>
+</div>
+
+</div>
+
 <p></p><hr><a id="method-Configuration-clone"></a><div class="section">
 <h3 id="configuration-clone-"><code>Configuration$clone()</code><a class="anchor" aria-label="anchor" href="#configuration-clone-"></a></h3>
 <p>The objects of this class are cloneable with this method.</p><div class="section">
-<h4 id="usage-4">Usage<a class="anchor" aria-label="anchor" href="#usage-4"></a></h4>
+<h4 id="usage-5">Usage<a class="anchor" aria-label="anchor" href="#usage-5"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">Configuration</span><span class="op">$</span><span class="fu">clone</span><span class="op">(</span>deep <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div><p></p><div class="section">
-<h4 id="arguments-1">Arguments<a class="anchor" aria-label="anchor" href="#arguments-1"></a></h4>
+<h4 id="arguments-2">Arguments<a class="anchor" aria-label="anchor" href="#arguments-2"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>deep</code></dt>
 <dd><p>Whether to make a deep clone.</p></dd>
 

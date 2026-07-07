@@ -7,14 +7,16 @@
 <url><loc>/reference/BalanceClosureTest.html</loc></url>
 <url><loc>/reference/Configuration.html</loc></url>
 <url><loc>/reference/EvalWorkspace.html</loc></url>
-<url><loc>/reference/Evaluation.html</loc></url>
 <url><loc>/reference/SticsREval-package.html</loc></url>
 <url><loc>/reference/export_stats_to_csv.html</loc></url>
 <url><loc>/reference/field_spec.html</loc></url>
+<url><loc>/reference/fields_by_group.html</loc></url>
 <url><loc>/reference/index.html</loc></url>
 <url><loc>/reference/required.html</loc></url>
+<url><loc>/reference/run_all_evaluations.html</loc></url>
 <url><loc>/reference/schema_initialize.html</loc></url>
 <url><loc>/reference/schema_public_fields.html</loc></url>
+<url><loc>/reference/validate_for.html</loc></url>
 <url><loc>/reference/validate_schema.html</loc></url>
 </urlset>
 

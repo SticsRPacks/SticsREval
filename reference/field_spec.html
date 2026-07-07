@@ -57,7 +57,10 @@
 <span>  choices <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  min <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  max <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  validator <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  validator <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  required_for <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">character</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span>,</span>
+<span>  required_unless <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  group <span class="op">=</span> <span class="st">"other"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -93,6 +96,33 @@ fields that must be explicitly provided and have no sensible default.</p></dd>
 <dt id="arg-validator">validator<a class="anchor" aria-label="anchor" href="#arg-validator"></a></dt>
 <dd><p>Function. Custom validation: function(val) returns
 TRUE if valid, or a character error message otherwise.</p></dd>
+
+
+<dt id="arg-required-for">required_for<a class="anchor" aria-label="anchor" href="#arg-required-for"></a></dt>
+<dd><p>Character vector. Names of workflow contexts (e.g.
+"eval", "export", "balance_closure") in which this field must be
+non-NULL. Checked by <code><a href="validate_for.html">validate_for()</a></code>. This is independent of
+<code>nullable</code>, which only governs whether NULL is an acceptable
+value in general (outside of any specific workflow).</p></dd>
+
+
+<dt id="arg-required-unless">required_unless<a class="anchor" aria-label="anchor" href="#arg-required-unless"></a></dt>
+<dd><p>Function(self, context) or NULL. If provided and
+it returns TRUE for the context currently being validated, the
+<code>required_for</code> requirement is waived for that context (the field
+may be NULL). General escape hatch for conditional requirements that
+depend on other field values (e.g. "field X is required for context Y,
+UNLESS some other field Z is set"). Not currently used by any field in
+this schema, but kept available for future cases like this. Evaluated
+only when <code>context %in% required_for</code>; ignored otherwise.</p></dd>
+
+
+<dt id="arg-group">group<a class="anchor" aria-label="anchor" href="#arg-group"></a></dt>
+<dd><p>Character scalar. Purely organisational: which thematic
+group this field belongs to (e.g. "paths", "execution", "filtering").
+Has no effect on validation; used to group fields when printing a
+Configuration, generating docs, or browsing the schema. Defaults to
+"other" if not specified.</p></dd>
 
 </dl></div>
     <div id="value">
