@@ -11,7 +11,10 @@ field_spec(
   choices = NULL,
   min = NULL,
   max = NULL,
-  validator = NULL
+  validator = NULL,
+  required_for = character(0),
+  required_unless = NULL,
+  group = "other"
 )
 }
 \arguments{
@@ -30,6 +33,27 @@ fields that must be explicitly provided and have no sensible default.}
 
 \item{validator}{Function. Custom validation: function(val) returns
 TRUE if valid, or a character error message otherwise.}
+
+\item{required_for}{Character vector. Names of workflow contexts (e.g.
+"eval", "export", "balance_closure") in which this field must be
+non-NULL. Checked by \code{validate_for()}. This is independent of
+\code{nullable}, which only governs whether NULL is an acceptable
+value in general (outside of any specific workflow).}
+
+\item{required_unless}{Function(self, context) or NULL. If provided and
+it returns TRUE for the context currently being validated, the
+\code{required_for} requirement is waived for that context (the field
+may be NULL). General escape hatch for conditional requirements that
+depend on other field values (e.g. "field X is required for context Y,
+UNLESS some other field Z is set"). Not currently used by any field in
+this schema, but kept available for future cases like this. Evaluated
+only when \code{context \%in\% required_for}; ignored otherwise.}
+
+\item{group}{Character scalar. Purely organisational: which thematic
+group this field belongs to (e.g. "paths", "execution", "filtering").
+Has no effect on validation; used to group fields when printing a
+Configuration, generating docs, or browsing the schema. Defaults to
+"other" if not specified.}
 }
 \value{
 A list of class "field_spec"

@@ -52,6 +52,14 @@ be included in export and plots.}
 
     \item{\code{var2exclude}}{Character vector or NULL. If specified, these variables
 will be excluded from export and plots.}
+
+    \item{\code{sim_rds}}{Character or NULL. Path to an .rds file containing
+pre-computed simulation results. If supplied, bypasses the need to
+run simulations (see \code{validate_eval()}). Independent of \code{obs_rds}.}
+
+    \item{\code{obs_rds}}{Character or NULL. Path to an .rds file containing
+observation data used as reference for evaluation, plots and balance
+closure. Independent of \code{sim_rds} — has no effect on required fields.}
   }
   \if{html}{\out{</div>}}
 }
@@ -62,6 +70,7 @@ will be excluded from export and plots.}
     \item \href{#method-Configuration-validate_eval}{\code{Configuration$validate_eval()}}
     \item \href{#method-Configuration-validate_export}{\code{Configuration$validate_export()}}
     \item \href{#method-Configuration-validate_balance_closure}{\code{Configuration$validate_balance_closure()}}
+    \item \href{#method-Configuration-print}{\code{Configuration$print()}}
     \item \href{#method-Configuration-clone}{\code{Configuration$clone()}}
   }
 }
@@ -91,7 +100,11 @@ Invalid or unknown fields will trigger validation errors.}
 \if{html}{\out{<a id="method-Configuration-validate_eval"></a>}}
 \if{latex}{\out{\hypertarget{method-Configuration-validate_eval}{}}}
 \subsection{\code{Configuration$validate_eval()}}{
-  Validate configuration for evaluation workflow
+  Validate configuration for evaluation workflow.
+Note: if \code{sim_rds} is supplied, it bypasses the need to run
+simulations (see \code{check_metadata_file}). \code{obs_rds} is independent
+and has no effect on required fields. \code{usms_workspace} remains
+required for eval regardless of \code{sim_rds}/\code{obs_rds}.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{Configuration$validate_eval()}
@@ -119,6 +132,27 @@ Invalid or unknown fields will trigger validation errors.}
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{Configuration$validate_balance_closure()}
+    \if{html}{\out{</div>}}
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Configuration-print"></a>}}
+\if{latex}{\out{\hypertarget{method-Configuration-print}{}}}
+\subsection{\code{Configuration$print()}}{
+  Print the configuration, with fields grouped by theme (paths,
+execution, filtering, ...) rather than as a flat list. Makes it
+much easier to eyeball the current state of a large Configuration.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Configuration$print(...)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{...}}{Ignored. For compatibility with R6 print() generic.}
+    }
     \if{html}{\out{</div>}}
   }
 }
