@@ -75,35 +75,51 @@ USMSWorkspace <- R6::R6Class("USMSWorkspace", # nolint: object_name_linter
       v
     },
 
-    load_sim = function(usms_species) {
-      if (private$config$run_simulations) {
+    load_sim = function() {
+      species_situations <- private$workspace$get_species_situations(
+        species = NULL
+      )
+      if (!is.null(private$config$sim_rds)) {
+        sim <- readRDS(private$config$sim_rds)[
+          unique(species_situations$situation)
+        ]
+      } else if (private$config$run_simulations) {
         logger::log_info("Running simulations...")
-        sim <- self$run_simulations(usms_species$situation)
+        sim <- self$run_simulations(species_situations$situation)
       } else {
         logger::log_info("Loading simulations data...")
         sim <- SticsRFiles::get_sim(
           workspace = private$config$usms_workspace,
-          usm = unique(usms_species$situation),
+          usm = unique(species_situations$situation),
           verbose = is_debug(),
           parallel = private$backend$parallel,
           cores = private$backend$cores
         )
       }
-      private$workspace$save_sim(sim, usms_species)
+      private$workspace$save_sim(sim, species_situations)
       rm(sim)
       gc()
     },
 
-    load_obs = function(usms_species) {
+    load_obs = function() {
       logger::log_info("Loading observations data...")
-      obs <- SticsRFiles::get_obs(
-        workspace = private$config$usms_workspace,
-        usm = unique(usms_species$situation),
-        verbose = is_debug(),
-        parallel = private$backend$parallel,
-        cores = private$backend$cores
+      species_situations <- private$workspace$get_species_situations(
+        species = NULL
       )
-      private$workspace$save_obs(obs, usms_species)
+      if (!is.null(private$config$obs_rds)) {
+        obs <- readRDS(private$config$obs_rds)[
+          unique(species_situations$situation)
+        ]
+      } else {
+        obs <- SticsRFiles::get_obs(
+          workspace = private$config$usms_workspace,
+          usm = unique(species_situations$situation),
+          verbose = is_debug(),
+          parallel = private$backend$parallel,
+          cores = private$backend$cores
+        )
+      }
+      private$workspace$save_obs(obs, species_situations)
       rm(obs)
       gc()
     },
@@ -176,8 +192,8 @@ USMSWorkspace <- R6::R6Class("USMSWorkspace", # nolint: object_name_linter
       stics_version <- private$load_stics_version()
       private$workspace$set_version(stics_version)
 
-      private$load_obs(usms_species)
-      private$load_sim(usms_species)
+      private$load_obs()
+      private$load_sim()
       private$workspace$remove_init_obs()
       invisible(private$workspace)
     }

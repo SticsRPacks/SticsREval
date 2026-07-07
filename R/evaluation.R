@@ -254,12 +254,12 @@ SpeciesEvaluation <- R6::R6Class("SpeciesEvaluation", # nolint: object_name_lint
       species <- species[
         vapply(species, function(sp) {
           private$logger$debug(sprintf("Checking USMs for species %s...", sp))
-          species_usms <- private$workspace$get_species_usm(
+          species_usms <- private$workspace$get_species_situations(
             sp, private$config$usms
           )
           private$logger$debug(sprintf(
             "Species %s has USMs: %s",
-            sp, toString(species_usms)
+            sp, toString(unique(species_usms$situation))
           ))
           length(species_usms) > 0
         }, FUN.VALUE = logical(1))

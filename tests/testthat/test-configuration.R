@@ -533,7 +533,7 @@ test_that(
 
 test_that("validate_export stops when output_dir is NULL", {
   cfg <- Configuration$new(eval_workspace = "ws")
-  expect_error(cfg$validate_export(), "Output dir")
+  expect_error(cfg$validate_export(), "output_dir")
 })
 
 test_that("validate_export passes when output_dir exists", {
@@ -562,7 +562,7 @@ test_that("validate_export creates output_dir if it does not exist", {
 
 test_that("validate_balance_closure stops when usms_workspace is NULL", {
   cfg <- Configuration$new(eval_workspace = "ws")
-  expect_error(cfg$validate_balance_closure(), "USMs workspace")
+  expect_error(cfg$validate_balance_closure(), "usms_workspace")
 })
 
 test_that("validate_balance_closure stops when stics_exe is NULL", {
@@ -570,5 +570,5 @@ test_that("validate_balance_closure stops when stics_exe is NULL", {
     eval_workspace = "ws",
     usms_workspace = "usms_ws"
   )
-  expect_error(cfg$validate_balance_closure(), "STICS executable")
+  expect_error(cfg$validate_balance_closure(), "stics_exe")
 })

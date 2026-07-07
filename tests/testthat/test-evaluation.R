@@ -45,7 +45,13 @@ make_fake_workspace <- function() {
   list(
     init = function(...) {},
     get_species = function() c("wheat", "barley"),
-    get_species_usm = function(sp, usms) "usm1",
+    get_species_situations = function(sp, usms) {
+      data.frame(
+        species = "wheat",
+        situation = "usm1",
+        stringsAsFactors = FALSE
+      )
+    },
     get_sim = function(...) data.frame(),
     get_obs = function(...) data.frame(),
     save_stats = function(...) {},
@@ -77,7 +83,7 @@ test_that("get_species_to_evaluate filters by species and usms", {
   workspace <- make_fake_workspace()
   workspace$get_species <- function() c("wheat", "barley", "corn")
 
-  workspace$get_species_usm <- function(sp, usms) {
+  workspace$get_species_situations <- function(sp, usms) {
     if (sp %in% c("wheat", "corn")) return("usm1")
     character(0)
   }

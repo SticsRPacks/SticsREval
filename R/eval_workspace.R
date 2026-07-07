@@ -223,7 +223,7 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
     #' @param usms Optional, filter the USMs returned by the function
 
     #' @returns a list of USMs as a character list
-    get_species_usm = function(species, usms = NULL) {
+    get_species_situations = function(species, usms = NULL) {
       res <- private$.reader$read(
         path = species_usm_ds_path(private$.data_dir),
         species = species,
@@ -231,12 +231,9 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
         collect = TRUE,
         apply_version = FALSE
       )
-      if (is.null(res)) {
-        return(NULL)
-      }
-      res |>
-        dplyr::distinct(.data$situation) |>
-        dplyr::pull("situation")
+      if (is.null(res)) return(NULL)
+      res <- dplyr::select(res, species, situation)
+      as.data.frame(res, stringsAsFactors = FALSE)
     },
     #' @description
     #' Save the association between species and USMs

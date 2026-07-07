@@ -9,6 +9,24 @@
 #' @param max Numeric. Maximum allowed value (for numeric types).
 #' @param validator Function. Custom validation: function(val) returns
 #'   TRUE if valid, or a character error message otherwise.
+#' @param required_for Character vector. Names of workflow contexts (e.g.
+#'   "eval", "export", "balance_closure") in which this field must be
+#'   non-NULL. Checked by \code{validate_for()}. This is independent of
+#'   \code{nullable}, which only governs whether NULL is an acceptable
+#'   value in general (outside of any specific workflow).
+#' @param required_unless Function(self, context) or NULL. If provided and
+#'   it returns TRUE for the context currently being validated, the
+#'   \code{required_for} requirement is waived for that context (the field
+#'   may be NULL). General escape hatch for conditional requirements that
+#'   depend on other field values (e.g. "field X is required for context Y,
+#'   UNLESS some other field Z is set"). Not currently used by any field in
+#'   this schema, but kept available for future cases like this. Evaluated
+#'   only when \code{context \%in\% required_for}; ignored otherwise.
+#' @param group Character scalar. Purely organisational: which thematic
+#'   group this field belongs to (e.g. "paths", "execution", "filtering").
+#'   Has no effect on validation; used to group fields when printing a
+#'   Configuration, generating docs, or browsing the schema. Defaults to
+#'   "other" if not specified.
 #' @return A list of class "field_spec"
 #'
 #' @keywords internal
@@ -19,7 +37,10 @@ field_spec <- function(
   choices = NULL,
   min = NULL,
   max = NULL,
-  validator = NULL
+  validator = NULL,
+  required_for = character(0),
+  required_unless = NULL,
+  group = "other"
 ) {
   is_required <- inherits(default, "required_field")
   if (is_required) nullable <- FALSE
@@ -32,7 +53,10 @@ field_spec <- function(
     choices = choices,
     min = min,
     max = max,
-    validator = validator
+    validator = validator,
+    required_for = required_for,
+    required_unless = required_unless,
+    group = group
   )
   class(field) <- "field_spec"
   field
@@ -62,11 +86,30 @@ validate_nonempty_chr <- function(val) {
   TRUE
 }
 
+#' @keywords internal
+validate_rds_path <- function(val) {
+  if (is.null(val)) return(TRUE)
+  if (!is.character(val) || length(val) != 1)
+    return("must be a single file path (character)")
+  if (!grepl("\\.rds$", val, ignore.case = TRUE))
+    return("must point to a .rds file")
+  if (!file.exists(val))
+    return(paste0("file not found: ", val))
+  TRUE
+}
+
 # Cross-field constraint checkers
+# These express dependencies BETWEEN fields (e.g. "metadata_file is
+# required only if run_simulations is TRUE"), which is different from
+# "this field is required for the eval workflow" (see required_for in
+# field_spec() and validate_for() below). Both mechanisms are needed:
+# required_for is static (depends only on which workflow is being run),
+# while these cross-validators are dynamic (depend on other field values).
 
 #' @keywords internal
 check_metadata_file <- function(s) {
   if (!s$run_simulations) return(TRUE)
+  if (sim_rds_given(s)) return(TRUE) # sim_rds bypasses the simulation step
   if (is.null(s$metadata_file))
     return("metadata_file is required")
   if (!file.exists(s$metadata_file))
@@ -85,98 +128,141 @@ check_parallel_cores <- function(s) {
   TRUE
 }
 
+#' @keywords internal
+sim_rds_given <- function(self) {
+  !is.null(self$sim_rds)
+}
+
 config_schema <- list(
 
   fields = list(
 
+    # --- paths ---------------------------------------------------------
     stics_exe = field_spec(
       default = NULL,
       type = "character",
-      nullable = TRUE
+      nullable = TRUE,
+      required_for = c("eval", "balance_closure"),
+      group = "paths"
     ),
 
     usms_workspace = field_spec(
       default = NULL,
       type = "character",
-      nullable = TRUE
+      nullable = TRUE,
+      required_for = c("eval", "balance_closure"),
+      group = "paths"
     ),
 
     metadata_file = field_spec(
       default = NULL,
       type = "character",
-      nullable = TRUE
+      nullable = TRUE,
+      group = "paths"
     ),
 
     eval_workspace = field_spec(
       default = NULL,
       type = "character",
-      nullable = TRUE
+      nullable = TRUE,
+      required_for = c("eval", "export"),
+      group = "paths"
     ),
 
     output_dir = field_spec(
       default = NULL,
       type = "character",
-      nullable = TRUE
+      nullable = TRUE,
+      required_for = "export",
+      group = "paths"
     ),
 
+    # --- execution -------------------------------------------------------
     run_simulations = field_spec(
       default = FALSE,
       type = "logical",
-      nullable = FALSE
+      nullable = FALSE,
+      group = "execution"
     ),
 
     parallel = field_spec(
       default = FALSE,
       type = "logical",
-      nullable = FALSE
+      nullable = FALSE,
+      group = "execution"
     ),
 
     verbose = field_spec(
       default = 1L,
       type = "integer",
       nullable = FALSE,
-      min = 0L
+      min = 0L,
+      group = "execution"
     ),
 
     cores = field_spec(
       default = NA,
       nullable = TRUE,
-      validator = validate_cores
+      validator = validate_cores,
+      group = "execution"
     ),
 
+    # --- filtering / export ----------------------------------------------
     percentage = field_spec(
       default = 5,
       type = "numeric",
       nullable = FALSE,
       min = 0,
-      max = 100
+      max = 100,
+      group = "filtering"
     ),
 
     reference_version = field_spec(
       default = NULL,
       type = "character",
-      nullable = TRUE
+      nullable = TRUE,
+      group = "filtering"
     ),
 
     species = field_spec(
       default = NULL,
       type = "character",
       nullable = TRUE,
-      validator = validate_nonempty_chr
+      validator = validate_nonempty_chr,
+      group = "filtering"
     ),
 
     usms = field_spec(
       default = NULL,
       type = "character",
       nullable = TRUE,
-      validator = validate_nonempty_chr
+      validator = validate_nonempty_chr,
+      group = "filtering"
     ),
 
     var2exclude = field_spec(
       default = NULL,
       type = "character",
       nullable = TRUE,
-      validator = validate_nonempty_chr
+      validator = validate_nonempty_chr,
+      group = "filtering"
+    ),
+
+    # --- data --------------------------------------------------------
+    sim_rds = field_spec(
+      default = NULL,
+      type = "character",
+      nullable = TRUE,
+      validator = validate_rds_path,
+      group = "data"
+    ),
+
+    obs_rds = field_spec(
+      default = NULL,
+      type = "character",
+      nullable = TRUE,
+      validator = validate_rds_path,
+      group = "data"
     )
   ),
 
@@ -321,6 +407,62 @@ validate_schema <- function(self, schema = config_schema) {
   invisible(TRUE)
 }
 
+#' Validate that all fields required for a given workflow context are set
+#'
+#' Looks up, for every field in the schema, whether \code{context} appears
+#' in that field's \code{required_for}. If so, the field must be non-NULL
+#' on \code{self} — unless the field's \code{required_unless(self, context)}
+#' function is defined and returns TRUE, in which case the requirement is
+#' waived for that field/context pair.
+#' This replaces the hand-written \code{if (is.null(...)) stop(...)}
+#' checks that used to live in each \code{validate_*} method, so that
+#' "which fields are required for which workflow, and under which
+#' exceptions" has a single source of truth: the schema itself.
+#'
+#' @param self A Configuration object (or any named list/R6 with the
+#'   relevant fields).
+#' @param context Character scalar naming the workflow, e.g. "eval",
+#'   "export", "balance_closure".
+#' @param schema A schema produced by config_schema.
+#' @return invisible(TRUE) if valid, otherwise stop() with all errors found.
+#' @keywords internal
+validate_for <- function(self, context, schema = config_schema) {
+  errors <- unlist(lapply(
+    names(schema$fields),
+    function(field_name) {
+      spec <- schema$fields[[field_name]]
+      if (!context %in% spec$required_for) return(NULL)
+      waived <- !is.null(spec$required_unless) &&
+        isTRUE(spec$required_unless(self, context))
+      if (waived) return(NULL)
+      if (is.null(self[[field_name]]))
+        sprintf("- %s: required for the '%s' workflow", field_name, context)
+      else
+        NULL
+    }
+  ))
+
+  if (length(errors) > 0)
+    stop(
+      "Invalid configuration for '", context, "':\n",
+      paste(errors, collapse = "\n"),
+      call. = FALSE
+    )
+
+  invisible(TRUE)
+}
+
+#' List field names grouped by their `group` attribute
+#'
+#' @param schema A schema produced by config_schema.
+#' @return A named list: group name -> character vector of field names,
+#'   in the order groups first appear in the schema.
+#' @keywords internal
+fields_by_group <- function(schema = config_schema) {
+  groups <- vapply(schema$fields, function(spec) spec$group, character(1))
+  split(names(schema$fields), factor(groups, levels = unique(groups)))
+}
+
 #' Generate the R6 public fields list from the schema
 #' (all initialised to NULL — actual values are set inside initialize)
 #' @keywords internal
@@ -375,6 +517,12 @@ schema_initialize <- function(self, args, schema = config_schema) {
 #'  be included in export and plots.
 #' @field var2exclude Character vector or NULL. If specified, these variables
 #'  will be excluded from export and plots.
+#' @field sim_rds Character or NULL. Path to an .rds file containing
+#'  pre-computed simulation results. If supplied, bypasses the need to
+#'  run simulations (see `validate_eval()`). Independent of `obs_rds`.
+#' @field obs_rds Character or NULL. Path to an .rds file containing
+#'  observation data used as reference for evaluation, plots and balance
+#'  closure. Independent of `sim_rds` — has no effect on required fields.
 #' @export
 Configuration <- R6::R6Class("Configuration", # nolint: object_name_linter
   public = c(
@@ -396,14 +544,14 @@ Configuration <- R6::R6Class("Configuration", # nolint: object_name_linter
         invisible(self)
       },
 
-      #' @description Validate configuration for evaluation workflow
+      #' @description
+      #' Validate configuration for evaluation workflow.
+      #' Note: if `sim_rds` is supplied, it bypasses the need to run
+      #' simulations (see `check_metadata_file`). `obs_rds` is independent
+      #' and has no effect on required fields. `usms_workspace` remains
+      #' required for eval regardless of `sim_rds`/`obs_rds`.
       validate_eval = function() {
-        if (is.null(self$eval_workspace))
-          stop("Eval workspace path must be defined", call. = FALSE)
-        if (is.null(self$stics_exe))
-          stop("STICS executable path must be defined", call. = FALSE)
-        if (is.null(self$usms_workspace))
-          stop("USMs workspace path must be defined", call. = FALSE)
+        validate_for(self, "eval")
         if (!is.null(self$reference_version))
           private$check_reference_version()
         invisible(self)
@@ -411,21 +559,35 @@ Configuration <- R6::R6Class("Configuration", # nolint: object_name_linter
 
       #' @description Validate configuration for export
       validate_export = function() {
-        if (is.null(self$output_dir))
-          stop("Output dir path must be defined", call. = FALSE)
+        validate_for(self, "export")
         if (!dir.exists(self$output_dir) && !dir.create(self$output_dir))
           stop("Can't create ", self$output_dir, " directory", call. = FALSE)
-        if (is.null(self$eval_workspace))
-          stop("Eval workspace path must be defined", call. = FALSE)
         invisible(self)
       },
 
       #' @description Validate configuration for balance closure test
       validate_balance_closure = function() {
-        if (is.null(self$usms_workspace))
-          stop("USMs workspace path must be defined", call. = FALSE)
-        if (is.null(self$stics_exe))
-          stop("STICS executable path must be defined", call. = FALSE)
+        validate_for(self, "balance_closure")
+        invisible(self)
+      },
+
+      #' @description
+      #' Print the configuration, with fields grouped by theme (paths,
+      #' execution, filtering, ...) rather than as a flat list. Makes it
+      #' much easier to eyeball the current state of a large Configuration.
+      #'
+      #' @param ... Ignored. For compatibility with R6 print() generic.
+      print = function(...) {
+        cat("<Configuration>\n")
+        groups <- fields_by_group()
+        for (group_name in names(groups)) {
+          cat(sprintf("  [%s]\n", group_name))
+          for (field_name in groups[[group_name]]) {
+            val <- self[[field_name]]
+            val_str <- if (is.null(val)) "NULL" else toString(val)
+            cat(sprintf("    %-20s %s\n", field_name, val_str))
+          }
+        }
         invisible(self)
       }
     )

@@ -157,7 +157,7 @@ test_that("get_all_versions returns NULL when no metadata exists", {
   expect_null(ws$get_all_versions())
 })
 
-# ---- get_species / get_species_usm ----
+# ---- get_species / get_species_situations ----
 
 test_that("get_species returns sorted distinct species from obs dataset", {
   dir <- withr::local_tempdir()
@@ -174,7 +174,7 @@ test_that("get_species returns sorted distinct species from obs dataset", {
   expect_identical(ws$get_species(), c("barley", "wheat"))
 })
 
-test_that("get_species_usm returns USMs for a species", {
+test_that("get_species_situations returns USMs for a species", {
   dir <- withr::local_tempdir()
   species_usm <- data.frame(
     situation = c("usm1", "usm2", "usm3"),
@@ -186,14 +186,21 @@ test_that("get_species_usm returns USMs for a species", {
   )
 
   ws <- make_ws(dir)
-  expect_setequal(ws$get_species_usm("wheat"), c("usm1", "usm2"))
+  expect_identical(
+    ws$get_species_situations("wheat"),
+    data.frame(
+      species = c("wheat", "wheat"),
+      situation = c("usm1", "usm2"),
+      stringsAsFactors = FALSE
+    )
+  )
 })
 
-test_that("get_species_usm filters by usms when provided", {
+test_that("get_species_situations filters by usms when provided", {
   dir <- withr::local_tempdir()
   species_usm <- data.frame(
-    situation = c("usm1", "usm2", "usm3"),
     species = c("wheat", "wheat", "barley"),
+    situation = c("usm1", "usm2", "usm3"),
     stringsAsFactors = FALSE
   )
   write_parquet_ds(
@@ -201,7 +208,10 @@ test_that("get_species_usm filters by usms when provided", {
   )
 
   ws <- make_ws(dir)
-  expect_identical(ws$get_species_usm("wheat", usms = "usm1"), "usm1")
+  expect_identical(
+    ws$get_species_situations("wheat", usms = "usm1"),
+    data.frame(species = "wheat", situation = "usm1", stringsAsFactors = FALSE)
+  )
 })
 
 # ---- save_stats / get_stats ----

@@ -22,7 +22,7 @@ ws <- EvalWorkspace$new(
     \item \href{#method-EvalWorkspace-save_sim}{\code{EvalWorkspace$save_sim()}}
     \item \href{#method-EvalWorkspace-save_obs}{\code{EvalWorkspace$save_obs()}}
     \item \href{#method-EvalWorkspace-get_species}{\code{EvalWorkspace$get_species()}}
-    \item \href{#method-EvalWorkspace-get_species_usm}{\code{EvalWorkspace$get_species_usm()}}
+    \item \href{#method-EvalWorkspace-get_species_situations}{\code{EvalWorkspace$get_species_situations()}}
     \item \href{#method-EvalWorkspace-save_species_usm}{\code{EvalWorkspace$save_species_usm()}}
     \item \href{#method-EvalWorkspace-get_sim}{\code{EvalWorkspace$get_sim()}}
     \item \href{#method-EvalWorkspace-get_obs}{\code{EvalWorkspace$get_obs()}}
@@ -128,13 +128,13 @@ extraction. If not defined the last evaluated version will be used.}
 }
 
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-EvalWorkspace-get_species_usm"></a>}}
-\if{latex}{\out{\hypertarget{method-EvalWorkspace-get_species_usm}{}}}
-\subsection{\code{EvalWorkspace$get_species_usm()}}{
+\if{html}{\out{<a id="method-EvalWorkspace-get_species_situations"></a>}}
+\if{latex}{\out{\hypertarget{method-EvalWorkspace-get_species_situations}{}}}
+\subsection{\code{EvalWorkspace$get_species_situations()}}{
   Returns the list of USMs of a species
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
-    \preformatted{EvalWorkspace$get_species_usm(species, usms = NULL)}
+    \preformatted{EvalWorkspace$get_species_situations(species, usms = NULL)}
     \if{html}{\out{</div>}}
   }
   \subsection{Arguments}{
