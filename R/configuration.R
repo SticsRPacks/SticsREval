@@ -217,13 +217,6 @@ config_schema <- list(
       group = "filtering"
     ),
 
-    reference_version = field_spec(
-      default = NULL,
-      type = "character",
-      nullable = TRUE,
-      group = "filtering"
-    ),
-
     species = field_spec(
       default = NULL,
       type = "character",
@@ -263,6 +256,15 @@ config_schema <- list(
       nullable = TRUE,
       validator = validate_rds_path,
       group = "data"
+    ),
+
+    ref_sim_rds = field_spec(
+      default = NULL,
+      type = "character",
+      nullable = TRUE,
+      validator = validate_rds_path,
+      group = "data",
+      required_for = "eval"
     )
   ),
 
@@ -422,7 +424,7 @@ validate_schema <- function(self, schema = config_schema) {
 #' @param self A Configuration object (or any named list/R6 with the
 #'   relevant fields).
 #' @param context Character scalar naming the workflow, e.g. "eval",
-#'   "export", "balance_closure".
+#'   "balance_closure".
 #' @param schema A schema produced by config_schema.
 #' @return invisible(TRUE) if valid, otherwise stop() with all errors found.
 #' @keywords internal
@@ -490,7 +492,7 @@ schema_initialize <- function(self, args, schema = config_schema) {
 
 #' Configuration class
 #' Encapsulates all configuration parameters for the package, with validation.
-#' The same object is used for all workflows (evaluation, export, plots), with
+#' The same object is used for all workflows, with
 #' workflow-specific validation methods.
 #'
 #' @field stics_exe Path to STICS executable (required)
@@ -508,9 +510,6 @@ schema_initialize <- function(self, args, schema = config_schema) {
 #'  processing (only if parallel = TRUE). NA means auto-detect.
 #' @field percentage Numeric. Percentage of simulations to consider for export
 #'  and plots (between 0 and 100).
-#' @field reference_version Character or NULL. If specified, the version in the
-#'  evaluation workspace to use as reference for export and plots. Must be
-#'  present in the workspace.
 #' @field species Character vector or NULL. If specified, only these species
 #'  will be included in export and plots.
 #' @field usms Character vector or NULL. If specified, only these USMs will
@@ -523,6 +522,9 @@ schema_initialize <- function(self, args, schema = config_schema) {
 #' @field obs_rds Character or NULL. Path to an .rds file containing
 #'  observation data used as reference for evaluation, plots and balance
 #'  closure. Independent of `sim_rds` — has no effect on required fields.
+#' @field ref_sim_rds Character or NULL. Path to an .rds file containing
+#'  reference simulation results used for evaluation and plots. Required for
+#'  evaluation.
 #' @export
 Configuration <- R6::R6Class("Configuration", # nolint: object_name_linter
   public = c(
@@ -552,16 +554,13 @@ Configuration <- R6::R6Class("Configuration", # nolint: object_name_linter
       #' required for eval regardless of `sim_rds`/`obs_rds`.
       validate_eval = function() {
         validate_for(self, "eval")
-        if (!is.null(self$reference_version))
-          private$check_reference_version()
-        invisible(self)
-      },
-
-      #' @description Validate configuration for export
-      validate_export = function() {
-        validate_for(self, "export")
-        if (!dir.exists(self$output_dir) && !dir.create(self$output_dir))
+        if (
+          !is.null(self$output_dir) &&
+            !dir.exists(self$output_dir) &&
+            !dir.create(self$output_dir)
+        ) {
           stop("Can't create ", self$output_dir, " directory", call. = FALSE)
+        }
         invisible(self)
       },
 
@@ -591,18 +590,5 @@ Configuration <- R6::R6Class("Configuration", # nolint: object_name_linter
         invisible(self)
       }
     )
-  ),
-
-  private = list(
-    check_reference_version = function() {
-      ws <- EvalWorkspace$new(self$eval_workspace)
-      versions <- ws$get_all_versions()
-      if (is.null(versions) || !(self$reference_version %in% versions))
-        stop(
-          "Reference version is not present in evaluation workspace. ",
-          "Available versions: ", toString(versions),
-          call. = FALSE
-        )
-    }
   )
 )

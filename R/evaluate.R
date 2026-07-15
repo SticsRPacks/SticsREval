@@ -1,107 +1,8 @@
-#' @importFrom rlang .data
-NULL
-
-remove_null_values <- function(l) {
-  result <- l[!vapply(l, is.null, logical(1))]
-  if (length(result) == 0) list() else result
-}
-format_duration <- function(start_time, end_time = Sys.time(), digits = 2) {
-  elapsed <- as.numeric(end_time - start_time, units = "secs")
-
-  h <- elapsed %/% 3600
-  m <- (elapsed %% 3600) %/% 60
-  s <- elapsed %% 60
-
-  if (digits > 0) {
-    s_str <- formatC(
-      s, format = "f", digits = digits, flag = "0", width = 2 + digits + 1
-    )
-  } else {
-    s_str <- sprintf("%02d", round(s))
-  }
-
-  sprintf("%02d:%02d:%s", h, m, s_str)
-}
-
-format_species <- function(x) {
-  if (length(x) == 0) {
-    return("None")
-  }
-  toString(x)
-}
-
-safe_write_csv <- function(data, path) {
-  tryCatch({
-    readr::write_delim(
-      data,
-      path,
-      delim = ",",
-      na = "NA"
-    )
-  },
-  error = function(e) {
-    logger::log_error(
-      sprintf("ERROR: Unable to create '%s': %s", path, e$message)
-    )
-    stop(sprintf("Error: unable to create %s", path), call. = FALSE)
-  })
-}
-
-read_csv <- function(filepath, delimiter = ",") {
-  csv_data <- readr::read_delim(
-    filepath,
-    delim = delimiter,
-    na = c("NA", "NaN", ""),
-    locale = readr::locale(
-      decimal_mark = ".",
-      date_format = "%Y-%m-%d"
-    ),
-    show_col_types = is_debug()
-  )
-  names(csv_data) <- trimws(names(csv_data))
-  csv_data
-}
-
-gen_scatter_plot <- function(output_path, sim, obs, ref_sim, vars) {
-  plots <- plot(
-    "New version" = sim,
-    "Ref version" = ref_sim,
-    obs = obs,
-    type = "scatter",
-    select_scat = "sim",
-    var = vars
-  )
-  page_list <- htmltools::tagList(
-    lapply(vars, function(var) {
-      suppressWarnings(
-        plotly::ggplotly(
-          CroPlotR::extract_plot(plots, var = var)[[1]]
-        )
-      )
-    })
-  )
-  htmltools::save_html(
-    page_list,
-    file = output_path
-  )
-  invisible(NULL)
-}
-
-prepare_output_dir <- function(output_dir) {
-  o_dir <- file.path(output_dir)
-  if (!dir.exists(o_dir) && !dir.create(o_dir, recursive = TRUE)) {
-    stop(
-      "Can't create output directory ",
-      o_dir,
-      call. = FALSE
-    )
-  }
-}
-
 #' Run All Evaluations
 #'
 #' Initializes the evaluation workspace, runs global and species evaluations,
-#' displays a summary of results, and stops with an error if any test failed.
+#' exports results, displays a summary of results, and stops with an error if
+#' any test failed.
 #'
 #' @param config A list containing the evaluation configuration. Must include at
 #'   least the following element:
@@ -121,6 +22,7 @@ prepare_output_dir <- function(output_dir) {
 #'   \item Loads the USMS workspace via \code{USMSWorkspace$new(config)$load()}.
 #'   \item Instantiates and runs a \code{GlobalEvaluation} then a
 #'     \code{SpeciesEvaluation}.
+#'   \item Exports results to \code{config$output_dir} if defined.
 #'   \item Prints their respective summaries.
 #'   \item Displays a CLI report listing each evaluation as
 #'     \strong{success} (green ✔) or \strong{failed} (red ✗).
@@ -128,7 +30,7 @@ prepare_output_dir <- function(output_dir) {
 #' }
 #'
 #' @export
-run_all_evaluations <- function(config) {
+evaluate <- function(config) {
   logger::log_info(
     "Initializing workspace {config$eval_workspace}
     for evaluation..."

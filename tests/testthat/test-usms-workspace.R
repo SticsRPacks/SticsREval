@@ -161,40 +161,6 @@ test_that("get_rotation_list handles single-USM rotations", {
 
 # ---- load ----
 
-test_that("load sets workspace version to stics version", {
-
-  ws_dir <- withr::local_tempdir()
-  dir.create(file.path(ws_dir, "usm1"))
-
-  meta_path <- withr::local_tempfile(fileext = ".csv")
-  write_metadata(meta_path, "usm;rotation;rotation_order")
-
-  workspace <- make_fake_workspace()
-  workspace$remove_init_obs <- function() {}
-
-  config <- make_base_cfg(metadata_file = meta_path, usms_workspace = ws_dir)
-
-  loader <- make_loader(
-    workspace = workspace,
-    config = config
-  )
-  replace_private(loader, "extract_species_from_usms",
-    function(...) {
-      data.frame(
-        usm = "usm1", species = "wheat",
-        stringsAsFactors = FALSE
-      )
-    }
-  )
-  replace_private(loader, "load_stics_version", function() "v1")
-  replace_private(loader, "load_sim", function(...) invisible(NULL))
-  replace_private(loader, "load_obs", function(...) invisible(NULL))
-
-  loader$load()
-
-  expect_identical(workspace$get_version(), "v1")
-})
-
 test_that("load discovers USMs from usms_workspace subdirectories", {
   ws_dir <- withr::local_tempdir()
   dir.create(file.path(ws_dir, "usm1"))
@@ -223,6 +189,7 @@ test_that("load discovers USMs from usms_workspace subdirectories", {
   replace_private(loader, "load_stics_version", function() "v1")
   replace_private(loader, "load_sim", function(...) invisible(NULL))
   replace_private(loader, "load_obs", function(...) invisible(NULL))
+  replace_private(loader, "load_ref_sim", function(...) invisible(NULL))
 
   loader$load()
 

@@ -3,7 +3,10 @@ RRmseComparison <- R6::R6Class("RRmseComparison", # nolint: object_name_linter
     data = NULL,
     percentage = NULL,
 
-    compare_rrmse = function(species, ref_stats, new_stats) {
+    compare_rrmse = function(species, stats) {
+      ref_stats <- dplyr::filter(stats, .data$group == "reference")
+      new_stats <- dplyr::filter(stats, .data$group == "evaluated")
+
       res <- new_stats |>
         dplyr::left_join(ref_stats, by = c("situation", "variable")) |>
         dplyr::mutate(
@@ -56,23 +59,20 @@ RRmseComparison <- R6::R6Class("RRmseComparison", # nolint: object_name_linter
 
   public = list(
     initialize = function(
-      percentage, species = NULL, ref_stats = NULL,
-      eval_stats = NULL, data = NULL
+      percentage, species = NULL, stats = NULL, data = NULL
     ) {
       private$percentage <- percentage
       if (!is.null(data)) {
         private$data <- data |>
           dplyr::arrange(dplyr::desc(.data$ratio)) |>
           dplyr::collect()
-      } else if (
-        !is.null(ref_stats) && !is.null(eval_stats)
-      ) {
-        private$data <- private$compare_rrmse(species, ref_stats, eval_stats) |>
+      } else if (!is.null(stats)) {
+        private$data <- private$compare_rrmse(species, stats) |>
           dplyr::arrange(dplyr::desc(.data$ratio)) |>
           dplyr::collect()
       } else {
         stop(
-          "`data`, or `ref_stats` + `eval_stats` must be defined",
+          "`data`, or `stats` must be defined",
           call. = FALSE
         )
       }
@@ -85,22 +85,23 @@ RRmseComparison <- R6::R6Class("RRmseComparison", # nolint: object_name_linter
         cli::cli_rule(left = "Species: {private$data$species[1]}")
       }
 
+      n_crit <- length(self$critical_vars)
+      n_warn <- length(self$warning_vars)
+      n_imp <- length(self$improved_vars)
+
       cli::cli_dl(c(
-        "Total variables" = "{nrow(private$data)}"
+        "Total variables" = "{n_crit + n_warn + n_imp}"
       ))
 
-      n_crit <- length(self$critical_vars)
       cli::cli_li("{.strong {n_crit} critical} (>= {private$percentage}%)")
       if (n_crit > 0) {
         cli::cli_text(cli::col_red("  {toString(self$critical_vars)}"))
       }
-      n_warn <- length(self$warning_vars)
       cli::cli_li("{.strong {n_warn} warning} (> 0%, < {private$percentage}%)")
       if (n_warn > 0) {
         cli::cli_text(cli::col_yellow("  {toString(self$warning_vars)}"))
       }
 
-      n_imp <- length(self$improved_vars)
       cli::cli_li("{.strong {n_imp} improved} (<= 0%)")
       if (n_imp > 0) {
         cli::cli_text(cli::col_green("  {toString(self$improved_vars)}"))
@@ -171,14 +172,12 @@ DeterioratedUSMComparison <- R6::R6Class("DeterioratedUSMComparison", # nolint: 
     initialize = function(
       percentage,
       species = NULL,
-      ref_stats = NULL,
-      eval_stats = NULL,
+      stats = NULL,
       data = NULL
     ) {
       super$initialize(
         species = species,
-        ref_stats = ref_stats,
-        eval_stats = eval_stats,
+        stats = stats,
         percentage = percentage,
         data = data
       )

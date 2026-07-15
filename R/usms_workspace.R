@@ -80,6 +80,7 @@ USMSWorkspace <- R6::R6Class("USMSWorkspace", # nolint: object_name_linter
         species = NULL
       )
       if (!is.null(private$config$sim_rds)) {
+        logger::log_info("Loading simulations data...")
         sim <- readRDS(private$config$sim_rds)[
           unique(species_situations$situation)
         ]
@@ -122,6 +123,21 @@ USMSWorkspace <- R6::R6Class("USMSWorkspace", # nolint: object_name_linter
       private$workspace$save_obs(obs, species_situations)
       rm(obs)
       gc()
+    },
+
+    load_ref_sim = function() {
+      if (!is.null(private$config$ref_sim_rds)) {
+        logger::log_info("Loading reference simulations data...")
+        species_situations <- private$workspace$get_species_situations(
+          species = NULL
+        )
+        ref_sim <- readRDS(private$config$ref_sim_rds)[
+          unique(species_situations$situation)
+        ]
+        private$workspace$save_ref_sim(ref_sim, species_situations)
+        rm(ref_sim)
+        gc()
+      }
     },
 
     get_var_from_obs = function() {
@@ -189,11 +205,10 @@ USMSWorkspace <- R6::R6Class("USMSWorkspace", # nolint: object_name_linter
       }
       usms_species <- private$extract_species_from_usms(all_usms)
       private$workspace$save_species_usm(usms_species)
-      stics_version <- private$load_stics_version()
-      private$workspace$set_version(stics_version)
 
       private$load_obs()
       private$load_sim()
+      private$load_ref_sim()
       private$workspace$remove_init_obs()
       invisible(private$workspace)
     }

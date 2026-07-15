@@ -117,22 +117,3 @@ test_that("run logs and rethrows error", {
   expect_error(eval$run(), "fail")
   expect_gt(length(logger$.env$error_calls), 0)
 })
-
-test_that("evaluate_species skips comparison if no reference_version", {
-  eval <- make_species_eval(make_base_cfg())
-  replace_private(eval, "gen_species_stats", function(...) {})
-  called <- new.env()
-  called$flag <- FALSE
-
-  replace_private(
-    eval,
-    "gen_species_deteriorated_usm",
-    function(...) {
-      called$flag <- TRUE
-    }
-  )
-
-  eval$.__enclos_env__$private$evaluate_species("wheat")
-
-  expect_false(called$flag)
-})

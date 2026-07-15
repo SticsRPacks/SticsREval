@@ -11,7 +11,7 @@ validate_for(self, context, schema = config_schema)
 relevant fields).}
 
 \item{context}{Character scalar naming the workflow, e.g. "eval",
-"export", "balance_closure".}
+"balance_closure".}
 
 \item{schema}{A schema produced by config_schema.}
 }

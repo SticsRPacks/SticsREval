@@ -1,7 +1,6 @@
 EvalDataReader <- R6::R6Class("EvalDataReader", # nolint: object_name_linter
   private = list(
     .data_dir = NULL,
-    .version = NULL,
 
     open_ds = function(path, warn_msg) {
       if (!file.exists(path) && !dir.exists(path)) {
@@ -13,14 +12,13 @@ EvalDataReader <- R6::R6Class("EvalDataReader", # nolint: object_name_linter
       arrow::open_dataset(path)
     },
 
-    apply_version = function(ds) {
-      if (is.null(private$.version)) return(ds)
-      dplyr::filter(ds, .data$version == private$.version)
-    },
-
     apply_filters = function(
-      ds, species = NULL, usms = NULL, var2exclude = NULL
+      ds, version = NULL, species = NULL, usms = NULL, var2exclude = NULL
     ) {
+
+      if (!is.null(version)) {
+        ds <- dplyr::filter(ds, .data$version == !!version)
+      }
 
       if (!is.null(species)) {
         ds <- dplyr::filter(ds, .data$species %in% !!species)
@@ -37,11 +35,6 @@ EvalDataReader <- R6::R6Class("EvalDataReader", # nolint: object_name_linter
       ds
     },
 
-    apply_version_if_needed = function(ds, apply_version) {
-      if (!apply_version) return(ds)
-      private$apply_version(ds)
-    },
-
     post_process = function(ds, collect) {
       if (is.null(ds)) return(NULL)
       if (collect) dplyr::collect(ds) else ds # nolint: coalesce_linter
@@ -49,32 +42,25 @@ EvalDataReader <- R6::R6Class("EvalDataReader", # nolint: object_name_linter
   ),
 
   public = list(
-    initialize = function(data_dir, version = NULL) {
+    initialize = function(data_dir) {
       private$.data_dir <- data_dir
-      private$.version <- version
-    },
-
-    set_version = function(version) {
-      private$.version <- version
     },
 
     read = function(
       path,
+      version = NULL,
       species = NULL,
       usms = NULL,
       var2exclude = NULL,
       collect = FALSE,
-      warn_msg = "",
-      apply_version = TRUE
+      warn_msg = ""
     ) {
       logger::log_debug("Reading dataset from", path, "...")
       ds <- private$open_ds(path, warn_msg)
       logger::log_debug("Dataset opened, applying filters...")
       if (is.null(ds)) return(NULL)
-      logger::log_debug("Applying version filter...")
-      ds <- private$apply_version_if_needed(ds, apply_version)
       logger::log_debug("Applying species, USMs and variable filters...")
-      ds <- private$apply_filters(ds, species, usms, var2exclude)
+      ds <- private$apply_filters(ds, version, species, usms, var2exclude)
 
       if (!is.null(species)) {
         n <- ds |>
@@ -99,26 +85,15 @@ EvalDataReader <- R6::R6Class("EvalDataReader", # nolint: object_name_linter
 
 EvalDataWriter <- R6::R6Class("EvalDataWriter", # nolint: object_name_linter
   private = list(
-    .data_dir = NULL,
-    .version = NULL
+    .data_dir = NULL
   ),
 
   public = list(
-    initialize = function(data_dir, version = NULL) {
+    initialize = function(data_dir) {
       private$.data_dir <- data_dir
-      private$.version <- version
-    },
-
-    set_version = function(version) {
-      private$.version <- version
     },
 
     write_dataset = function(data, path, partitioning) {
-
-      if (!is.null(private$.version)) {
-        data <- dplyr::mutate(data, version = private$.version)
-      }
-
       arrow::write_dataset(
         data,
         path = path,
@@ -144,12 +119,9 @@ EvalDataWriter <- R6::R6Class("EvalDataWriter", # nolint: object_name_linter
 #'   data_dir = "/path/to/eval_workspace"
 #' )
 #' }
-#'
-#' @export
 EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
   private = list(
     .data_dir = NULL,
-    .version  = NULL,
     .reader = NULL,
     .writer = NULL
   ),
@@ -159,17 +131,11 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
     #' @param data_dir Path to the evaluation workspace
     #' @param version Optional, the version of STICS to use for the data
     #' extraction. If not defined the last evaluated version will be used.
-    initialize = function(data_dir, version = NULL) {
+    initialize = function(data_dir) {
       private$.data_dir <- data_dir
 
       private$.reader <- EvalDataReader$new(data_dir)
-      if (is.null(version)) {
-        version <- self$get_stics_version()
-      }
-
-      private$.version <- version
-      private$.reader$set_version(version)
-      private$.writer <- EvalDataWriter$new(data_dir, version)
+      private$.writer <- EvalDataWriter$new(data_dir)
 
     },
 
@@ -179,7 +145,8 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
     #' @param usms_species a dataframe which associates a USM to its species
     save_sim = function(sim, usms_species) {
       sim_data <- CroPlotR::bind_rows(sim) |>
-        dplyr::inner_join(usms_species, by = "situation")
+        dplyr::inner_join(usms_species, by = "situation") |>
+        dplyr::mutate(version = "evaluated")
 
       private$.writer$write_dataset(
         sim_data,
@@ -198,6 +165,22 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
       private$.writer$write_dataset(
         obs_data,
         obs_ds_path(private$.data_dir),
+        partitioning = "species"
+      )
+    },
+
+    #' @description
+    #' Save reference simulations
+    #' @param ref_sim the list of reference simulations
+    #' @param usms_species a dataframe which associates a USM to its species
+    save_ref_sim = function(ref_sim, usms_species) {
+      ref_sim_data <- CroPlotR::bind_rows(ref_sim) |>
+        dplyr::inner_join(usms_species, by = "situation") |>
+        dplyr::mutate(version = "reference")
+
+      private$.writer$write_dataset(
+        ref_sim_data,
+        sim_ds_path(private$.data_dir),
         partitioning = c("version", "species")
       )
     },
@@ -207,8 +190,7 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
     get_species = function() {
       res <- private$.reader$read(
         path = species_usm_ds_path(private$.data_dir),
-        collect = TRUE,
-        apply_version = FALSE
+        collect = TRUE
       )
       if (is.null(res)) return(NULL)
       res |>
@@ -228,8 +210,7 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
         path = species_usm_ds_path(private$.data_dir),
         species = species,
         usms = usms,
-        collect = TRUE,
-        apply_version = FALSE
+        collect = TRUE
       )
       if (is.null(res)) return(NULL)
       res <- dplyr::select(res, species, situation)
@@ -264,6 +245,7 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
     ) {
       private$.reader$read(
         path = sim_ds_path(private$.data_dir),
+        version = "evaluated",
         species = species,
         usms = usms,
         var2exclude = var2exclude,
@@ -296,298 +278,30 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
         warn_msg = "Observation dataset not found"
       )
     },
+
     #' @description
-    #' Save a species statistics
+    #' Return the reference simulation
     #'
-    #' @param species the species
-    #' @param stats the statistics as a dataframe
-    save_stats = function(species, stats) {
-      private$.writer$write_dataset(
-        data = dplyr::mutate(stats, species = species),
-        path = stats_ds_path(private$.data_dir),
-        partitioning = c("version", "species")
-      )
-    },
-    #' @description
-    #' Save global statistics
-    #'
-    #' @param stats the global statistics as a dataframe
-    save_global_stats = function(stats) {
-      private$.writer$write_dataset(
-        data = stats,
-        path = global_stats_ds_path(private$.data_dir),
-        partitioning = "version"
-      )
-    },
-    #' @description
-    #' Return statistics for a species
-    #'
-    #' @param species the species
-    #' @param collect Optional, if `TRUE` returns a dataframe,
-    #'  otherwise a lazy arrow data object will be returned
-    #'
-    #' @returns the statistics, as a dataframe if collect is `TRUE`,
-    #'  a lazy arrow data object otherwise
-    get_stats = function(species, collect = FALSE) {
-      private$.reader$read(
-        path = stats_ds_path(private$.data_dir),
-        species = species,
-        collect = collect,
-        warn_msg = paste("No stats for", species)
-      )
-    },
-    #' @description
-    #' Return global statistics
-    #'
-    #' @param collect Optional, if `TRUE` returns a dataframe,
-    #'  otherwise a lazy arrow data object will be returned
-    #' @returns the global statistics, as a dataframe if collect is `TRUE`,
-    #'  a lazy arrow data object otherwise
-    get_global_stats = function(collect = FALSE) {
-      private$.reader$read(
-        path = global_stats_ds_path(private$.data_dir),
-        collect = collect,
-        warn_msg = "No global stats found"
-      )
-    },
-    #' @description
-    #' Save the rRMSE per USM
-    #'
-    #' @param species the species
-    #' @param rrmse_per_usm the rRMSE per USMs
-    save_rrmse_per_usm = function(species, rrmse_per_usm) {
-      private$.writer$write_dataset(
-        data = dplyr::mutate(rrmse_per_usm, species = species),
-        path = rrmse_per_usm_ds_path(private$.data_dir),
-        partitioning = c("version", "species")
-      )
-    },
-    #' @description
-    #' Return the rRMSE per USM for a species
-    #'
-    #' @param species Optional, the species
-    #' @param collect Optional, if `TRUE` a dataframe will be returned,
-    #'  otherwise a lazy arrow data object will be returned
-    #' @param usms Optional, if defined filter the rRMSE per USM with these
-    #'  USMs
+    #' @param species Optional, if defined filter the reference simulations with
+    #'  this species
+    #' @param usms Optional, if defined filter the reference simulations with
+    #'  these USMs
     #' @param var2exclude Optional, if defined remove the variables from
-    #'  the returned rRMSE per USM
-    #'
-    #' @returns the rRMSE per USM for a species, as a dataframe if collect is
-    #'  `TRUE`, a lazy arrow data object otherwise
-    get_rrmse_per_usm = function(
-      species = NULL, collect = FALSE, usms = NULL, var2exclude = NULL
+    #'  the returned reference simulations
+    #' @param collect Optional, if `TRUE` a dataframe will be returned,
+    #'  otherwise the lazy arrow data object will be returned
+    get_ref_sim = function(
+      species = NULL, usms = NULL, var2exclude = NULL, collect = TRUE
     ) {
       private$.reader$read(
-        path = rrmse_per_usm_ds_path(private$.data_dir),
+        path = sim_ds_path(private$.data_dir),
+        version = "reference",
         species = species,
         usms = usms,
         var2exclude = var2exclude,
         collect = collect,
-        warn_msg = paste("No rRMSE for", species)
+        warn_msg = "Reference simulation dataset not found"
       )
-    },
-    #' @description
-    #' Save the deteriorated USM
-    #'
-    #' @param deteriorated the deteriorated USM object
-    save_deteriorated_usm = function(deteriorated) {
-      private$.writer$write_dataset(
-        data = dplyr::mutate(deteriorated$get_data()),
-        path = deteriorated_ds_path(private$.data_dir),
-        partitioning = c("version", "species")
-      )
-    },
-    #' @description
-    #' Get the deteriorated USM comparison for a species
-    #'
-    #' @param species the species
-    #' @param percentage the percentage
-    #'
-    #' @returns a DeterioratedUSMComparison object
-    get_deteriorated_usm = function(species, percentage) {
-      res <- private$.reader$read(
-        path = deteriorated_ds_path(private$.data_dir),
-        species = species,
-        collect = TRUE,
-        warn_msg = paste("No deteriorated USM for", species)
-      )
-      if (is.null(res)) return(NULL)
-      DeterioratedUSMComparison$new(data = res, percentage = percentage)
-    },
-    #' @description
-    #' Save the species comparison
-    #'
-    #' @param spec_comparison the species comparison object
-    save_species_comparison = function(spec_comparison) {
-      private$.writer$write_dataset(
-        data = spec_comparison$get_data(),
-        path = comparison_ds_path(private$.data_dir),
-        partitioning = c("version", "species")
-      )
-    },
-    #' @description
-    #' Save the global comparison
-    #'
-    #' @param spec_comparison the global comparison object
-    save_global_comparison = function(spec_comparison) {
-      private$.writer$write_dataset(
-        data = spec_comparison$get_data(),
-        path = global_comparison_ds_path(private$.data_dir),
-        partitioning = "version"
-      )
-    },
-    #' @description
-    #' Get the species comparison for a species
-    #'
-    #' @param species the species
-    #' @param percentage the percentage
-    #'
-    #' @returns an RRmseComparison object
-    get_species_comparison = function(
-      species, percentage
-    ) {
-      res <- private$.reader$read(
-        path = comparison_ds_path(private$.data_dir),
-        species = species,
-        collect = TRUE,
-        warn_msg = paste("No comparison for", species)
-      )
-      if (is.null(res)) return(NULL)
-      RRmseComparison$new(
-        data = res,
-        percentage = percentage
-      )
-    },
-    #' @description
-    #' Get the global comparison
-    #'
-    #' @param percentage the percentage
-    #'
-    #' @returns an RRmseComparison object
-    get_global_comparison = function(percentage) {
-      res <- private$.reader$read(
-        path = global_comparison_ds_path(private$.data_dir),
-        collect = TRUE,
-        warn_msg = "No global comparison found"
-      )
-      if (is.null(res)) return(NULL)
-      RRmseComparison$new(
-        data = res,
-        percentage = percentage
-      )
-    },
-    #' @description
-    #' Save the metadata
-    #'
-    #' @param metadata the metadata dataframe
-    save_metadata = function(metadata) {
-      arrow::write_parquet(
-        metadata,
-        sink = metadata_ds_path(private$.data_dir)
-      )
-    },
-    #' @description
-    #' Add an evaluated version to the metadata
-    #'
-    #' @param version the STICS version
-    add_evaluated_version = function(version) {
-      new_line <- data.frame(
-        stics_version = version,
-        last_evaluated = TRUE
-      )
-
-      if (file.exists(metadata_ds_path(private$.data_dir))) {
-        metadata <- private$.reader$read(
-          path = metadata_ds_path(private$.data_dir),
-          collect = TRUE,
-          apply_version = FALSE,
-          warn_msg = paste("No metadata file found in", private$.data_dir)
-        )
-
-        metadata <- dplyr::mutate(metadata, last_evaluated = FALSE)
-
-        if (version %in% metadata$stics_version) {
-          metadata <- dplyr::mutate(
-            metadata,
-            last_evaluated = dplyr::if_else(
-              stics_version == version, TRUE, last_evaluated
-            )
-          )
-        } else {
-          metadata <- rbind(metadata, new_line)
-        }
-      } else {
-        metadata <- new_line
-      }
-      arrow::write_parquet(metadata, sink = metadata_ds_path(private$.data_dir))
-    },
-    #' @description
-    #' Get all evaluated versions
-    #'
-    #' @returns a list of versions
-    get_all_versions = function() {
-      versions <- private$.reader$read(
-        path = metadata_ds_path(private$.data_dir),
-        collect = TRUE,
-        apply_version = FALSE,
-        warn_msg = paste("No metadata file found in", private$.data_dir)
-      )
-      if (is.null(versions)) return(NULL)
-      versions$stics_version
-    },
-    #' @description
-    #' Get the last evaluated STICS version
-    #'
-    #' @returns the STICS version
-    get_stics_version = function() {
-      ds <- private$.reader$read(
-        path = metadata_ds_path(private$.data_dir),
-        collect = TRUE,
-        warn_msg = paste("No metadata file found in", private$.data_dir),
-        apply_version = FALSE
-      )
-      if (is.null(ds)) {
-        return(NULL)
-      }
-      res <- dplyr::filter(ds, .data$last_evaluated)
-      res$stics_version
-    },
-    #' @description
-    #' Create a new EvalWorkspace with a specific version
-    #'
-    #' @param version the version
-    #'
-    #' @returns an EvalWorkspace object
-    with_version = function(version) {
-      all_versions <- self$get_all_versions()
-      if (is.null(all_versions) || !(version %in% all_versions)) {
-        stop(
-          "Version ",
-          version,
-          " not found in the workspace. Available versions: ",
-          toString(all_versions),
-          call. = FALSE
-        )
-      }
-      EvalWorkspace$new(private$.data_dir, version)
-    },
-
-    #' @description
-    #' Set the version of the evaluation workspace
-    #'
-    #' @param v the version to set
-    set_version = function(v) {
-      private$.version <- v
-      private$.reader$set_version(v)
-      private$.writer$set_version(v)
-    },
-    #' @description
-    #' Get the current version of the evaluation workspace
-    #'
-    #' @returns the current version of the evaluation workspace
-    get_version = function() {
-      private$.version
     },
 
     #' @description
@@ -639,7 +353,7 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
         arrow::write_dataset(
           obs_ds_path(private$.data_dir),
           format = "parquet",
-          partitioning = c("version", "species")
+          partitioning = "species"
         )
     },
     #' @description
@@ -667,34 +381,6 @@ sim_ds_path <- function(data_dir) {
 
 obs_ds_path <- function(data_dir) {
   file.path(data_dir, "obs")
-}
-
-global_stats_ds_path <- function(data_dir) {
-  file.path(data_dir, "global_stats")
-}
-
-stats_ds_path <- function(data_dir) {
-  file.path(data_dir, "stats")
-}
-
-rrmse_per_usm_ds_path <- function(data_dir) {
-  file.path(data_dir, "rRMSE_per_USM")
-}
-
-deteriorated_ds_path <- function(data_dir) {
-  file.path(data_dir, "Deteriorated_rRMSE_per_usm")
-}
-
-global_comparison_ds_path <- function(data_dir) {
-  file.path(data_dir, "Global_Comparison")
-}
-
-comparison_ds_path <- function(data_dir) {
-  file.path(data_dir, "comparison")
-}
-
-metadata_ds_path <- function(data_dir) {
-  file.path(data_dir, "metadata.parquet")
 }
 
 species_usm_ds_path <- function(data_dir) {

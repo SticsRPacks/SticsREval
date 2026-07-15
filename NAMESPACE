@@ -3,7 +3,7 @@
 export(BalanceClosureTest)
 export(Configuration)
 export(EvalWorkspace)
-export(export_stats_to_csv)
+export(evaluate)
 export(run_all_evaluations)
 importFrom(R6,R6Class)
 importFrom(SticsOnR,get_version_number)
