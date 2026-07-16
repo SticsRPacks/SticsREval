@@ -3,5 +3,4 @@
 export(BalanceClosureTest)
 export(Configuration)
 export(evaluate)
-export(run_all_evaluations)
 importFrom(rlang,.data)

@@ -217,14 +217,14 @@
       "Encoding": "UTF-8",
       "Language": "en-US",
       "Roxygen": "list(markdown = TRUE)",
-      "RoxygenNote": "7.3.3",
+      "Config/roxygen2/version": "8.0.0",
       "Author": "Patrice Lecharpentier [aut, cre] (ORCID: <https://orcid.org/0000-0002-4044-4322>), Remi Vezy [aut] (ORCID: <https://orcid.org/0000-0002-0808-1461>), Samuel Buis [aut] (ORCID: <https://orcid.org/0000-0002-8676-5447>), Michel Giner [aut] (ORCID: <https://orcid.org/0000-0002-9310-2377>), Julie Constantin [rev], Dominique Ripoche [rev], Marie Launay [rev], Christine Le Bas [rev], Alain Mollier [rev]",
       "Maintainer": "Patrice Lecharpentier <patrice.lecharpentier@inrae.fr>",
       "RemoteType": "github",
       "RemoteUsername": "SticsRPacks",
       "RemoteRepo": "SticsOnR",
       "RemoteRef": "main",
-      "RemoteSha": "205fa01340c1d8cd5ed6150a2cb514ad94cd4657",
+      "RemoteSha": "877c032436e8cf4be068104e7916142350e38779",
       "RemoteHost": "api.github.com"
     },
     "SticsRFiles": {
