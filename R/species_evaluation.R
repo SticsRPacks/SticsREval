@@ -1,3 +1,32 @@
+#' SpeciesEvaluation class
+#'
+#' @description
+#' The \code{SpeciesEvaluation} class is responsible for evaluating the
+#' performance of a model across different species. It computes statistics,
+#' generates comparisons, and produces reports for each species based on the
+#' provided configuration and workspace.
+#'
+#' @details
+#' The class uses a backend for parallel processing and a workspace to
+#' access simulation and observation data. It provides methods to run
+#' evaluations, summarize results, and export findings.
+#'
+#' @examples
+#' \dontrun{
+#' config <- list(
+#'    eval_workspace = "path/to/eval_workspace",
+#'    usms = c("USM1", "USM2"),
+#'    species = c("Species1", "Species2"),
+#'    var2exclude = c("var1", "var2"),
+#'    percentage = 10,
+#'    parallel = TRUE,
+#'    cores = 4,
+#'    output_dir = "path/to/output"
+#' )
+#' species_eval <- SpeciesEvaluation$new(config = config)
+#' species_eval$run()
+#' }
+#' @export
 SpeciesEvaluation <- R6::R6Class("SpeciesEvaluation", # nolint: object_name_linter
 
   private = list(
@@ -144,6 +173,11 @@ SpeciesEvaluation <- R6::R6Class("SpeciesEvaluation", # nolint: object_name_lint
   ),
 
   active = list(
+    #' @field success
+    #' A logical value indicating whether the species evaluation was successful.
+    #' The evaluation is considered successful if all species comparisons were
+    #' performed and there are no critical variables identified in any of the
+    #' comparisons.
     success = function() {
       comparisons <- Filter(Negate(is.null), private$rrmse_comparisons)
       all_crit <- unique(unlist(lapply(comparisons, function(c) {
@@ -154,6 +188,18 @@ SpeciesEvaluation <- R6::R6Class("SpeciesEvaluation", # nolint: object_name_lint
   ),
 
   public = list(
+    #' @description
+    #' Create a new SpeciesEvaluation object.
+    #' @param config A Configuration object containing the necessary parameters
+    #' for the evaluation.
+    #' @param workspace An optional EvalWorkspace object. If not provided, a new
+    #' EvalWorkspace will be created using the provided configuration.
+    #' @param backend An optional ParallelBackend object for parallel
+    #' processing.
+    #' If not provided, a new ParallelBackend will be created using the provided
+    #' configuration.
+    #' @param logger An optional logger object for logging messages. If not
+    #' provided, the default logger will be used.
     initialize = function(
       config, workspace = NULL, backend = NULL, logger = default_logger
     ) {
@@ -168,6 +214,11 @@ SpeciesEvaluation <- R6::R6Class("SpeciesEvaluation", # nolint: object_name_lint
       private$logger <- logger
     },
 
+    #' @description
+    #' Run the species evaluation.
+    #' This method performs the species evaluation by generating statistics and
+    #' comparisons for each species based on the provided configuration and
+    #' workspace.
     run = function() {
       on.exit({
         end_time <- Sys.time()
@@ -203,6 +254,8 @@ SpeciesEvaluation <- R6::R6Class("SpeciesEvaluation", # nolint: object_name_lint
       })
     },
 
+    #' @description
+    #' Print a summary of the species evaluation results.
     summary = function() {
       comparisons <- Filter(Negate(is.null), private$rrmse_comparisons)
       cli::cli_h1("Species comparisons")
@@ -255,6 +308,12 @@ SpeciesEvaluation <- R6::R6Class("SpeciesEvaluation", # nolint: object_name_lint
       invisible(self)
     },
 
+    #' @description
+    #' Export the species evaluation results to CSV files and plots.
+    #' This method exports the statistics, rRMSE comparisons, and deteriorated
+    #' USM data to CSV files in the specified output directory. It also
+    #' generates plots for each species and saves them in the "plots"
+    #' subdirectory.
     export = function() {
       plots_dir <- file.path(private$config$output_dir, "plots")
       dir.create(

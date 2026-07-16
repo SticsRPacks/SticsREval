@@ -2,5 +2,7 @@
 
 export(BalanceClosureTest)
 export(Configuration)
+export(GlobalEvaluation)
+export(SpeciesEvaluation)
 export(evaluate)
 importFrom(rlang,.data)
