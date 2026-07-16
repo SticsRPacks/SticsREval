@@ -136,10 +136,10 @@ config <- Configuration$new(
 
 | Field | Description |
 |---|---|
-| `stics_exe` | Path to the STICS executable (required) |
+| `stics_exe` | Path to the STICS executable (required when `run_simulations = TRUE`) |
 | `usms_workspace` | Path to the USMs input data directory (required) |
 | `metadata_file` | Path to the metadata CSV file describing simulations (required when `run_simulations = TRUE`) |
-| `eval_workspace` | Path to the evaluation workspace, used internally to stage simulation and observation data as Parquet datasets before evaluation. Created automatically by `evaluate()` if it doesn't exist |
+| `eval_workspace` | Optional path to the evaluation workspace, used internally to stage simulation and observation data as Parquet datasets before evaluation. Created automatically by `evaluate()` if it doesn't exist. If not provided, a temporary directory will be used |
 | `output_dir` | Output directory for CSV exports and plots (required for export and plots workflows) |
 | `run_simulations` | Whether to run STICS simulations (default: `FALSE`). Alternative to providing pre-computed data via `sim_rds` / `obs_rds` |
 | `verbose` | Logging verbosity level: `0` = silent, `1` = info, `2` = debug (default: `1`) |

@@ -10,7 +10,7 @@
 #' @param validator Function. Custom validation: function(val) returns
 #'   TRUE if valid, or a character error message otherwise.
 #' @param required_for Character vector. Names of workflow contexts (e.g.
-#'   "eval", "export", "balance_closure") in which this field must be
+#'   "eval", "balance_closure") in which this field must be
 #'   non-NULL. Checked by \code{validate_for()}. This is independent of
 #'   \code{nullable}, which only governs whether NULL is an acceptable
 #'   value in general (outside of any specific workflow).
@@ -118,6 +118,16 @@ check_metadata_file <- function(s) {
 }
 
 #' @keywords internal
+check_stics_exe <- function(s) {
+  if (!s$run_simulations) return(TRUE)
+  if (is.null(s$stics_exe))
+    return("stics_exe is required when run_simulations = TRUE")
+  if (!file.exists(s$stics_exe))
+    return(paste0("stics_exe not found: ", s$stics_exe))
+  TRUE
+}
+
+#' @keywords internal
 check_parallel_cores <- function(s) {
   if (!isTRUE(s$parallel)) return(TRUE)
   cores_missing <- is.null(s$cores) ||
@@ -142,7 +152,7 @@ config_schema <- list(
       default = NULL,
       type = "character",
       nullable = TRUE,
-      required_for = c("eval", "balance_closure"),
+      required_for = "balance_closure",
       group = "paths"
     ),
 
@@ -162,10 +172,10 @@ config_schema <- list(
     ),
 
     eval_workspace = field_spec(
-      default = NULL,
+      default = tempfile(pattern = "eval_workspace_"),
       type = "character",
-      nullable = TRUE,
-      required_for = c("eval", "export"),
+      nullable = FALSE,
+      required_for = "eval",
       group = "paths"
     ),
 
@@ -173,7 +183,6 @@ config_schema <- list(
       default = NULL,
       type = "character",
       nullable = TRUE,
-      required_for = "export",
       group = "paths"
     ),
 
@@ -272,6 +281,10 @@ config_schema <- list(
     list(
       desc = "If run_simulations = TRUE, metadata_file must be a valid path",
       check = check_metadata_file
+    ),
+    list(
+      desc = "If run_simulations = TRUE, stics_exe must be a valid path",
+      check = check_stics_exe
     ),
     list(
       desc = "If parallel = TRUE, cores must be an integer >= 1",
