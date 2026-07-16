@@ -1,34 +1,27 @@
 # ---- Fixtures ----
 
-make_ref_stats <- function() {
+make_stats <- function() {
   data.frame(
-    situation = c("usm1", "usm1", "usm2"),
-    variable = c("LAI", "MASEC", "LAI"),
-    rRMSE = c(0.10, 0.20, 0.15),
-    n_obs = c(20, 20, 20),
-    stringsAsFactors = FALSE
-  )
-}
-
-make_eval_stats <- function() {
-  data.frame(
-    situation = c("usm1", "usm1", "usm2"),
-    variable = c("LAI", "MASEC", "LAI"),
-    rRMSE = c(0.12, 0.18, 0.30),
-    n_obs = c(20, 20, 20),
+    group = c(
+      "reference", "reference", "reference",
+      "evaluated", "evaluated", "evaluated"
+    ),
+    situation = c("usm1", "usm1", "usm2", "usm1", "usm1", "usm2"),
+    variable = c("LAI", "MASEC", "LAI", "LAI", "MASEC", "LAI"),
+    rRMSE = c(0.10, 0.20, 0.15, 0.12, 0.18, 0.30),
+    n_obs = c(20, 20, 20, 20, 20, 20),
     stringsAsFactors = FALSE
   )
 }
 
 make_comparison <- function(
   percentage = 10, species = "wheat",
-  ref = make_ref_stats(), eval = make_eval_stats()
+  stats = make_stats()
 ) {
   RRmseComparison$new(
     percentage = percentage,
     species = species,
-    ref_stats = ref,
-    eval_stats = eval
+    stats = stats
   )
 }
 
@@ -53,10 +46,10 @@ test_that("initializes from precomputed data", {
   expect_equal(cmp$get_data()$ratio, 20.0)
 })
 
-test_that("errors when neither data nor species/ref/eval provided", { # nolint: nonportable_path_linter
+test_that("errors when neither data nor stats provided", { # nolint: nonportable_path_linter
   expect_error(
     RRmseComparison$new(percentage = 10),
-    "`data`, or `ref_stats` \\+ `eval_stats` must be defined" # nolint: nonportable_path_linter
+    "`data`, or `stats` must be defined" # nolint: nonportable_path_linter
   )
 })
 
@@ -69,41 +62,31 @@ test_that("data is sorted descending by ratio", {
 # ---- ratio computation ----
 
 test_that("computes ratio correctly", {
-  ref <- data.frame(
-    situation = "usm1", variable = "LAI", rRMSE = 0.10, n_obs = 20,
+  stats <- data.frame(
+    group = c("reference", "evaluated"),
+    situation = c("usm1", "usm1"),
+    variable = c("LAI", "LAI"),
+    rRMSE = c(0.10, 0.15),
+    n_obs = c(20, 20),
     stringsAsFactors = FALSE
   )
-  eval <- data.frame(
-    situation = "usm1", variable = "LAI", rRMSE = 0.15, n_obs = 20,
-    stringsAsFactors = FALSE
-  )
-
-  cmp <- RRmseComparison$new(
-    percentage = 10, species = "wheat",
-    ref_stats = ref, eval_stats = eval
-  )
+  cmp <- RRmseComparison$new(percentage = 10, species = "wheat", stats = stats)
   expect_identical(cmp$get_data()$ratio, 50)
 })
 
 test_that("filters out non-finite and NA rows", {
-  ref <- data.frame(
-    situation = c("usm1", "usm2", "usm3"),
-    variable = c("LAI", "LAI", NA_character_),
-    rRMSE = c(0.10, Inf, 0.10),
-    n_obs = c(20, 20, 20),
+  stats <- data.frame(
+    group = c(
+      "reference", "reference", "reference",
+      "evaluated", "evaluated", "evaluated"
+    ),
+    situation = c("usm1", "usm2", "usm3", "usm1", "usm2", "usm3"),
+    variable = c("LAI", "LAI", NA_character_, "LAI", "LAI", NA_character_),
+    rRMSE = c(0.10, Inf, 0.10, 0.12, 0.20, 0.15),
+    n_obs = c(20, 20, 20, 20, 20, 20),
     stringsAsFactors = FALSE
   )
-  eval <- data.frame(
-    situation = c("usm1", "usm2", "usm3"),
-    variable = c("LAI", "LAI", NA_character_),
-    rRMSE = c(0.12, 0.20, 0.15),
-    n_obs = c(20, 20, 20),
-    stringsAsFactors = FALSE
-  )
-  cmp <- RRmseComparison$new(
-    percentage = 10, species = "wheat",
-    ref_stats = ref, eval_stats = eval
-  )
+  cmp <- RRmseComparison$new(percentage = 10, species = "wheat", stats = stats)
   # only usm1/LAI survives
   expect_identical(nrow(cmp$get_data()), 1L)
 })
@@ -117,51 +100,42 @@ test_that("critical_vars returns variables at or above percentage threshold", {
 })
 
 test_that("critical_vars does not return variables with n_obs < 10", {
-  ref <- data.frame(
-    situation = "usm1", variable = "LAI", rRMSE = 0.15, n_obs = 9,
+  stats <- data.frame(
+    group = c("reference", "evaluated"),
+    situation = c("usm1", "usm1"),
+    variable = c("LAI", "LAI"),
+    rRMSE = c(0.15, 0.30),
+    n_obs = c(9, 9),
     stringsAsFactors = FALSE
   )
-  eval <- data.frame(
-    situation = "usm1", variable = "LAI", rRMSE = 0.30, n_obs = 9,
-    stringsAsFactors = FALSE
-  )
-  cmp <- RRmseComparison$new(
-    percentage = 10, species = "wheat",
-    ref_stats = ref, eval_stats = eval
-  )
+  cmp <- RRmseComparison$new(percentage = 10, species = "wheat", stats = stats)
   expect_false("LAI" %in% cmp$critical_vars)
 })
 
 test_that("warning_vars returns variables between 0 and percentage", {
-  ref <- data.frame(
-    situation = "usm1", variable = "LAI", rRMSE = 0.10, n_obs = 20,
+  stats <- data.frame(
+    group = c("reference", "evaluated"),
+    situation = c("usm1", "usm1"),
+    variable = c("LAI", "LAI"),
+    rRMSE = c(0.10, 0.105),
+    n_obs = c(20, 20),
     stringsAsFactors = FALSE
   )
-  eval <- data.frame(
-    situation = "usm1", variable = "LAI", rRMSE = 0.105, n_obs = 20,
-    stringsAsFactors = FALSE
-  )
-  cmp <- RRmseComparison$new(
-    percentage = 10, species = "wheat",
-    ref_stats = ref, eval_stats = eval
-  )
+  cmp <- RRmseComparison$new(percentage = 10, species = "wheat", stats = stats)
   # ratio = 5%, below threshold but above 0
   expect_true("LAI" %in% cmp$warning_vars)
 })
 
 test_that("warning_vars does not return variables with n_obs < 10", {
-  ref <- data.frame(
-    situation = "usm1", variable = "LAI", rRMSE = 0.10, n_obs = 9,
+  stats <- data.frame(
+    group = c("reference", "evaluated"),
+    situation = c("usm1", "usm1"),
+    variable = c("LAI", "LAI"),
+    rRMSE = c(0.10, 0.105),
+    n_obs = c(9, 9),
     stringsAsFactors = FALSE
   )
-  eval <- data.frame(
-    situation = "usm1", variable = "LAI", rRMSE = 0.105, n_obs = 9,
-    stringsAsFactors = FALSE
-  )
-  cmp <- RRmseComparison$new(
-    percentage = 10, species = "wheat",
-    ref_stats = ref, eval_stats = eval
-  )
+  cmp <- RRmseComparison$new(percentage = 10, species = "wheat", stats = stats)
   expect_false("LAI" %in% cmp$warning_vars)
 })
 
@@ -172,35 +146,29 @@ test_that("improved_vars returns variables with ratio <= 0", {
 })
 
 test_that("improved_vars does not return variables with n_obs < 10", {
-  ref <- data.frame(
-    situation = "usm1", variable = "LAI", rRMSE = 0.105, n_obs = 9,
+  stats <- data.frame(
+    group = c("reference", "evaluated"),
+    situation = c("usm1", "usm1"),
+    variable = c("LAI", "LAI"),
+    rRMSE = c(0.105, 0.10),
+    n_obs = c(9, 9),
     stringsAsFactors = FALSE
   )
-  eval <- data.frame(
-    situation = "usm1", variable = "LAI", rRMSE = 0.10, n_obs = 9,
-    stringsAsFactors = FALSE
-  )
-  cmp <- RRmseComparison$new(
-    percentage = 10, species = "wheat",
-    ref_stats = ref, eval_stats = eval
-  )
+  cmp <- RRmseComparison$new(percentage = 10, species = "wheat", stats = stats)
   expect_false("LAI" %in% cmp$improved_vars)
 })
 
 test_that("is_empty returns TRUE when no rows", {
   # ref and eval with no matching situations
-  ref <- data.frame(
-    situation = "usm1", variable = "LAI", rRMSE = 0.10, n_obs = 20,
+  stats <- data.frame(
+    group = c("reference", "evaluated"),
+    situation = c("usm1", "usm2"),
+    variable = c("LAI", "LAI"),
+    rRMSE = c(0.10, 0.12),
+    n_obs = c(20, 20),
     stringsAsFactors = FALSE
   )
-  eval <- data.frame(
-    situation = "usm2", variable = "LAI", rRMSE = 0.12, n_obs = 20,
-    stringsAsFactors = FALSE
-  )
-  cmp <- RRmseComparison$new(
-    percentage = 10, species = "wheat",
-    ref_stats = ref, eval_stats = eval
-  )
+  cmp <- RRmseComparison$new(percentage = 10, species = "wheat", stats = stats)
   expect_true(cmp$is_empty)
 })
 
@@ -227,8 +195,7 @@ test_that(
   {
     cmp <- DeterioratedUSMComparison$new(
       species = "wheat",
-      ref_stats = make_ref_stats(),
-      eval_stats = make_eval_stats(),
+      stats = make_stats(),
       percentage = 10
     )
     expect_true(all(cmp$get_data()$ratio > 0))
@@ -238,8 +205,7 @@ test_that(
 test_that("DeterioratedUSMComparison excludes improved variables", {
   cmp <- DeterioratedUSMComparison$new(
     species = "wheat",
-    ref_stats = make_ref_stats(),
-    eval_stats = make_eval_stats(),
+    stats = make_stats(),
     percentage = 10
   )
   # MASEC ratio is -10%, should be excluded
@@ -249,8 +215,7 @@ test_that("DeterioratedUSMComparison excludes improved variables", {
 test_that("DeterioratedUSMComparison data is sorted descending by ratio", {
   cmp <- DeterioratedUSMComparison$new(
     species = "wheat",
-    ref_stats = make_ref_stats(),
-    eval_stats = make_eval_stats(),
+    stats = make_stats(),
     percentage = 10
   )
   ratios <- cmp$get_data()$ratio
@@ -258,18 +223,16 @@ test_that("DeterioratedUSMComparison data is sorted descending by ratio", {
 })
 
 test_that("DeterioratedUSMComparison is empty when all ratios are improved", {
-  ref <- data.frame(
-    situation = "usm1", variable = "LAI", rRMSE = 0.20, n_obs = 20,
+  stats <- data.frame(
+    group = c("reference", "evaluated"),
+    situation = c("usm1", "usm1"),
+    variable = c("LAI", "LAI"),
+    rRMSE = c(0.20, 0.10),
+    n_obs = c(20, 20),
     stringsAsFactors = FALSE
   )
-  eval <- data.frame(
-    situation = "usm1", variable = "LAI", rRMSE = 0.10, n_obs = 20,
-    stringsAsFactors = FALSE
-  )
-
   cmp <- DeterioratedUSMComparison$new(
-    species = "wheat", ref_stats = ref,
-    eval_stats = eval, percentage = 10
+    species = "wheat", stats = stats, percentage = 10
   )
   expect_true(cmp$is_empty)
 })

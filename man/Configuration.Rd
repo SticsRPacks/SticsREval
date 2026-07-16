@@ -4,12 +4,12 @@
 \alias{Configuration}
 \title{Configuration class
 Encapsulates all configuration parameters for the package, with validation.
-The same object is used for all workflows (evaluation, export, plots), with
+The same object is used for all workflows, with
 workflow-specific validation methods.}
 \description{
 Configuration class
 Encapsulates all configuration parameters for the package, with validation.
-The same object is used for all workflows (evaluation, export, plots), with
+The same object is used for all workflows, with
 workflow-specific validation methods.
 }
 \section{Public fields}{
@@ -40,10 +40,6 @@ processing (only if parallel = TRUE). NA means auto-detect.}
     \item{\code{percentage}}{Numeric. Percentage of simulations to consider for export
 and plots (between 0 and 100).}
 
-    \item{\code{reference_version}}{Character or NULL. If specified, the version in the
-evaluation workspace to use as reference for export and plots. Must be
-present in the workspace.}
-
     \item{\code{species}}{Character vector or NULL. If specified, only these species
 will be included in export and plots.}
 
@@ -60,6 +56,10 @@ run simulations (see \code{validate_eval()}). Independent of \code{obs_rds}.}
     \item{\code{obs_rds}}{Character or NULL. Path to an .rds file containing
 observation data used as reference for evaluation, plots and balance
 closure. Independent of \code{sim_rds} — has no effect on required fields.}
+
+    \item{\code{ref_sim_rds}}{Character or NULL. Path to an .rds file containing
+reference simulation results used for evaluation and plots. Required for
+evaluation.}
   }
   \if{html}{\out{</div>}}
 }
@@ -68,7 +68,6 @@ closure. Independent of \code{sim_rds} — has no effect on required fields.}
   \itemize{
     \item \href{#method-Configuration-initialize}{\code{Configuration$new()}}
     \item \href{#method-Configuration-validate_eval}{\code{Configuration$validate_eval()}}
-    \item \href{#method-Configuration-validate_export}{\code{Configuration$validate_export()}}
     \item \href{#method-Configuration-validate_balance_closure}{\code{Configuration$validate_balance_closure()}}
     \item \href{#method-Configuration-print}{\code{Configuration$print()}}
     \item \href{#method-Configuration-clone}{\code{Configuration$clone()}}
@@ -108,18 +107,6 @@ required for eval regardless of \code{sim_rds}/\code{obs_rds}.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{Configuration$validate_eval()}
-    \if{html}{\out{</div>}}
-  }
-}
-
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-Configuration-validate_export"></a>}}
-\if{latex}{\out{\hypertarget{method-Configuration-validate_export}{}}}
-\subsection{\code{Configuration$validate_export()}}{
-  Validate configuration for export
-  \subsection{Usage}{
-    \if{html}{\out{<div class="r">}}
-    \preformatted{Configuration$validate_export()}
     \if{html}{\out{</div>}}
   }
 }

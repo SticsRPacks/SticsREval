@@ -64,19 +64,44 @@ This will install all required packages at the versions specified in `renv.lock`
 
 ## Workflow
 
-`Configuration` is the single entry point for all parameters. Once defined, it is passed to any combination of evaluation classes and export functions:
+`Configuration` is the single entry point for all parameters. The simplest way to run a full evaluation is via the `evaluate()` function, which orchestrates the entire pipeline:
 
 ```
   Configuration$new(...)                         ← defines all parameters (paths, options, filters)
            │
-           ├──► Evaluation$new(config)$run()                  ← statistical evaluation vs obs & reference
-           │         │
-           │         └──► export_stats_to_csv(config)         ← export statistics + deteriorated USMs to CSV
+           └──► evaluate(config)
+                     │
+                     ├──► USMSWorkspace$new(config)$load()      ← loads/prepares sim, obs & reference data
+                     ├──► GlobalEvaluation$new(config)$run()    ← statistical evaluation vs obs & reference (all species)
+                     ├──► SpeciesEvaluation$new(config)$run()   ← statistical evaluation vs obs & reference (per species)
+                     ├──► $export(...)                          ← export statistics, deteriorated USMs & plots to output_dir
+                     ├──► $summary()                             ← prints a summary of results
+                     └──► stops with an error if any evaluation failed
+```
+
+`BalanceClosureTest` runs independently of `evaluate()` and loads its own simulation data directly from `usms_workspace`:
+
+```
+  Configuration$new(...)
            │
            └──► BalanceClosureTest$new(config)$run()          ← water & nitrogen balance closure check
 ```
 
-All evaluation results are stored in an **`EvalWorkspace`**, which manages Parquet datasets on disk.
+For advanced use cases, `GlobalEvaluation` and `SpeciesEvaluation` can also be instantiated and run individually instead of using `evaluate()`:
+
+```
+  Configuration$new(...)
+           │
+           ├──► GlobalEvaluation$new(config)$run()            ← statistical evaluation vs obs & reference (all species)
+           │         │
+           │         └──► $export(...)                        ← export statistics to CSV
+           │
+           └──► SpeciesEvaluation$new(config)$run()           ← statistical evaluation vs obs & reference (per species)
+                     │
+                     └──► $export(...)                        ← export statistics, deteriorated USMs & plots
+```
+
+`GlobalEvaluation` and `SpeciesEvaluation` are independent classes and store their evaluation results as an internal attribute of the object. When used individually (without `evaluate()`), the data must first be loaded into the evaluation workspace via `USMSWorkspace$new(config)$load()`.
 
 ---
 
@@ -99,7 +124,9 @@ config <- Configuration$new(
   verbose            = 1L,
   parallel           = FALSE,
   cores              = NA,
-  reference_version  = NULL,
+  ref_sim_rds        = NULL,
+  sim_rds            = NULL,
+  obs_rds            = NULL,
   percentage         = 5,
   species            = NULL,
   usms               = NULL,
@@ -109,25 +136,27 @@ config <- Configuration$new(
 
 | Field | Description |
 |---|---|
-| `stics_exe` | Path to the STICS executable (required) |
+| `stics_exe` | Path to the STICS executable (required when `run_simulations = TRUE`) |
 | `usms_workspace` | Path to the USMs input data directory (required) |
 | `metadata_file` | Path to the metadata CSV file describing simulations (required when `run_simulations = TRUE`) |
-| `eval_workspace` | Path to the evaluation workspace — (required for evaluation) |
+| `eval_workspace` | Optional path to the evaluation workspace, used internally to stage simulation and observation data as Parquet datasets before evaluation. Created automatically by `evaluate()` if it doesn't exist. If not provided, a temporary directory will be used |
 | `output_dir` | Output directory for CSV exports and plots (required for export and plots workflows) |
-| `run_simulations` | Whether to run STICS simulations (default: `FALSE`) |
+| `run_simulations` | Whether to run STICS simulations (default: `FALSE`). Alternative to providing pre-computed data via `sim_rds` / `obs_rds` |
 | `verbose` | Logging verbosity level: `0` = silent, `1` = info, `2` = debug (default: `1`) |
 | `parallel` | Enable parallel execution (default: `FALSE`) |
 | `cores` | Number of cores for parallel execution (`NA` = auto; required when `parallel = TRUE`) |
-| `reference_version` | Version string present in `eval_workspace` to use as the reference for regression detection |
+| `ref_sim_rds` | Optional path to an RDS file containing the reference version's simulation outputs, used for regression detection. If not provided, evaluation runs against observations only, without regression comparison |
+| `sim_rds` | Path to an RDS file containing pre-computed simulation outputs for the new version (alternative to `run_simulations` + `usms_workspace`) |
+| `obs_rds` | Path to an RDS file containing pre-computed observation data (alternative to `run_simulations` + `usms_workspace`) |
 | `percentage` | Threshold (%) above which a variable is flagged as deteriorated vs. the reference (default: `5`) |
-| `species` | Optional character vector of species to evaluate. `NULL` = all available. |
+| `species` | Optional character vector of species to evaluate. Used by `SpeciesEvaluation` to determine which species to evaluate in the provided data; ignored by `GlobalEvaluation`. `NULL` = all available |
 | `usms` | Optional character vector of USMs to evaluate. `NULL` = all available. |
 | `var2exclude` | Optional character vector of variables to exclude from evaluation. |
 
 `Configuration` also exposes workflow-specific validation methods called internally by each function:
 
-- `config$validate_eval()` — checks requirements for the statistical evaluation workflow
-- `config$validate_export()` — checks that `output_dir` is set and writable
+- `config$validate_eval()` — checks requirements for the statistical evaluation workflow (used by `evaluate()`, `GlobalEvaluation`, and `SpeciesEvaluation`)
+- `config$validate_balance_closure()` — checks requirements for the balance closure test workflow
 
 ---
 
@@ -135,37 +164,65 @@ config <- Configuration$new(
 
 ### Statistical Evaluation
 
-#### `Evaluation`
-
-The core statistical evaluation class. It orchestrates the full evaluation workflow:
-
-- Optionally initializes the `EvalWorkspace` (loading simulations and observations from the USMs workspace)
-- Computes statistics per species (RMSE, nRMSE, bias, R², etc.) against **field observations**
-- When `reference_version` is set, compares statistics against the **reference version** to detect regressions
-- Flags variables and USMs where performance has deteriorated beyond the `percentage` threshold
-- Saves all results as **Arrow/Parquet files** in the `eval_workspace` directory
-- Displays a summary of comparison results
+The simplest way to run the full statistical evaluation is via the `evaluate()` function:
 
 ```r
-Evaluation$new(config)$run()
+evaluate(config)
 ```
 
-You can also inject custom dependencies for testing or advanced use:
+This loads simulation, observation and reference data into `eval_workspace`, runs both `GlobalEvaluation` and `SpeciesEvaluation`, exports results to `output_dir` (if defined), prints a summary, and stops with an error if any evaluation failed.
+
+#### `GlobalEvaluation`
+
+Computes statistics (RMSE, nRMSE, bias, R², etc.) across **all species and USMs combined**, against field observations and, when `ref_sim_rds` is provided, against the reference version's simulation outputs.
 
 ```r
-Evaluation$new(
+global_eval <- GlobalEvaluation$new(config)
+global_eval$run()
+global_eval$summary()
+global_eval$export()
+```
+
+- `run()` computes the global statistics and, if a reference is available, the rRMSE comparison against it.
+- `summary()` prints a report of the comparison to the console.
+- `export()` writes `global_stats.csv` to `output_dir`.
+- `global_eval$success` is `TRUE` if no variable shows a critical deterioration.
+
+#### `SpeciesEvaluation`
+
+Computes statistics per species (RMSE, nRMSE, bias, R², etc.) against field observations and, when `ref_sim_rds` is provided, against the reference version. Flags variables and USMs where performance has deteriorated beyond the `percentage` threshold.
+
+```r
+species_eval <- SpeciesEvaluation$new(config)
+species_eval$run()
+species_eval$summary()
+species_eval$export()
+```
+
+- `run()` computes per-species statistics and rRMSE comparisons for the species selected via `config$species` and `config$usms`.
+- `summary()` prints a report per species, grouped by degradation level (major, minor, none).
+- `export()` writes, to `output_dir`:
+  - `species_stats.csv` — statistical metrics per species
+  - `rRMSE_per_usm.csv` — rRMSE broken down per USM
+  - `Deteriorated_USM.csv` — USMs with deteriorated performance vs. the reference version
+  - `plots/<species>_species_comparison.png` — rRMSE comparison scatter plot (see below)
+  - `plots/<species>_scatter_plots.html` — interactive scatter plots for deteriorated variables
+- `species_eval$success` is `TRUE` if no species shows a critical deterioration.
+
+Both classes accept optional `workspace` and `logger` (and, for `SpeciesEvaluation`, `backend`) arguments for dependency injection in tests or advanced use:
+
+```r
+SpeciesEvaluation$new(
   config,
-  workspace = EvalWorkspace$new("eval_workspace/"),
-  backend   = ParallelBackend$new(FALSE, NA),
+  workspace = EvalWorkspace$new(config$eval_workspace),
+  backend   = ParallelBackend$new(config$parallel, config$cores),
   logger    = default_logger
 )$run()
 ```
 
----
+##### rRMSE comparison plot
 
-#### `plot_comparison()`
-
-Generates a scatter plot comparing the **rRMSE of the new version vs. the reference version**, one point per variable × USM combination. Points are colour-coded by regression status:
+`SpeciesEvaluation$export()` generates, for each species, a scatter plot comparing the **rRMSE of the new version vs. the reference version**, one point per variable, colour-coded by regression status:
 
 | Colour | Status | Condition |
 |--------|--------|-----------|
@@ -173,33 +230,7 @@ Generates a scatter plot comparing the **rRMSE of the new version vs. the refere
 | 🟠 Orange | Warning | 0 % < ratio < `percentage` % |
 | 🟢 Green | Improved | ratio ≤ 0 % |
 
-A diagonal line (slope = 1) marks perfect parity; a dashed line (slope = 1 + `percentage`/100) marks the deterioration threshold. Variable names are displayed as repelled labels.
-
-```r
-ws <- EvalWorkspace$new("eval_workspace/")
-
-ws$get_species_comparison(species = "wheat", percentage = 5)$
-  plot_comparison("outputs/rrmse_comparison_wheat.png")
-```
-
-The plot is saved as a PNG file at the path provided to `output_path`. `get_species_comparison()` returns `NULL` if no comparison data is available for the requested species (i.e. no reference version was set during evaluation).
-
----
-
-#### `export_stats_to_csv()`
-
-Exports the evaluation statistics to CSV files in `output_dir`:
-
-| File | Content |
-|---|---|
-| `species_stats.csv` | Statistical metrics per species |
-| `global_stats.csv` | Global statistical criteria (RMSE, nRMSE, bias, R², etc.) |
-| `rRMSE_per_usm.csv` | rRMSE broken down per USM |
-| `Deteriorated_USM.csv` | USMs with deteriorated performance vs. the reference version |
-
-```r
-export_stats_to_csv(config)
-```
+A diagonal line (slope = 1) marks perfect parity; a dashed line (slope = 1 + `percentage`/100) marks the deterioration threshold. Variable names are displayed as repelled labels. The plot is only generated when a reference version (`ref_sim_rds`) is available.
 
 ---
 
@@ -227,69 +258,70 @@ config <- Configuration$new(
 BalanceClosureTest$new(config)$run()
 ```
 
-The `run()` method logs a summary of the test and lists any USMs with balance closure issues. It respects the `usms`, `parallel`, and `cores` filters defined in the `Configuration`.
-
----
-
-## `EvalWorkspace`
-
-Manages reading and writing all evaluation data (simulations, observations, statistics, comparisons) stored as Parquet datasets on disk. Used internally by `Evaluation` and `export_stats_to_csv` but can also be used directly to inspect results.
-
-```r
-ws <- EvalWorkspace$new("eval_workspace/")
-
-# Read simulations and observations
-sim <- ws$get_sim(species = "wheat")
-obs <- ws$get_obs(species = "wheat")
-
-# Read statistics
-stats <- ws$get_stats(species = "wheat", collect = TRUE)
-
-# List all evaluated versions
-ws$get_all_versions()
-
-# Access data for a specific version
-ws_ref <- ws$with_version("v10.0")
-ref_stats <- ws_ref$get_stats(species = "wheat")
-```
-
-| Method | Description |
-|---|---|
-| `get_sim(species, usms, var2exclude)` | Return simulated data |
-| `get_obs(species, usms, var2exclude)` | Return observed data |
-| `get_stats(species)` | Return global evaluation statistics |
-| `get_rrmse_per_usm(species)` | Return rRMSE broken down per USM |
-| `get_deteriorated_usm(species, percentage)` | Return deteriorated USM comparison |
-| `get_species_comparison(species, percentage)` | Return rRMSE comparison vs reference |
-| `get_all_versions()` | List all evaluated STICS versions in the workspace |
-| `with_version(version)` | Return a new `EvalWorkspace` scoped to a specific version |
+The `run()` method logs a summary of the test and stops with an error listing any USMs with balance closure issues. It respects the `usms`, `parallel`, and `cores` filters defined in the `Configuration`.
 
 ---
 
 ## Complete Example
+
+### Simple usage
 
 ```r
 library(SticsREval)
 
 # 1. Configure the evaluation
 config <- Configuration$new(
-  stics_exe         = "/path/to/stics_candidate",
-  usms_workspace    = "workspace/",
-  metadata_file     = "metadata.csv",
-  eval_workspace    = "eval_workspace/",
-  output_dir        = "outputs/",
-  run_simulations   = TRUE,
-  reference_version = "v10.0",
-  percentage        = 5
+  stics_exe       = "/path/to/stics_candidate",
+  usms_workspace  = "workspace/",
+  metadata_file   = "metadata.csv",
+  eval_workspace  = "eval_workspace/",
+  output_dir      = "outputs/",
+  run_simulations = TRUE,
+  ref_sim_rds     = "reference_simulations.rds",
+  percentage      = 5
 )
 
-# 2. Run statistical evaluation vs observations and reference version
-Evaluation$new(config)$run()
+# 2. Run the full statistical evaluation (global + per species),
+#    export results, and print a summary
+evaluate(config)
 
-# 3. Export statistics and deteriorated USMs to CSV
-export_stats_to_csv(config)
+# 3. Check water and nitrogen balance closure
+BalanceClosureTest$new(config)$run()
+```
 
-# 4. Check water and nitrogen balance closure
+### Advanced usage
+
+```r
+library(SticsREval)
+
+# 1. Configure the evaluation
+config <- Configuration$new(
+  stics_exe       = "/path/to/stics_candidate",
+  usms_workspace  = "workspace/",
+  metadata_file   = "metadata.csv",
+  eval_workspace  = "eval_workspace/",
+  output_dir      = "outputs/",
+  run_simulations = TRUE,
+  ref_sim_rds     = "reference_simulations.rds",
+  percentage      = 5
+)
+
+# 2. Load simulation, observation and reference data into the eval workspace
+USMSWorkspace$new(config)$load()
+
+# 3. Run the global evaluation (all species combined)
+global_eval <- GlobalEvaluation$new(config)
+global_eval$run()
+global_eval$summary()
+global_eval$export()
+
+# 4. Run the per-species evaluation
+species_eval <- SpeciesEvaluation$new(config)
+species_eval$run()
+species_eval$summary()
+species_eval$export()
+
+# 5. Check water and nitrogen balance closure
 BalanceClosureTest$new(config)$run()
 ```
 
@@ -328,7 +360,7 @@ config <- Configuration$new(
   run_simulations = TRUE
 )
 
-Evaluation$new(config)$run()
+evaluate(config)
 BalanceClosureTest$new(config)$run()
 ```
 

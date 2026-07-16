@@ -518,43 +518,17 @@ test_that(
   "validate_eval passes when eval_workspace, stics_exe and usms_workspace is
   set",
   {
+    rds_file <- tempfile(fileext = ".rds")
+    file.create(rds_file)
     cfg <- Configuration$new(
       eval_workspace = "ws",
       stics_exe = "stics",
-      usms_workspace = "usms_ws"
+      usms_workspace = "usms_ws",
+      ref_sim_rds = rds_file
     )
     expect_r6_class(cfg$validate_eval(), "Configuration")
   }
 )
-
-# ---------------------------------------------------------------------------
-# validate_export
-# ---------------------------------------------------------------------------
-
-test_that("validate_export stops when output_dir is NULL", {
-  cfg <- Configuration$new(eval_workspace = "ws")
-  expect_error(cfg$validate_export(), "output_dir")
-})
-
-test_that("validate_export passes when output_dir exists", {
-  tmp <- tempdir()
-  cfg <- Configuration$new(
-    eval_workspace = "wp",
-    output_dir = tmp
-  )
-  expect_r6_class(cfg$validate_export(), "Configuration")
-})
-
-test_that("validate_export creates output_dir if it does not exist", {
-  tmp <- file.path(tempdir(), paste0("test_out_", sample.int(1e6, 1)))
-  on.exit(unlink(tmp, recursive = TRUE))
-  cfg <- Configuration$new(
-    eval_workspace = "ws",
-    output_dir = tmp
-  )
-  cfg$validate_export()
-  expect_true(dir.exists(tmp))
-})
 
 # ---------------------------------------------------------------------------
 # validate_balance_closure

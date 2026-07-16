@@ -35,7 +35,7 @@ fields that must be explicitly provided and have no sensible default.}
 TRUE if valid, or a character error message otherwise.}
 
 \item{required_for}{Character vector. Names of workflow contexts (e.g.
-"eval", "export", "balance_closure") in which this field must be
+"eval", "balance_closure") in which this field must be
 non-NULL. Checked by \code{validate_for()}. This is independent of
 \code{nullable}, which only governs whether NULL is an acceptable
 value in general (outside of any specific workflow).}

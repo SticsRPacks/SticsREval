@@ -13,7 +13,6 @@ ws <- EvalWorkspace$new(
   data_dir = "/path/to/eval_workspace"
 )
 }
-
 }
 \section{Methods}{
 \subsection{Public methods}{
@@ -21,30 +20,13 @@ ws <- EvalWorkspace$new(
     \item \href{#method-EvalWorkspace-initialize}{\code{EvalWorkspace$new()}}
     \item \href{#method-EvalWorkspace-save_sim}{\code{EvalWorkspace$save_sim()}}
     \item \href{#method-EvalWorkspace-save_obs}{\code{EvalWorkspace$save_obs()}}
+    \item \href{#method-EvalWorkspace-save_ref_sim}{\code{EvalWorkspace$save_ref_sim()}}
     \item \href{#method-EvalWorkspace-get_species}{\code{EvalWorkspace$get_species()}}
     \item \href{#method-EvalWorkspace-get_species_situations}{\code{EvalWorkspace$get_species_situations()}}
     \item \href{#method-EvalWorkspace-save_species_usm}{\code{EvalWorkspace$save_species_usm()}}
     \item \href{#method-EvalWorkspace-get_sim}{\code{EvalWorkspace$get_sim()}}
     \item \href{#method-EvalWorkspace-get_obs}{\code{EvalWorkspace$get_obs()}}
-    \item \href{#method-EvalWorkspace-save_stats}{\code{EvalWorkspace$save_stats()}}
-    \item \href{#method-EvalWorkspace-save_global_stats}{\code{EvalWorkspace$save_global_stats()}}
-    \item \href{#method-EvalWorkspace-get_stats}{\code{EvalWorkspace$get_stats()}}
-    \item \href{#method-EvalWorkspace-get_global_stats}{\code{EvalWorkspace$get_global_stats()}}
-    \item \href{#method-EvalWorkspace-save_rrmse_per_usm}{\code{EvalWorkspace$save_rrmse_per_usm()}}
-    \item \href{#method-EvalWorkspace-get_rrmse_per_usm}{\code{EvalWorkspace$get_rrmse_per_usm()}}
-    \item \href{#method-EvalWorkspace-save_deteriorated_usm}{\code{EvalWorkspace$save_deteriorated_usm()}}
-    \item \href{#method-EvalWorkspace-get_deteriorated_usm}{\code{EvalWorkspace$get_deteriorated_usm()}}
-    \item \href{#method-EvalWorkspace-save_species_comparison}{\code{EvalWorkspace$save_species_comparison()}}
-    \item \href{#method-EvalWorkspace-save_global_comparison}{\code{EvalWorkspace$save_global_comparison()}}
-    \item \href{#method-EvalWorkspace-get_species_comparison}{\code{EvalWorkspace$get_species_comparison()}}
-    \item \href{#method-EvalWorkspace-get_global_comparison}{\code{EvalWorkspace$get_global_comparison()}}
-    \item \href{#method-EvalWorkspace-save_metadata}{\code{EvalWorkspace$save_metadata()}}
-    \item \href{#method-EvalWorkspace-add_evaluated_version}{\code{EvalWorkspace$add_evaluated_version()}}
-    \item \href{#method-EvalWorkspace-get_all_versions}{\code{EvalWorkspace$get_all_versions()}}
-    \item \href{#method-EvalWorkspace-get_stics_version}{\code{EvalWorkspace$get_stics_version()}}
-    \item \href{#method-EvalWorkspace-with_version}{\code{EvalWorkspace$with_version()}}
-    \item \href{#method-EvalWorkspace-set_version}{\code{EvalWorkspace$set_version()}}
-    \item \href{#method-EvalWorkspace-get_version}{\code{EvalWorkspace$get_version()}}
+    \item \href{#method-EvalWorkspace-get_ref_sim}{\code{EvalWorkspace$get_ref_sim()}}
     \item \href{#method-EvalWorkspace-remove_init_obs}{\code{EvalWorkspace$remove_init_obs()}}
     \item \href{#method-EvalWorkspace-remove_all_sim}{\code{EvalWorkspace$remove_all_sim()}}
     \item \href{#method-EvalWorkspace-remove_all_obs}{\code{EvalWorkspace$remove_all_obs()}}
@@ -58,7 +40,7 @@ ws <- EvalWorkspace$new(
   Create an evaluation workspace manager
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
-    \preformatted{EvalWorkspace$new(data_dir, version = NULL)}
+    \preformatted{EvalWorkspace$new(data_dir)}
     \if{html}{\out{</div>}}
   }
   \subsection{Arguments}{
@@ -106,6 +88,26 @@ extraction. If not defined the last evaluated version will be used.}
     \if{html}{\out{<div class="arguments">}}
     \describe{
       \item{\code{obs}}{the list of observations}
+      \item{\code{usms_species}}{a dataframe which associates a USM to its species}
+    }
+    \if{html}{\out{</div>}}
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-EvalWorkspace-save_ref_sim"></a>}}
+\if{latex}{\out{\hypertarget{method-EvalWorkspace-save_ref_sim}{}}}
+\subsection{\code{EvalWorkspace$save_ref_sim()}}{
+  Save reference simulations
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{EvalWorkspace$save_ref_sim(ref_sim, usms_species)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{ref_sim}}{the list of reference simulations}
       \item{\code{usms_species}}{a dataframe which associates a USM to its species}
     }
     \if{html}{\out{</div>}}
@@ -240,393 +242,33 @@ otherwise the lazy arrow data object will be returned}
 }
 
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-EvalWorkspace-save_stats"></a>}}
-\if{latex}{\out{\hypertarget{method-EvalWorkspace-save_stats}{}}}
-\subsection{\code{EvalWorkspace$save_stats()}}{
-  Save a species statistics
+\if{html}{\out{<a id="method-EvalWorkspace-get_ref_sim"></a>}}
+\if{latex}{\out{\hypertarget{method-EvalWorkspace-get_ref_sim}{}}}
+\subsection{\code{EvalWorkspace$get_ref_sim()}}{
+  Return the reference simulation
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
-    \preformatted{EvalWorkspace$save_stats(species, stats)}
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Arguments}{
-    \if{html}{\out{<div class="arguments">}}
-    \describe{
-      \item{\code{species}}{the species}
-      \item{\code{stats}}{the statistics as a dataframe}
-    }
-    \if{html}{\out{</div>}}
-  }
-}
-
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-EvalWorkspace-save_global_stats"></a>}}
-\if{latex}{\out{\hypertarget{method-EvalWorkspace-save_global_stats}{}}}
-\subsection{\code{EvalWorkspace$save_global_stats()}}{
-  Save global statistics
-  \subsection{Usage}{
-    \if{html}{\out{<div class="r">}}
-    \preformatted{EvalWorkspace$save_global_stats(stats)}
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Arguments}{
-    \if{html}{\out{<div class="arguments">}}
-    \describe{
-      \item{\code{stats}}{the global statistics as a dataframe}
-    }
-    \if{html}{\out{</div>}}
-  }
-}
-
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-EvalWorkspace-get_stats"></a>}}
-\if{latex}{\out{\hypertarget{method-EvalWorkspace-get_stats}{}}}
-\subsection{\code{EvalWorkspace$get_stats()}}{
-  Return statistics for a species
-  \subsection{Usage}{
-    \if{html}{\out{<div class="r">}}
-    \preformatted{EvalWorkspace$get_stats(species, collect = FALSE)}
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Arguments}{
-    \if{html}{\out{<div class="arguments">}}
-    \describe{
-      \item{\code{species}}{the species}
-      \item{\code{collect}}{Optional, if \code{TRUE} returns a dataframe,
-otherwise a lazy arrow data object will be returned}
-    }
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Returns}{
-    the statistics, as a dataframe if collect is \code{TRUE},
-a lazy arrow data object otherwise
-  }
-}
-
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-EvalWorkspace-get_global_stats"></a>}}
-\if{latex}{\out{\hypertarget{method-EvalWorkspace-get_global_stats}{}}}
-\subsection{\code{EvalWorkspace$get_global_stats()}}{
-  Return global statistics
-  \subsection{Usage}{
-    \if{html}{\out{<div class="r">}}
-    \preformatted{EvalWorkspace$get_global_stats(collect = FALSE)}
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Arguments}{
-    \if{html}{\out{<div class="arguments">}}
-    \describe{
-      \item{\code{collect}}{Optional, if \code{TRUE} returns a dataframe,
-otherwise a lazy arrow data object will be returned}
-    }
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Returns}{
-    the global statistics, as a dataframe if collect is \code{TRUE},
-a lazy arrow data object otherwise
-  }
-}
-
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-EvalWorkspace-save_rrmse_per_usm"></a>}}
-\if{latex}{\out{\hypertarget{method-EvalWorkspace-save_rrmse_per_usm}{}}}
-\subsection{\code{EvalWorkspace$save_rrmse_per_usm()}}{
-  Save the rRMSE per USM
-  \subsection{Usage}{
-    \if{html}{\out{<div class="r">}}
-    \preformatted{EvalWorkspace$save_rrmse_per_usm(species, rrmse_per_usm)}
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Arguments}{
-    \if{html}{\out{<div class="arguments">}}
-    \describe{
-      \item{\code{species}}{the species}
-      \item{\code{rrmse_per_usm}}{the rRMSE per USMs}
-    }
-    \if{html}{\out{</div>}}
-  }
-}
-
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-EvalWorkspace-get_rrmse_per_usm"></a>}}
-\if{latex}{\out{\hypertarget{method-EvalWorkspace-get_rrmse_per_usm}{}}}
-\subsection{\code{EvalWorkspace$get_rrmse_per_usm()}}{
-  Return the rRMSE per USM for a species
-  \subsection{Usage}{
-    \if{html}{\out{<div class="r">}}
-    \preformatted{EvalWorkspace$get_rrmse_per_usm(
+    \preformatted{EvalWorkspace$get_ref_sim(
   species = NULL,
-  collect = FALSE,
   usms = NULL,
-  var2exclude = NULL
+  var2exclude = NULL,
+  collect = TRUE
 )}
     \if{html}{\out{</div>}}
   }
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
-      \item{\code{species}}{Optional, the species}
-      \item{\code{collect}}{Optional, if \code{TRUE} a dataframe will be returned,
-otherwise a lazy arrow data object will be returned}
-      \item{\code{usms}}{Optional, if defined filter the rRMSE per USM with these
-USMs}
+      \item{\code{species}}{Optional, if defined filter the reference simulations with
+this species}
+      \item{\code{usms}}{Optional, if defined filter the reference simulations with
+these USMs}
       \item{\code{var2exclude}}{Optional, if defined remove the variables from
-the returned rRMSE per USM}
+the returned reference simulations}
+      \item{\code{collect}}{Optional, if \code{TRUE} a dataframe will be returned,
+otherwise the lazy arrow data object will be returned}
     }
     \if{html}{\out{</div>}}
-  }
-  \subsection{Returns}{
-    the rRMSE per USM for a species, as a dataframe if collect is
-\code{TRUE}, a lazy arrow data object otherwise
-  }
-}
-
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-EvalWorkspace-save_deteriorated_usm"></a>}}
-\if{latex}{\out{\hypertarget{method-EvalWorkspace-save_deteriorated_usm}{}}}
-\subsection{\code{EvalWorkspace$save_deteriorated_usm()}}{
-  Save the deteriorated USM
-  \subsection{Usage}{
-    \if{html}{\out{<div class="r">}}
-    \preformatted{EvalWorkspace$save_deteriorated_usm(deteriorated)}
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Arguments}{
-    \if{html}{\out{<div class="arguments">}}
-    \describe{
-      \item{\code{deteriorated}}{the deteriorated USM object}
-    }
-    \if{html}{\out{</div>}}
-  }
-}
-
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-EvalWorkspace-get_deteriorated_usm"></a>}}
-\if{latex}{\out{\hypertarget{method-EvalWorkspace-get_deteriorated_usm}{}}}
-\subsection{\code{EvalWorkspace$get_deteriorated_usm()}}{
-  Get the deteriorated USM comparison for a species
-  \subsection{Usage}{
-    \if{html}{\out{<div class="r">}}
-    \preformatted{EvalWorkspace$get_deteriorated_usm(species, percentage)}
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Arguments}{
-    \if{html}{\out{<div class="arguments">}}
-    \describe{
-      \item{\code{species}}{the species}
-      \item{\code{percentage}}{the percentage}
-    }
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Returns}{
-    a DeterioratedUSMComparison object
-  }
-}
-
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-EvalWorkspace-save_species_comparison"></a>}}
-\if{latex}{\out{\hypertarget{method-EvalWorkspace-save_species_comparison}{}}}
-\subsection{\code{EvalWorkspace$save_species_comparison()}}{
-  Save the species comparison
-  \subsection{Usage}{
-    \if{html}{\out{<div class="r">}}
-    \preformatted{EvalWorkspace$save_species_comparison(spec_comparison)}
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Arguments}{
-    \if{html}{\out{<div class="arguments">}}
-    \describe{
-      \item{\code{spec_comparison}}{the species comparison object}
-    }
-    \if{html}{\out{</div>}}
-  }
-}
-
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-EvalWorkspace-save_global_comparison"></a>}}
-\if{latex}{\out{\hypertarget{method-EvalWorkspace-save_global_comparison}{}}}
-\subsection{\code{EvalWorkspace$save_global_comparison()}}{
-  Save the global comparison
-  \subsection{Usage}{
-    \if{html}{\out{<div class="r">}}
-    \preformatted{EvalWorkspace$save_global_comparison(spec_comparison)}
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Arguments}{
-    \if{html}{\out{<div class="arguments">}}
-    \describe{
-      \item{\code{spec_comparison}}{the global comparison object}
-    }
-    \if{html}{\out{</div>}}
-  }
-}
-
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-EvalWorkspace-get_species_comparison"></a>}}
-\if{latex}{\out{\hypertarget{method-EvalWorkspace-get_species_comparison}{}}}
-\subsection{\code{EvalWorkspace$get_species_comparison()}}{
-  Get the species comparison for a species
-  \subsection{Usage}{
-    \if{html}{\out{<div class="r">}}
-    \preformatted{EvalWorkspace$get_species_comparison(species, percentage)}
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Arguments}{
-    \if{html}{\out{<div class="arguments">}}
-    \describe{
-      \item{\code{species}}{the species}
-      \item{\code{percentage}}{the percentage}
-    }
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Returns}{
-    an RRmseComparison object
-  }
-}
-
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-EvalWorkspace-get_global_comparison"></a>}}
-\if{latex}{\out{\hypertarget{method-EvalWorkspace-get_global_comparison}{}}}
-\subsection{\code{EvalWorkspace$get_global_comparison()}}{
-  Get the global comparison
-  \subsection{Usage}{
-    \if{html}{\out{<div class="r">}}
-    \preformatted{EvalWorkspace$get_global_comparison(percentage)}
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Arguments}{
-    \if{html}{\out{<div class="arguments">}}
-    \describe{
-      \item{\code{percentage}}{the percentage}
-    }
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Returns}{
-    an RRmseComparison object
-  }
-}
-
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-EvalWorkspace-save_metadata"></a>}}
-\if{latex}{\out{\hypertarget{method-EvalWorkspace-save_metadata}{}}}
-\subsection{\code{EvalWorkspace$save_metadata()}}{
-  Save the metadata
-  \subsection{Usage}{
-    \if{html}{\out{<div class="r">}}
-    \preformatted{EvalWorkspace$save_metadata(metadata)}
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Arguments}{
-    \if{html}{\out{<div class="arguments">}}
-    \describe{
-      \item{\code{metadata}}{the metadata dataframe}
-    }
-    \if{html}{\out{</div>}}
-  }
-}
-
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-EvalWorkspace-add_evaluated_version"></a>}}
-\if{latex}{\out{\hypertarget{method-EvalWorkspace-add_evaluated_version}{}}}
-\subsection{\code{EvalWorkspace$add_evaluated_version()}}{
-  Add an evaluated version to the metadata
-  \subsection{Usage}{
-    \if{html}{\out{<div class="r">}}
-    \preformatted{EvalWorkspace$add_evaluated_version(version)}
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Arguments}{
-    \if{html}{\out{<div class="arguments">}}
-    \describe{
-      \item{\code{version}}{the STICS version}
-    }
-    \if{html}{\out{</div>}}
-  }
-}
-
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-EvalWorkspace-get_all_versions"></a>}}
-\if{latex}{\out{\hypertarget{method-EvalWorkspace-get_all_versions}{}}}
-\subsection{\code{EvalWorkspace$get_all_versions()}}{
-  Get all evaluated versions
-  \subsection{Usage}{
-    \if{html}{\out{<div class="r">}}
-    \preformatted{EvalWorkspace$get_all_versions()}
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Returns}{
-    a list of versions
-  }
-}
-
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-EvalWorkspace-get_stics_version"></a>}}
-\if{latex}{\out{\hypertarget{method-EvalWorkspace-get_stics_version}{}}}
-\subsection{\code{EvalWorkspace$get_stics_version()}}{
-  Get the last evaluated STICS version
-  \subsection{Usage}{
-    \if{html}{\out{<div class="r">}}
-    \preformatted{EvalWorkspace$get_stics_version()}
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Returns}{
-    the STICS version
-  }
-}
-
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-EvalWorkspace-with_version"></a>}}
-\if{latex}{\out{\hypertarget{method-EvalWorkspace-with_version}{}}}
-\subsection{\code{EvalWorkspace$with_version()}}{
-  Create a new EvalWorkspace with a specific version
-  \subsection{Usage}{
-    \if{html}{\out{<div class="r">}}
-    \preformatted{EvalWorkspace$with_version(version)}
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Arguments}{
-    \if{html}{\out{<div class="arguments">}}
-    \describe{
-      \item{\code{version}}{the version}
-    }
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Returns}{
-    an EvalWorkspace object
-  }
-}
-
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-EvalWorkspace-set_version"></a>}}
-\if{latex}{\out{\hypertarget{method-EvalWorkspace-set_version}{}}}
-\subsection{\code{EvalWorkspace$set_version()}}{
-  Set the version of the evaluation workspace
-  \subsection{Usage}{
-    \if{html}{\out{<div class="r">}}
-    \preformatted{EvalWorkspace$set_version(v)}
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Arguments}{
-    \if{html}{\out{<div class="arguments">}}
-    \describe{
-      \item{\code{v}}{the version to set}
-    }
-    \if{html}{\out{</div>}}
-  }
-}
-
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-EvalWorkspace-get_version"></a>}}
-\if{latex}{\out{\hypertarget{method-EvalWorkspace-get_version}{}}}
-\subsection{\code{EvalWorkspace$get_version()}}{
-  Get the current version of the evaluation workspace
-  \subsection{Usage}{
-    \if{html}{\out{<div class="r">}}
-    \preformatted{EvalWorkspace$get_version()}
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Returns}{
-    the current version of the evaluation workspace
   }
 }
 

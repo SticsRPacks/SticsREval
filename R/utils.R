@@ -62,16 +62,38 @@ read_csv <- function(filepath, delimiter = ",") {
   csv_data
 }
 
-prepare_species_output_dir <- function(output_dir, species) {
-  o_dir <- file.path(output_dir, species)
+gen_scatter_plot <- function(output_path, sim, obs, ref_sim, vars) {
+  plots <- plot(
+    "New version" = sim,
+    "Ref version" = ref_sim,
+    obs = obs,
+    type = "scatter",
+    select_scat = "sim",
+    var = vars
+  )
+  page_list <- htmltools::tagList(
+    lapply(vars, function(var) {
+      suppressWarnings(
+        plotly::ggplotly(
+          CroPlotR::extract_plot(plots, var = var)[[1]]
+        )
+      )
+    })
+  )
+  htmltools::save_html(
+    page_list,
+    file = output_path
+  )
+  invisible(NULL)
+}
+
+prepare_output_dir <- function(output_dir) {
+  o_dir <- file.path(output_dir)
   if (!dir.exists(o_dir) && !dir.create(o_dir, recursive = TRUE)) {
     stop(
       "Can't create output directory ",
       o_dir,
-      " for species ",
-      species,
       call. = FALSE
     )
   }
-  o_dir
 }
