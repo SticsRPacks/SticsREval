@@ -13,7 +13,6 @@ ws <- EvalWorkspace$new(
   data_dir = "/path/to/eval_workspace"
 )
 }
-
 }
 \section{Methods}{
 \subsection{Public methods}{
