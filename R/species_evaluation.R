@@ -327,7 +327,7 @@ SpeciesEvaluation <- R6::R6Class("SpeciesEvaluation", # nolint: object_name_lint
         function(i) {
           spec <- names(private$rrmse_comparisons)[i]
           comp <- private$rrmse_comparisons[[spec]]
-          if (is.null(comp$get_data())) next
+          if (is.null(comp$get_data())) return()
 
           comp$plot_comparison(
             file.path(
