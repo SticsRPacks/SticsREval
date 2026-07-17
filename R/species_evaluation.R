@@ -315,55 +315,59 @@ SpeciesEvaluation <- R6::R6Class("SpeciesEvaluation", # nolint: object_name_lint
     #' generates plots for each species and saves them in the "plots"
     #' subdirectory.
     export = function() {
+      private$logger$info("Exporting species evaluation data")
       plots_dir <- file.path(private$config$output_dir, "plots")
       dir.create(
         plots_dir,
         recursive = TRUE,
         showWarnings = FALSE
       )
-      for (spec in names(private$rrmse_comparisons)) {
-        comp <- private$rrmse_comparisons[[spec]]
-        if (is.null(comp$get_data())) next
+      private$backend$run(
+        length(names(private$rrmse_comparisons)),
+        function(i) {
+          spec <- names(private$rrmse_comparisons)[i]
+          comp <- private$rrmse_comparisons[[spec]]
+          if (is.null(comp$get_data())) return()
 
-        comp$plot_comparison(
-          file.path(
-            plots_dir,
-            paste0(spec, "_species_comparison.png")
-          )
-        )
-        deteriorated <- c(
-          comp$critical_vars,
-          comp$warning_vars
-        )
-        if (length(deteriorated) > 0) {
-          spec_usms <- private$workspace$get_species_situations(spec)
-          sim <- CroPlotR::split_df2sim(
-            private$workspace$get_sim(
-              spec, usms = private$config$usms,
-              var2exclude = c("version", "species", private$config$var2exclude)
+          comp$plot_comparison(
+            file.path(
+              plots_dir,
+              paste0(spec, "_species_comparison.png")
             )
           )
-          ref_sim <- CroPlotR::split_df2sim(
-            private$workspace$get_ref_sim(
-              spec, usms = private$config$usms,
-              var2exclude = c("version", "species", private$config$var2exclude)
+          deteriorated <- c(
+            comp$critical_vars,
+            comp$warning_vars
+          )
+          if (length(deteriorated) > 0) {
+            spec_usms <- private$workspace$get_species_situations(spec)
+            var2exclude <- c("version", "species", private$config$var2exclude)
+            sim <- CroPlotR::split_df2sim(
+              private$workspace$get_sim(
+                spec, usms = private$config$usms, var2exclude = var2exclude
+              )
             )
-          )
-          obs <- CroPlotR::split_df2sim(
-            private$workspace$get_obs(
-              spec, usms = private$config$usms,
-              var2exclude = c("version", "species", private$config$var2exclude)
+            ref_sim <- CroPlotR::split_df2sim(
+              private$workspace$get_ref_sim(
+                spec, usms = private$config$usms, var2exclude = var2exclude
+              )
             )
-          )
-          gen_scatter_plot(
-            file.path(plots_dir, paste0(spec, "_scatter_plots.html")),
-            sim[spec_usms$situation],
-            Filter(Negate(is.null), obs[spec_usms$situation]),
-            ref_sim[spec_usms$situation],
-            deteriorated
-          )
+            obs <- CroPlotR::split_df2sim(
+              private$workspace$get_obs(
+                spec, usms = private$config$usms, var2exclude = var2exclude
+              )
+            )
+            gen_scatter_plot(
+              file.path(plots_dir, paste0(spec, "_scatter_plots.html")),
+              sim[spec_usms$situation],
+              Filter(Negate(is.null), obs[spec_usms$situation]),
+              ref_sim[spec_usms$situation],
+              deteriorated
+            )
+          }
+
         }
-      }
+      )
       safe_write_csv(
         dplyr::bind_rows(private$stats, .id = "species"),
         file.path(private$config$output_dir, "species_stats.csv")
@@ -378,6 +382,7 @@ SpeciesEvaluation <- R6::R6Class("SpeciesEvaluation", # nolint: object_name_lint
         })),
         file.path(private$config$output_dir, "Deteriorated_USM.csv")
       )
+      private$logger$info("Species evaluation export done")
     }
   )
 )
