@@ -97,3 +97,11 @@ prepare_output_dir <- function(output_dir) {
     )
   }
 }
+
+truncate <- function(x, max_chars = 50) {
+  if (nchar(x) > max_chars) {
+    paste0(substr(x, 1, max_chars), "...")
+  } else {
+    x
+  }
+}

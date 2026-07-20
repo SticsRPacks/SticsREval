@@ -53,9 +53,6 @@ for the test.}
 \if{latex}{\out{\hypertarget{method-BalanceClosureTest-run}{}}}
 \subsection{\code{BalanceClosureTest$run()}}{
   Run the balance closure test on the simulations.
-This method loads the simulations data for the specified USMs and checks
-the balance closure for each USM. It logs the results of the test,
-including any USMs that have balance closure issues.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{BalanceClosureTest$run()}

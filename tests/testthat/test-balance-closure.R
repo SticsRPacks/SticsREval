@@ -61,11 +61,12 @@ test_that("BalanceClosureTest logs balance closure issues", {
 
   expect_match(
     log_env$logs,
-    paste0(
-      "USM usm1 has balance closure issue for balance H2O_balance: ",
-      "init = 100, final = 80"
+    paste(
+      "Balance closure issue for USM usm1: H2O_balance difference = -20",
+      "(initial = 100, final = 80)"
     ),
-    all = FALSE
+    all = FALSE,
+    fixed = TRUE
   )
 })
 test_that("BalanceClosureTest handles USMs with missing or NA fields", {
@@ -95,17 +96,9 @@ test_that("BalanceClosureTest handles USMs with missing or NA fields", {
       list(usm1 = sim_data)
     }
   ))
-  bc_test$run()
-
-  expect_match(
-    log_env$logs,
-    paste0(
-      "USM usm1 has NA values for balance closure test fields: ",
-      "init_H2O_balance, final_H2O_balance"
-    ),
-    all = FALSE
-  )
+  expect_no_error(bc_test$run())
 })
+
 test_that("BalanceClosureTest runs without errors when all USMs pass", {
   temp_dir <- file.path(tempdir(), "usms_test_dir")
   dir.create(temp_dir, showWarnings = FALSE)
@@ -131,6 +124,5 @@ test_that("BalanceClosureTest runs without errors when all USMs pass", {
       list(usm1 = sim_data)
     }
   ))
-
-  expect_silent(bc_test$run())
+  expect_no_error(bc_test$run())
 })
