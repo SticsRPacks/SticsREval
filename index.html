@@ -433,16 +433,18 @@
 </tr>
 </tbody>
 </table>
-<p>A USM is flagged if its rounded initial and final values differ. USMs with missing fields or fully <code>NA</code> values are silently skipped.</p>
+<p>A USM is flagged if the absolute rounded difference between its initial and final values is greater than 1. USMs with missing fields or only NA values are silently skipped.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">config</span> <span class="op">&lt;-</span> <span class="va"><a href="reference/Configuration.html">Configuration</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span></span>
 <span>  stics_exe      <span class="op">=</span> <span class="st">"/path/to/stics"</span>,</span>
 <span>  metadata_file  <span class="op">=</span> <span class="st">"metadata.csv"</span>,</span>
-<span>  usms_workspace <span class="op">=</span> <span class="st">"path/to/usms_workspace"</span></span>
+<span>  usms_workspace <span class="op">=</span> <span class="st">"path/to/usms_workspace"</span>,</span>
+<span>  output_dir     <span class="op">=</span> <span class="st">"/path/to/output_dir"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va"><a href="reference/BalanceClosureTest.html">BalanceClosureTest</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">config</span><span class="op">)</span><span class="op">$</span><span class="fu">run</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p>The <code>run()</code> method logs a summary of the test and stops with an error listing any USMs with balance closure issues. It respects the <code>usms</code>, <code>parallel</code>, and <code>cores</code> filters defined in the <code>Configuration</code>.</p>
+<p>If <code>output_dir</code> is defined, the balance closure details will be written to a CSV file in the specified directory.</p>
 <hr>
 </div>
 </div>
