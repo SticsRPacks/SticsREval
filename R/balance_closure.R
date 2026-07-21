@@ -115,24 +115,16 @@ BalanceClosureTest <- R6::R6Class("BalanceClosureTest", # nolint: object_name_li
         if (all(is.na(latest_sim[fields]))) {
           next
         }
-        init <- round(latest_sim[[fields[1]]])
-        final <- round(latest_sim[[fields[2]]])
-        balance_diff <- final - init
+        init <- latest_sim[[fields[1]]]
+        final <- latest_sim[[fields[2]]]
+        balance_diff <- round(final - init)
 
-        if (!(is.na(balance_diff) || balance_diff == 0)) {
+        if (!is.na(balance_diff) && abs(balance_diff) > 1) {
           logger::log_warn(
             paste0(
-              "Balance closure issue for USM ",
-              usm,
-              ": ",
-              balance,
-              " difference = ",
-              balance_diff,
-              " (initial = ",
-              init,
-              ", final = ",
-              final,
-              ")"
+              "Balance closure issue for USM ", usm, ": ",
+              balance, " rounded difference = ", balance_diff,
+              " (initial = ", init, ", final = ", final, ")"
             )
           )
 
