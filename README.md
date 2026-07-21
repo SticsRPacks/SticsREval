@@ -246,19 +246,22 @@ Checks the **water and nitrogen balance closure** for each simulated USM. For ea
 | Soil organic nitrogen | `init_soil_organic_N_balance` / `final_soil_organic_N_balance` |
 | Soil organic carbon | `init_soil_organic_C_balance` / `final_soil_organic_C_balance` |
 
-A USM is flagged if its rounded initial and final values differ. USMs with missing fields or fully `NA` values are silently skipped.
+A USM is flagged if the absolute rounded difference between its initial and final values is greater than 1. USMs with missing fields or only NA values are silently skipped.
 
 ```r
 config <- Configuration$new(
   stics_exe      = "/path/to/stics",
   metadata_file  = "metadata.csv",
-  usms_workspace = "path/to/usms_workspace"
+  usms_workspace = "path/to/usms_workspace",
+  output_dir     = "/path/to/output_dir"
 )
 
 BalanceClosureTest$new(config)$run()
 ```
 
 The `run()` method logs a summary of the test and stops with an error listing any USMs with balance closure issues. It respects the `usms`, `parallel`, and `cores` filters defined in the `Configuration`.
+
+If `output_dir` is defined, the balance closure details will be written to a CSV file in the specified directory.
 
 ---
 
