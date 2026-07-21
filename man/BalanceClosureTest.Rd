@@ -9,13 +9,18 @@ This class implements a test to check the balance closure of water and
 nitrogen in the simulations. It checks if the initial and final
 balances of water and nitrogen are equal (or NA) for each USM.
 If there are discrepancies, it logs a warning with the details of the issue.
+Detailed information about the balance closure issues is exported to a CSV
+file in the specified output directory.
 }
 \examples{
 \dontrun{
 config <- Configuration$new(
   stics_exe = "/path/to/stics",
-  metadata_file = "metadata.csv",
-  usms_workspace = "path/to/usms_workspace"
+  metadata_file = "/path/to/metadata.csv",
+  usms_workspace = "/path/to/usms_workspace",
+  output_dir = "/path/to/output_dir",
+  parallel = TRUE,
+  cores = 4
 )
 BalanceClosureTest$new(config)$run()
 }
