@@ -62,8 +62,8 @@ test_that("BalanceClosureTest logs balance closure issues", {
   expect_match(
     log_env$logs,
     paste(
-      "Balance closure issue for USM usm1: H2O_balance difference = -20",
-      "(initial = 100, final = 80)"
+      "Balance closure issue for USM usm1: H2O_balance rounded",
+      "difference = -20 (initial = 100, final = 80)"
     ),
     all = FALSE,
     fixed = TRUE
