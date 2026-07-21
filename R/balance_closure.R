@@ -242,11 +242,14 @@ BalanceClosureTest <- R6::R6Class("BalanceClosureTest", # nolint: object_name_li
         cli::cli_text(
           "{.strong Balance closure summary}"
         )
-        cat(
-          capture.output(
-            print(balance_summary, row.names = FALSE)
-          ),
-          sep = "\n"
+        withr::with_options(
+          list(width = 200),
+          cat(
+            capture.output(
+              print(balance_summary, row.names = FALSE)
+            ),
+            sep = "\n"
+          )
         )
         balance_details <- private$get_balance_details(
           errors,
