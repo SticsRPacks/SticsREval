@@ -45,15 +45,19 @@ evaluate <- function(config) {
   global_eval$run()
   species_eval <- SpeciesEvaluation$new(config = config)
   species_eval$run()
+  usm_eval <- USMEvaluation$new(config = config)
+  usm_eval$run()
 
   if (!is.null(config$output_dir)) {
     prepare_output_dir(config$output_dir)
     global_eval$export()
     species_eval$export()
+    usm_eval$export()
   }
 
   global_eval$summary()
   species_eval$summary()
+  usm_eval$summary()
 
   ok  <- paste(cli::col_green(cli::symbol$tick), cli::col_green("success"))
   nok <- paste(cli::col_red(cli::symbol$cross),  cli::col_red("failed"))
@@ -62,8 +66,9 @@ evaluate <- function(config) {
   cli::cli_ul()
   cli::cli_li("Global evaluation: {if (global_eval$success) ok else nok}")
   cli::cli_li("Species evaluation: {if (species_eval$success) ok else nok}")
+  cli::cli_li("USM evaluation: {if (usm_eval$success) ok else nok}")
   cli::cli_end()
-  if (!global_eval$success || !species_eval$success) {
+  if (!global_eval$success || !species_eval$success || !usm_eval$success) {
     stop("At least one test failed, see details above.", call. = FALSE)
   }
 }

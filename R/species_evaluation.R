@@ -35,7 +35,6 @@ SpeciesEvaluation <- R6::R6Class("SpeciesEvaluation", # nolint: object_name_lint
     workspace = NULL,
     logger = NULL,
     rrmse_comparisons = list(),
-    deteriorated_usm = list(),
     stats = list(),
     rrmse_per_usm = list(),
 
@@ -79,16 +78,6 @@ SpeciesEvaluation <- R6::R6Class("SpeciesEvaluation", # nolint: object_name_lint
         private$logger$info(
           "Species comparison for species ", spec, " generated"
         )
-
-        private$logger$info("Comparing rRMSE per usm for species ", spec)
-        deteriorated_usm <- DeterioratedUSMComparison$new(
-          species = spec,
-          stats = stats$rrmse_per_usm,
-          percentage = private$config$percentage
-        )
-        if (is.null(deteriorated_usm$get_data())) next
-        private$deteriorated_usm[[spec]] <- deteriorated_usm
-        private$logger$info("Deteriorated USM for species ", spec, " generated")
       }
     },
 
@@ -375,12 +364,6 @@ SpeciesEvaluation <- R6::R6Class("SpeciesEvaluation", # nolint: object_name_lint
       safe_write_csv(
         dplyr::bind_rows(private$rrmse_per_usm, .id = "species"),
         file.path(private$config$output_dir, "rRMSE_per_usm.csv")
-      )
-      safe_write_csv(
-        do.call(rbind, lapply(private$deteriorated_usm, function(x) {
-          if (!is.null(x$get_data())) x$get_data()
-        })),
-        file.path(private$config$output_dir, "Deteriorated_USM.csv")
       )
       private$logger$info("Species evaluation export done")
     }
