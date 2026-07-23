@@ -53,7 +53,7 @@ initialize_eval_workspace <- function(config) {
   )
 
   if (!dir.exists(config$eval_workspace) &&
-      !dir.create(config$eval_workspace, recursive = TRUE)) {
+        !dir.create(config$eval_workspace, recursive = TRUE)) {
     stop("Can't create evaluation workspace", call. = FALSE)
   }
 
