@@ -125,14 +125,14 @@ test_that("run propagates backend errors", {
 
   backend <- list(
     run = function(...) {
-      stop("backend failure")
+      stop("backend failure", call. = FALSE)
     }
   )
 
   workspace <- list(
     get_species = function() "wheat",
     get_species_situations = function(...) {
-      data.frame(situation = "USM1")
+      data.frame(situation = "USM1", stringsAsFactors = FALSE)
     }
   )
 

@@ -84,7 +84,7 @@ test_that("export returns when no statistics are available", {
 test_that("run propagates workspace errors", {
 
   workspace <- list(
-    get_sim = function(...) stop("workspace failure")
+    get_sim = function(...) stop("workspace failure", call. = FALSE)
   )
 
   config <- list(

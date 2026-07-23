@@ -4,13 +4,15 @@ test_that("USMEvaluation computes RMSE ratios correctly", {
     variable = c("lai", "lai"),
     group = c("reference", "evaluated"),
     RMSE = c(2, 4),
-    n_obs = c(20, 20)
+    n_obs = c(20, 20),
+    stringsAsFactors = FALSE
   )
 
   stats_species <- data.frame(
     variable = "lai",
     group = "evaluated",
-    RMSE = 4
+    RMSE = 4,
+    stringsAsFactors = FALSE
   )
 
   eval <- USMEvaluation$new(
@@ -21,12 +23,12 @@ test_that("USMEvaluation computes RMSE ratios correctly", {
 
   data <- eval$get_data()
 
-  expect_equal(nrow(data), 1)
-  expect_equal(data$rmse_ratio, 50)
-  expect_equal(data$rmse_eval, 4)
-  expect_equal(data$rmse_ref, 2)
-  expect_equal(data$rmse_species, 4)
-  expect_equal(data$species, "wheat")
+  expect_identical(nrow(data), 1L)
+  expect_identical(data$rmse_ratio, 50)
+  expect_identical(data$rmse_eval, 4)
+  expect_identical(data$rmse_ref, 2)
+  expect_identical(data$rmse_species, 4)
+  expect_identical(data$species, "wheat")
 })
 
 test_that("critical_vars returns only variables above ratio threshold", {
@@ -35,7 +37,8 @@ test_that("critical_vars returns only variables above ratio threshold", {
     situation = c("A", "A", "B"),
     variable = c("lai", "yield", "lai"),
     rmse_ratio = c(60, 30, 80),
-    n_obs = 20
+    n_obs = 20,
+    stringsAsFactors = FALSE
   )
 
   eval <- USMEvaluation$new(
@@ -45,7 +48,7 @@ test_that("critical_vars returns only variables above ratio threshold", {
 
   critical <- eval$critical_vars
 
-  expect_equal(nrow(critical), 2)
+  expect_identical(nrow(critical), 2L)
   expect_true(all(critical$rmse_ratio > 50))
 })
 
@@ -55,7 +58,8 @@ test_that("degraded_vars returns only degraded variables", {
     situation = c("A", "A", "B"),
     variable = c("lai", "yield", "lai"),
     rmse_ratio = c(10, 25, 60),
-    n_obs = 20
+    n_obs = 20,
+    stringsAsFactors = FALSE
   )
 
   eval <- USMEvaluation$new(
@@ -65,7 +69,7 @@ test_that("degraded_vars returns only degraded variables", {
 
   degraded <- eval$degraded_vars
 
-  expect_equal(nrow(degraded), 2)
+  expect_identical(nrow(degraded), 2L)
   expect_true(all(degraded$rmse_ratio > 20))
 })
 
@@ -76,7 +80,8 @@ test_that("USM fails when one variable exceeds critical threshold", {
     situation = c("USM1", "USM2"),
     variable = c("lai", "lai"),
     rmse_ratio = c(55, 10),
-    n_obs = 20
+    n_obs = 20,
+    stringsAsFactors = FALSE
   )
 
   eval <- USMEvaluation$new(
@@ -86,7 +91,7 @@ test_that("USM fails when one variable exceeds critical threshold", {
 
   failed <- eval$failed_usms
 
-  expect_equal(failed$situation, "USM1")
+  expect_identical(failed$situation, "USM1")
 })
 
 test_that("USM fails when one variable exceeds critical threshold", {
@@ -96,7 +101,8 @@ test_that("USM fails when one variable exceeds critical threshold", {
     situation = c("USM1", "USM2"),
     variable = c("lai", "lai"),
     rmse_ratio = c(55, 10),
-    n_obs = 20
+    n_obs = 20,
+    stringsAsFactors = FALSE
   )
 
   eval <- USMEvaluation$new(
@@ -106,7 +112,7 @@ test_that("USM fails when one variable exceeds critical threshold", {
 
   failed <- eval$failed_usms
 
-  expect_equal(failed$situation, "USM1")
+  expect_identical(failed$situation, "USM1")
 })
 
 test_that("USM fails when too many degraded variables are present", {
@@ -116,7 +122,8 @@ test_that("USM fails when too many degraded variables are present", {
     situation = rep("USM1", 4),
     variable = c("lai", "yield", "biomass", "height"),
     rmse_ratio = c(21, 22, 25, 30),
-    n_obs = 20
+    n_obs = 20,
+    stringsAsFactors = FALSE
   )
 
   eval <- USMEvaluation$new(
@@ -126,8 +133,8 @@ test_that("USM fails when too many degraded variables are present", {
 
   failed <- eval$failed_usms
 
-  expect_equal(nrow(failed), 1)
-  expect_equal(failed$situation, "USM1")
+  expect_identical(nrow(failed), 1L)
+  expect_identical(failed$situation, "USM1")
 })
 
 test_that("success is TRUE when no USM fails", {
@@ -137,7 +144,8 @@ test_that("success is TRUE when no USM fails", {
     situation = c("A", "B"),
     variable = c("lai", "lai"),
     rmse_ratio = c(5, 10),
-    n_obs = 20
+    n_obs = 20,
+    stringsAsFactors = FALSE
   )
 
   eval <- USMEvaluation$new(
@@ -155,7 +163,8 @@ test_that("success is FALSE when one USM fails", {
     situation = "A",
     variable = "lai",
     rmse_ratio = 70,
-    n_obs = 20
+    n_obs = 20,
+    stringsAsFactors = FALSE
   )
 
   eval <- USMEvaluation$new(
@@ -173,7 +182,8 @@ test_that("data are sorted by decreasing RMSE ratio", {
     situation = c("A", "B"),
     variable = c("lai", "yield"),
     rmse_ratio = c(10, 80),
-    n_obs = 20
+    n_obs = 20,
+    stringsAsFactors = FALSE
   )
 
   eval <- USMEvaluation$new(
@@ -181,14 +191,12 @@ test_that("data are sorted by decreasing RMSE ratio", {
     data = data
   )
 
-  expect_equal(eval$get_data()$rmse_ratio, c(80, 10))
+  expect_identical(eval$get_data()$rmse_ratio, c(80, 10))
 })
 
 test_that("initialize fails without inputs", {
   expect_error(
-    {
-      USMEvaluation$new()
-    },
+    USMEvaluation$new(),
     "must be defined"
   )
 })
@@ -200,13 +208,15 @@ test_that("variables with fewer than 10 observations are ignored", {
     variable = c("lai", "lai"),
     group = c("reference", "evaluated"),
     RMSE = c(2, 5),
-    n_obs = c(5, 5)
+    n_obs = c(5, 5),
+    stringsAsFactors = FALSE
   )
 
   stats_species <- data.frame(
     variable = "lai",
     group = "evaluated",
-    RMSE = 4
+    RMSE = 4,
+    stringsAsFactors = FALSE
   )
 
   eval <- USMEvaluation$new(
@@ -215,5 +225,5 @@ test_that("variables with fewer than 10 observations are ignored", {
     stats_species = stats_species
   )
 
-  expect_equal(nrow(eval$failed_usms), 0)
+  expect_identical(nrow(eval$failed_usms), 0L)
 })
