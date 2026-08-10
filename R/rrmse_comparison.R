@@ -10,23 +10,24 @@ RRmseComparison <- R6::R6Class("RRmseComparison", # nolint: object_name_linter
       res <- new_stats |>
         dplyr::left_join(ref_stats, by = c("situation", "variable")) |>
         dplyr::mutate(
-          rrmse_new = as.numeric(.data$rRMSE.x),
+          rrmse_eval = as.numeric(.data$rRMSE.x),
           rrmse_ref = as.numeric(.data$rRMSE.y),
           n_obs = as.numeric(.data$n_obs.y)
         ) |>
         dplyr::filter(
-          is.finite(.data$rrmse_new), is.finite(.data$rrmse_ref),
+          is.finite(.data$rrmse_eval), is.finite(.data$rrmse_ref),
           !is.na(.data$variable), !is.na(.data$situation)
         ) |>
         dplyr::mutate(
-          ratio = round(
-            (abs(.data$rrmse_new) - abs(.data$rrmse_ref)) / abs(.data$rrmse_ref) * 100, # nolint: line_length_linter
+          rrmse_ratio = round(
+            (abs(.data$rrmse_eval) - abs(.data$rrmse_ref)) / abs(.data$rrmse_ref) * 100, # nolint: line_length_linter
             2
           )
         ) |>
-        dplyr::filter(is.finite(.data$ratio)) |>
+        dplyr::filter(is.finite(.data$rrmse_ratio)) |>
         dplyr::select(
-          "situation", "variable", "rrmse_new", "rrmse_ref", "ratio", "n_obs"
+          "situation", "variable", "rrmse_eval",
+          "rrmse_ref", "rrmse_ratio", "n_obs"
         )
       if (!is.null(species)) {
         res <- dplyr::mutate(res, species = species)
@@ -38,20 +39,22 @@ RRmseComparison <- R6::R6Class("RRmseComparison", # nolint: object_name_linter
   active = list(
     critical_vars = function() {
       private$data |>
-        dplyr::filter(.data$ratio >= private$percentage, .data$n_obs > 10) |>
+        dplyr::filter(
+          .data$rrmse_ratio >= private$percentage, .data$n_obs > 10
+        ) |>
         dplyr::pull("variable")
     },
     warning_vars = function() {
       private$data |>
         dplyr::filter(
-          .data$ratio < private$percentage, .data$ratio > 0,
+          .data$rrmse_ratio < private$percentage, .data$rrmse_ratio > 0,
           .data$n_obs > 10
         ) |>
         dplyr::pull("variable")
     },
     improved_vars = function() {
       private$data |>
-        dplyr::filter(.data$ratio <= 0, .data$n_obs > 10) |>
+        dplyr::filter(.data$rrmse_ratio <= 0, .data$n_obs > 10) |>
         dplyr::pull("variable")
     },
     is_empty = function() isTRUE(nrow(private$data) == 0)
@@ -64,11 +67,11 @@ RRmseComparison <- R6::R6Class("RRmseComparison", # nolint: object_name_linter
       private$percentage <- percentage
       if (!is.null(data)) {
         private$data <- data |>
-          dplyr::arrange(dplyr::desc(.data$ratio)) |>
+          dplyr::arrange(dplyr::desc(.data$rrmse_ratio)) |>
           dplyr::collect()
       } else if (!is.null(stats)) {
         private$data <- private$compare_rrmse(species, stats) |>
-          dplyr::arrange(dplyr::desc(.data$ratio)) |>
+          dplyr::arrange(dplyr::desc(.data$rrmse_ratio)) |>
           dplyr::collect()
       } else {
         stop(
@@ -116,16 +119,16 @@ RRmseComparison <- R6::R6Class("RRmseComparison", # nolint: object_name_linter
       p <- private$data |>
         dplyr::mutate(
           status = dplyr::case_when(
-            .data$ratio >= private$percentage ~ "Critical",
-            .data$ratio > 0 & .data$ratio < private$percentage ~ "Warning",
-            .data$ratio <= 0 ~ "Improved",
+            .data$rrmse_ratio >= private$percentage ~ "Critical",
+            .data$rrmse_ratio > 0 & .data$rrmse_ratio < private$percentage ~ "Warning", # nolint
+            .data$rrmse_ratio <= 0 ~ "Improved",
             TRUE ~ "Other"
           )
         ) |>
         ggplot2::ggplot(
           ggplot2::aes(
             x = .data$rrmse_ref,
-            y = .data$rrmse_new,
+            y = .data$rrmse_eval,
             color = .data$status,
             text = .data$variable
           ),
@@ -182,8 +185,8 @@ DeterioratedUSMComparison <- R6::R6Class("DeterioratedUSMComparison", # nolint: 
         data = data
       )
       private$data <- private$data |>
-        dplyr::filter(.data$ratio > 0) |>
-        dplyr::arrange(dplyr::desc(.data$ratio))
+        dplyr::filter(.data$rrmse_ratio > 0) |>
+        dplyr::arrange(dplyr::desc(.data$rrmse_ratio))
     }
   )
 )

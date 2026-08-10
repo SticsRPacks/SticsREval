@@ -31,39 +31,77 @@
 #'
 #' @export
 evaluate <- function(config) {
-  logger::log_info(
-    "Initializing workspace {config$eval_workspace}
-    for evaluation..."
-  )
-  if (!dir.exists(config$eval_workspace) &&
-      !dir.create(config$eval_workspace, recursive = TRUE)
-  ) {
-    stop("Can't create evaluation workspace", call. = FALSE)
-  }
-  USMSWorkspace$new(config = config)$load()
-  global_eval <- GlobalEvaluation$new(config = config)
-  global_eval$run()
-  species_eval <- SpeciesEvaluation$new(config = config)
-  species_eval$run()
+  initialize_eval_workspace(config)
+
+  evaluations <- create_evaluations(config)
+
+  run_evaluations(evaluations)
 
   if (!is.null(config$output_dir)) {
-    prepare_output_dir(config$output_dir)
-    global_eval$export()
-    species_eval$export()
+    export_evaluations(evaluations, config$output_dir)
   }
 
-  global_eval$summary()
-  species_eval$summary()
+  summarize_evaluations(evaluations)
 
-  ok  <- paste(cli::col_green(cli::symbol$tick), cli::col_green("success"))
-  nok <- paste(cli::col_red(cli::symbol$cross),  cli::col_red("failed"))
+  report_evaluation_status(evaluations)
+}
+
+
+initialize_eval_workspace <- function(config) {
+  logger::log_info(
+    "Initializing workspace {config$eval_workspace} for evaluation..."
+  )
+
+  if (!dir.exists(config$eval_workspace) &&
+        !dir.create(config$eval_workspace, recursive = TRUE)) {
+    stop("Can't create evaluation workspace", call. = FALSE)
+  }
+
+  USMSWorkspace$new(config = config)$load()
+}
+
+
+create_evaluations <- function(config) {
+  list(
+    "Global evaluation" = GlobalEvaluation$new(config = config),
+    "Species evaluation" = SpeciesEvaluation$new(config = config),
+    "USM evaluation" = USMEvaluation$new(config = config)
+  )
+}
+
+
+run_evaluations <- function(evaluations) {
+  lapply(evaluations, function(eval) eval$run())
+}
+
+
+export_evaluations <- function(evaluations, output_dir) {
+  prepare_output_dir(output_dir)
+
+  lapply(evaluations, function(eval) eval$export())
+}
+
+
+summarize_evaluations <- function(evaluations) {
+  lapply(evaluations, function(eval) eval$summary())
+}
+
+
+report_evaluation_status <- function(evaluations) {
+  ok <- paste(cli::col_green(cli::symbol$tick), cli::col_green("success"))
+  nok <- paste(cli::col_red(cli::symbol$cross), cli::col_red("failed"))
 
   cli::cli_h1("Tests results")
   cli::cli_ul()
-  cli::cli_li("Global evaluation: {if (global_eval$success) ok else nok}")
-  cli::cli_li("Species evaluation: {if (species_eval$success) ok else nok}")
+
+  for (name in names(evaluations)) {
+    status <- if (evaluations[[name]]$success) ok else nok
+    cli::cli_li("{name}: {status}")
+  }
+
   cli::cli_end()
-  if (!global_eval$success || !species_eval$success) {
+
+  if (!all(vapply(evaluations, function(x) x$success, logical(1)))) {
     stop("At least one test failed, see details above.", call. = FALSE)
   }
 }

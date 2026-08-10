@@ -10,11 +10,14 @@
 
 ## Overview
 
-`SticsREval` is an R package for **evaluating and comparing versions of the STICS crop model**. It supports multiple types of evaluation, each implemented as an independent class sharing the same `Configuration` object. Tests can be run individually or combined into a custom pipeline.
+`SticsREval` is an R package for **evaluating and comparing versions of the STICS crop model**. It supports multiple evaluation workflows implemented as independent classes sharing the same `Configuration` object. Tests can be run individually or combined into a custom pipeline.
 
-The package currently provides two types of evaluation:
+The package currently provides the following evaluation workflows:
 
-- **Statistical Evaluation** — assesses whether a new version of STICS performs better, equally, or worse than a reference version, both against field observations and against reference simulation outputs
+- **Statistical Evaluation** — assesses whether a new version of STICS performs better, equally, or worse than a reference version, both against field observations and against reference simulation outputs. It includes:
+  - global evaluation across all species and USMs
+  - species-level evaluation
+  - USM-level evaluation
 - **Balance Closure Test** — checks the internal consistency of water and nitrogen balances in the simulations
 
 ---
@@ -74,8 +77,9 @@ This will install all required packages at the versions specified in `renv.lock`
                      ├──► USMSWorkspace$new(config)$load()      ← loads/prepares sim, obs & reference data
                      ├──► GlobalEvaluation$new(config)$run()    ← statistical evaluation vs obs & reference (all species)
                      ├──► SpeciesEvaluation$new(config)$run()   ← statistical evaluation vs obs & reference (per species)
-                     ├──► $export(...)                          ← export statistics, deteriorated USMs & plots to output_dir
-                     ├──► $summary()                             ← prints a summary of results
+                     ├──► USMEvaluation$new(config)$run()       ← statistical evaluation vs obs & reference (per USM)
+                     ├──► $export(...)                          ← exports evaluation results to output_dir
+                     ├──► $summary()                            ← prints a summary of results
                      └──► stops with an error if any evaluation failed
 ```
 
@@ -87,7 +91,7 @@ This will install all required packages at the versions specified in `renv.lock`
            └──► BalanceClosureTest$new(config)$run()          ← water & nitrogen balance closure check
 ```
 
-For advanced use cases, `GlobalEvaluation` and `SpeciesEvaluation` can also be instantiated and run individually instead of using `evaluate()`:
+For advanced use cases, `GlobalEvaluation`, `SpeciesEvaluation` and `USMEvaluation` can also be instantiated and run individually instead of using `evaluate()`:
 
 ```
   Configuration$new(...)
@@ -96,12 +100,16 @@ For advanced use cases, `GlobalEvaluation` and `SpeciesEvaluation` can also be i
            │         │
            │         └──► $export(...)                        ← export statistics to CSV
            │
-           └──► SpeciesEvaluation$new(config)$run()           ← statistical evaluation vs obs & reference (per species)
+           ├──► SpeciesEvaluation$new(config)$run()           ← statistical evaluation vs obs & reference (per species)
+           │         │
+           │         └──► $export(...)                        ← export statistics & plots
+           │
+           └──► USMEvaluation$new(config)$run()               ← USM-level regression detection based on RMSE ratio
                      │
-                     └──► $export(...)                        ← export statistics, deteriorated USMs & plots
+                     └──► $export(...)                        ← export deteriorated USMs
 ```
 
-`GlobalEvaluation` and `SpeciesEvaluation` are independent classes and store their evaluation results as an internal attribute of the object. When used individually (without `evaluate()`), the data must first be loaded into the evaluation workspace via `USMSWorkspace$new(config)$load()`.
+`GlobalEvaluation`, `SpeciesEvaluation` and `USMEvaluation` are independent classes and store their evaluation results as an internal attribute of the object. When used individually (without `evaluate()`), the data must first be loaded into the evaluation workspace via `USMSWorkspace$new(config)$load()`.
 
 ---
 
@@ -149,13 +157,13 @@ config <- Configuration$new(
 | `sim_rds` | Path to an RDS file containing pre-computed simulation outputs for the new version (alternative to `run_simulations` + `usms_workspace`) |
 | `obs_rds` | Path to an RDS file containing pre-computed observation data (alternative to `run_simulations` + `usms_workspace`) |
 | `percentage` | Threshold (%) above which a variable is flagged as deteriorated vs. the reference (default: `5`) |
-| `species` | Optional character vector of species to evaluate. Used by `SpeciesEvaluation` to determine which species to evaluate in the provided data; ignored by `GlobalEvaluation`. `NULL` = all available |
+| `species` | Optional character vector of species to evaluate. Used by `SpeciesEvaluation` and `USMEvaluation`; ignored by `GlobalEvaluation`. `NULL` = all available |
 | `usms` | Optional character vector of USMs to evaluate. `NULL` = all available. |
 | `var2exclude` | Optional character vector of variables to exclude from evaluation. |
 
 `Configuration` also exposes workflow-specific validation methods called internally by each function:
 
-- `config$validate_eval()` — checks requirements for the statistical evaluation workflow (used by `evaluate()`, `GlobalEvaluation`, and `SpeciesEvaluation`)
+- `config$validate_eval()` — checks requirements for the statistical evaluation workflow (used by `evaluate()`, `GlobalEvaluation`, `SpeciesEvaluation`, and `USMEvaluation`)
 - `config$validate_balance_closure()` — checks requirements for the balance closure test workflow
 
 ---
@@ -170,7 +178,7 @@ The simplest way to run the full statistical evaluation is via the `evaluate()` 
 evaluate(config)
 ```
 
-This loads simulation, observation and reference data into `eval_workspace`, runs both `GlobalEvaluation` and `SpeciesEvaluation`, exports results to `output_dir` (if defined), prints a summary, and stops with an error if any evaluation failed.
+This loads simulation, observation and reference data into `eval_workspace`, runs `GlobalEvaluation`, `SpeciesEvaluation`, and `USMEvaluation`, exports results to `output_dir` (if defined), prints a summary, and stops with an error if any evaluation failed.
 
 #### `GlobalEvaluation`
 
@@ -203,8 +211,6 @@ species_eval$export()
 - `summary()` prints a report per species, grouped by degradation level (major, minor, none).
 - `export()` writes, to `output_dir`:
   - `species_stats.csv` — statistical metrics per species
-  - `rRMSE_per_usm.csv` — rRMSE broken down per USM
-  - `Deteriorated_USM.csv` — USMs with deteriorated performance vs. the reference version
   - `plots/<species>_species_comparison.png` — rRMSE comparison scatter plot (see below)
   - `plots/<species>_scatter_plots.html` — interactive scatter plots for deteriorated variables
 - `species_eval$success` is `TRUE` if no species shows a critical deterioration.
@@ -231,6 +237,91 @@ SpeciesEvaluation$new(
 | 🟢 Green | Improved | ratio ≤ 0 % |
 
 A diagonal line (slope = 1) marks perfect parity; a dashed line (slope = 1 + `percentage`/100) marks the deterioration threshold. Variable names are displayed as repelled labels. The plot is only generated when a reference version (`ref_sim_rds`) is available.
+
+#### `USMEvaluation`
+
+Evaluates model performance at the **USM (situation) level** to identify situations where the evaluated STICS version is locally degraded compared to the reference version.
+
+Unlike `SpeciesEvaluation`, which detects degradation at the species level, `USMEvaluation` identifies individual USMs where one or more variables show an abnormal increase in RMSE compared to the reference.
+
+For each variable and each USM, the following ratio is computed:
+
+\[
+RMSE\_ratio = 100 \times
+\frac{RMSE_{eval} - RMSE_{ref}}{RMSE_{species}}
+\]
+
+where:
+
+- `RMSE_eval` is the RMSE of the evaluated version for this variable and USM.
+- `RMSE_ref` is the RMSE of the reference version for this variable and USM.
+- `RMSE_species` is the RMSE of the evaluated version computed over the whole species.
+
+A USM fails the evaluation if at least one of the following conditions is met:
+
+- one variable has `RMSE_ratio > ratio_threshold` (default: 50%)
+- more than `max_degraded_vars` variables have `RMSE_ratio > degraded_threshold` (default: 20%)
+
+USMs and variables with fewer than 10 observations (`n_obs`) are ignored when determining failed USMs.
+
+```r
+usm_eval <- USMEvaluation$new(config)
+usm_eval$run()
+usm_eval$summary()
+usm_eval$export()
+```
+
+- `run()` computes RMSE ratios for each variable and USM.
+- `summary()` prints the list of failed and passed USMs by species.
+- `export()` writes `Deteriorated_USM.csv` to `output_dir`.
+- `usm_eval$success` is `TRUE` if no USM fails the evaluation.
+
+The evaluation thresholds can be customized:
+
+```r
+usm_eval <- USMEvaluation$new(
+  config,
+  ratio_threshold = 50,
+  degraded_threshold = 20,
+  max_degraded_vars = 3
+)
+```
+
+`USMEvaluation` can also be used manually by providing pre-computed statistics, which is useful for unit testing:
+
+```r
+usm_eval <- USMEvaluation$new(
+  species = "Species1",
+  stats_usm = stats_usm,
+  stats_species = stats_species
+)
+
+usm_eval$get_data()
+usm_eval$failed_usms
+```
+
+The returned data contains one row per variable/USM/species combination:
+
+| Column | Description |
+|---|---|
+| `species` | Species name |
+| `situation` | USM identifier |
+| `variable` | Evaluated variable |
+| `rmse_eval` | RMSE of the evaluated version |
+| `rmse_ref` | RMSE of the reference version |
+| `rmse_species` | Species-level RMSE of the evaluated version |
+| `rmse_ratio` | Relative RMSE deterioration ratio (%) |
+| `n_obs` | Number of observations used |
+
+`USMEvaluation` is independent from `evaluate()` and can be run after loading the workspace:
+
+```r
+USMSWorkspace$new(config)$load()
+
+usm_eval <- USMEvaluation$new(config)
+usm_eval$run()
+usm_eval$summary()
+```
 
 ---
 
@@ -284,8 +375,8 @@ config <- Configuration$new(
   percentage      = 5
 )
 
-# 2. Run the full statistical evaluation (global + per species),
-#    export results, and print a summary
+# 2. Run the full statistical evaluation (global, per species,
+#    and per USM), export results, and print summaries
 evaluate(config)
 
 # 3. Check water and nitrogen balance closure
@@ -324,7 +415,13 @@ species_eval$run()
 species_eval$summary()
 species_eval$export()
 
-# 5. Check water and nitrogen balance closure
+# 5. Run the USM-level evaluation
+usm_eval <- USMEvaluation$new(config)
+usm_eval$run()
+usm_eval$summary()
+usm_eval$export()
+
+# 6. Check water and nitrogen balance closure
 BalanceClosureTest$new(config)$run()
 ```
 

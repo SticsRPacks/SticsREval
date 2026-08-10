@@ -37,13 +37,13 @@ test_that("initializes from precomputed data", {
     species = "wheat",
     situation = "usm1",
     variable = "LAI",
-    rrmse_new = 0.12,
+    rrmse_eval = 0.12,
     rrmse_ref = 0.10,
-    ratio = 20.0,
+    rrmse_ratio = 20.0,
     stringsAsFactors = FALSE
   )
   cmp <- RRmseComparison$new(percentage = 10, data = data)
-  expect_equal(cmp$get_data()$ratio, 20.0)
+  expect_equal(cmp$get_data()$rrmse_ratio, 20.0)
 })
 
 test_that("errors when neither data nor stats provided", { # nolint: nonportable_path_linter
@@ -55,7 +55,7 @@ test_that("errors when neither data nor stats provided", { # nolint: nonportable
 
 test_that("data is sorted descending by ratio", {
   cmp <- make_comparison()
-  ratios <- cmp$get_data()$ratio
+  ratios <- cmp$get_data()$rrmse_ratio
   expect_identical(ratios, sort(ratios, decreasing = TRUE))
 })
 
@@ -71,7 +71,7 @@ test_that("computes ratio correctly", {
     stringsAsFactors = FALSE
   )
   cmp <- RRmseComparison$new(percentage = 10, species = "wheat", stats = stats)
-  expect_identical(cmp$get_data()$ratio, 50)
+  expect_identical(cmp$get_data()$rrmse_ratio, 50)
 })
 
 test_that("filters out non-finite and NA rows", {
@@ -182,7 +182,7 @@ test_that("is_empty returns FALSE when rows exist", {
 test_that("get_data returns expected columns", {
   cmp <- make_comparison()
   expected_cols <- c(
-    "situation", "variable", "rrmse_new", "rrmse_ref", "ratio",
+    "situation", "variable", "rrmse_eval", "rrmse_ref", "rrmse_ratio",
     "n_obs", "species"
   )
   expect_named(cmp$get_data(), expected_cols)
@@ -198,7 +198,7 @@ test_that(
       stats = make_stats(),
       percentage = 10
     )
-    expect_true(all(cmp$get_data()$ratio > 0))
+    expect_true(all(cmp$get_data()$rrmse_ratio > 0))
   }
 )
 
@@ -218,7 +218,7 @@ test_that("DeterioratedUSMComparison data is sorted descending by ratio", {
     stats = make_stats(),
     percentage = 10
   )
-  ratios <- cmp$get_data()$ratio
+  ratios <- cmp$get_data()$rrmse_ratio
   expect_identical(ratios, sort(ratios, decreasing = TRUE))
 })
 
