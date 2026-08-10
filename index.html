@@ -70,11 +70,17 @@
 <div class="section level2">
 <h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
 </h2>
-<p><code>SticsREval</code> is an R package for <strong>evaluating and comparing versions of the STICS crop model</strong>. It supports multiple types of evaluation, each implemented as an independent class sharing the same <code>Configuration</code> object. Tests can be run individually or combined into a custom pipeline.</p>
-<p>The package currently provides two types of evaluation:</p>
+<p><code>SticsREval</code> is an R package for <strong>evaluating and comparing versions of the STICS crop model</strong>. It supports multiple evaluation workflows implemented as independent classes sharing the same <code>Configuration</code> object. Tests can be run individually or combined into a custom pipeline.</p>
+<p>The package currently provides the following evaluation workflows:</p>
 <ul>
 <li>
-<strong>Statistical Evaluation</strong> — assesses whether a new version of STICS performs better, equally, or worse than a reference version, both against field observations and against reference simulation outputs</li>
+<strong>Statistical Evaluation</strong> — assesses whether a new version of STICS performs better, equally, or worse than a reference version, both against field observations and against reference simulation outputs. It includes:
+<ul>
+<li>global evaluation across all species and USMs</li>
+<li>species-level evaluation</li>
+<li>USM-level evaluation</li>
+</ul>
+</li>
 <li>
 <strong>Balance Closure Test</strong> — checks the internal consistency of water and nitrogen balances in the simulations</li>
 </ul>
@@ -145,24 +151,29 @@
                      ├──► USMSWorkspace$new(config)$load()      ← loads/prepares sim, obs &amp; reference data
                      ├──► GlobalEvaluation$new(config)$run()    ← statistical evaluation vs obs &amp; reference (all species)
                      ├──► SpeciesEvaluation$new(config)$run()   ← statistical evaluation vs obs &amp; reference (per species)
-                     ├──► $export(...)                          ← export statistics, deteriorated USMs &amp; plots to output_dir
-                     ├──► $summary()                             ← prints a summary of results
+                     ├──► USMEvaluation$new(config)$run()       ← statistical evaluation vs obs &amp; reference (per USM)
+                     ├──► $export(...)                          ← exports evaluation results to output_dir
+                     ├──► $summary()                            ← prints a summary of results
                      └──► stops with an error if any evaluation failed</code></pre>
 <p><code>BalanceClosureTest</code> runs independently of <code><a href="reference/evaluate.html">evaluate()</a></code> and loads its own simulation data directly from <code>usms_workspace</code>:</p>
 <pre><code>  Configuration$new(...)
            │
            └──► BalanceClosureTest$new(config)$run()          ← water &amp; nitrogen balance closure check</code></pre>
-<p>For advanced use cases, <code>GlobalEvaluation</code> and <code>SpeciesEvaluation</code> can also be instantiated and run individually instead of using <code><a href="reference/evaluate.html">evaluate()</a></code>:</p>
+<p>For advanced use cases, <code>GlobalEvaluation</code>, <code>SpeciesEvaluation</code> and <code>USMEvaluation</code> can also be instantiated and run individually instead of using <code><a href="reference/evaluate.html">evaluate()</a></code>:</p>
 <pre><code>  Configuration$new(...)
            │
            ├──► GlobalEvaluation$new(config)$run()            ← statistical evaluation vs obs &amp; reference (all species)
            │         │
            │         └──► $export(...)                        ← export statistics to CSV
            │
-           └──► SpeciesEvaluation$new(config)$run()           ← statistical evaluation vs obs &amp; reference (per species)
+           ├──► SpeciesEvaluation$new(config)$run()           ← statistical evaluation vs obs &amp; reference (per species)
+           │         │
+           │         └──► $export(...)                        ← export statistics &amp; plots
+           │
+           └──► USMEvaluation$new(config)$run()               ← USM-level regression detection based on RMSE ratio
                      │
-                     └──► $export(...)                        ← export statistics, deteriorated USMs &amp; plots</code></pre>
-<p><code>GlobalEvaluation</code> and <code>SpeciesEvaluation</code> are independent classes and store their evaluation results as an internal attribute of the object. When used individually (without <code><a href="reference/evaluate.html">evaluate()</a></code>), the data must first be loaded into the evaluation workspace via <code>USMSWorkspace$new(config)$load()</code>.</p>
+                     └──► $export(...)                        ← export deteriorated USMs</code></pre>
+<p><code>GlobalEvaluation</code>, <code>SpeciesEvaluation</code> and <code>USMEvaluation</code> are independent classes and store their evaluation results as an internal attribute of the object. When used individually (without <code><a href="reference/evaluate.html">evaluate()</a></code>), the data must first be loaded into the evaluation workspace via <code>USMSWorkspace$new(config)$load()</code>.</p>
 <hr>
 </div>
 <div class="section level2">
@@ -259,7 +270,7 @@
 </tr>
 <tr>
 <td><code>species</code></td>
-<td>Optional character vector of species to evaluate. Used by <code>SpeciesEvaluation</code> to determine which species to evaluate in the provided data; ignored by <code>GlobalEvaluation</code>. <code>NULL</code> = all available</td>
+<td>Optional character vector of species to evaluate. Used by <code>SpeciesEvaluation</code> and <code>USMEvaluation</code>; ignored by <code>GlobalEvaluation</code>. <code>NULL</code> = all available</td>
 </tr>
 <tr>
 <td><code>usms</code></td>
@@ -274,7 +285,7 @@
 <p><code>Configuration</code> also exposes workflow-specific validation methods called internally by each function:</p>
 <ul>
 <li>
-<code>config$validate_eval()</code> — checks requirements for the statistical evaluation workflow (used by <code><a href="reference/evaluate.html">evaluate()</a></code>, <code>GlobalEvaluation</code>, and <code>SpeciesEvaluation</code>)</li>
+<code>config$validate_eval()</code> — checks requirements for the statistical evaluation workflow (used by <code><a href="reference/evaluate.html">evaluate()</a></code>, <code>GlobalEvaluation</code>, <code>SpeciesEvaluation</code>, and <code>USMEvaluation</code>)</li>
 <li>
 <code>config$validate_balance_closure()</code> — checks requirements for the balance closure test workflow</li>
 </ul>
@@ -290,7 +301,7 @@
 <p>The simplest way to run the full statistical evaluation is via the <code><a href="reference/evaluate.html">evaluate()</a></code> function:</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/evaluate.html">evaluate</a></span><span class="op">(</span><span class="va">config</span><span class="op">)</span></span></code></pre></div>
-<p>This loads simulation, observation and reference data into <code>eval_workspace</code>, runs both <code>GlobalEvaluation</code> and <code>SpeciesEvaluation</code>, exports results to <code>output_dir</code> (if defined), prints a summary, and stops with an error if any evaluation failed.</p>
+<p>This loads simulation, observation and reference data into <code>eval_workspace</code>, runs <code>GlobalEvaluation</code>, <code>SpeciesEvaluation</code>, and <code>USMEvaluation</code>, exports results to <code>output_dir</code> (if defined), prints a summary, and stops with an error if any evaluation failed.</p>
 <div class="section level4">
 <h4 id="globalevaluation">
 <code>GlobalEvaluation</code><a class="anchor" aria-label="anchor" href="#globalevaluation"></a>
@@ -332,10 +343,6 @@
 <ul>
 <li>
 <code>species_stats.csv</code> — statistical metrics per species</li>
-<li>
-<code>rRMSE_per_usm.csv</code> — rRMSE broken down per USM</li>
-<li>
-<code>Deteriorated_USM.csv</code> — USMs with deteriorated performance vs. the reference version</li>
 <li>
 <code>plots/&lt;species&gt;_species_comparison.png</code> — rRMSE comparison scatter plot (see below)</li>
 <li>
@@ -382,8 +389,113 @@
 </tbody>
 </table>
 <p>A diagonal line (slope = 1) marks perfect parity; a dashed line (slope = 1 + <code>percentage</code>/100) marks the deterioration threshold. Variable names are displayed as repelled labels. The plot is only generated when a reference version (<code>ref_sim_rds</code>) is available.</p>
-<hr>
 </div>
+</div>
+<div class="section level4">
+<h4 id="usmevaluation">
+<code>USMEvaluation</code><a class="anchor" aria-label="anchor" href="#usmevaluation"></a>
+</h4>
+<p>Evaluates model performance at the <strong>USM (situation) level</strong> to identify situations where the evaluated STICS version is locally degraded compared to the reference version.</p>
+<p>Unlike <code>SpeciesEvaluation</code>, which detects degradation at the species level, <code>USMEvaluation</code> identifies individual USMs where one or more variables show an abnormal increase in RMSE compared to the reference.</p>
+<p>For each variable and each USM, the following ratio is computed:</p>
+<p>[ RMSE_ratio = 100   ]</p>
+<p>where:</p>
+<ul>
+<li>
+<code>RMSE_eval</code> is the RMSE of the evaluated version for this variable and USM.</li>
+<li>
+<code>RMSE_ref</code> is the RMSE of the reference version for this variable and USM.</li>
+<li>
+<code>RMSE_species</code> is the RMSE of the evaluated version computed over the whole species.</li>
+</ul>
+<p>A USM fails the evaluation if at least one of the following conditions is met:</p>
+<ul>
+<li>one variable has <code>RMSE_ratio &gt; ratio_threshold</code> (default: 50%)</li>
+<li>more than <code>max_degraded_vars</code> variables have <code>RMSE_ratio &gt; degraded_threshold</code> (default: 20%)</li>
+</ul>
+<p>USMs and variables with fewer than 10 observations (<code>n_obs</code>) are ignored when determining failed USMs.</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">usm_eval</span> <span class="op">&lt;-</span> <span class="va"><a href="reference/USMEvaluation.html">USMEvaluation</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">config</span><span class="op">)</span></span>
+<span><span class="va">usm_eval</span><span class="op">$</span><span class="fu">run</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">usm_eval</span><span class="op">$</span><span class="fu">summary</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">usm_eval</span><span class="op">$</span><span class="fu">export</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<ul>
+<li>
+<code>run()</code> computes RMSE ratios for each variable and USM.</li>
+<li>
+<code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> prints the list of failed and passed USMs by species.</li>
+<li>
+<code>export()</code> writes <code>Deteriorated_USM.csv</code> to <code>output_dir</code>.</li>
+<li>
+<code>usm_eval$success</code> is <code>TRUE</code> if no USM fails the evaluation.</li>
+</ul>
+<p>The evaluation thresholds can be customized:</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">usm_eval</span> <span class="op">&lt;-</span> <span class="va"><a href="reference/USMEvaluation.html">USMEvaluation</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span></span>
+<span>  <span class="va">config</span>,</span>
+<span>  ratio_threshold <span class="op">=</span> <span class="fl">50</span>,</span>
+<span>  degraded_threshold <span class="op">=</span> <span class="fl">20</span>,</span>
+<span>  max_degraded_vars <span class="op">=</span> <span class="fl">3</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p><code>USMEvaluation</code> can also be used manually by providing pre-computed statistics, which is useful for unit testing:</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">usm_eval</span> <span class="op">&lt;-</span> <span class="va"><a href="reference/USMEvaluation.html">USMEvaluation</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span></span>
+<span>  species <span class="op">=</span> <span class="st">"Species1"</span>,</span>
+<span>  stats_usm <span class="op">=</span> <span class="va">stats_usm</span>,</span>
+<span>  stats_species <span class="op">=</span> <span class="va">stats_species</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">usm_eval</span><span class="op">$</span><span class="fu">get_data</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">usm_eval</span><span class="op">$</span><span class="va">failed_usms</span></span></code></pre></div>
+<p>The returned data contains one row per variable/USM/species combination:</p>
+<table class="table">
+<thead><tr>
+<th>Column</th>
+<th>Description</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code>species</code></td>
+<td>Species name</td>
+</tr>
+<tr>
+<td><code>situation</code></td>
+<td>USM identifier</td>
+</tr>
+<tr>
+<td><code>variable</code></td>
+<td>Evaluated variable</td>
+</tr>
+<tr>
+<td><code>rmse_eval</code></td>
+<td>RMSE of the evaluated version</td>
+</tr>
+<tr>
+<td><code>rmse_ref</code></td>
+<td>RMSE of the reference version</td>
+</tr>
+<tr>
+<td><code>rmse_species</code></td>
+<td>Species-level RMSE of the evaluated version</td>
+</tr>
+<tr>
+<td><code>rmse_ratio</code></td>
+<td>Relative RMSE deterioration ratio (%)</td>
+</tr>
+<tr>
+<td><code>n_obs</code></td>
+<td>Number of observations used</td>
+</tr>
+</tbody>
+</table>
+<p><code>USMEvaluation</code> is independent from <code><a href="reference/evaluate.html">evaluate()</a></code> and can be run after loading the workspace:</p>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">USMSWorkspace</span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">config</span><span class="op">)</span><span class="op">$</span><span class="fu">load</span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">usm_eval</span> <span class="op">&lt;-</span> <span class="va"><a href="reference/USMEvaluation.html">USMEvaluation</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">config</span><span class="op">)</span></span>
+<span><span class="va">usm_eval</span><span class="op">$</span><span class="fu">run</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">usm_eval</span><span class="op">$</span><span class="fu">summary</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<hr>
 </div>
 </div>
 <div class="section level3">
@@ -434,7 +546,7 @@
 </tbody>
 </table>
 <p>A USM is flagged if the absolute rounded difference between its initial and final values is greater than 1. USMs with missing fields or only NA values are silently skipped.</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">config</span> <span class="op">&lt;-</span> <span class="va"><a href="reference/Configuration.html">Configuration</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span></span>
 <span>  stics_exe      <span class="op">=</span> <span class="st">"/path/to/stics"</span>,</span>
 <span>  metadata_file  <span class="op">=</span> <span class="st">"metadata.csv"</span>,</span>
@@ -454,7 +566,7 @@
 <div class="section level3">
 <h3 id="simple-usage">Simple usage<a class="anchor" aria-label="anchor" href="#simple-usage"></a>
 </h3>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/SticsRPacks/SticsREval" class="external-link">SticsREval</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># 1. Configure the evaluation</span></span>
@@ -469,8 +581,8 @@
 <span>  percentage      <span class="op">=</span> <span class="fl">5</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># 2. Run the full statistical evaluation (global + per species),</span></span>
-<span><span class="co">#    export results, and print a summary</span></span>
+<span><span class="co"># 2. Run the full statistical evaluation (global, per species,</span></span>
+<span><span class="co">#    and per USM), export results, and print summaries</span></span>
 <span><span class="fu"><a href="reference/evaluate.html">evaluate</a></span><span class="op">(</span><span class="va">config</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># 3. Check water and nitrogen balance closure</span></span>
@@ -479,7 +591,7 @@
 <div class="section level3">
 <h3 id="advanced-usage">Advanced usage<a class="anchor" aria-label="anchor" href="#advanced-usage"></a>
 </h3>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/SticsRPacks/SticsREval" class="external-link">SticsREval</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># 1. Configure the evaluation</span></span>
@@ -509,7 +621,13 @@
 <span><span class="va">species_eval</span><span class="op">$</span><span class="fu">summary</span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">species_eval</span><span class="op">$</span><span class="fu">export</span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># 5. Check water and nitrogen balance closure</span></span>
+<span><span class="co"># 5. Run the USM-level evaluation</span></span>
+<span><span class="va">usm_eval</span> <span class="op">&lt;-</span> <span class="va"><a href="reference/USMEvaluation.html">USMEvaluation</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">config</span><span class="op">)</span></span>
+<span><span class="va">usm_eval</span><span class="op">$</span><span class="fu">run</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">usm_eval</span><span class="op">$</span><span class="fu">summary</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">usm_eval</span><span class="op">$</span><span class="fu">export</span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># 6. Check water and nitrogen balance closure</span></span>
 <span><span class="va"><a href="reference/BalanceClosureTest.html">BalanceClosureTest</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">config</span><span class="op">)</span><span class="op">$</span><span class="fu">run</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <hr>
 </div>
@@ -521,17 +639,17 @@
 <div class="section level3">
 <h3 id="pull-the-image">Pull the image<a class="anchor" aria-label="anchor" href="#pull-the-image"></a>
 </h3>
-<div class="sourceCode" id="cb15"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a><span class="ex">docker</span> pull ghcr.io/sticsrpacks/stics-r-eval:latest</span></code></pre></div>
+<div class="sourceCode" id="cb19"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" tabindex="-1"></a><span class="ex">docker</span> pull ghcr.io/sticsrpacks/stics-r-eval:latest</span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="run-an-interactive-r-session">Run an interactive R session<a class="anchor" aria-label="anchor" href="#run-an-interactive-r-session"></a>
 </h3>
-<div class="sourceCode" id="cb16"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">--rm</span> <span class="at">-it</span> <span class="dt">\</span></span>
-<span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a>  <span class="at">-v</span> /path/to/your/workspace:/workspace <span class="dt">\</span></span>
-<span id="cb16-3"><a href="#cb16-3" tabindex="-1"></a>  ghcr.io/sticsrpacks/stics-r-eval:latest <span class="dt">\</span></span>
-<span id="cb16-4"><a href="#cb16-4" tabindex="-1"></a>  R</span></code></pre></div>
+<div class="sourceCode" id="cb20"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">--rm</span> <span class="at">-it</span> <span class="dt">\</span></span>
+<span id="cb20-2"><a href="#cb20-2" tabindex="-1"></a>  <span class="at">-v</span> /path/to/your/workspace:/workspace <span class="dt">\</span></span>
+<span id="cb20-3"><a href="#cb20-3" tabindex="-1"></a>  ghcr.io/sticsrpacks/stics-r-eval:latest <span class="dt">\</span></span>
+<span id="cb20-4"><a href="#cb20-4" tabindex="-1"></a>  R</span></code></pre></div>
 <p>Then inside R:</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/SticsRPacks/SticsREval" class="external-link">SticsREval</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">config</span> <span class="op">&lt;-</span> <span class="va"><a href="reference/Configuration.html">Configuration</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span></span>
@@ -549,22 +667,22 @@
 <div class="section level3">
 <h3 id="run-a-script-non-interactively">Run a script non-interactively<a class="anchor" aria-label="anchor" href="#run-a-script-non-interactively"></a>
 </h3>
-<div class="sourceCode" id="cb18"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">--rm</span> <span class="dt">\</span></span>
-<span id="cb18-2"><a href="#cb18-2" tabindex="-1"></a>  <span class="at">-v</span> /path/to/your/workspace:/workspace <span class="dt">\</span></span>
-<span id="cb18-3"><a href="#cb18-3" tabindex="-1"></a>  <span class="at">-v</span> /path/to/your/script.R:/script.R <span class="dt">\</span></span>
-<span id="cb18-4"><a href="#cb18-4" tabindex="-1"></a>  ghcr.io/sticsrpacks/stics-r-eval:latest <span class="dt">\</span></span>
-<span id="cb18-5"><a href="#cb18-5" tabindex="-1"></a>  Rscript /script.R</span></code></pre></div>
+<div class="sourceCode" id="cb22"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">--rm</span> <span class="dt">\</span></span>
+<span id="cb22-2"><a href="#cb22-2" tabindex="-1"></a>  <span class="at">-v</span> /path/to/your/workspace:/workspace <span class="dt">\</span></span>
+<span id="cb22-3"><a href="#cb22-3" tabindex="-1"></a>  <span class="at">-v</span> /path/to/your/script.R:/script.R <span class="dt">\</span></span>
+<span id="cb22-4"><a href="#cb22-4" tabindex="-1"></a>  ghcr.io/sticsrpacks/stics-r-eval:latest <span class="dt">\</span></span>
+<span id="cb22-5"><a href="#cb22-5" tabindex="-1"></a>  Rscript /script.R</span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="build-the-image-locally">Build the image locally<a class="anchor" aria-label="anchor" href="#build-the-image-locally"></a>
 </h3>
-<div class="sourceCode" id="cb19"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" tabindex="-1"></a><span class="co"># Without a GitHub token</span></span>
-<span id="cb19-2"><a href="#cb19-2" tabindex="-1"></a><span class="ex">docker</span> build <span class="at">-t</span> stics-r-eval .</span>
-<span id="cb19-3"><a href="#cb19-3" tabindex="-1"></a></span>
-<span id="cb19-4"><a href="#cb19-4" tabindex="-1"></a><span class="co"># With a GitHub token (needed to install private SticsRPacks dependencies)</span></span>
-<span id="cb19-5"><a href="#cb19-5" tabindex="-1"></a><span class="ex">docker</span> build <span class="dt">\</span></span>
-<span id="cb19-6"><a href="#cb19-6" tabindex="-1"></a>  <span class="at">--secret</span> id=GITHUB_TOKEN,src=<span class="op">&lt;(</span><span class="bu">echo</span> <span class="va">$GITHUB_PAT</span><span class="op">)</span> <span class="dt">\</span></span>
-<span id="cb19-7"><a href="#cb19-7" tabindex="-1"></a>  <span class="at">-t</span> stics-r-eval .</span></code></pre></div>
+<div class="sourceCode" id="cb23"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" tabindex="-1"></a><span class="co"># Without a GitHub token</span></span>
+<span id="cb23-2"><a href="#cb23-2" tabindex="-1"></a><span class="ex">docker</span> build <span class="at">-t</span> stics-r-eval .</span>
+<span id="cb23-3"><a href="#cb23-3" tabindex="-1"></a></span>
+<span id="cb23-4"><a href="#cb23-4" tabindex="-1"></a><span class="co"># With a GitHub token (needed to install private SticsRPacks dependencies)</span></span>
+<span id="cb23-5"><a href="#cb23-5" tabindex="-1"></a><span class="ex">docker</span> build <span class="dt">\</span></span>
+<span id="cb23-6"><a href="#cb23-6" tabindex="-1"></a>  <span class="at">--secret</span> id=GITHUB_TOKEN,src=<span class="op">&lt;(</span><span class="bu">echo</span> <span class="va">$GITHUB_PAT</span><span class="op">)</span> <span class="dt">\</span></span>
+<span id="cb23-7"><a href="#cb23-7" tabindex="-1"></a>  <span class="at">-t</span> stics-r-eval .</span></code></pre></div>
 <blockquote>
 <p><strong>Note:</strong> The image is based on <a href="https://rocker-project.org/" class="external-link"><code>rocker/r-ver:4</code></a> and uses <a href="https://rstudio.github.io/renv/" class="external-link"><code>renv</code></a> to ensure reproducible package versions. Dependencies are restored from <code>renv.lock</code> at build time.</p>
 </blockquote>
@@ -588,7 +706,7 @@
 <h2 id="citation">Citation<a class="anchor" aria-label="anchor" href="#citation"></a>
 </h2>
 <p>If you use <code>SticsREval</code> in your work, please cite it as follows:</p>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/citation.html" class="external-link">citation</a></span><span class="op">(</span><span class="st">"SticsREval"</span><span class="op">)</span></span></code></pre></div>
 <hr>
 </div>
