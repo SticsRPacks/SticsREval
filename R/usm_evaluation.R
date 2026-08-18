@@ -77,11 +77,23 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
     backend = NULL,
     workspace = NULL,
     logger = NULL,
+    species_evaluation = NULL,
     data = list(),
     deteriorated_usm = list(),
     ratio_threshold = NULL,
     degraded_threshold = NULL,
     max_degraded_vars = NULL,
+
+    # If a SpeciesEvaluation instance was injected and it has already
+    # computed statistics for this species (i.e. it was run() before this
+    # USMEvaluation), reuse them instead of re-reading the sim/obs/ref data
+    # and recomputing the same CroPlotR summary() twice more.
+    get_cached_stats = function(species) {
+      if (is.null(private$species_evaluation)) return(NULL)
+      cached <- private$species_evaluation$get_species_stats(species)
+      if (is.null(cached$stats) || is.null(cached$stats_usm)) return(NULL)
+      list(stats_species = cached$stats, stats_usm = cached$stats_usm)
+    },
 
     compute_ratio = function(species, stats_usm, stats_species) {
       ref_usm <- dplyr::filter(stats_usm, .data$group == "reference")
@@ -166,6 +178,15 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
     },
 
     gen_usm_stats = function(species) {
+      cached <- private$get_cached_stats(species)
+      if (!is.null(cached)) {
+        private$logger$info(
+          "Reusing statistics already computed by SpeciesEvaluation for ",
+          species
+        )
+        return(cached)
+      }
+
       private$logger$info(
         "Generating RMSE and rRMSE per USM for species ",
         species
@@ -332,6 +353,13 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
     #' using the provided configuration.
     #' @param logger An optional logger object for logging messages. If not
     #' provided, the default logger will be used.
+    #' @param species_evaluation Optional \code{SpeciesEvaluation} instance.
+    #' If provided and already \code{run()}, its per-species statistics are
+    #' reused instead of being recomputed from scratch (avoids re-reading
+    #' the sim/obs/ref data and re-running CroPlotR's \code{summary()} for
+    #' each species). Falls back to computing statistics independently for
+    #' any species not found in \code{species_evaluation} (e.g. if it
+    #' hasn't been run yet).
     #' @param ratio_threshold Numeric threshold (%) above which a single
     #' variable makes the USM fail. Default 50.
     #' @param degraded_threshold Numeric threshold (%) above which a variable
@@ -355,6 +383,7 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
       workspace = NULL,
       backend = NULL,
       logger = default_logger,
+      species_evaluation = NULL,
       ratio_threshold = 50,
       degraded_threshold = 20,
       max_degraded_vars = 3,
@@ -377,6 +406,7 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
           config$eval_workspace
         )
         private$logger <- logger
+        private$species_evaluation <- species_evaluation
         return(invisible(self))
       }
 
