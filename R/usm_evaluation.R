@@ -71,7 +71,6 @@
 #' }
 #' @export
 USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
-
   private = list(
     config = NULL,
     backend = NULL,
@@ -82,7 +81,6 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
     ratio_threshold = NULL,
     degraded_threshold = NULL,
     max_degraded_vars = NULL,
-
     compute_ratio = function(species, stats_usm, stats_species) {
       ref_usm <- dplyr::filter(stats_usm, .data$group == "reference")
       eval_usm <- dplyr::filter(stats_usm, .data$group == "evaluated")
@@ -125,7 +123,6 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
         dplyr::arrange(dplyr::desc(.data$rmse_ratio)) |>
         dplyr::collect()
     },
-
     get_species_to_evaluate = function() {
       private$logger$debug("Getting species to evaluate...")
       species <- private$workspace$get_species()
@@ -140,14 +137,16 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
 
       species
     },
-
     filter_species_config = function(species) {
-      if (is.null(private$config$species)) return(species)
+      if (is.null(private$config$species)) {
+        return(species)
+      }
       intersect(species, private$config$species)
     },
-
     filter_species_usms = function(species) {
-      if (is.null(private$config$usms)) return(species)
+      if (is.null(private$config$usms)) {
+        return(species)
+      }
 
       species <- species[
         vapply(species, function(sp) {
@@ -164,7 +163,6 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
       ]
       species
     },
-
     gen_usm_stats = function(species) {
       private$logger$info(
         "Generating RMSE and rRMSE per USM for species ",
@@ -174,17 +172,20 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
 
       splited_sim <- CroPlotR::split_df2sim(
         private$workspace$get_sim(
-          species, usms = private$config$usms, var2exclude = exclude
+          species,
+          usms = private$config$usms, var2exclude = exclude
         )
       )
       splited_ref_sim <- CroPlotR::split_df2sim(
         private$workspace$get_ref_sim(
-          species, usms = private$config$usms, var2exclude = exclude
+          species,
+          usms = private$config$usms, var2exclude = exclude
         )
       )
       splited_obs <- CroPlotR::split_df2sim(
         private$workspace$get_obs(
-          species, usms = private$config$usms, var2exclude = exclude
+          species,
+          usms = private$config$usms, var2exclude = exclude
         )
       )
       private$logger$info("Generating RMSE statistics for ", species)
@@ -214,7 +215,6 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
         stats_usm = stats_usm
       )
     },
-
     gen_usm_comparisons = function(species) {
       private$logger$info(
         "Generating RMSE per USM comparison for ",
@@ -227,14 +227,28 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
           spec <- species[i]
           stats <- private$gen_usm_stats(spec)
           private$logger$info("Comparing rRMSE per usm for species ", spec)
+          if (is.null(stats$stats_usm)) {
+            private$logger$warn(
+              "No stats generated for species ", spec, ". Skipping."
+            )
+            return(NULL)
+          }
           deteriorated_usm <- DeterioratedUSMComparison$new(
             species = spec,
             stats = stats$stats_usm,
             percentage = private$config$percentage
           )
-          ratio <- private$compute_ratio(
-            spec, stats$stats_usm, stats$stats_species
-          )
+          if (is.null(stats$stats_species)) {
+            private$logger$warn(
+              "No species-level stats generated for species ", spec,
+              ". Skipping."
+            )
+            ratio <- NULL
+          } else {
+            ratio <- private$compute_ratio(
+              spec, stats$stats_usm, stats$stats_species
+            )
+          }
           list(
             species = spec,
             deteriorated_usm = deteriorated_usm,
@@ -245,7 +259,8 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
       results <- Filter(Negate(is.null), results)
       for (res in results) {
         private$data[[res$species]] <- res$data
-        if (!is.null(res$deteriorated_usm$get_data())) {
+        deteriorated_data <- res$deteriorated_usm$get_data()
+        if (!is.null(deteriorated_data) && nrow(deteriorated_data) > 0) {
           private$deteriorated_usm[[res$species]] <- res$deteriorated_usm
           private$logger$info(
             "Deteriorated USM for species ", res$species, " generated"
@@ -255,7 +270,6 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
       invisible(NULL)
     }
   ),
-
   active = list(
     #' @field degraded_vars
     #' Data frame of variable/USM combinations (across all species) where
@@ -318,7 +332,6 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
     #' TRUE if there is no data to evaluate.
     is_empty = function() isTRUE(length(private$data) == 0)
   ),
-
   public = list(
     #' @description
     #' Create a new USMEvaluation object.
@@ -350,19 +363,17 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
     #' \code{all_situations = TRUE} (default).
     #' @param data Manual mode: optional pre-computed data frame (bypasses
     #' \code{stats_usm}/\code{stats_species} computation).
-    initialize = function(
-      config = NULL,
-      workspace = NULL,
-      backend = NULL,
-      logger = default_logger,
-      ratio_threshold = 50,
-      degraded_threshold = 20,
-      max_degraded_vars = 3,
-      species = NULL,
-      stats_usm = NULL,
-      stats_species = NULL,
-      data = NULL
-    ) {
+    initialize = function(config = NULL,
+                          workspace = NULL,
+                          backend = NULL,
+                          logger = default_logger,
+                          ratio_threshold = 50,
+                          degraded_threshold = 20,
+                          max_degraded_vars = 3,
+                          species = NULL,
+                          stats_usm = NULL,
+                          stats_species = NULL,
+                          data = NULL) {
       private$ratio_threshold <- ratio_threshold
       private$degraded_threshold <- degraded_threshold
       private$max_degraded_vars <- max_degraded_vars
@@ -410,38 +421,46 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
         )
       }
 
-      on.exit({
-        end_time <- Sys.time()
-        private$logger$info(
-          "USM evaluation time: ",
-          format_duration(start_time, end_time)
-        )
-      }, add = TRUE)
+      on.exit(
+        {
+          end_time <- Sys.time()
+          private$logger$info(
+            "USM evaluation time: ",
+            format_duration(start_time, end_time)
+          )
+        },
+        add = TRUE
+      )
       start_time <- Sys.time()
-      tryCatch({
-        private$logger$info("Starting USM evaluation...")
+      tryCatch(
+        {
+          private$logger$info("Starting USM evaluation...")
 
-        species <- private$get_species_to_evaluate()
+          species <- private$get_species_to_evaluate()
 
-        if (length(species) == 0) {
-          private$logger$info("No species found to evaluate in the workspace.")
-          return(invisible(NULL))
+          if (length(species) == 0) {
+            private$logger$info(
+              "No species found to evaluate in the workspace."
+            )
+            return(invisible(NULL))
+          }
+
+          private$logger$info(
+            "Found ", length(species), " species in workspace ",
+            private$config$eval_workspace, ": ", format_species(species)
+          )
+
+          private$logger$info("Computing RMSE per USM comparison.")
+          private$gen_usm_comparisons(species)
+        },
+        error = function(e) {
+          private$logger$error(conditionMessage(e))
+          private$logger$debug(
+            paste(capture.output(rlang::last_trace()), collapse = "\n")
+          )
+          rlang::abort(conditionMessage(e), parent = e)
         }
-
-        private$logger$info(
-          "Found ", length(species), " species in workspace ",
-          private$config$eval_workspace, ": ", format_species(species)
-        )
-
-        private$logger$info("Computing RMSE per USM comparison.")
-        private$gen_usm_comparisons(species)
-      }, error = function(e) {
-        private$logger$error(conditionMessage(e))
-        private$logger$debug(
-          paste(capture.output(rlang::last_trace()), collapse = "\n")
-        )
-        rlang::abort(conditionMessage(e), parent = e)
-      })
+      )
     },
 
     #' @description
@@ -449,7 +468,21 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
     #' combination, with columns: species, situation, variable, rmse_eval,
     #' rmse_ref, rmse_species, ratio, n_obs).
     get_data = function() {
-      if (self$is_empty) return(NULL)
+      if (self$is_empty) {
+        return({
+          data.frame(
+            species = character(0),
+            situation = character(0),
+            variable = character(0),
+            rmse_eval = numeric(0),
+            rmse_ref = numeric(0),
+            rmse_species = numeric(0),
+            rmse_ratio = numeric(0),
+            n_obs = integer(0),
+            stringsAsFactors = FALSE
+          )
+        })
+      }
       dplyr::bind_rows(private$data)
     },
 
@@ -466,6 +499,12 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
         if (!is.null(x$get_data())) x$get_data()
       }))
 
+      if (is.null(deteriorated_data)) {
+        private$logger$info("No deteriorated USM data to export")
+
+        return(invisible(NULL))
+      }
+
       usm_eval_data <- self$get_data()
 
       merged_data <- dplyr::left_join(
@@ -473,6 +512,11 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
         usm_eval_data,
         by = c("species", "situation", "variable")
       )
+
+      if (nrow(merged_data) == 0) {
+        private$logger$info("No deteriorated USM data to export")
+        return(invisible(NULL))
+      }
 
       safe_write_csv(
         merged_data,

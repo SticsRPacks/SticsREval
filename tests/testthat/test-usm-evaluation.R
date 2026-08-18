@@ -227,3 +227,74 @@ test_that("variables with fewer than 10 observations are ignored", {
 
   expect_identical(nrow(eval$failed_usms), 0L)
 })
+
+test_that("get_data returns an empty data frame with the expected columns when there is no data", { # nolint: line_length_linter
+  workspace <- list(get_species = function() character(0))
+  backend <- list()
+  config <- make_base_cfg()
+
+  eval <- USMEvaluation$new(
+    config = config, workspace = workspace, backend = backend
+  )
+  eval$run()
+
+  data <- eval$get_data()
+
+  expect_s3_class(data, "data.frame")
+  expect_identical(nrow(data), 0L)
+  expect_setequal(
+    names(data),
+    c(
+      "species", "situation", "variable", "rmse_eval", "rmse_ref",
+      "rmse_species", "rmse_ratio", "n_obs"
+    )
+  )
+})
+
+test_that("export does not error when no species were evaluated at all", {
+
+  output_dir <- file.path(tempdir(), "usm_eval_no_species")
+  unlink(output_dir, recursive = TRUE)
+  dir.create(output_dir, recursive = TRUE)
+
+  workspace <- list(get_species = function() character(0))
+  backend <- list()
+  config <- make_base_cfg(output_dir = output_dir)
+
+  eval <- USMEvaluation$new(
+    config = config, workspace = workspace, backend = backend
+  )
+  eval$run()
+
+  expect_no_error(eval$export())
+})
+
+test_that("export does not error when no species has a deteriorated USM", {
+
+  output_dir <- file.path(tempdir(), "usm_eval_no_deteriorated")
+  unlink(output_dir, recursive = TRUE)
+  dir.create(output_dir, recursive = TRUE)
+
+  eval <- USMEvaluation$new(
+    species = "wheat",
+    data = data.frame(
+      species = "wheat",
+      situation = "USM1",
+      variable = "lai",
+      rmse_eval = 2,
+      rmse_ref = 2,
+      rmse_species = 4,
+      rmse_ratio = 0,
+      n_obs = 20,
+      stringsAsFactors = FALSE
+    )
+  )
+  # Manual mode never runs gen_usm_comparisons(), so `deteriorated_usm`
+  # stays empty here just like it would for a real run() where every
+  # species passed: inject config/logger the same way run() would.
+  replace_private(eval, "config", make_base_cfg(output_dir = output_dir))
+  replace_private(eval, "logger", default_logger)
+
+  expect_no_error(eval$export())
+  expect_false(file.exists(file.path(output_dir, "Deteriorated_USM.csv")))
+})
