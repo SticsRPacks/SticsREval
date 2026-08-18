@@ -62,10 +62,13 @@ initialize_eval_workspace <- function(config) {
 
 
 create_evaluations <- function(config) {
+  species_evaluation <- SpeciesEvaluation$new(config = config)
   list(
     "Global evaluation" = GlobalEvaluation$new(config = config),
-    "Species evaluation" = SpeciesEvaluation$new(config = config),
-    "USM evaluation" = USMEvaluation$new(config = config)
+    "Species evaluation" = species_evaluation,
+    "USM evaluation" = USMEvaluation$new(
+      config = config, species_evaluation = species_evaluation
+    )
   )
 }
 
