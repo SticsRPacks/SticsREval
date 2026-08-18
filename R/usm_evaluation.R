@@ -87,9 +87,13 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
     # USMEvaluation), reuse them instead of re-reading the sim/obs/ref data
     # and recomputing the same CroPlotR summary() twice more.
     get_cached_stats = function(species) {
-      if (is.null(private$species_evaluation)) return(NULL)
+      if (is.null(private$species_evaluation)) {
+        return(NULL)
+      }
       cached <- private$species_evaluation$get_species_stats(species)
-      if (is.null(cached$stats) || is.null(cached$stats_usm)) return(NULL)
+      if (is.null(cached$stats) || is.null(cached$stats_usm)) {
+        return(NULL)
+      }
       list(stats_species = cached$stats, stats_usm = cached$stats_usm)
     },
     compute_ratio = function(species, stats_usm, stats_species) {
@@ -575,16 +579,20 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
         all_usms <- unique(spec_data$situation)
         spec_passed <- setdiff(all_usms, spec_failed)
 
-        cli::cli_rule(left = "Species: {spec}")
+        cli_species_rule(spec)
+        div_id <- cli_indent_start()
         cli::cli_dl(c("Total USMs" = "{length(all_usms)}"))
-        cli::cli_li("{.strong {length(spec_failed)} failed}")
         if (length(spec_failed) > 0) {
-          cli::cli_text(cli::col_red("  {toString(spec_failed)}"))
+          cli::cli_li("{.strong {length(spec_failed)} failed}")
+          cli::cli_text(cli::col_red("{toString(spec_failed)}"))
+          cli::cli_li("{.strong {length(spec_passed)} passed}")
+        } else {
+          cli_indent_text(paste(
+            cli::col_green(cli::symbol$tick),
+            cli::col_green(sprintf("All %d USMs passed", length(spec_passed)))
+          ))
         }
-        cli::cli_li("{.strong {length(spec_passed)} passed}")
-        if (length(spec_passed) > 0) {
-          cli::cli_text(cli::col_green("  {toString(spec_passed)}"))
-        }
+        cli_indent_end(div_id)
       }
 
       cli::cli_h2("Summary")
@@ -605,6 +613,8 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
       } else {
         cli::cli_alert_success("All USMs passed for all species")
       }
+
+      cli::cli_rule()
 
       invisible(self)
     }

@@ -162,6 +162,8 @@ GlobalEvaluation <- R6::R6Class("GlobalEvaluation", # nolint: object_name_linter
         return(invisible(self))
       }
       private$rrmse_comparison$log()
+
+      cli::cli_rule()
     },
 
     #' @description

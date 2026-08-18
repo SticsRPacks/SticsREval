@@ -43,6 +43,8 @@ evaluate <- function(config) {
 
   summarize_evaluations(evaluations)
 
+  cat("\n")
+
   report_evaluation_status(evaluations)
 }
 
@@ -86,7 +88,10 @@ export_evaluations <- function(evaluations, output_dir) {
 
 
 summarize_evaluations <- function(evaluations) {
-  lapply(evaluations, function(eval) eval$summary())
+  lapply(evaluations, function(eval) {
+    cat("\n")
+    eval$summary()
+  })
 }
 
 
@@ -103,6 +108,7 @@ report_evaluation_status <- function(evaluations) {
   }
 
   cli::cli_end()
+  cli::cli_rule()
 
   if (!all(vapply(evaluations, function(x) x$success, logical(1)))) {
     stop("At least one test failed, see details above.", call. = FALSE)

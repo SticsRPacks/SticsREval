@@ -312,6 +312,8 @@ SpeciesEvaluation <- R6::R6Class("SpeciesEvaluation", # nolint: object_name_lint
       } else {
         cli::cli_alert_success("All species stable or improved")
       }
+
+      cli::cli_rule()
       invisible(self)
     },
 
