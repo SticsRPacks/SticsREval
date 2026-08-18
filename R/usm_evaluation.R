@@ -614,6 +614,8 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
         cli::cli_alert_success("All USMs passed for all species")
       }
 
+      cli::cli_rule()
+
       invisible(self)
     }
   )
