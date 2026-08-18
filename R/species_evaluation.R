@@ -148,7 +148,7 @@ SpeciesEvaluation <- R6::R6Class("SpeciesEvaluation", # nolint: object_name_lint
               evaluated = splited_sim,
               reference = splited_ref_sim,
               obs = splited_obs,
-              all_situations = FALSE, stats = c("rRMSE", "n_obs")
+              all_situations = FALSE, stats = c("RMSE", "rRMSE", "n_obs")
             )
           )
           rm(splited_sim, splited_ref_sim, splited_obs)
@@ -201,6 +201,24 @@ SpeciesEvaluation <- R6::R6Class("SpeciesEvaluation", # nolint: object_name_lint
         config$eval_workspace
       )
       private$logger <- logger
+    },
+
+    #' @description
+    #' Return the CroPlotR statistics already computed by `run()` for a
+    #' given species, so that other evaluation classes (e.g.
+    #' \code{USMEvaluation}) can reuse them instead of recomputing the same
+    #' summary statistics from scratch.
+    #' @param species The species to get statistics for.
+    #' @returns A list with elements \code{stats} (species-level summary,
+    #' \code{all_situations = TRUE}) and \code{stats_usm} (per-USM summary
+    #' with \code{RMSE}, \code{rRMSE} and \code{n_obs}). Elements are
+    #' \code{NULL} if \code{run()} has not been called yet or produced no
+    #' result for this species.
+    get_species_stats = function(species) {
+      list(
+        stats = private$stats[[species]],
+        stats_usm = private$rrmse_per_usm[[species]]
+      )
     },
 
     #' @description

@@ -44,6 +44,7 @@ comparisons.}
 \subsection{Public methods}{
   \itemize{
     \item \href{#method-SpeciesEvaluation-initialize}{\code{SpeciesEvaluation$new()}}
+    \item \href{#method-SpeciesEvaluation-get_species_stats}{\code{SpeciesEvaluation$get_species_stats()}}
     \item \href{#method-SpeciesEvaluation-run}{\code{SpeciesEvaluation$run()}}
     \item \href{#method-SpeciesEvaluation-summary}{\code{SpeciesEvaluation$summary()}}
     \item \href{#method-SpeciesEvaluation-export}{\code{SpeciesEvaluation$export()}}
@@ -80,6 +81,35 @@ configuration.}
 provided, the default logger will be used.}
     }
     \if{html}{\out{</div>}}
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-SpeciesEvaluation-get_species_stats"></a>}}
+\if{latex}{\out{\hypertarget{method-SpeciesEvaluation-get_species_stats}{}}}
+\subsection{\code{SpeciesEvaluation$get_species_stats()}}{
+  Return the CroPlotR statistics already computed by \code{run()} for a
+given species, so that other evaluation classes (e.g.
+\code{USMEvaluation}) can reuse them instead of recomputing the same
+summary statistics from scratch.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SpeciesEvaluation$get_species_stats(species)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{species}}{The species to get statistics for.}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    A list with elements \code{stats} (species-level summary,
+\code{all_situations = TRUE}) and \code{stats_usm} (per-USM summary
+with \code{RMSE}, \code{rRMSE} and \code{n_obs}). Elements are
+\code{NULL} if \code{run()} has not been called yet or produced no
+result for this species.
   }
 }
 

@@ -117,6 +117,7 @@ for any species.}
   workspace = NULL,
   backend = NULL,
   logger = default_logger,
+  species_evaluation = NULL,
   ratio_threshold = 50,
   degraded_threshold = 20,
   max_degraded_vars = 3,
@@ -140,6 +141,13 @@ processing. If not provided, a new ParallelBackend will be created
 using the provided configuration.}
       \item{\code{logger}}{An optional logger object for logging messages. If not
 provided, the default logger will be used.}
+      \item{\code{species_evaluation}}{Optional \code{SpeciesEvaluation} instance.
+If provided and already \code{run()}, its per-species statistics are
+reused instead of being recomputed from scratch (avoids re-reading
+the sim/obs/ref data and re-running CroPlotR's \code{summary()} for
+each species). Falls back to computing statistics independently for
+any species not found in \code{species_evaluation} (e.g. if it
+hasn't been run yet).}
       \item{\code{ratio_threshold}}{Numeric threshold (\%) above which a single
 variable makes the USM fail. Default 50.}
       \item{\code{degraded_threshold}}{Numeric threshold (\%) above which a variable
