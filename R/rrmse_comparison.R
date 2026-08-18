@@ -84,8 +84,10 @@ RRmseComparison <- R6::R6Class("RRmseComparison", # nolint: object_name_linter
     log = function() {
       if (self$is_empty) return(invisible(self))
 
+      div_id <- NULL
       if (!is.null(private$data$species[1])) {
-        cli::cli_rule(left = "Species: {private$data$species[1]}")
+        cli_species_rule(private$data$species[1])
+        div_id <- cli_indent_start()
       }
 
       n_crit <- length(self$critical_vars)
@@ -98,17 +100,19 @@ RRmseComparison <- R6::R6Class("RRmseComparison", # nolint: object_name_linter
 
       cli::cli_li("{.strong {n_crit} critical} (>= {private$percentage}%)")
       if (n_crit > 0) {
-        cli::cli_text(cli::col_red("  {toString(self$critical_vars)}"))
+        cli::cli_text(cli::col_red("{toString(self$critical_vars)}"))
       }
       cli::cli_li("{.strong {n_warn} warning} (> 0%, < {private$percentage}%)")
       if (n_warn > 0) {
-        cli::cli_text(cli::col_yellow("  {toString(self$warning_vars)}"))
+        cli::cli_text(cli::col_yellow("{toString(self$warning_vars)}"))
       }
 
       cli::cli_li("{.strong {n_imp} improved} (<= 0%)")
       if (n_imp > 0) {
-        cli::cli_text(cli::col_green("  {toString(self$improved_vars)}"))
+        cli::cli_text(cli::col_green("{toString(self$improved_vars)}"))
       }
+
+      if (!is.null(div_id)) cli_indent_end(div_id)
 
       invisible(self)
     },
