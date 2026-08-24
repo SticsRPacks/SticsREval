@@ -336,14 +336,17 @@ test_that(
 # required-ness. It is not run automatically by validate_schema()
 # (see the filesystem_checks / check_filesystem tests below).
 
-test_that("check_path_exists fails when metadata_file does not exist and
-  no `needed` gate is given", {
-  s <- make_state(metadata_file = file.path("nonexistent", "path.csv"))
-  check <- check_path_exists("metadata_file")
-  result <- check(s)
-  expect_type(result, "character")
-  expect_match(result, "not found")
-})
+test_that(
+  "check_path_exists fails when metadata_file does not exist and
+  no `needed` gate is given",
+  {
+    s <- make_state(metadata_file = file.path("nonexistent", "path.csv"))
+    check <- check_path_exists("metadata_file")
+    result <- check(s)
+    expect_type(result, "character")
+    expect_match(result, "not found")
+  }
+)
 
 test_that("check_path_exists passes with an existing file", {
   tmp <- tempfile()
