@@ -335,10 +335,13 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
         dplyr::group_by(.data$situation) |>
         dplyr::summarise(init_date = min(.data$Date, na.rm = TRUE))
 
-      include_cols <- c(
-        "HR_1", "HR_2", "HR_3", "HR_4", "HR_5",
-        "AZnit_1", "AZnit_2", "AZnit_3", "AZnit_4", "AZnit_5",
-        "resmes", "azomes"
+      include_cols <- intersect(
+        c(
+          "HR_1", "HR_2", "HR_3", "HR_4", "HR_5",
+          "AZnit_1", "AZnit_2", "AZnit_3", "AZnit_4", "AZnit_5",
+          "resmes", "azomes"
+        ),
+        names(obs)
       )
 
       obs |>
