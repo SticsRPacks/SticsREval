@@ -67,6 +67,10 @@ evaluation.}
 \subsection{Public methods}{
   \itemize{
     \item \href{#method-Configuration-initialize}{\code{Configuration$new()}}
+    \item \href{#method-Configuration-check_filesystem}{\code{Configuration$check_filesystem()}}
+    \item \href{#method-Configuration-has_precomputed_sim}{\code{Configuration$has_precomputed_sim()}}
+    \item \href{#method-Configuration-has_precomputed_obs}{\code{Configuration$has_precomputed_obs()}}
+    \item \href{#method-Configuration-has_reference_sim}{\code{Configuration$has_reference_sim()}}
     \item \href{#method-Configuration-validate_eval}{\code{Configuration$validate_eval()}}
     \item \href{#method-Configuration-validate_balance_closure}{\code{Configuration$validate_balance_closure()}}
     \item \href{#method-Configuration-print}{\code{Configuration$print()}}
@@ -96,14 +100,70 @@ Invalid or unknown fields will trigger validation errors.}
 }
 
 \if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Configuration-check_filesystem"></a>}}
+\if{latex}{\out{\hypertarget{method-Configuration-check_filesystem}{}}}
+\subsection{\code{Configuration$check_filesystem()}}{
+  Check that filesystem-dependent fields point to files that exist
+on disk. Separate from schema validation (structural, checked at
+construction): this is I/O-bound and only runs when called
+explicitly, e.g. from \code{validate_eval()} /
+\code{validate_balance_closure()}.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Configuration$check_filesystem()}
+    \if{html}{\out{</div>}}
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Configuration-has_precomputed_sim"></a>}}
+\if{latex}{\out{\hypertarget{method-Configuration-has_precomputed_sim}{}}}
+\subsection{\code{Configuration$has_precomputed_sim()}}{
+  TRUE if \code{sim_rds} was supplied, meaning precomputed simulation
+results are available and the simulation step can be bypassed.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Configuration$has_precomputed_sim()}
+    \if{html}{\out{</div>}}
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Configuration-has_precomputed_obs"></a>}}
+\if{latex}{\out{\hypertarget{method-Configuration-has_precomputed_obs}{}}}
+\subsection{\code{Configuration$has_precomputed_obs()}}{
+  TRUE if \code{obs_rds} was supplied, meaning precomputed observation
+data is available and doesn't need to be extracted from the
+USMs workspace.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Configuration$has_precomputed_obs()}
+    \if{html}{\out{</div>}}
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Configuration-has_reference_sim"></a>}}
+\if{latex}{\out{\hypertarget{method-Configuration-has_reference_sim}{}}}
+\subsection{\code{Configuration$has_reference_sim()}}{
+  TRUE if \code{ref_sim_rds} was supplied, meaning reference simulation
+results are available for evaluation.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Configuration$has_reference_sim()}
+    \if{html}{\out{</div>}}
+  }
+}
+
+\if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Configuration-validate_eval"></a>}}
 \if{latex}{\out{\hypertarget{method-Configuration-validate_eval}{}}}
 \subsection{\code{Configuration$validate_eval()}}{
   Validate configuration for evaluation workflow.
 Note: if \code{sim_rds} is supplied, it bypasses the need to run
-simulations (see \code{check_metadata_file}). \code{obs_rds} is independent
-and has no effect on required fields. \code{usms_workspace} remains
-required for eval regardless of \code{sim_rds}/\code{obs_rds}.
+simulations (see \code{check_metadata_file_required}). \code{obs_rds} is
+independent and has no effect on required fields. \code{usms_workspace}
+remains required for eval regardless of \code{sim_rds}/\code{obs_rds}.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{Configuration$validate_eval()}

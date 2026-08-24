@@ -31,6 +31,8 @@
 #'
 #' @export
 evaluate <- function(config) {
+  init_logger(config$verbose)
+  config$validate_eval()
   initialize_eval_workspace(config)
 
   evaluations <- create_evaluations(config)

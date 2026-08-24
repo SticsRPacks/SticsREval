@@ -192,6 +192,7 @@ SpeciesEvaluation <- R6::R6Class("SpeciesEvaluation", # nolint: object_name_lint
     initialize = function(
       config, workspace = NULL, backend = NULL, logger = default_logger
     ) {
+      init_logger(config$verbose %||% 1L)
       config$validate_eval()
       private$config <- config
       private$backend <- backend %||% ParallelBackend$new(
