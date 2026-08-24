@@ -117,6 +117,7 @@ GlobalEvaluation <- R6::R6Class("GlobalEvaluation", # nolint: object_name_linter
     initialize = function(
       config, workspace = NULL, logger = default_logger
     ) {
+      init_logger(config$verbose %||% 1L)
       config$validate_eval()
       private$config <- config
       private$workspace <- workspace %||% EvalWorkspace$new(

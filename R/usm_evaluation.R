@@ -411,6 +411,7 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
       private$max_degraded_vars <- max_degraded_vars
 
       if (!is.null(config)) {
+        init_logger(config$verbose %||% 1L)
         config$validate_eval()
         private$config <- config
         private$backend <- backend %||% ParallelBackend$new(

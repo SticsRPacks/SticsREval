@@ -79,7 +79,7 @@ USMSWorkspace <- R6::R6Class("USMSWorkspace", # nolint: object_name_linter
       species_situations <- private$workspace$get_species_situations(
         species = NULL
       )
-      if (!is.null(private$config$sim_rds)) {
+      if (private$config$has_precomputed_sim()) {
         logger::log_info("Loading simulations data...")
         sim <- readRDS(private$config$sim_rds)[
           unique(species_situations$situation)
@@ -107,7 +107,7 @@ USMSWorkspace <- R6::R6Class("USMSWorkspace", # nolint: object_name_linter
       species_situations <- private$workspace$get_species_situations(
         species = NULL
       )
-      if (!is.null(private$config$obs_rds)) {
+      if (private$config$has_precomputed_obs()) {
         obs <- readRDS(private$config$obs_rds)[
           unique(species_situations$situation)
         ]
@@ -126,7 +126,7 @@ USMSWorkspace <- R6::R6Class("USMSWorkspace", # nolint: object_name_linter
     },
 
     load_ref_sim = function() {
-      if (!is.null(private$config$ref_sim_rds)) {
+      if (private$config$has_reference_sim()) {
         logger::log_info("Loading reference simulations data...")
         species_situations <- private$workspace$get_species_situations(
           species = NULL

@@ -300,36 +300,70 @@ make_state <- function(...) {
   defaults
 }
 
-test_that("check_metadata_file passes when run_simulations = FALSE", {
-  expect_true(check_metadata_file(make_state(run_simulations = FALSE)))
+test_that("check_metadata_file_required passes when run_simulations = FALSE", {
+  expect_true(check_metadata_file_required(make_state(run_simulations = FALSE)))
 })
 
-test_that("check_metadata_file fails when metadata_file is NULL", {
+test_that("check_metadata_file_required fails when metadata_file is NULL", {
   s <- make_state(run_simulations = TRUE, metadata_file = NULL)
-  result <- check_metadata_file(s)
+  result <- check_metadata_file_required(s)
   expect_type(result, "character")
   expect_match(result, "metadata_file")
 })
 
 test_that(
-  "check_metadata_file fails when metadata_file does not exist",
+  "check_metadata_file_required passes when metadata_file is set (even to a
+  path that doesn't exist -- existence is check_path_exists()'s job)",
   {
     s <- make_state(
       run_simulations = TRUE,
       metadata_file = file.path("nonexistent", "path.csv")
     )
-    result <- check_metadata_file(s)
+    expect_true(check_metadata_file_required(s))
+  }
+)
+
+test_that(
+  "check_metadata_file_required passes when sim_rds bypasses simulation", {
+    s <- make_state(
+      run_simulations = TRUE, metadata_file = NULL, sim_rds = "sim.rds"
+    )
+    expect_true(check_metadata_file_required(s))
+  }
+)
+
+# check_path_exists() is the I/O counterpart: file existence, not
+# required-ness. It is not run automatically by validate_schema()
+# (see the filesystem_checks / check_filesystem tests below).
+
+test_that(
+  "check_path_exists fails when metadata_file does not exist and
+  no `needed` gate is given",
+  {
+    s <- make_state(metadata_file = file.path("nonexistent", "path.csv"))
+    check <- check_path_exists("metadata_file")
+    result <- check(s)
     expect_type(result, "character")
     expect_match(result, "not found")
   }
 )
 
-test_that("check_metadata_file passes with an existing file", {
+test_that("check_path_exists passes with an existing file", {
   tmp <- tempfile()
   file.create(tmp)
   on.exit(unlink(tmp))
-  s <- make_state(run_simulations = TRUE, metadata_file = tmp)
-  expect_true(check_metadata_file(s))
+  s <- make_state(metadata_file = tmp)
+  check <- check_path_exists("metadata_file")
+  expect_true(check(s))
+})
+
+test_that("check_path_exists honors its `needed` gate", {
+  s <- make_state(
+    run_simulations = FALSE,
+    metadata_file = file.path("nonexistent", "path.csv")
+  )
+  check <- check_path_exists("metadata_file", needed = metadata_file_needed)
+  expect_true(check(s))
 })
 
 test_that("check_parallel_cores passes when parallel = FALSE", {
@@ -388,7 +422,7 @@ test_that("validate_schema returns invisible TRUE for a valid config", {
 
 test_that("validate_schema stops with message for wrong type", {
   cfg <- make_valid_list(run_simulations = "yes")
-  expect_error(validate_schema(cfg), "invalid argument type")
+  expect_error(validate_schema(cfg), "expected type")
 })
 
 test_that("validate_schema stops when percentage out of range", {
@@ -410,7 +444,8 @@ test_that("validate_schema collects multiple errors before stopping", {
   cfg$run_simulations <- "bad"
   err <- tryCatch(validate_schema(cfg), error = function(e) e$message)
   # Both errors should appear in the same message
-  expect_match(err, "invalid argument type")
+  expect_match(err, "eval_workspace")
+  expect_match(err, "expected type")
 })
 
 # ---------------------------------------------------------------------------

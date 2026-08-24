@@ -177,6 +177,7 @@ BalanceClosureTest <- R6::R6Class("BalanceClosureTest", # nolint: object_name_li
     #' @param config A Configuration object containing the necessary parameters
     #' for the test.
     initialize = function(config) {
+      init_logger(config$verbose %||% 1L)
       private$config <- config
       private$loader <- USMSWorkspace$new(
         workspace = private$config$usms_workspace,
