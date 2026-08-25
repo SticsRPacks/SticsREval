@@ -1,26 +1,4 @@
 # ---------------------------------------------------------------------------
-# Helpers / stubs # nolint: commented_code_linter
-# ---------------------------------------------------------------------------
-
-# Stub init_logger so tests don't depend on it
-init_logger <- function(verbose) invisible(NULL)
-
-# Stub EvalWorkspace so check_reference_version can be exercised
-EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
-  public = list(
-    path = NULL,
-    initialize = function(path) self$path <- path,
-    get_all_versions = function() c("v1.0", "v2.0")
-  )
-)
-
-build_metadata_file <- function() {
-  f <- tempfile()
-  file.create(f)
-  f
-}
-
-# ---------------------------------------------------------------------------
 # field_spec
 # ---------------------------------------------------------------------------
 
@@ -112,6 +90,26 @@ test_that("validate_nonempty_chr accepts non-empty character vectors", {
 
 test_that("validate_nonempty_chr rejects empty character vector", {
   expect_type(validate_nonempty_chr(character(0)), "character")
+})
+
+# ---------------------------------------------------------------------------
+# validate_rds_path
+# ---------------------------------------------------------------------------
+
+test_that("validate_rds_path accepts NULL", {
+  expect_true(validate_rds_path(NULL))
+})
+
+test_that("validate_rds_path accepts a path ending in .rds", {
+  expect_true(validate_rds_path("sim.rds"))
+})
+
+test_that("validate_rds_path rejects a non-character value", {
+  expect_type(validate_rds_path(42), "character")
+})
+
+test_that("validate_rds_path rejects a path not ending in .rds", {
+  expect_type(validate_rds_path("sim.csv"), "character")
 })
 
 # ---------------------------------------------------------------------------
@@ -283,12 +281,11 @@ test_that("validate_field accumulates multiple errors", {
 })
 
 # ---------------------------------------------------------------------------
-# Cross-field validators
+# Cross-field / filesystem validators
 # ---------------------------------------------------------------------------
 
 make_state <- function(...) {
   defaults <- list(
-    init_workspace = FALSE,
     stics_exe = NULL,
     usms_workspace = NULL,
     metadata_file = NULL,
@@ -300,45 +297,12 @@ make_state <- function(...) {
   defaults
 }
 
-test_that("check_metadata_file_required passes when run_simulations = FALSE", {
-  expect_true(check_metadata_file_required(make_state(run_simulations = FALSE)))
-})
-
-test_that("check_metadata_file_required fails when metadata_file is NULL", {
-  s <- make_state(run_simulations = TRUE, metadata_file = NULL)
-  result <- check_metadata_file_required(s)
-  expect_type(result, "character")
-  expect_match(result, "metadata_file")
-})
-
-test_that(
-  "check_metadata_file_required passes when metadata_file is set (even to a
-  path that doesn't exist -- existence is check_path_exists()'s job)",
-  {
-    s <- make_state(
-      run_simulations = TRUE,
-      metadata_file = file.path("nonexistent", "path.csv")
-    )
-    expect_true(check_metadata_file_required(s))
-  }
-)
-
-test_that(
-  "check_metadata_file_required passes when sim_rds bypasses simulation", {
-    s <- make_state(
-      run_simulations = TRUE, metadata_file = NULL, sim_rds = "sim.rds"
-    )
-    expect_true(check_metadata_file_required(s))
-  }
-)
-
 # check_path_exists() is the I/O counterpart: file existence, not
 # required-ness. It is not run automatically by validate_schema()
-# (see the filesystem_checks / check_filesystem tests below).
+# (see the validate_filesystem tests below).
 
 test_that(
-  "check_path_exists fails when metadata_file does not exist and
-  no `needed` gate is given",
+  "check_path_exists fails when metadata_file does not exist",
   {
     s <- make_state(metadata_file = file.path("nonexistent", "path.csv"))
     check <- check_path_exists("metadata_file")
@@ -357,12 +321,9 @@ test_that("check_path_exists passes with an existing file", {
   expect_true(check(s))
 })
 
-test_that("check_path_exists honors its `needed` gate", {
-  s <- make_state(
-    run_simulations = FALSE,
-    metadata_file = file.path("nonexistent", "path.csv")
-  )
-  check <- check_path_exists("metadata_file", needed = metadata_file_needed)
+test_that("check_path_exists passes when the field is NULL", {
+  s <- make_state(metadata_file = NULL)
+  check <- check_path_exists("metadata_file")
   expect_true(check(s))
 })
 
@@ -389,195 +350,92 @@ test_that("check_parallel_cores fails when parallel = TRUE and cores is NULL", {
 })
 
 # ---------------------------------------------------------------------------
-# validate_schema (integration)
+# validate_schema and validate_filesystem (integration)
 # ---------------------------------------------------------------------------
 
-make_valid_list <- function(...) {
+make_local_schema <- function() {
+  list(
+    fields = list(
+      eval_workspace = field_spec(type = "character", nullable = FALSE),
+      output_dir = field_spec(type = "character"),
+      parallel = field_spec(type = "logical", nullable = FALSE),
+      cores = field_spec(validator = validate_cores),
+      percentage = field_spec(type = "numeric", min = 0, max = 100)
+    ),
+    cross_validators = list(
+      list(
+        desc = "If parallel = TRUE, cores must be an integer >= 1",
+        check = check_parallel_cores
+      )
+    ),
+    filesystem_checks = list(
+      list(
+        desc = "output_dir must point to an existing file",
+        check = check_path_exists("output_dir")
+      )
+    )
+  )
+}
+
+make_valid_args <- function(...) {
   base <- list(
     eval_workspace = "ws",
-    stics_exe = NULL,
-    usms_workspace = NULL,
-    metadata_file = NULL,
     output_dir = NULL,
-    run_simulations = FALSE,
-    init_workspace = FALSE,
     parallel = FALSE,
-    verbose = 1L,
     cores = NA,
-    percentage = 5,
-    reference_version = NULL,
-    species = NULL,
-    usms = NULL,
-    var2exclude = NULL
+    percentage = 5
   )
   overrides <- list(...)
   for (nm in names(overrides)) base[[nm]] <- overrides[[nm]]
   base
 }
 
-test_that("validate_schema returns invisible TRUE for a valid config", {
-  result <- validate_schema(make_valid_list())
+test_that("validate_schema returns invisible TRUE for valid args", {
+  result <- validate_schema(make_valid_args(), make_local_schema())
   expect_true(result)
 })
 
 test_that("validate_schema stops with message for wrong type", {
-  cfg <- make_valid_list(run_simulations = "yes")
-  expect_error(validate_schema(cfg), "expected type")
+  args <- make_valid_args(parallel = "yes")
+  expect_error(validate_schema(args, make_local_schema()), "expected type")
 })
 
 test_that("validate_schema stops when percentage out of range", {
-  cfg <- make_valid_list(percentage = 150)
-  expect_error(validate_schema(cfg), "exceeds the maximum")
+  args <- make_valid_args(percentage = 150)
+  expect_error(
+    validate_schema(args, make_local_schema()), "exceeds the maximum"
+  )
 })
 
 test_that(
   "validate_schema reports cross-field error for parallel without cores",
   {
-    cfg <- make_valid_list(parallel = TRUE, cores = NA)
-    expect_error(validate_schema(cfg), "cores")
+    args <- make_valid_args(parallel = TRUE, cores = NA)
+    expect_error(validate_schema(args, make_local_schema()), "cores")
   }
 )
 
 test_that("validate_schema collects multiple errors before stopping", {
-  cfg <- make_valid_list()
-  cfg$eval_workspace <- NULL
-  cfg$run_simulations <- "bad"
-  err <- tryCatch(validate_schema(cfg), error = function(e) e$message)
+  args <- make_valid_args()
+  args$eval_workspace <- NULL
+  args$parallel <- "bad"
+  err <- tryCatch(
+    validate_schema(args, make_local_schema()),
+    error = function(e) e$message
+  )
   # Both errors should appear in the same message
   expect_match(err, "eval_workspace")
   expect_match(err, "expected type")
 })
 
-# ---------------------------------------------------------------------------
-# schema_public_fields
-# ---------------------------------------------------------------------------
-
-test_that("schema_public_fields returns a named list with all schema fields", {
-  fields <- schema_public_fields()
-  expect_type(fields, "list")
-  expect_true(all(names(config_schema$fields) %in% names(fields)))
+test_that("validate_filesystem passes when output_dir is NULL", {
+  result <- validate_filesystem(make_valid_args(), make_local_schema())
+  expect_true(result)
 })
 
-test_that("schema_public_fields all values are NULL", {
-  fields <- schema_public_fields()
-  expect_true(all(vapply(fields, is.null, logical(1))))
-})
-
-# ---------------------------------------------------------------------------
-# schema_initialize
-# ---------------------------------------------------------------------------
-
-test_that("schema_initialize applies defaults for unspecified fields", {
-  obj <- new.env(parent = emptyenv())
-  schema_initialize(
-    obj,
-    list(eval_workspace = "/path"),
-    config_schema
-  )
-  expect_false(obj$run_simulations)
-  expect_false(obj$parallel)
-  expect_identical(obj$percentage, 5)
-})
-
-test_that("schema_initialize uses provided values over defaults", {
-  obj <- new.env(parent = emptyenv())
-  schema_initialize(
-    obj,
-    list(eval_workspace = "/path", percentage = 10),
-    config_schema
-  )
-  expect_identical(obj$percentage, 10)
-})
-
-# ---------------------------------------------------------------------------
-# Configuration R6 class
-# ---------------------------------------------------------------------------
-
-test_that("Configuration initializes with minimal required args", {
-  cfg <- Configuration$new(
-    eval_workspace = "ws",
-    usms_workspace = "usms_ws",
-    metadata_file = build_metadata_file()
-  )
-  expect_s3_class(cfg, "R6")
-  expect_identical(cfg$eval_workspace, "ws")
-})
-
-test_that("Configuration applies defaults correctly", {
-  cfg <- Configuration$new(eval_workspace = "ws")
-  expect_false(cfg$run_simulations)
-  expect_false(cfg$parallel)
-  expect_identical(cfg$percentage, 5)
-  expect_identical(cfg$verbose, 1L)
-})
-
-test_that("Configuration raises error on invalid type", {
+test_that("validate_filesystem stops when output_dir does not exist", {
+  args <- make_valid_args(output_dir = file.path("nonexistent", "dir"))
   expect_error(
-    Configuration$new(eval_workspace = "/p", verbose = "loud"),
-    "expected type"
+    validate_filesystem(args, make_local_schema()), "not found"
   )
-})
-
-test_that("Configuration raises error when percentage is out of range", {
-  expect_error(
-    Configuration$new(eval_workspace = "/p", percentage = -1),
-    "below the minimum"
-  )
-  expect_error(
-    Configuration$new(eval_workspace = "/p", percentage = 101),
-    "exceeds the maximum"
-  )
-})
-
-test_that("Configuration raises error when parallel = TRUE and cores is NA", {
-  expect_error(
-    Configuration$new(eval_workspace = "/p", parallel = TRUE, cores = NA),
-    "cores"
-  )
-})
-
-test_that("Configuration accepts valid cores when parallel = TRUE", {
-  cfg <- Configuration$new(
-    eval_workspace = "ws",
-    parallel = TRUE,
-    cores = 2L
-  )
-  expect_identical(cfg$cores, 2L)
-})
-
-# ---------------------------------------------------------------------------
-# validate_eval
-# ---------------------------------------------------------------------------
-
-test_that(
-  "validate_eval passes when eval_workspace, stics_exe and usms_workspace is
-  set",
-  {
-    rds_file <- tempfile(fileext = ".rds")
-    file.create(rds_file)
-    cfg <- Configuration$new(
-      eval_workspace = "ws",
-      stics_exe = "stics",
-      usms_workspace = "usms_ws",
-      ref_sim_rds = rds_file
-    )
-    expect_r6_class(cfg$validate_eval(), "Configuration")
-  }
-)
-
-# ---------------------------------------------------------------------------
-# validate_balance_closure
-# ---------------------------------------------------------------------------
-
-test_that("validate_balance_closure stops when usms_workspace is NULL", {
-  cfg <- Configuration$new(eval_workspace = "ws")
-  expect_error(cfg$validate_balance_closure(), "usms_workspace")
-})
-
-test_that("validate_balance_closure stops when stics_exe is NULL", {
-  cfg <- Configuration$new(
-    eval_workspace = "ws",
-    usms_workspace = "usms_ws"
-  )
-  expect_error(cfg$validate_balance_closure(), "stics_exe")
 })

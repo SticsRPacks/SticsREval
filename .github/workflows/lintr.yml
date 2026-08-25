@@ -23,7 +23,7 @@ jobs:
         run: |
           install.packages("pak")
           install.packages(c("lintr", "cyclocomp"))
-          pak::local_install_deps()
+          pak::local_install_deps(dependencies = TRUE)
           pak::local_install()
         shell: Rscript {0}
       - name: Run lintr

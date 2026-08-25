@@ -231,10 +231,9 @@ test_that("variables with fewer than 10 observations are ignored", {
 test_that("get_data returns an empty data frame with the expected columns when there is no data", { # nolint: line_length_linter
   workspace <- list(get_species = function() character(0))
   backend <- list()
-  config <- make_base_cfg()
 
   eval <- USMEvaluation$new(
-    config = config, workspace = workspace, backend = backend
+    eval_workspace = "ws", workspace = workspace, backend = backend
   )
   eval$run()
 
@@ -259,10 +258,10 @@ test_that("export does not error when no species were evaluated at all", {
 
   workspace <- list(get_species = function() character(0))
   backend <- list()
-  config <- make_base_cfg(output_dir = output_dir)
 
   eval <- USMEvaluation$new(
-    config = config, workspace = workspace, backend = backend
+    eval_workspace = "ws", output_dir = output_dir,
+    workspace = workspace, backend = backend
   )
   eval$run()
 
@@ -291,8 +290,8 @@ test_that("export does not error when no species has a deteriorated USM", {
   )
   # Manual mode never runs gen_usm_comparisons(), so `deteriorated_usm`
   # stays empty here just like it would for a real run() where every
-  # species passed: inject config/logger the same way run() would.
-  replace_private(eval, "config", make_base_cfg(output_dir = output_dir))
+  # species passed: inject output_dir/logger the same way run() would.
+  replace_private(eval, "output_dir", output_dir)
   replace_private(eval, "logger", default_logger)
 
   expect_no_error(eval$export())

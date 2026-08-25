@@ -1,11 +1,11 @@
 #' GlobalEvaluation class
 #'
 #' @description
-#' The \code{GlobalEvaluation} class is responsible for evaluating the
-#' global performance of the STICS model across multiple USMs (User
-#' Simulation Models).
-#' It computes global statistics and performs a comparison of the relative
-#' Root Mean Square Error (rRMSE) for the specified variables.
+#' Internal class. Evaluates the global performance of the STICS model
+#' across multiple USMs (User Simulation Models): computes global
+#' statistics and performs a comparison of the relative Root Mean Square
+#' Error (rRMSE) for the specified variables. Instantiated internally by
+#' \code{\link{evaluate}}.
 #'
 #' @details
 #' The evaluation process involves the following steps:
@@ -16,46 +16,34 @@
 #'   \item Logging the results and providing a summary of the evaluation.
 #' }
 #'
-#' @examples
-#' \dontrun{
-#' config <- Configuration$new(
-#'   eval_workspace = "path/to/eval_workspace",
-#'   usms_workspace = "path/to/usms_workspace",
-#'   usms = c("USM1", "USM2"),
-#'   var2exclude = c("var1", "var2"),
-#'   percentage = 0.1,
-#'   output_dir = "path/to/output_dir"
-#' )
-#' global_eval <- GlobalEvaluation$new(config = config)
-#' global_eval$run()
-#' global_eval$summary()
-#' global_eval$export()
-#' }
-#' @export
+#' @keywords internal
 GlobalEvaluation <- R6::R6Class("GlobalEvaluation", # nolint: object_name_linter
   private = list(
-    config = NULL,
+    usms = NULL,
+    var2exclude = NULL,
+    percentage = NULL,
+    output_dir = NULL,
     rrmse_comparison = NULL,
     stats = NULL,
     workspace = NULL,
     logger = NULL,
 
     gen_global_stats = function() {
-      exclude <- c("version", "species", private$config$var2exclude)
+      exclude <- c("version", "species", private$var2exclude)
 
       splited_sim <- CroPlotR::split_df2sim(
         private$workspace$get_sim(
-          species = NULL, usms = private$config$usms, var2exclude = exclude
+          species = NULL, usms = private$usms, var2exclude = exclude
         )
       )
       splited_ref_sim <- CroPlotR::split_df2sim(
         private$workspace$get_ref_sim(
-          species = NULL, usms = private$config$usms, var2exclude = exclude
+          species = NULL, usms = private$usms, var2exclude = exclude
         )
       )
       splited_obs <- CroPlotR::split_df2sim(
         private$workspace$get_obs(
-          species = NULL, usms = private$config$usms, var2exclude = exclude
+          species = NULL, usms = private$usms, var2exclude = exclude
         )
       )
 
@@ -82,7 +70,7 @@ GlobalEvaluation <- R6::R6Class("GlobalEvaluation", # nolint: object_name_linter
       private$logger$info("Comparing global rRMSE")
       private$rrmse_comparison <- RRmseComparison$new(
         stats = private$stats,
-        percentage = private$config$percentage
+        percentage = private$percentage
       )
       private$logger$info("Global comparison generated")
     },
@@ -108,21 +96,31 @@ GlobalEvaluation <- R6::R6Class("GlobalEvaluation", # nolint: object_name_linter
   public = list(
     #' @description
     #' Create a new GlobalEvaluation object.
-    #' @param config A Configuration object containing the necessary parameters
-    #' for the evaluation.
-    #' @param workspace An optional EvalWorkspace object. If not provided, a new
-    #' EvalWorkspace will be created using the provided configuration.
+    #' @param eval_workspace Path to the evaluation workspace. Only used to
+    #' build a default `workspace` when one isn't supplied.
+    #' @param usms Optional character vector of USMs to evaluate.
+    #' @param var2exclude Optional character vector of variables to exclude.
+    #' @param percentage Threshold (%) above which a variable is flagged as
+    #' deteriorated vs. the reference.
+    #' @param output_dir Output directory for the CSV export.
+    #' @param workspace An optional EvalWorkspace object. If not provided, a
+    #' new EvalWorkspace will be created from `eval_workspace`.
     #' @param logger An optional logger object for logging messages. If not
     #' provided, the default logger will be used.
     initialize = function(
-      config, workspace = NULL, logger = default_logger
+      eval_workspace = NULL,
+      usms = NULL,
+      var2exclude = NULL,
+      percentage = 5,
+      output_dir = NULL,
+      workspace = NULL,
+      logger = default_logger
     ) {
-      init_logger(config$verbose %||% 1L)
-      config$validate_eval()
-      private$config <- config
-      private$workspace <- workspace %||% EvalWorkspace$new(
-        config$eval_workspace
-      )
+      private$usms <- usms
+      private$var2exclude <- var2exclude
+      private$percentage <- percentage
+      private$output_dir <- output_dir
+      private$workspace <- workspace %||% EvalWorkspace$new(eval_workspace)
       private$logger <- logger
     },
 
@@ -179,7 +177,7 @@ GlobalEvaluation <- R6::R6Class("GlobalEvaluation", # nolint: object_name_linter
       }
       safe_write_csv(
         private$stats,
-        file.path(private$config$output_dir, "global_stats.csv")
+        file.path(private$output_dir, "global_stats.csv")
       )
       private$logger$info("Global evaluation export done")
     }

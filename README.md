@@ -10,7 +10,7 @@
 
 ## Overview
 
-`SticsREval` is an R package for **evaluating and comparing versions of the STICS crop model**. It supports multiple evaluation workflows implemented as independent classes sharing the same `Configuration` object. Tests can be run individually or combined into a custom pipeline.
+`SticsREval` is an R package for **evaluating and comparing versions of the STICS crop model**. It supports multiple evaluation workflows, each exposed as a plain function taking explicit arguments — there is no shared configuration object to build first.
 
 The package currently provides the following evaluation workflows:
 
@@ -67,104 +67,128 @@ This will install all required packages at the versions specified in `renv.lock`
 
 ## Workflow
 
-`Configuration` is the single entry point for all parameters. The simplest way to run a full evaluation is via the `evaluate()` function, which orchestrates the entire pipeline:
+`evaluate()` takes explicit arguments (paths, options, filters) and orchestrates the entire statistical evaluation pipeline — global, per-species and per-USM:
 
 ```
-  Configuration$new(...)                         ← defines all parameters (paths, options, filters)
+  evaluate(usms_workspace, sim_rds, obs_rds, ref_sim_rds, ...)
            │
-           └──► evaluate(config)
-                     │
-                     ├──► USMSWorkspace$new(config)$load()      ← loads/prepares sim, obs & reference data
-                     ├──► GlobalEvaluation$new(config)$run()    ← statistical evaluation vs obs & reference (all species)
-                     ├──► SpeciesEvaluation$new(config)$run()   ← statistical evaluation vs obs & reference (per species)
-                     ├──► USMEvaluation$new(config)$run()       ← statistical evaluation vs obs & reference (per USM)
-                     ├──► $export(...)                          ← exports evaluation results to output_dir
-                     ├──► $summary()                            ← prints a summary of results
-                     └──► stops with an error if any evaluation failed
+           ├──► loads/prepares sim, obs & reference data into a temporary workspace
+           ├──► statistical evaluation vs obs & reference (all species)
+           ├──► statistical evaluation vs obs & reference (per species)
+           ├──► statistical evaluation vs obs & reference (per USM)
+           ├──► exports evaluation results to output_dir
+           ├──► prints a summary of results
+           └──► stops with an error if any evaluation failed
 ```
 
-`BalanceClosureTest` runs independently of `evaluate()` and loads its own simulation data directly from `usms_workspace`:
+`balance_closure_test()` runs independently of `evaluate()`. Like `evaluate()`, it always reads pre-computed simulation data from `sim_rds` — it never runs simulations itself:
 
 ```
-  Configuration$new(...)
+  balance_closure_test(sim_rds, ...)                          ← water & nitrogen balance closure check
+```
+
+Upstream, two standalone functions prepare the data these workflows consume, starting from a raw SMS repository:
+
+```
+  gen_workspace_from_sms(sms_path, stics_path, output_dir)
+           │  builds a Stics text workspace (one folder per USM) from raw SMS data
+           ▼
+     output_dir/                                     ← usable as `usms_workspace` from here on
            │
-           └──► BalanceClosureTest$new(config)$run()          ← water & nitrogen balance closure check
+           └──► run_simulations(stics_exe, usms_workspace = output_dir, ...)
+                     │  runs Stics and derives the variables to simulate from the observations
+                     ├──► output_dir/simulations.rds     ← reusable as `sim_rds` / `ref_sim_rds`
+                     └──► output_dir/observations.rds    ← reusable as `obs_rds`
 ```
 
-For advanced use cases, `GlobalEvaluation`, `SpeciesEvaluation` and `USMEvaluation` can also be instantiated and run individually instead of using `evaluate()`:
-
-```
-  Configuration$new(...)
-           │
-           ├──► GlobalEvaluation$new(config)$run()            ← statistical evaluation vs obs & reference (all species)
-           │         │
-           │         └──► $export(...)                        ← export statistics to CSV
-           │
-           ├──► SpeciesEvaluation$new(config)$run()           ← statistical evaluation vs obs & reference (per species)
-           │         │
-           │         └──► $export(...)                        ← export statistics & plots
-           │
-           └──► USMEvaluation$new(config)$run()               ← USM-level regression detection based on RMSE ratio
-                     │
-                     └──► $export(...)                        ← export deteriorated USMs
-```
-
-`GlobalEvaluation`, `SpeciesEvaluation` and `USMEvaluation` are independent classes and store their evaluation results as an internal attribute of the object. When used individually (without `evaluate()`), the data must first be loaded into the evaluation workspace via `USMSWorkspace$new(config)$load()`.
+`evaluate()` never runs STICS simulations itself — it always reads pre-computed `sim_rds` / `obs_rds` (and `ref_sim_rds`). `run_simulations()` is how those files are produced, both for the version under evaluation and for the reference version — see [Data Preparation](#data-preparation) below.
 
 ---
 
-## Configuration
+## Data Preparation
 
-### `Configuration`
+### `gen_workspace_from_sms()`
 
-Encapsulates and validates all configuration parameters for the package. The same object is passed to all workflow classes and functions. Fields are validated against a declarative schema at construction time — all errors are collected and reported together.
+Converts a raw SMS repository (XML input files) into a Stics text workspace — one folder per USM — ready to be used as `usms_workspace` by the rest of the package.
 
 ```r
-library(SticsREval)
-
-config <- Configuration$new(
-  stics_exe          = "/path/to/stics",
-  usms_workspace     = "workspace/",
-  metadata_file      = "metadata.csv",
-  eval_workspace     = "eval_workspace/",
-  output_dir         = "outputs/",
-  run_simulations    = TRUE,
-  verbose            = 1L,
-  parallel           = FALSE,
-  cores              = NA,
-  ref_sim_rds        = NULL,
-  sim_rds            = NULL,
-  obs_rds            = NULL,
-  percentage         = 5,
-  species            = NULL,
-  usms               = NULL,
-  var2exclude        = NULL
+gen_workspace_from_sms(
+  sms_path   = "/path/to/sms_repository",
+  stics_path = "/path/to/stics_distribution",
+  output_dir = "workspace/",
+  usms_files = NULL,
+  parallel   = FALSE,
+  cores      = NA
 )
 ```
 
-| Field | Description |
+| Argument | Description |
 |---|---|
-| `stics_exe` | Path to the STICS executable (required when `run_simulations = TRUE`) |
-| `usms_workspace` | Path to the USMs input data directory (required) |
-| `metadata_file` | Path to the metadata CSV file describing simulations (required when `run_simulations = TRUE`) |
-| `eval_workspace` | Optional path to the evaluation workspace, used internally to stage simulation and observation data as Parquet datasets before evaluation. Created automatically by `evaluate()` if it doesn't exist. If not provided, a temporary directory will be used |
-| `output_dir` | Output directory for CSV exports and plots (required for export and plots workflows) |
-| `run_simulations` | Whether to run STICS simulations (default: `FALSE`). Alternative to providing pre-computed data via `sim_rds` / `obs_rds` |
+| `sms_path` | Path to the SMS repository |
+| `stics_path` | Path to the Stics distribution (used to copy model input files) |
+| `output_dir` | Path to the Stics text workspace to generate |
+| `usms_files` | Character vector of one or more paths to text files, each listing USM names (one per line), to restrict which USMs are generated. `NULL` (default) generates all evaluation and calibration USMs |
+| `parallel` / `cores` | Parallel execution options |
+
+### `run_simulations()`
+
+Runs Stics simulations for the USMs found in a text workspace (as generated by `gen_workspace_from_sms()`), and saves both the simulation and observation data as RDS files in `output_dir`.
+
+```r
+run_simulations(
+  stics_exe      = "/path/to/stics",
+  usms_workspace = "workspace/",
+  metadata_file  = "metadata.csv",
+  output_dir     = "outputs/",
+  usms_files     = NULL,
+  vars           = NULL,
+  parallel       = FALSE,
+  cores          = NA
+)
+```
+
+| Argument | Description |
+|---|---|
+| `stics_exe` | Path to the Stics executable to run |
+| `usms_workspace` | Path to the Stics text workspace containing the USMs to simulate |
+| `metadata_file` | Path to the metadata CSV file describing USM rotations |
+| `output_dir` | Directory where `simulations.rds` and `observations.rds` are written |
+| `usms_files` | Character vector of one or more paths to text files listing the USMs to simulate. `NULL` (default) simulates all USMs found in `usms_workspace` |
+| `vars` | Character vector of variable names to simulate. `NULL` (default) derives them automatically from the observation files found in `usms_workspace`. Pass this explicitly to simulate variables that aren't observed, e.g. the balance closure variables consumed by `balance_closure_test()` |
+| `parallel` / `cores` | Parallel execution options |
+
+By default, the variables to simulate are derived automatically from the observation files found in `usms_workspace`, using `get_var_from_obs()`. The resulting `simulations.rds` / `observations.rds` files can be passed as `sim_rds` / `obs_rds` (or `ref_sim_rds` for a reference version) to `evaluate()` — see [From raw SMS data to evaluation](#from-raw-sms-data-to-evaluation) below.
+
+#### `get_var_from_obs()`
+
+Returns the variable names found in a list of observation data frames (e.g. as returned by `SticsRFiles::get_obs()`), excluding metadata columns (`Date`, `situation`, `species`, `version`, `Plant`). This is exactly how `run_simulations()` derives its default `vars` — exposed so you can inspect that list, or extend it with extra variables (such as the balance closure ones) into a single `run_simulations()` call instead of running simulations twice:
+
+```r
+obs <- SticsRFiles::get_obs("workspace/", usm = usms)
+vars <- c(get_var_from_obs(obs), balance_vars)
+
+run_simulations(
+  stics_exe      = "/path/to/stics",
+  usms_workspace = "workspace/",
+  metadata_file  = "metadata.csv",
+  output_dir     = "outputs/",
+  vars           = vars
+)
+```
+
+---
+
+## Common Arguments
+
+There is no shared configuration object: every workflow function (`evaluate()`, `balance_closure_test()`, `run_simulations()`, `gen_workspace_from_sms()`) takes its own explicit arguments and validates them independently as soon as it's called — all errors are collected and reported together, before anything is read from or written to disk. A few argument names and conventions are shared across these functions:
+
+| Argument | Description |
+|---|---|
+| `usms_workspace` | Path to the Stics text workspace (one folder per USM), as generated by `gen_workspace_from_sms()` |
+| `sim_rds` / `obs_rds` / `ref_sim_rds` | Paths to RDS files containing pre-computed simulation/observation data, as produced by `run_simulations()` |
+| `output_dir` | Directory where results (CSV exports, plots) are written. Created if it doesn't exist |
+| `parallel` / `cores` | Enable parallel execution (`FALSE` by default) and the number of cores to use (`NA` = auto; required when `parallel = TRUE`) |
 | `verbose` | Logging verbosity level: `0` = silent, `1` = info, `2` = debug (default: `1`) |
-| `parallel` | Enable parallel execution (default: `FALSE`) |
-| `cores` | Number of cores for parallel execution (`NA` = auto; required when `parallel = TRUE`) |
-| `ref_sim_rds` | Optional path to an RDS file containing the reference version's simulation outputs, used for regression detection. If not provided, evaluation runs against observations only, without regression comparison |
-| `sim_rds` | Path to an RDS file containing pre-computed simulation outputs for the new version (alternative to `run_simulations` + `usms_workspace`) |
-| `obs_rds` | Path to an RDS file containing pre-computed observation data (alternative to `run_simulations` + `usms_workspace`) |
-| `percentage` | Threshold (%) above which a variable is flagged as deteriorated vs. the reference (default: `5`) |
-| `species` | Optional character vector of species to evaluate. Used by `SpeciesEvaluation` and `USMEvaluation`; ignored by `GlobalEvaluation`. `NULL` = all available |
-| `usms` | Optional character vector of USMs to evaluate. `NULL` = all available. |
-| `var2exclude` | Optional character vector of variables to exclude from evaluation. |
-
-`Configuration` also exposes workflow-specific validation methods called internally by each function:
-
-- `config$validate_eval()` — checks requirements for the statistical evaluation workflow (used by `evaluate()`, `GlobalEvaluation`, `SpeciesEvaluation`, and `USMEvaluation`)
-- `config$validate_balance_closure()` — checks requirements for the balance closure test workflow
 
 ---
 
@@ -172,63 +196,59 @@ config <- Configuration$new(
 
 ### Statistical Evaluation
 
-The simplest way to run the full statistical evaluation is via the `evaluate()` function:
+`evaluate()` runs the full statistical evaluation:
 
 ```r
-evaluate(config)
+evaluate(
+  usms_workspace     = "workspace/",
+  sim_rds            = "outputs/simulations.rds",
+  obs_rds            = "outputs/observations.rds",
+  ref_sim_rds        = "reference/simulations.rds",
+  output_dir         = "outputs/",
+  percentage         = 5,
+  species            = NULL,
+  usms               = NULL,
+  var2exclude        = NULL,
+  ratio_threshold    = 50,
+  degraded_threshold = 20,
+  max_degraded_vars  = 3,
+  parallel           = FALSE,
+  cores              = NA,
+  verbose            = 1L
+)
 ```
 
-This loads simulation, observation and reference data into `eval_workspace`, runs `GlobalEvaluation`, `SpeciesEvaluation`, and `USMEvaluation`, exports results to `output_dir` (if defined), prints a summary, and stops with an error if any evaluation failed.
+| Argument | Description |
+|---|---|
+| `usms_workspace` | Path to the USMs input data directory (required) — used to determine the species associated with each USM |
+| `sim_rds` | Path to an RDS file containing pre-computed simulation outputs for the evaluated version (required). Produced by `run_simulations()` |
+| `obs_rds` | Path to an RDS file containing pre-computed observation data (required). Produced by `run_simulations()` |
+| `ref_sim_rds` | Path to an RDS file containing the reference version's simulation outputs, used for regression detection. `NULL` = evaluate against observations only, without regression comparison |
+| `output_dir` | Output directory for CSV exports and plots. `NULL` = results are not exported |
+| `percentage` | Threshold (%) above which a variable is flagged as deteriorated vs. the reference (default: `5`) |
+| `species` | Optional character vector of species to evaluate. `NULL` = all available |
+| `usms` | Optional character vector of USMs to evaluate. `NULL` = all available |
+| `var2exclude` | Optional character vector of variables to exclude from evaluation |
+| `ratio_threshold` | Threshold (%) above which a single variable makes a USM fail the USM-level evaluation (default: `50`) |
+| `degraded_threshold` | Threshold (%) above which a variable is considered degraded for the USM-level evaluation (default: `20`) |
+| `max_degraded_vars` | Maximum number of degraded variables tolerated per USM before it's considered failed (default: `3`) |
 
-#### `GlobalEvaluation`
+`evaluate()` loads simulation, observation and reference data into a temporary evaluation workspace (cleaned up automatically), runs the global, per-species and per-USM evaluations described below, exports results to `output_dir` (if defined), prints a summary, and stops with an error if any evaluation failed. It never runs STICS simulations itself — use `run_simulations()` to produce `sim_rds` / `obs_rds` beforehand.
 
-Computes statistics (RMSE, nRMSE, bias, R², etc.) across **all species and USMs combined**, against field observations and, when `ref_sim_rds` is provided, against the reference version's simulation outputs.
+#### Global evaluation
 
-```r
-global_eval <- GlobalEvaluation$new(config)
-global_eval$run()
-global_eval$summary()
-global_eval$export()
-```
+Computes statistics (RMSE, nRMSE, bias, R², etc.) across **all species and USMs combined**, against field observations and, when `ref_sim_rds` is provided, against the reference version's simulation outputs. Writes `global_stats.csv` to `output_dir`. Considered successful if no variable shows a critical deterioration.
 
-- `run()` computes the global statistics and, if a reference is available, the rRMSE comparison against it.
-- `summary()` prints a report of the comparison to the console.
-- `export()` writes `global_stats.csv` to `output_dir`.
-- `global_eval$success` is `TRUE` if no variable shows a critical deterioration.
+#### Species evaluation
 
-#### `SpeciesEvaluation`
-
-Computes statistics per species (RMSE, nRMSE, bias, R², etc.) against field observations and, when `ref_sim_rds` is provided, against the reference version. Flags variables and USMs where performance has deteriorated beyond the `percentage` threshold.
-
-```r
-species_eval <- SpeciesEvaluation$new(config)
-species_eval$run()
-species_eval$summary()
-species_eval$export()
-```
-
-- `run()` computes per-species statistics and rRMSE comparisons for the species selected via `config$species` and `config$usms`.
-- `summary()` prints a report per species, grouped by degradation level (major, minor, none).
-- `export()` writes, to `output_dir`:
-  - `species_stats.csv` — statistical metrics per species
-  - `plots/<species>_species_comparison.png` — rRMSE comparison scatter plot (see below)
-  - `plots/<species>_scatter_plots.html` — interactive scatter plots for deteriorated variables
-- `species_eval$success` is `TRUE` if no species shows a critical deterioration.
-
-Both classes accept optional `workspace` and `logger` (and, for `SpeciesEvaluation`, `backend`) arguments for dependency injection in tests or advanced use:
-
-```r
-SpeciesEvaluation$new(
-  config,
-  workspace = EvalWorkspace$new(config$eval_workspace),
-  backend   = ParallelBackend$new(config$parallel, config$cores),
-  logger    = default_logger
-)$run()
-```
+Computes statistics per species (RMSE, nRMSE, bias, R², etc.) against field observations and, when `ref_sim_rds` is provided, against the reference version. Flags variables and USMs where performance has deteriorated beyond the `percentage` threshold, for the species/USMs selected via `species` and `usms`. Considered successful if no species shows a critical deterioration. Writes, to `output_dir`:
+- `species_stats.csv` — statistical metrics per species
+- `plots/<species>_species_comparison.png` — rRMSE comparison scatter plot (see below)
+- `plots/<species>_scatter_plots.html` — interactive scatter plots for deteriorated variables
 
 ##### rRMSE comparison plot
 
-`SpeciesEvaluation$export()` generates, for each species, a scatter plot comparing the **rRMSE of the new version vs. the reference version**, one point per variable, colour-coded by regression status:
+For each species, a scatter plot compares the **rRMSE of the new version vs. the reference version**, one point per variable, colour-coded by regression status:
 
 | Colour | Status | Condition |
 |--------|--------|-----------|
@@ -238,11 +258,9 @@ SpeciesEvaluation$new(
 
 A diagonal line (slope = 1) marks perfect parity; a dashed line (slope = 1 + `percentage`/100) marks the deterioration threshold. Variable names are displayed as repelled labels. The plot is only generated when a reference version (`ref_sim_rds`) is available.
 
-#### `USMEvaluation`
+#### USM evaluation
 
-Evaluates model performance at the **USM (situation) level** to identify situations where the evaluated STICS version is locally degraded compared to the reference version.
-
-Unlike `SpeciesEvaluation`, which detects degradation at the species level, `USMEvaluation` identifies individual USMs where one or more variables show an abnormal increase in RMSE compared to the reference.
+Evaluates model performance at the **USM (situation) level** to identify situations where the evaluated STICS version is locally degraded compared to the reference version. Unlike the species evaluation, which detects degradation at the species level, this identifies individual USMs where one or more variables show an abnormal increase in RMSE compared to the reference.
 
 For each variable and each USM, the following ratio is computed:
 
@@ -262,72 +280,13 @@ A USM fails the evaluation if at least one of the following conditions is met:
 - one variable has `RMSE_ratio > ratio_threshold` (default: 50%)
 - more than `max_degraded_vars` variables have `RMSE_ratio > degraded_threshold` (default: 20%)
 
-USMs and variables with fewer than 10 observations (`n_obs`) are ignored when determining failed USMs.
-
-```r
-usm_eval <- USMEvaluation$new(config)
-usm_eval$run()
-usm_eval$summary()
-usm_eval$export()
-```
-
-- `run()` computes RMSE ratios for each variable and USM.
-- `summary()` prints the list of failed and passed USMs by species.
-- `export()` writes `Deteriorated_USM.csv` to `output_dir`.
-- `usm_eval$success` is `TRUE` if no USM fails the evaluation.
-
-The evaluation thresholds can be customized:
-
-```r
-usm_eval <- USMEvaluation$new(
-  config,
-  ratio_threshold = 50,
-  degraded_threshold = 20,
-  max_degraded_vars = 3
-)
-```
-
-`USMEvaluation` can also be used manually by providing pre-computed statistics, which is useful for unit testing:
-
-```r
-usm_eval <- USMEvaluation$new(
-  species = "Species1",
-  stats_usm = stats_usm,
-  stats_species = stats_species
-)
-
-usm_eval$get_data()
-usm_eval$failed_usms
-```
-
-The returned data contains one row per variable/USM/species combination:
-
-| Column | Description |
-|---|---|
-| `species` | Species name |
-| `situation` | USM identifier |
-| `variable` | Evaluated variable |
-| `rmse_eval` | RMSE of the evaluated version |
-| `rmse_ref` | RMSE of the reference version |
-| `rmse_species` | Species-level RMSE of the evaluated version |
-| `rmse_ratio` | Relative RMSE deterioration ratio (%) |
-| `n_obs` | Number of observations used |
-
-`USMEvaluation` is independent from `evaluate()` and can be run after loading the workspace:
-
-```r
-USMSWorkspace$new(config)$load()
-
-usm_eval <- USMEvaluation$new(config)
-usm_eval$run()
-usm_eval$summary()
-```
+USMs and variables with fewer than 10 observations (`n_obs`) are ignored when determining failed USMs. Writes `Deteriorated_USM.csv` to `output_dir`. Considered successful if no USM fails the evaluation.
 
 ---
 
-### `BalanceClosureTest`
+### `balance_closure_test()`
 
-Checks the **water and nitrogen balance closure** for each simulated USM. For each USM, the class compares the initial and final values of the following five balances:
+Checks the **water and nitrogen balance closure** for each simulated USM. For each USM, it compares the initial and final values of the following five balances:
 
 | Balance | Checked fields |
 |---|---|
@@ -339,18 +298,40 @@ Checks the **water and nitrogen balance closure** for each simulated USM. For ea
 
 A USM is flagged if the absolute rounded difference between its initial and final values is greater than 1. USMs with missing fields or only NA values are silently skipped.
 
+Like `evaluate()`, `balance_closure_test()` never runs STICS simulations itself — it reads simulation data from `sim_rds`. Since the balance fields above aren't observed variables, pass them explicitly via the `vars` argument of `run_simulations()` so they end up in `sim_rds`:
+
 ```r
-config <- Configuration$new(
-  stics_exe      = "/path/to/stics",
-  metadata_file  = "metadata.csv",
-  usms_workspace = "path/to/usms_workspace",
-  output_dir     = "/path/to/output_dir"
+balance_vars <- c(
+  "init_H2O_balance", "final_H2O_balance",
+  "init_plant_N_balance", "final_plant_N_balance",
+  "init_soil_mineral_N_balance", "final_soil_mineral_N_balance",
+  "init_soil_organic_N_balance", "final_soil_organic_N_balance",
+  "init_soil_organic_C_balance", "final_soil_organic_C_balance"
 )
 
-BalanceClosureTest$new(config)$run()
+run_simulations(
+  stics_exe      = "/path/to/stics",
+  usms_workspace = "path/to/usms_workspace",
+  metadata_file  = "metadata.csv",
+  output_dir     = "/path/to/output_dir",
+  vars           = balance_vars
+)
+
+balance_closure_test(
+  sim_rds    = "/path/to/output_dir/simulations.rds",
+  output_dir = "/path/to/output_dir"
+)
 ```
 
-The `run()` method logs a summary of the test and stops with an error listing any USMs with balance closure issues. It respects the `usms`, `parallel`, and `cores` filters defined in the `Configuration`.
+| Argument | Description |
+|---|---|
+| `sim_rds` | Path to an RDS file containing pre-computed simulation data, including the balance variables above. Produced by `run_simulations()`. The USMs to test are the names of this list, optionally restricted by `usms` |
+| `output_dir` | Directory where balance error details (`balance_errors_details.csv`) are written, if any. `NULL` (default) skips the export |
+| `usms` | Optional character vector of USMs to restrict the test to. `NULL` = all available |
+| `parallel` / `cores` | Parallel execution options |
+| `verbose` | Logging verbosity level: `0` = silent, `1` = info, `2` = debug (default: `1`) |
+
+`balance_closure_test()` validates these arguments, logs a summary of the test, and stops with an error listing any USMs with balance closure issues.
 
 If `output_dir` is defined, the balance closure details will be written to a CSV file in the specified directory.
 
@@ -358,71 +339,87 @@ If `output_dir` is defined, the balance closure details will be written to a CSV
 
 ## Complete Example
 
-### Simple usage
+### From raw SMS data to evaluation
 
 ```r
 library(SticsREval)
 
-# 1. Configure the evaluation
-config <- Configuration$new(
-  stics_exe       = "/path/to/stics_candidate",
-  usms_workspace  = "workspace/",
-  metadata_file   = "metadata.csv",
-  eval_workspace  = "eval_workspace/",
-  output_dir      = "outputs/",
-  run_simulations = TRUE,
-  ref_sim_rds     = "reference_simulations.rds",
-  percentage      = 5
+balance_vars <- c(
+  "init_H2O_balance", "final_H2O_balance",
+  "init_plant_N_balance", "final_plant_N_balance",
+  "init_soil_mineral_N_balance", "final_soil_mineral_N_balance",
+  "init_soil_organic_N_balance", "final_soil_organic_N_balance",
+  "init_soil_organic_C_balance", "final_soil_organic_C_balance"
 )
 
-# 2. Run the full statistical evaluation (global, per species,
-#    and per USM), export results, and print summaries
-evaluate(config)
+# 1. Build a Stics text workspace from the raw SMS repository
+gen_workspace_from_sms(
+  sms_path   = "/path/to/sms_repository",
+  stics_path = "/path/to/stics_distribution",
+  output_dir = "workspace/"
+)
 
-# 3. Check water and nitrogen balance closure
-BalanceClosureTest$new(config)$run()
+# 2. Pre-compute the reference version's simulations and observations once
+run_simulations(
+  stics_exe      = "/path/to/stics_reference",
+  usms_workspace = "workspace/",
+  metadata_file  = "metadata.csv",
+  output_dir     = "reference/"
+)
+
+# 3. Run the candidate version's simulations, combining the observed
+#    variables with the balance closure ones into a single call
+obs  <- SticsRFiles::get_obs("workspace/")
+vars <- c(get_var_from_obs(obs), balance_vars)
+
+run_simulations(
+  stics_exe      = "/path/to/stics_candidate",
+  usms_workspace = "workspace/",
+  metadata_file  = "metadata.csv",
+  output_dir     = "outputs/",
+  vars           = vars
+)
+
+# 4. Evaluate the candidate version against the reference
+evaluate(
+  usms_workspace = "workspace/",
+  output_dir     = "outputs/",
+  sim_rds        = "outputs/simulations.rds",
+  obs_rds        = "outputs/observations.rds",
+  ref_sim_rds    = "reference/simulations.rds",
+  percentage     = 5
+)
+
+# 5. Check water and nitrogen balance closure
+balance_closure_test(
+  sim_rds    = "outputs/simulations.rds",
+  output_dir = "outputs/"
+)
 ```
 
-### Advanced usage
+### Simple usage
+
+Assuming `run_simulations()` has already produced the RDS files (see above):
 
 ```r
 library(SticsREval)
 
-# 1. Configure the evaluation
-config <- Configuration$new(
-  stics_exe       = "/path/to/stics_candidate",
-  usms_workspace  = "workspace/",
-  metadata_file   = "metadata.csv",
-  eval_workspace  = "eval_workspace/",
-  output_dir      = "outputs/",
-  run_simulations = TRUE,
-  ref_sim_rds     = "reference_simulations.rds",
-  percentage      = 5
+# 1. Run the full statistical evaluation (global, per species,
+#    and per USM), export results, and print summaries
+evaluate(
+  usms_workspace = "workspace/",
+  output_dir     = "outputs/",
+  sim_rds        = "outputs/simulations.rds",
+  obs_rds        = "outputs/observations.rds",
+  ref_sim_rds    = "reference_simulations.rds",
+  percentage     = 5
 )
 
-# 2. Load simulation, observation and reference data into the eval workspace
-USMSWorkspace$new(config)$load()
-
-# 3. Run the global evaluation (all species combined)
-global_eval <- GlobalEvaluation$new(config)
-global_eval$run()
-global_eval$summary()
-global_eval$export()
-
-# 4. Run the per-species evaluation
-species_eval <- SpeciesEvaluation$new(config)
-species_eval$run()
-species_eval$summary()
-species_eval$export()
-
-# 5. Run the USM-level evaluation
-usm_eval <- USMEvaluation$new(config)
-usm_eval$run()
-usm_eval$summary()
-usm_eval$export()
-
-# 6. Check water and nitrogen balance closure
-BalanceClosureTest$new(config)$run()
+# 2. Check water and nitrogen balance closure
+balance_closure_test(
+  sim_rds    = "outputs/simulations.rds",
+  output_dir = "outputs/"
+)
 ```
 
 ---
@@ -451,17 +448,24 @@ Then inside R:
 ```r
 library(SticsREval)
 
-config <- Configuration$new(
-  stics_exe       = "/path/to/stics",
-  usms_workspace  = "/workspace/",
-  metadata_file   = "/workspace/metadata.csv",
-  eval_workspace  = "/workspace/eval_workspace/",
-  output_dir      = "/workspace/outputs/",
-  run_simulations = TRUE
+run_simulations(
+  stics_exe      = "/path/to/stics",
+  usms_workspace = "/workspace/",
+  metadata_file  = "/workspace/metadata.csv",
+  output_dir     = "/workspace/outputs/"
 )
 
-evaluate(config)
-BalanceClosureTest$new(config)$run()
+evaluate(
+  usms_workspace = "/workspace/",
+  output_dir     = "/workspace/outputs/",
+  sim_rds        = "/workspace/outputs/simulations.rds",
+  obs_rds        = "/workspace/outputs/observations.rds"
+)
+
+balance_closure_test(
+  sim_rds    = "/workspace/outputs/simulations.rds",
+  output_dir = "/workspace/outputs/"
+)
 ```
 
 ### Run a script non-interactively

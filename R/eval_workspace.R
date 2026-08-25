@@ -105,20 +105,13 @@ EvalDataWriter <- R6::R6Class("EvalDataWriter", # nolint: object_name_linter
   )
 )
 
-#'
 #' EvalWorkspace class
 #'
-#' Manage the evaluation workspace
+#' Internal class. Manages the evaluation workspace (a Parquet-backed
+#' staging area for simulation/observation/reference data), used
+#' internally by \code{\link{evaluate}}.
 #'
-#' @name EvalWorkspace
-#' @docType class
-#'
-#' @examples
-#' \dontrun{
-#' ws <- EvalWorkspace$new(
-#'   data_dir = "/path/to/eval_workspace"
-#' )
-#' }
+#' @keywords internal
 EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
   private = list(
     .data_dir = NULL,

@@ -4,10 +4,10 @@
 \alias{USMEvaluation}
 \title{USMEvaluation class}
 \description{
-The \code{USMEvaluation} class detects USMs (situations) where the model
-performance on a given variable is very degraded compared to a reference
-version, relative to the overall performance of the species on that
-variable.
+Internal class. Detects USMs (situations) where the model performance
+on a given variable is very degraded compared to a reference version,
+relative to the overall performance of the species on that variable.
+Instantiated internally by \code{\link{evaluate}}.
 }
 \details{
 For each variable and each USM, the following ratio is computed:
@@ -38,41 +38,15 @@ consistently with \code{RRmseComparison}/\code{DeterioratedUSMComparison}.
 
 The class can be used in two ways:
 \itemize{
-\item Driven by a \code{Configuration} + workspace, like
-\code{SpeciesEvaluation}: create with \code{config} (and optionally
-\code{workspace}/\code{backend}/\code{logger}), then call \code{run()}.
+\item Driven by \code{eval_workspace}/\code{workspace}, like
+\code{SpeciesEvaluation}: create with \code{eval_workspace} (or a
+pre-built \code{workspace}), then call \code{run()}.
 \item Manually, by directly providing \code{stats_usm} and
 \code{stats_species} (or a pre-computed \code{data}) for a single
 species, useful for unit testing.
 }
 }
-\examples{
-\dontrun{
-# Driven by config/workspace, like SpeciesEvaluation
-config <- list(
-  eval_workspace = "path/to/eval_workspace",
-  usms = c("USM1", "USM2"),
-  species = c("Species1", "Species2"),
-  var2exclude = c("var1", "var2"),
-  parallel = TRUE,
-  cores = 4,
-  output_dir = "path/to/output"
-)
-usm_eval <- USMEvaluation$new(config = config)
-usm_eval$run()
-usm_eval$summary()
-usm_eval$get_data()
-usm_eval$failed_usms
-
-# Manual mode (unit tests)
-usm_eval <- USMEvaluation$new(
-  species = "Species1",
-  stats_usm = stats_usm,
-  stats_species = stats_species
-)
-usm_eval$summary()
-}
-}
+\keyword{internal}
 \section{Active bindings}{
   \if{html}{\out{<div class="r6-active-bindings">}}
   \describe{
@@ -113,7 +87,14 @@ for any species.}
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{USMEvaluation$new(
-  config = NULL,
+  eval_workspace = NULL,
+  species_filter = NULL,
+  usms = NULL,
+  var2exclude = NULL,
+  percentage = 5,
+  output_dir = NULL,
+  parallel = FALSE,
+  cores = NA,
   workspace = NULL,
   backend = NULL,
   logger = default_logger,
@@ -131,14 +112,24 @@ for any species.}
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
-      \item{\code{config}}{A Configuration object containing the necessary
-parameters for the evaluation (same as \code{SpeciesEvaluation}).
-Required to use \code{run()}.}
+      \item{\code{eval_workspace}}{Path to the evaluation workspace. Only used to
+build a default \code{workspace} when one isn't supplied. Providing this
+or \code{workspace} selects the evaluation mode; otherwise the object is
+built in manual mode from \code{data}/\code{stats_usm}+\code{stats_species}.}
+      \item{\code{species_filter}}{Optional character vector of species to
+evaluate.}
+      \item{\code{usms}}{Optional character vector of USMs to evaluate.}
+      \item{\code{var2exclude}}{Optional character vector of variables to exclude.}
+      \item{\code{percentage}}{Threshold (\%) above which a variable is flagged as
+deteriorated vs. the reference.}
+      \item{\code{output_dir}}{Output directory for the CSV export.}
+      \item{\code{parallel, cores}}{Parallel execution options. Only used to build
+a default \code{backend} when one isn't supplied.}
       \item{\code{workspace}}{An optional EvalWorkspace object. If not provided, a
-new EvalWorkspace will be created using the provided configuration.}
+new EvalWorkspace will be created from \code{eval_workspace}.}
       \item{\code{backend}}{An optional ParallelBackend object for parallel
 processing. If not provided, a new ParallelBackend will be created
-using the provided configuration.}
+from \code{parallel}/\code{cores}.}
       \item{\code{logger}}{An optional logger object for logging messages. If not
 provided, the default logger will be used.}
       \item{\code{species_evaluation}}{Optional \code{SpeciesEvaluation} instance.
@@ -155,8 +146,8 @@ is considered degraded. Default 20.}
       \item{\code{max_degraded_vars}}{Maximum number of degraded variables (ratio >
 \code{degraded_threshold}) tolerated per USM before it is considered
 failed. Default 3 (i.e. fails starting at 4 degraded variables).}
-      \item{\code{species}}{Optional species name, used in manual mode (ignored if
-\code{config} is provided).}
+      \item{\code{species}}{Optional species name, used in manual mode (ignored in
+evaluation mode).}
       \item{\code{stats_usm}}{Manual mode: data frame of per-USM stats (RMSE,
 n_obs), for \code{evaluated} and \code{reference} groups, e.g. as
 returned by CroPlotR's summary method with \code{all_situations =
@@ -177,8 +168,8 @@ FALSE, stats = c("RMSE", "n_obs")}.}
 \subsection{\code{USMEvaluation$run()}}{
   Run the USM evaluation.
 This method computes, for each species found in the workspace
-(filtered according to the configuration), the RMSE_ratio per variable
-and per USM, and stores the results internally.
+(filtered according to \code{species_filter}/\code{usms}), the RMSE_ratio per
+variable and per USM, and stores the results internally.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{USMEvaluation$run()}

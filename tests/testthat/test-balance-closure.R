@@ -1,24 +1,24 @@
-test_that("BalanceClosureTest calls config$validate_balance_closure()", {
-  called <- new.env()
-  called$flag <- FALSE
-  config <- make_base_cfg(usms_workspace = tempdir())
-  config$validate_balance_closure <- function() {
-    called$flag <- TRUE
-  }
-  BalanceClosureTest$new(config)$run()
-  expect_true(called$flag)
-})
+write_sim_rds <- function(sim_list) {
+  path <- withr::local_tempfile(fileext = ".rds", .local_envir = parent.frame())
+  saveRDS(sim_list, path)
+  path
+}
+
 test_that("BalanceClosureTest handles no USMs to test", {
-  empty_dir <- file.path(tempdir(), "empty_test_dir")
-  dir.create(empty_dir, showWarnings = FALSE)
+  sim_data <- data.frame(
+    Date = as.Date("2024-01-01"),
+    init_H2O_balance = 100,
+    final_H2O_balance = 100
+  )
 
-  config <- make_base_cfg(usms_workspace = empty_dir, usms = "nonexistent_usm")
-  logs <- character(0)
-
+  init_logger(1L)
   log_env <- make_log_capture()
   on.exit(logger::log_appender(logger::appender_console), add = TRUE)
 
-  BalanceClosureTest$new(config)$run()
+  BalanceClosureTest$new(
+    sim_rds = write_sim_rds(list(usm1 = sim_data)),
+    usms = "nonexistent_usm"
+  )$run()
 
   expect_match(
     log_env$logs,
@@ -27,32 +27,19 @@ test_that("BalanceClosureTest handles no USMs to test", {
   )
 })
 test_that("BalanceClosureTest logs balance closure issues", {
-  temp_dir <- file.path(tempdir(), "usms_test_dir")
-  dir.create(temp_dir, showWarnings = FALSE)
-
-  usm_path <- file.path(temp_dir, "usm1")
-  dir.create(usm_path, showWarnings = FALSE)
-
   sim_data <- data.frame(
     Date = as.Date(c("2024-01-01", "2024-01-02")),
     init_H2O_balance = c(100, 100),
     final_H2O_balance = c(90, 80)
   )
 
-  config <- make_base_cfg(
-    usms_workspace = temp_dir,
-    usms = "usm1",
-    stics_exe = file.path("path", "to", "stics.exe")
-  )
+  init_logger(1L)
   log_env <- make_log_capture()
   on.exit(logger::log_appender(logger::appender_console), add = TRUE)
 
-  bc_test <- BalanceClosureTest$new(config)
-  replace_private(bc_test, "loader", list(
-    run_simulations = function(usms, var) {
-      list(usm1 = sim_data)
-    }
-  ))
+  bc_test <- BalanceClosureTest$new(
+    sim_rds = write_sim_rds(list(usm1 = sim_data))
+  )
 
   expect_error(
     bc_test$run(),
@@ -70,59 +57,105 @@ test_that("BalanceClosureTest logs balance closure issues", {
   )
 })
 test_that("BalanceClosureTest handles USMs with missing or NA fields", {
-  temp_dir <- file.path(tempdir(), "usms_test_dir")
-  dir.create(temp_dir, showWarnings = FALSE)
-
-  usm_path <- file.path(temp_dir, "usm1")
-  dir.create(usm_path, showWarnings = FALSE)
-
   sim_data <- data.frame(
     Date = as.Date(c("2024-01-01", "2024-01-02")),
     init_H2O_balance = c(NA, NA),
     final_H2O_balance = c(NA, NA)
   )
 
-  config <- make_base_cfg(
-    usms_workspace = temp_dir,
-    usms = "usm1",
-    stics_exe = file.path("path", "to", "stics.exe")
-  )
   log_env <- make_log_capture()
   on.exit(logger::log_appender(logger::appender_console), add = TRUE)
 
-  bc_test <- BalanceClosureTest$new(config)
-  replace_private(bc_test, "loader", list(
-    run_simulations = function(usms, var) {
-      list(usm1 = sim_data)
-    }
-  ))
+  bc_test <- BalanceClosureTest$new(
+    sim_rds = write_sim_rds(list(usm1 = sim_data))
+  )
   expect_no_error(bc_test$run())
 })
 
 test_that("BalanceClosureTest runs without errors when all USMs pass", {
-  temp_dir <- file.path(tempdir(), "usms_test_dir")
-  dir.create(temp_dir, showWarnings = FALSE)
-
-  usm_path <- file.path(temp_dir, "usm1")
-  dir.create(usm_path, showWarnings = FALSE)
-
   sim_data <- data.frame(
     Date = as.Date(c("2024-01-01", "2024-01-02")),
     init_H2O_balance = c(100, 100),
     final_H2O_balance = c(100, 100)
   )
 
-  config <- make_base_cfg(
-    usms_workspace = temp_dir,
-    usms = "usm1",
-    stics_exe = file.path("path", "to", "stics.exe")
+  bc_test <- BalanceClosureTest$new(
+    sim_rds = write_sim_rds(list(usm1 = sim_data))
+  )
+  expect_no_error(bc_test$run())
+})
+
+test_that("BalanceClosureTest restricts to USMs listed in usms", {
+  sim_data_ok <- data.frame(
+    Date = as.Date(c("2024-01-01", "2024-01-02")),
+    init_H2O_balance = c(100, 100),
+    final_H2O_balance = c(100, 100)
+  )
+  sim_data_bad <- data.frame(
+    Date = as.Date(c("2024-01-01", "2024-01-02")),
+    init_H2O_balance = c(100, 100),
+    final_H2O_balance = c(90, 80)
   )
 
-  bc_test <- BalanceClosureTest$new(config)
-  replace_private(bc_test, "loader", list(
-    run_simulations = function(usms, var) {
-      list(usm1 = sim_data)
-    }
-  ))
+  bc_test <- BalanceClosureTest$new(
+    sim_rds = write_sim_rds(list(usm1 = sim_data_ok, usm2 = sim_data_bad)),
+    usms = "usm1"
+  )
   expect_no_error(bc_test$run())
+})
+
+test_that("BalanceClosureTest exports balance error details to output_dir", {
+  sim_data <- data.frame(
+    Date = as.Date(c("2024-01-01", "2024-01-02")),
+    init_H2O_balance = c(100, 100),
+    final_H2O_balance = c(90, 80)
+  )
+  output_dir <- withr::local_tempdir()
+
+  bc_test <- BalanceClosureTest$new(
+    sim_rds = write_sim_rds(list(usm1 = sim_data)),
+    output_dir = output_dir
+  )
+  expect_error(bc_test$run())
+
+  expect_true(file.exists(file.path(output_dir, "balance_errors_details.csv")))
+})
+
+test_that("balance_closure_test() runs the balance closure test end to end", {
+  sim_data <- data.frame(
+    Date = as.Date(c("2024-01-01", "2024-01-02")),
+    init_H2O_balance = c(100, 100),
+    final_H2O_balance = c(100, 100)
+  )
+
+  expect_no_error(
+    balance_closure_test(
+      sim_rds = write_sim_rds(list(usm1 = sim_data)),
+      usms = "usm1"
+    )
+  )
+})
+
+test_that("balance_closure_test() validates its arguments", {
+  sim_data <- data.frame(
+    Date = as.Date(c("2024-01-01", "2024-01-02")),
+    init_H2O_balance = c(100, 100),
+    final_H2O_balance = c(100, 100)
+  )
+
+  expect_error(
+    balance_closure_test(
+      sim_rds = write_sim_rds(list(usm1 = sim_data)),
+      parallel = TRUE,
+      cores = NA
+    ),
+    "cores"
+  )
+})
+
+test_that("balance_closure_test() stops when sim_rds does not exist", {
+  expect_error(
+    balance_closure_test(sim_rds = file.path("nonexistent", "sim.rds")),
+    "not found"
+  )
 })

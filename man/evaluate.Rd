@@ -4,34 +4,93 @@
 \alias{evaluate}
 \title{Run All Evaluations}
 \usage{
-evaluate(config)
+evaluate(
+  usms_workspace,
+  sim_rds,
+  obs_rds,
+  ref_sim_rds = NULL,
+  output_dir = NULL,
+  percentage = 5,
+  species = NULL,
+  usms = NULL,
+  var2exclude = NULL,
+  ratio_threshold = 50,
+  degraded_threshold = 20,
+  max_degraded_vars = 3,
+  parallel = FALSE,
+  cores = NA,
+  verbose = 1L
+)
 }
 \arguments{
-\item{config}{A list containing the evaluation configuration. Must include at
-least the following element:
-\describe{
-\item{eval_workspace}{Character. Path to the directory used as evaluation
-workspace. Created recursively if it does not already exist.}
-}}
+\item{usms_workspace}{path to the Stics text workspace containing the
+USMs to evaluate. Used to determine the species associated with each
+USM}
+
+\item{sim_rds}{path to an \code{.rds} file containing pre-computed
+simulation results for the evaluated version — see
+\code{\link{run_simulations}}}
+
+\item{obs_rds}{path to an \code{.rds} file containing pre-computed
+observation data — see \code{\link{run_simulations}}}
+
+\item{ref_sim_rds}{path to an \code{.rds} file containing pre-computed
+simulation results for the reference version. If NULL (default),
+evaluation runs against observations only, without regression
+comparison against a reference}
+
+\item{output_dir}{directory where CSV exports and plots are written. If
+NULL (default), results are not exported}
+
+\item{percentage}{threshold (\%) above which a variable is flagged as
+deteriorated vs. the reference (default 5)}
+
+\item{species}{optional character vector of species to evaluate. NULL
+(default) evaluates all available species}
+
+\item{usms}{optional character vector of USMs to evaluate. NULL
+(default) evaluates all available USMs}
+
+\item{var2exclude}{optional character vector of variables to exclude
+from evaluation}
+
+\item{ratio_threshold}{numeric threshold (\%) above which a single
+variable makes a USM fail the USM-level evaluation (default 50)}
+
+\item{degraded_threshold}{numeric threshold (\%) above which a variable
+is considered degraded for the USM-level evaluation (default 20)}
+
+\item{max_degraded_vars}{maximum number of degraded variables (ratio >
+\code{degraded_threshold}) tolerated per USM before it is considered
+failed (default 3, i.e. fails starting at 4 degraded variables)}
+
+\item{parallel}{Boolean. Is the computation to be done in parallel ?}
+
+\item{cores}{Number of cores to use for parallel computation}
+
+\item{verbose}{Integer. Logging verbosity level: 0 = silent, 1 = info,
+2 = debug}
 }
 \value{
 Invisibly \code{NULL}. Called for its side effects: workspace
 creation, evaluation runs, and console reporting.
 }
 \description{
-Initializes the evaluation workspace, runs global and species evaluations,
-exports results, displays a summary of results, and stops with an error if
-any test failed.
+Loads simulation, observation and reference data from \code{sim_rds},
+\code{obs_rds} and \code{ref_sim_rds} into a temporary evaluation
+workspace, runs the global, per-species and per-USM evaluations,
+exports results to \code{output_dir} (if defined), prints a summary,
+and stops with an error if any evaluation failed. \code{evaluate()}
+never runs STICS simulations itself — use \code{\link{run_simulations}}
+to produce \code{sim_rds} / \code{obs_rds} beforehand.
 }
 \details{
 The function proceeds in the following steps:
 \enumerate{
-\item Creates \code{config$eval_workspace} if it does not exist, and stops
-with an error if creation fails.
-\item Loads the USMS workspace via \code{USMSWorkspace$new(config)$load()}.
-\item Instantiates and runs a \code{GlobalEvaluation} then a
-\code{SpeciesEvaluation}.
-\item Exports results to \code{config$output_dir} if defined.
+\item Creates a temporary evaluation workspace, cleaned up on exit.
+\item Loads simulation/observation/reference data into it.
+\item Runs the global, per-species and per-USM evaluations.
+\item Exports results to \code{output_dir} if defined.
 \item Prints their respective summaries.
 \item Displays a CLI report listing each evaluation as
 \strong{success} (green ✔) or \strong{failed} (red ✗).

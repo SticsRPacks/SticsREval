@@ -1,16 +1,11 @@
 test_that("GlobalEvaluation initializes correctly", {
 
-  config <- list(
+  eval <- GlobalEvaluation$new(
     eval_workspace = tempdir(),
     usms = NULL,
     var2exclude = NULL,
     percentage = 10,
-    output_dir = tempdir()
-  )
-  config$validate_eval <- function() {}
-
-  eval <- GlobalEvaluation$new(
-    config = config,
+    output_dir = tempdir(),
     workspace = mock()
   )
 
@@ -20,17 +15,12 @@ test_that("GlobalEvaluation initializes correctly", {
 
 test_that("success is FALSE before running evaluation", {
 
-  config <- list(
+  eval <- GlobalEvaluation$new(
     eval_workspace = tempdir(),
     usms = NULL,
     var2exclude = NULL,
     percentage = 10,
-    output_dir = tempdir()
-  )
-  config$validate_eval <- function() {}
-
-  eval <- GlobalEvaluation$new(
-    config = config,
+    output_dir = tempdir(),
     workspace = mock()
   )
 
@@ -40,17 +30,12 @@ test_that("success is FALSE before running evaluation", {
 
 test_that("summary works when no comparison exists", {
 
-  config <- list(
+  eval <- GlobalEvaluation$new(
     eval_workspace = tempdir(),
     usms = NULL,
     var2exclude = NULL,
     percentage = 10,
-    output_dir = tempdir()
-  )
-  config$validate_eval <- function() {}
-
-  eval <- GlobalEvaluation$new(
-    config = config,
+    output_dir = tempdir(),
     workspace = mock()
   )
 
@@ -63,17 +48,12 @@ test_that("export returns when no statistics are available", {
   output_dir <- file.path(tempdir(), "global_eval")
   unlink(output_dir, recursive = TRUE)
 
-  config <- list(
+  eval <- GlobalEvaluation$new(
     eval_workspace = tempdir(),
     usms = NULL,
     var2exclude = NULL,
     percentage = 10,
-    output_dir = output_dir
-  )
-  config$validate_eval <- function() {}
-
-  eval <- GlobalEvaluation$new(
-    config = config,
+    output_dir = output_dir,
     workspace = mock()
   )
 
@@ -87,17 +67,12 @@ test_that("run propagates workspace errors", {
     get_sim = function(...) stop("workspace failure", call. = FALSE)
   )
 
-  config <- list(
+  eval <- GlobalEvaluation$new(
     eval_workspace = tempdir(),
     usms = NULL,
     var2exclude = NULL,
     percentage = 10,
-    output_dir = tempdir()
-  )
-  config$validate_eval <- function() {}
-
-  eval <- GlobalEvaluation$new(
-    config = config,
+    output_dir = tempdir(),
     workspace = workspace
   )
 
@@ -115,17 +90,12 @@ test_that("export does not create csv when stats are NULL", {
 
   dir.create(output_dir, recursive = TRUE)
 
-  config <- list(
+  eval <- GlobalEvaluation$new(
     eval_workspace = tempdir(),
     usms = NULL,
     var2exclude = NULL,
     percentage = 10,
-    output_dir = output_dir
-  )
-  config$validate_eval <- function() {}
-
-  eval <- GlobalEvaluation$new(
-    config = config,
+    output_dir = output_dir,
     workspace = mock()
   )
 
