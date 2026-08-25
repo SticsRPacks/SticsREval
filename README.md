@@ -141,6 +141,7 @@ run_simulations(
   metadata_file  = "metadata.csv",
   output_dir     = "outputs/",
   usms_files     = NULL,
+  vars           = NULL,
   parallel       = FALSE,
   cores          = NA
 )
@@ -153,9 +154,10 @@ run_simulations(
 | `metadata_file` | Path to the metadata CSV file describing USM rotations |
 | `output_dir` | Directory where `simulations.rds` and `observations.rds` are written |
 | `usms_files` | Character vector of one or more paths to text files listing the USMs to simulate. `NULL` (default) simulates all USMs found in `usms_workspace` |
+| `vars` | Character vector of variable names to simulate. `NULL` (default) derives them automatically from the observation files found in `usms_workspace`. Pass this explicitly to simulate variables that aren't observed, e.g. the balance closure variables consumed by `balance_closure_test()` |
 | `parallel` / `cores` | Parallel execution options |
 
-The variables to simulate are derived automatically from the observation files found in `usms_workspace`. The resulting `simulations.rds` / `observations.rds` files can be passed as `sim_rds` / `obs_rds` (or `ref_sim_rds` for a reference version) to `evaluate()` — see [From raw SMS data to evaluation](#from-raw-sms-data-to-evaluation) below.
+By default, the variables to simulate are derived automatically from the observation files found in `usms_workspace`. The resulting `simulations.rds` / `observations.rds` files can be passed as `sim_rds` / `obs_rds` (or `ref_sim_rds` for a reference version) to `evaluate()` — see [From raw SMS data to evaluation](#from-raw-sms-data-to-evaluation) below.
 
 ---
 
