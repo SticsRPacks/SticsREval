@@ -563,25 +563,17 @@ test_that("validate_eval stops when obs_rds is NULL", {
 # validate_balance_closure
 # ---------------------------------------------------------------------------
 
-test_that("validate_balance_closure stops when usms_workspace is NULL", {
+test_that("validate_balance_closure stops when sim_rds is NULL", {
   cfg <- Configuration$new(eval_workspace = "ws")
-  expect_error(cfg$validate_balance_closure(), "usms_workspace")
+  expect_error(cfg$validate_balance_closure(), "sim_rds")
 })
 
-test_that("validate_balance_closure stops when stics_exe is NULL", {
+test_that("validate_balance_closure passes when sim_rds is set", {
+  sim_file <- tempfile(fileext = ".rds")
+  file.create(sim_file)
   cfg <- Configuration$new(
     eval_workspace = "ws",
-    usms_workspace = "usms_ws",
-    metadata_file = build_metadata_file()
+    sim_rds = sim_file
   )
-  expect_error(cfg$validate_balance_closure(), "stics_exe")
-})
-
-test_that("validate_balance_closure stops when metadata_file is NULL", {
-  cfg <- Configuration$new(
-    eval_workspace = "ws",
-    usms_workspace = "usms_ws",
-    stics_exe = build_metadata_file()
-  )
-  expect_error(cfg$validate_balance_closure(), "metadata_file")
+  expect_r6_class(cfg$validate_balance_closure(), "Configuration")
 })

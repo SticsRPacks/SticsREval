@@ -222,11 +222,12 @@ validate_schema <- function(self, schema = config_schema) {
 #' Validate filesystem-dependent fields (I/O)
 #'
 #' Checks that path fields point to files that actually exist on disk.
-#' Kept separate from \code{validate_schema()} so that constructing a
-#' Configuration never touches the filesystem: callers decide when this
-#' I/O-bound check runs (see \code{Configuration$check_filesystem()}).
+#' Kept separate from \code{validate_schema()} so that building a
+#' configuration never touches the filesystem: callers decide when this
+#' I/O-bound check runs (see \code{check_filesystem()}).
 #'
-#' @param self A named list or R6 object.
+#' @param self A named list (typically a configuration built by
+#'   \code{\link{Configuration}}).
 #' @param schema A schema produced by config_schema.
 #' @return invisible(TRUE) if valid, otherwise stop() with all errors.
 #' @keywords internal
@@ -259,8 +260,8 @@ validate_filesystem <- function(self, schema = config_schema) {
 #' "which fields are required for which workflow, and under which
 #' exceptions" has a single source of truth: the schema itself.
 #'
-#' @param self A Configuration object (or any named list/R6 with the
-#'   relevant fields).
+#' @param self A named list (typically a configuration built by
+#'   \code{\link{Configuration}}).
 #' @param context Character scalar naming the workflow, e.g. "eval",
 #'   "balance_closure".
 #' @param schema A schema produced by config_schema.
@@ -303,27 +304,26 @@ fields_by_group <- function(schema = config_schema) {
   split(names(schema$fields), factor(groups, levels = unique(groups)))
 }
 
-#' Generate the R6 public fields list from the schema
-#' (all initialised to NULL — actual values are set inside initialize)
+#' Build a validated configuration list from named arguments
+#'
+#' For every field in the schema, takes the corresponding value from
+#' \code{args} if provided, or the field's default otherwise, then
+#' validates the resulting list against the schema (see
+#' \code{\link{validate_schema}}).
+#'
+#' @param args A named list of field values, e.g. from \code{list(...)}.
+#' @param schema A schema produced by config_schema.
+#' @return The validated, fully-populated configuration list.
 #' @keywords internal
-schema_public_fields <- function(schema = config_schema) {
-  fields <- vector("list", length(schema$fields))
-  names(fields) <- names(schema$fields)
-  fields
-}
-
-#' Body of initialize(): assign args or defaults, then validate
-#' @keywords internal
-schema_initialize <- function(self, args, schema = config_schema) {
-  for (field_name in names(schema$fields)) {
-    spec <- schema$fields[[field_name]]
-    val <- if (field_name %in% names(args)) {
+schema_initialize <- function(args, schema = config_schema) {
+  self <- lapply(names(schema$fields), function(field_name) {
+    if (field_name %in% names(args)) {
       args[[field_name]]
     } else {
-      spec$default
+      schema$fields[[field_name]]$default
     }
-    self[[field_name]] <- val
-  }
+  })
+  names(self) <- names(schema$fields)
   validate_schema(self, schema)
-  invisible(self)
+  self
 }

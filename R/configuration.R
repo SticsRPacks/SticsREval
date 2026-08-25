@@ -62,7 +62,6 @@ config_schema <- list(
       default = NULL,
       type = "character",
       nullable = TRUE,
-      required_for = "balance_closure",
       group = "paths"
     ),
 
@@ -70,7 +69,7 @@ config_schema <- list(
       default = NULL,
       type = "character",
       nullable = TRUE,
-      required_for = c("eval", "balance_closure"),
+      required_for = "eval",
       group = "paths"
     ),
 
@@ -78,7 +77,6 @@ config_schema <- list(
       default = NULL,
       type = "character",
       nullable = TRUE,
-      required_for = "balance_closure",
       group = "paths"
     ),
 
@@ -161,7 +159,7 @@ config_schema <- list(
       nullable = TRUE,
       validator = validate_rds_path,
       group = "data",
-      required_for = "eval"
+      required_for = c("eval", "balance_closure")
     ),
 
     obs_rds = field_spec(
@@ -218,117 +216,139 @@ config_schema <- list(
   )
 )
 
-#' Configuration class
-#' Encapsulates all configuration parameters for the package, with validation.
-#' The same object is used for all workflows, with
-#' workflow-specific validation methods.
+#' Build a package configuration
 #'
-#' @field stics_exe Path to STICS executable (required for balance_closure)
-#' @field usms_workspace Path to USMs workspace (required)
-#' @field metadata_file Path to metadata file (required for balance_closure)
-#' @field eval_workspace Path to evaluation workspace (required)
-#' @field output_dir Path to output directory for export workflow (required for
-#'  export)
-#' @field parallel Logical. Whether to run workflow in parallel.
-#' @field verbose Integer. Verbosity level (0 = silent, 1 = info, 2 = debug).
-#' @field cores Integer or NA. Number of CPU cores to use for parallel
-#'  processing (only if parallel = TRUE). NA means auto-detect.
-#' @field percentage Numeric. Percentage of simulations to consider for export
-#'  and plots (between 0 and 100).
-#' @field species Character vector or NULL. If specified, only these species
-#'  will be included in export and plots.
-#' @field usms Character vector or NULL. If specified, only these USMs will
-#'  be included in export and plots.
-#' @field var2exclude Character vector or NULL. If specified, these variables
-#'  will be excluded from export and plots.
-#' @field sim_rds Character. Path to an .rds file containing pre-computed
-#'  simulation results (required for evaluation). Use
-#'  \code{\link{run_simulations}} to produce it.
-#' @field obs_rds Character. Path to an .rds file containing pre-computed
-#'  observation data (required for evaluation). Use
-#'  \code{\link{run_simulations}} to produce it.
-#' @field ref_sim_rds Character or NULL. Path to an .rds file containing
-#'  reference simulation results used for evaluation and plots. Required for
-#'  evaluation.
+#' Collects all configuration parameters for the package into a single,
+#' validated list. The same configuration is used for all workflows: which
+#' fields are actually required depends on the workflow it's used for (see
+#' \code{\link{evaluate}}, \code{\link{balance_closure_test}}). Fields are
+#' validated against a declarative schema when the configuration is built —
+#' all errors are collected and reported together.
+#'
+#' @param ... Named configuration fields. Unspecified fields use their
+#'  default values. Invalid or unknown fields trigger validation errors.
+#'  Recognized fields:
+#'  \describe{
+#'    \item{\code{stics_exe}}{Path to STICS executable. Only used by
+#'      \code{\link{run_simulations}} to produce \code{sim_rds} /
+#'      \code{obs_rds}.}
+#'    \item{\code{usms_workspace}}{Path to USMs workspace (required for
+#'      evaluation).}
+#'    \item{\code{metadata_file}}{Path to metadata file. Only used by
+#'      \code{\link{run_simulations}} to produce \code{sim_rds} /
+#'      \code{obs_rds}.}
+#'    \item{\code{eval_workspace}}{Path to evaluation workspace (required).}
+#'    \item{\code{output_dir}}{Path to output directory for export workflow
+#'      (required for export).}
+#'    \item{\code{parallel}}{Logical. Whether to run workflow in parallel.}
+#'    \item{\code{verbose}}{Integer. Verbosity level (0 = silent, 1 = info,
+#'      2 = debug).}
+#'    \item{\code{cores}}{Integer or NA. Number of CPU cores to use for
+#'      parallel processing (only if parallel = TRUE). NA means
+#'      auto-detect.}
+#'    \item{\code{percentage}}{Numeric. Percentage of simulations to
+#'      consider for export and plots (between 0 and 100).}
+#'    \item{\code{species}}{Character vector or NULL. If specified, only
+#'      these species will be included in export and plots.}
+#'    \item{\code{usms}}{Character vector or NULL. If specified, only
+#'      these USMs will be included in export and plots.}
+#'    \item{\code{var2exclude}}{Character vector or NULL. If specified,
+#'      these variables will be excluded from export and plots.}
+#'    \item{\code{sim_rds}}{Character. Path to an .rds file containing
+#'      pre-computed simulation results (required for evaluation and for
+#'      the balance closure test). Use \code{\link{run_simulations}} to
+#'      produce it.}
+#'    \item{\code{obs_rds}}{Character. Path to an .rds file containing
+#'      pre-computed observation data (required for evaluation). Use
+#'      \code{\link{run_simulations}} to produce it.}
+#'    \item{\code{ref_sim_rds}}{Character or NULL. Path to an .rds file
+#'      containing reference simulation results used for evaluation and
+#'      plots. Required for evaluation.}
+#'  }
+#'
+#' @return A validated configuration list, classed \code{"Configuration"}
+#'  (only used for pretty-printing).
 #' @export
-Configuration <- R6::R6Class("Configuration", # nolint: object_name_linter
-  public = c(
+Configuration <- function(...) {
+  config <- schema_initialize(list(...))
+  class(config) <- "Configuration"
+  config
+}
 
-    # Public fields generated from the schema
-    schema_public_fields(),
+#' Print a Configuration
+#'
+#' Prints fields grouped by theme (paths, execution, filtering, ...) rather
+#' than as a flat list. Makes it much easier to eyeball the current state
+#' of a large configuration.
+#'
+#' @param x A configuration built by \code{\link{Configuration}}.
+#' @param ... Ignored. For compatibility with the print() generic.
+#' @return Invisibly, \code{x}.
+#' @export
+print.Configuration <- function(x, ...) {
+  cat("<Configuration>\n")
+  groups <- fields_by_group()
+  for (group_name in names(groups)) {
+    cat(sprintf("  [%s]\n", group_name))
+    for (field_name in groups[[group_name]]) {
+      val <- x[[field_name]]
+      val_str <- if (is.null(val)) "NULL" else toString(val)
+      cat(sprintf("    %-20s %s\n", field_name, val_str))
+    }
+  }
+  invisible(x)
+}
 
-    list(
-      #' @description
-      #' Create a Configuration object.
-      #' Values are validated against a declarative schema.
-      #'
-      #' @param ... Named configuration fields. Must match names defined in
-      #'   `config_schema$fields`. Unspecified fields use their default values.
-      #'   Invalid or unknown fields will trigger validation errors.
-      initialize = function(...) {
-        schema_initialize(self, list(...))
-        invisible(self)
-      },
+#' Check that filesystem-dependent fields point to files that exist on
+#' disk. Separate from schema validation (structural, checked when
+#' \code{\link{Configuration}} is built): this is I/O-bound and only runs
+#' when called explicitly, e.g. from \code{validate_eval()} /
+#' \code{validate_balance_closure()}.
+#'
+#' @param config A configuration built by \code{\link{Configuration}}.
+#' @return Invisibly, \code{config}.
+#' @keywords internal
+check_filesystem <- function(config) {
+  validate_filesystem(config)
+  invisible(config)
+}
 
-      #' @description
-      #' Check that filesystem-dependent fields point to files that exist
-      #' on disk. Separate from schema validation (structural, checked at
-      #' construction): this is I/O-bound and only runs when called
-      #' explicitly, e.g. from `validate_eval()` /
-      #' `validate_balance_closure()`.
-      check_filesystem = function() {
-        validate_filesystem(self)
-        invisible(self)
-      },
+#' TRUE if \code{ref_sim_rds} was supplied, meaning reference simulation
+#' results are available for evaluation.
+#'
+#' @param config A configuration built by \code{\link{Configuration}}.
+#' @keywords internal
+has_reference_sim <- function(config) ref_sim_rds_given(config)
 
-      #' @description
-      #' TRUE if `ref_sim_rds` was supplied, meaning reference simulation
-      #' results are available for evaluation.
-      has_reference_sim = function() ref_sim_rds_given(self),
+#' Validate a configuration for the evaluation workflow. Evaluation always
+#' reads simulation and observation data from \code{sim_rds} /
+#' \code{obs_rds} — see \code{\link{run_simulations}} to produce them.
+#'
+#' @param config A configuration built by \code{\link{Configuration}}.
+#' @return Invisibly, \code{config}.
+#' @keywords internal
+validate_eval <- function(config) {
+  validate_for(config, "eval")
+  check_filesystem(config)
+  if (
+    !is.null(config$output_dir) &&
+      !dir.exists(config$output_dir) &&
+      !dir.create(config$output_dir)
+  ) {
+    stop("Can't create ", config$output_dir, " directory", call. = FALSE)
+  }
+  invisible(config)
+}
 
-      #' @description
-      #' Validate configuration for evaluation workflow. Evaluation always
-      #' reads simulation and observation data from `sim_rds` / `obs_rds`
-      #' — see `\link{run_simulations}` to produce them.
-      validate_eval = function() {
-        validate_for(self, "eval")
-        self$check_filesystem()
-        if (
-          !is.null(self$output_dir) &&
-            !dir.exists(self$output_dir) &&
-            !dir.create(self$output_dir)
-        ) {
-          stop("Can't create ", self$output_dir, " directory", call. = FALSE)
-        }
-        invisible(self)
-      },
-
-      #' @description Validate configuration for balance closure test
-      validate_balance_closure = function() {
-        validate_for(self, "balance_closure")
-        self$check_filesystem()
-        invisible(self)
-      },
-
-      #' @description
-      #' Print the configuration, with fields grouped by theme (paths,
-      #' execution, filtering, ...) rather than as a flat list. Makes it
-      #' much easier to eyeball the current state of a large Configuration.
-      #'
-      #' @param ... Ignored. For compatibility with R6 print() generic.
-      print = function(...) {
-        cat("<Configuration>\n")
-        groups <- fields_by_group()
-        for (group_name in names(groups)) {
-          cat(sprintf("  [%s]\n", group_name))
-          for (field_name in groups[[group_name]]) {
-            val <- self[[field_name]]
-            val_str <- if (is.null(val)) "NULL" else toString(val)
-            cat(sprintf("    %-20s %s\n", field_name, val_str))
-          }
-        }
-        invisible(self)
-      }
-    )
-  )
-)
+#' Validate a configuration for the balance closure test. Always reads
+#' simulation data from \code{sim_rds} — see \code{\link{run_simulations}}
+#' to produce it.
+#'
+#' @param config A configuration built by \code{\link{Configuration}}.
+#' @return Invisibly, \code{config}.
+#' @keywords internal
+validate_balance_closure <- function(config) {
+  validate_for(config, "balance_closure")
+  check_filesystem(config)
+  invisible(config)
+}

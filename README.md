@@ -83,12 +83,10 @@ This will install all required packages at the versions specified in `renv.lock`
                      └──► stops with an error if any evaluation failed
 ```
 
-`BalanceClosureTest` runs independently of `evaluate()` and loads its own simulation data directly from `usms_workspace`:
+`balance_closure_test()` runs independently of `evaluate()` and builds its own `Configuration` from its arguments. Like `evaluate()`, it always reads pre-computed simulation data from `sim_rds` — it never runs simulations itself:
 
 ```
-  Configuration$new(...)
-           │
-           └──► BalanceClosureTest$new(config)$run()          ← water & nitrogen balance closure check
+  balance_closure_test(sim_rds, ...)                          ← water & nitrogen balance closure check
 ```
 
 For advanced use cases, `GlobalEvaluation`, `SpeciesEvaluation` and `USMEvaluation` can also be instantiated and run individually instead of using `evaluate()`:
@@ -393,9 +391,9 @@ usm_eval$summary()
 
 ---
 
-### `BalanceClosureTest`
+### `balance_closure_test()`
 
-Checks the **water and nitrogen balance closure** for each simulated USM. For each USM, the class compares the initial and final values of the following five balances:
+Checks the **water and nitrogen balance closure** for each simulated USM. For each USM, it compares the initial and final values of the following five balances:
 
 | Balance | Checked fields |
 |---|---|
@@ -407,18 +405,40 @@ Checks the **water and nitrogen balance closure** for each simulated USM. For ea
 
 A USM is flagged if the absolute rounded difference between its initial and final values is greater than 1. USMs with missing fields or only NA values are silently skipped.
 
+Like `evaluate()`, `balance_closure_test()` never runs STICS simulations itself — it reads simulation data from `sim_rds`. Since the balance fields above aren't observed variables, pass them explicitly via the `vars` argument of `run_simulations()` so they end up in `sim_rds`:
+
 ```r
-config <- Configuration$new(
-  stics_exe      = "/path/to/stics",
-  metadata_file  = "metadata.csv",
-  usms_workspace = "path/to/usms_workspace",
-  output_dir     = "/path/to/output_dir"
+balance_vars <- c(
+  "init_H2O_balance", "final_H2O_balance",
+  "init_plant_N_balance", "final_plant_N_balance",
+  "init_soil_mineral_N_balance", "final_soil_mineral_N_balance",
+  "init_soil_organic_N_balance", "final_soil_organic_N_balance",
+  "init_soil_organic_C_balance", "final_soil_organic_C_balance"
 )
 
-BalanceClosureTest$new(config)$run()
+run_simulations(
+  stics_exe      = "/path/to/stics",
+  usms_workspace = "path/to/usms_workspace",
+  metadata_file  = "metadata.csv",
+  output_dir     = "/path/to/output_dir",
+  vars           = balance_vars
+)
+
+balance_closure_test(
+  sim_rds    = "/path/to/output_dir/simulations.rds",
+  output_dir = "/path/to/output_dir"
+)
 ```
 
-The `run()` method logs a summary of the test and stops with an error listing any USMs with balance closure issues. It respects the `usms`, `parallel`, and `cores` filters defined in the `Configuration`.
+| Argument | Description |
+|---|---|
+| `sim_rds` | Path to an RDS file containing pre-computed simulation data, including the balance variables above. Produced by `run_simulations()`. The USMs to test are the names of this list, optionally restricted by `usms` |
+| `output_dir` | Directory where balance error details (`balance_errors_details.csv`) are written, if any. `NULL` (default) skips the export |
+| `usms` | Optional character vector of USMs to restrict the test to. `NULL` = all available |
+| `parallel` / `cores` | Parallel execution options |
+| `verbose` | Logging verbosity level: `0` = silent, `1` = info, `2` = debug (default: `1`) |
+
+`balance_closure_test()` builds a `Configuration` from these arguments, logs a summary of the test, and stops with an error listing any USMs with balance closure issues.
 
 If `output_dir` is defined, the balance closure details will be written to a CSV file in the specified directory.
 
@@ -430,6 +450,14 @@ If `output_dir` is defined, the balance closure details will be written to a CSV
 
 ```r
 library(SticsREval)
+
+balance_vars <- c(
+  "init_H2O_balance", "final_H2O_balance",
+  "init_plant_N_balance", "final_plant_N_balance",
+  "init_soil_mineral_N_balance", "final_soil_mineral_N_balance",
+  "init_soil_organic_N_balance", "final_soil_organic_N_balance",
+  "init_soil_organic_C_balance", "final_soil_organic_C_balance"
+)
 
 # 1. Build a Stics text workspace from the raw SMS repository
 gen_workspace_from_sms(
@@ -446,19 +474,26 @@ run_simulations(
   output_dir     = "reference/"
 )
 
-# 3. Run the candidate version's simulations
+# 3. Run the candidate version's simulations (observed variables)
+#    and balance closure variables (separate output_dir, since both are
+#    written to simulations.rds / observations.rds)
 run_simulations(
   stics_exe      = "/path/to/stics_candidate",
   usms_workspace = "workspace/",
   metadata_file  = "metadata.csv",
   output_dir     = "outputs/"
 )
-
-# 4. Evaluate the candidate version against the reference
-config <- Configuration$new(
+run_simulations(
   stics_exe      = "/path/to/stics_candidate",
   usms_workspace = "workspace/",
   metadata_file  = "metadata.csv",
+  output_dir     = "outputs/balance/",
+  vars           = balance_vars
+)
+
+# 4. Evaluate the candidate version against the reference
+eval_config <- Configuration$new(
+  usms_workspace = "workspace/",
   eval_workspace = "eval_workspace/",
   output_dir     = "outputs/",
   sim_rds        = "outputs/simulations.rds",
@@ -466,9 +501,13 @@ config <- Configuration$new(
   ref_sim_rds    = "reference/simulations.rds",
   percentage     = 5
 )
+evaluate(eval_config)
 
-evaluate(config)
-BalanceClosureTest$new(config)$run()
+# 5. Check water and nitrogen balance closure
+balance_closure_test(
+  sim_rds    = "outputs/balance/simulations.rds",
+  output_dir = "outputs/"
+)
 ```
 
 ### Simple usage
@@ -477,10 +516,8 @@ BalanceClosureTest$new(config)$run()
 library(SticsREval)
 
 # 1. Configure the evaluation
-config <- Configuration$new(
-  stics_exe      = "/path/to/stics_candidate",
+eval_config <- Configuration$new(
   usms_workspace = "workspace/",
-  metadata_file  = "metadata.csv",
   eval_workspace = "eval_workspace/",
   output_dir     = "outputs/",
   sim_rds        = "outputs/simulations.rds",
@@ -491,10 +528,13 @@ config <- Configuration$new(
 
 # 2. Run the full statistical evaluation (global, per species,
 #    and per USM), export results, and print summaries
-evaluate(config)
+evaluate(eval_config)
 
 # 3. Check water and nitrogen balance closure
-BalanceClosureTest$new(config)$run()
+balance_closure_test(
+  sim_rds    = "outputs/balance/simulations.rds",
+  output_dir = "outputs/"
+)
 ```
 
 ### Advanced usage
@@ -504,9 +544,7 @@ library(SticsREval)
 
 # 1. Configure the evaluation
 config <- Configuration$new(
-  stics_exe      = "/path/to/stics_candidate",
   usms_workspace = "workspace/",
-  metadata_file  = "metadata.csv",
   eval_workspace = "eval_workspace/",
   output_dir     = "outputs/",
   sim_rds        = "outputs/simulations.rds",
@@ -537,7 +575,10 @@ usm_eval$summary()
 usm_eval$export()
 
 # 6. Check water and nitrogen balance closure
-BalanceClosureTest$new(config)$run()
+balance_closure_test(
+  sim_rds    = "outputs/balance/simulations.rds",
+  output_dir = "outputs/"
+)
 ```
 
 ---
@@ -574,9 +615,7 @@ run_simulations(
 )
 
 config <- Configuration$new(
-  stics_exe      = "/path/to/stics",
   usms_workspace = "/workspace/",
-  metadata_file  = "/workspace/metadata.csv",
   eval_workspace = "/workspace/eval_workspace/",
   output_dir     = "/workspace/outputs/",
   sim_rds        = "/workspace/outputs/simulations.rds",
@@ -584,7 +623,11 @@ config <- Configuration$new(
 )
 
 evaluate(config)
-BalanceClosureTest$new(config)$run()
+
+balance_closure_test(
+  sim_rds    = "/workspace/outputs/simulations.rds",
+  output_dir = "/workspace/outputs/"
+)
 ```
 
 ### Run a script non-interactively

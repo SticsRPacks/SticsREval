@@ -15,11 +15,13 @@ workflow-specific validation methods.
 \section{Public fields}{
   \if{html}{\out{<div class="r6-fields">}}
   \describe{
-    \item{\code{stics_exe}}{Path to STICS executable (required for balance_closure)}
+    \item{\code{stics_exe}}{Path to STICS executable. Only used by
+\code{\link{run_simulations}} to produce \code{sim_rds} / \code{obs_rds}.}
 
-    \item{\code{usms_workspace}}{Path to USMs workspace (required)}
+    \item{\code{usms_workspace}}{Path to USMs workspace (required for evaluation)}
 
-    \item{\code{metadata_file}}{Path to metadata file (required for balance_closure)}
+    \item{\code{metadata_file}}{Path to metadata file. Only used by
+\code{\link{run_simulations}} to produce \code{sim_rds} / \code{obs_rds}.}
 
     \item{\code{eval_workspace}}{Path to evaluation workspace (required)}
 
@@ -46,12 +48,12 @@ be included in export and plots.}
 will be excluded from export and plots.}
 
     \item{\code{sim_rds}}{Character. Path to an .rds file containing pre-computed
-simulation results (required for evaluation). Use \code{\link{run_simulations}}
-to produce it.}
+simulation results (required for evaluation and for the balance closure
+test). Use \code{\link{run_simulations}} to produce it.}
 
     \item{\code{obs_rds}}{Character. Path to an .rds file containing pre-computed
-observation data (required for evaluation). Use \code{\link{run_simulations}}
-to produce it.}
+observation data (required for evaluation). Use
+\code{\link{run_simulations}} to produce it.}
 
     \item{\code{ref_sim_rds}}{Character or NULL. Path to an .rds file containing
 reference simulation results used for evaluation and plots. Required for
@@ -140,7 +142,9 @@ reads simulation and observation data from \code{sim_rds} / \code{obs_rds}
 \if{html}{\out{<a id="method-Configuration-validate_balance_closure"></a>}}
 \if{latex}{\out{\hypertarget{method-Configuration-validate_balance_closure}{}}}
 \subsection{\code{Configuration$validate_balance_closure()}}{
-  Validate configuration for balance closure test
+  Validate configuration for balance closure test. Always reads
+simulation data from \code{sim_rds} — see \verb{\link{run_simulations}} to
+produce it.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{Configuration$validate_balance_closure()}

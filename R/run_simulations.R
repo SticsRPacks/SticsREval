@@ -20,6 +20,11 @@
 #' @param usms_files character vector of one or more paths to text files,
 #'  each containing one USM name per line. If NULL (default), all USMs
 #'  found in \code{usms_workspace} are simulated.
+#' @param vars character vector of variable names to simulate. If NULL
+#'  (default), the variables are derived automatically from the observation
+#'  files found in \code{usms_workspace}. Pass this explicitly to simulate
+#'  variables that aren't observed, e.g. the balance closure variables
+#'  consumed by \code{\link{balance_closure_test}}.
 #' @param parallel Boolean. Is the computation to be done in parallel ?
 #' @param cores Number of cores to use for parallel computation
 #'
@@ -35,6 +40,7 @@ run_simulations <- function(
   metadata_file,
   output_dir,
   usms_files = NULL,
+  vars = NULL,
   parallel = FALSE,
   cores = NA
 ) {
@@ -54,10 +60,10 @@ run_simulations <- function(
   config$check_filesystem()
 
   obs <- get_obs_files(usms_workspace, usms, parallel, cores)
-  vars <- get_var_from_obs(obs)
+  sim_vars <- vars %||% get_var_from_obs(obs)
 
   workspace <- USMSWorkspace$new(config = config)
-  sim <- workspace$run_simulations(usms, var = vars)
+  sim <- workspace$run_simulations(usms, var = sim_vars)
 
   logger::log_info(
     "Simulations done. Exporting sim and obs data to {output_dir}..."

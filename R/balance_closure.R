@@ -1,32 +1,71 @@
-#' Balance Closure Test
+#' Run the Balance Closure Test
 #'
-#' This class implements a test to check the balance closure of water and
-#' nitrogen in the simulations. It checks if the initial and final
-#' balances of water and nitrogen are equal (or NA) for each USM.
-#' If there are discrepancies, it logs a warning with the details of the issue.
-#' Detailed information about the balance closure issues is exported to a CSV
-#' file in the specified output directory.
+#' Builds a `Configuration` from its arguments, then instantiates a
+#' `BalanceClosureTest` with it and runs it: checks that the initial and
+#' final water and nitrogen balances are equal (or NA) for each USM, using
+#' pre-computed simulation data from `sim_rds` — see
+#' \code{\link{run_simulations}} to produce it. If there are discrepancies,
+#' it logs a warning with the details of the issue and stops with an error
+#' listing the affected USMs.
 #'
-#' @name BalanceClosureTest
-#' @docType class
+#' @param sim_rds path to an \code{.rds} file containing pre-computed
+#'  simulation data, including the balance variables — see
+#'  \code{\link{run_simulations}}'s \code{vars} argument. The USMs to test
+#'  are the names of this list, optionally restricted by \code{usms}
+#' @param output_dir directory where balance error details
+#'  (\code{balance_errors_details.csv}) will be written, if any. If NULL
+#'  (default), details are not exported
+#' @param usms character vector of USMs to restrict the test to. If NULL
+#'  (default), all USMs found in \code{sim_rds} are tested
+#' @param parallel Boolean. Is the computation to be done in parallel ?
+#' @param cores Number of cores to use for parallel computation
+#' @param verbose Integer. Logging verbosity level: 0 = silent, 1 = info,
+#'  2 = debug
+#'
+#' @return Invisibly, the `BalanceClosureTest` object. Called for its side
+#'  effects: logging a summary of the test, exporting detailed balance
+#'  errors to `output_dir` (if defined), and stopping with an error if any
+#'  USM failed the test.
 #'
 #' @examples
 #' \dontrun{
-#' config <- Configuration$new(
-#'   stics_exe = "/path/to/stics",
-#'   metadata_file = "/path/to/metadata.csv",
-#'   usms_workspace = "/path/to/usms_workspace",
+#' balance_closure_test(
+#'   sim_rds    = "/path/to/simulations.rds",
 #'   output_dir = "/path/to/output_dir",
-#'   parallel = TRUE,
-#'   cores = 4
+#'   parallel   = TRUE,
+#'   cores      = 4
 #' )
-#' BalanceClosureTest$new(config)$run()
 #' }
 #' @export
+balance_closure_test <- function(
+  sim_rds,
+  output_dir = NULL,
+  usms = NULL,
+  parallel = FALSE,
+  cores = NA,
+  verbose = 1L
+) {
+  config <- Configuration$new(
+    sim_rds = sim_rds,
+    output_dir = output_dir,
+    usms = usms,
+    parallel = parallel,
+    cores = cores,
+    verbose = verbose
+  )
+  BalanceClosureTest$new(config)$run()
+}
+
+#' Balance Closure Test
+#'
+#' Internal class implementing the balance closure test. Use
+#' \code{\link{balance_closure_test}} instead of instantiating this class
+#' directly.
+#'
+#' @keywords internal
 BalanceClosureTest <- R6::R6Class("BalanceClosureTest", # nolint: object_name_linter
   private = list(
     config = NULL,
-    loader = NULL,
 
     format_usms = function(usms, n = 5) {
       if (length(usms) <= n) {
@@ -179,21 +218,14 @@ BalanceClosureTest <- R6::R6Class("BalanceClosureTest", # nolint: object_name_li
     initialize = function(config) {
       init_logger(config$verbose %||% 1L)
       private$config <- config
-      private$loader <- USMSWorkspace$new(
-        workspace = private$config$usms_workspace,
-        backend = ParallelBackend$new(
-          parallel = private$config$parallel,
-          cores = private$config$cores
-        ),
-        config = private$config
-      )
     },
 
     #' @description
     #' Run the balance closure test on the simulations.
     run = function() {
       private$config$validate_balance_closure()
-      usms <- list.files(private$config$usms_workspace)
+      sim_list <- readRDS(private$config$sim_rds)
+      usms <- names(sim_list)
       if (!is.null(private$config$usms)) {
         usms <- intersect(usms, private$config$usms)
       }
@@ -216,10 +248,7 @@ BalanceClosureTest <- R6::R6Class("BalanceClosureTest", # nolint: object_name_li
         "soil_organic_N_balance",
         "soil_organic_C_balance"
       )
-      sim_list <- private$loader$run_simulations(
-        usms = usms,
-        var = c(paste0("init_", balances), paste0("final_", balances))
-      )
+      sim_list <- sim_list[usms]
       errors <- Map(
         function(usm, sim) {
           private$check_usm_balances(usm, sim, balances)

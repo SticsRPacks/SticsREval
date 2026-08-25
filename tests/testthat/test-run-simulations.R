@@ -152,6 +152,57 @@ test_that("run_simulations runs simulations and saves sim and obs as RDS", {
   expect_identical(readRDS(obs_file), obs_data)
 })
 
+test_that(
+  "run_simulations uses the explicit vars argument, bypassing
+  get_var_from_obs",
+  {
+    fx <- make_run_simulations_fixture()
+
+    sim_data <- list(
+      usm1 = data.frame(Date = as.Date("2024-01-01"), init_H2O_balance = 1)
+    )
+    obs_data <- list(
+      usm1 = data.frame(Date = as.Date("2024-01-01"), LAI = 0.9)
+    )
+
+    seen <- new.env()
+    seen$get_var_from_obs_called <- FALSE
+    fake_workspace <- list(
+      run_simulations = function(usms, var) {
+        seen$var <- var
+        sim_data
+      }
+    )
+
+    mockery::stub(
+      run_simulations, "USMSWorkspace$new",
+      function(config) fake_workspace
+    )
+    mockery::stub(
+      run_simulations, "get_obs_files",
+      function(...) obs_data
+    )
+    mockery::stub(
+      run_simulations, "get_var_from_obs",
+      function(...) {
+        seen$get_var_from_obs_called <- TRUE
+        "LAI"
+      }
+    )
+
+    run_simulations(
+      stics_exe = fx$stics_exe,
+      usms_workspace = fx$ws_dir,
+      metadata_file = fx$metadata_file,
+      output_dir = fx$output_dir,
+      vars = c("init_H2O_balance", "final_H2O_balance")
+    )
+
+    expect_identical(seen$var, c("init_H2O_balance", "final_H2O_balance"))
+    expect_false(seen$get_var_from_obs_called)
+  }
+)
+
 test_that("run_simulations restricts to USMs listed in usms_files", {
   fx <- make_run_simulations_fixture()
 

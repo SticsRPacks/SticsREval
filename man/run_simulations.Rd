@@ -10,6 +10,7 @@ run_simulations(
   metadata_file,
   output_dir,
   usms_files = NULL,
+  vars = NULL,
   parallel = FALSE,
   cores = NA
 )
@@ -30,6 +31,12 @@ will be written. Created if it doesn't exist.}
 \item{usms_files}{character vector of one or more paths to text files,
 each containing one USM name per line. If NULL (default), all USMs
 found in \code{usms_workspace} are simulated.}
+
+\item{vars}{character vector of variable names to simulate. If NULL
+(default), the variables are derived automatically from the observation
+files found in \code{usms_workspace}. Pass this explicitly to simulate
+variables that aren't observed, e.g. the balance closure variables
+consumed by \code{\link{balance_closure_test}}.}
 
 \item{parallel}{Boolean. Is the computation to be done in parallel ?}
 
