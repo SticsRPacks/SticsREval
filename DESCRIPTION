@@ -47,18 +47,19 @@ Config/testthat/edition: 3
 URL: https://github.com/SticsRPacks/SticsREval,
     https://sticsrpacks.github.io/SticsREval/
 BugReports: https://github.com/SticsRPacks/SticsREval/issues
-Config/roxygen2/version: 8.0.0
-RoxygenNote: 8.0.0
+Config/roxygen2/version: 8.1.0
 Collate: 
     'balance_closure.R'
     'schema.R'
     'configuration.R'
     'eval_workspace.R'
     'evaluate.R'
+    'gen_workspace_from_sms.R'
     'global_evaluation.R'
     'logger.R'
     'parallelism.R'
     'rrmse_comparison.R'
+    'run_simulations.R'
     'species_evaluation.R'
     'usm_evaluation.R'
     'usms_workspace.R'

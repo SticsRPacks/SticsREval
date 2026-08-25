@@ -300,45 +300,12 @@ make_state <- function(...) {
   defaults
 }
 
-test_that("check_metadata_file_required passes when run_simulations = FALSE", {
-  expect_true(check_metadata_file_required(make_state(run_simulations = FALSE)))
-})
-
-test_that("check_metadata_file_required fails when metadata_file is NULL", {
-  s <- make_state(run_simulations = TRUE, metadata_file = NULL)
-  result <- check_metadata_file_required(s)
-  expect_type(result, "character")
-  expect_match(result, "metadata_file")
-})
-
-test_that(
-  "check_metadata_file_required passes when metadata_file is set (even to a
-  path that doesn't exist -- existence is check_path_exists()'s job)",
-  {
-    s <- make_state(
-      run_simulations = TRUE,
-      metadata_file = file.path("nonexistent", "path.csv")
-    )
-    expect_true(check_metadata_file_required(s))
-  }
-)
-
-test_that(
-  "check_metadata_file_required passes when sim_rds bypasses simulation", {
-    s <- make_state(
-      run_simulations = TRUE, metadata_file = NULL, sim_rds = "sim.rds"
-    )
-    expect_true(check_metadata_file_required(s))
-  }
-)
-
 # check_path_exists() is the I/O counterpart: file existence, not
 # required-ness. It is not run automatically by validate_schema()
 # (see the filesystem_checks / check_filesystem tests below).
 
 test_that(
-  "check_path_exists fails when metadata_file does not exist and
-  no `needed` gate is given",
+  "check_path_exists fails when metadata_file does not exist",
   {
     s <- make_state(metadata_file = file.path("nonexistent", "path.csv"))
     check <- check_path_exists("metadata_file")
@@ -357,12 +324,9 @@ test_that("check_path_exists passes with an existing file", {
   expect_true(check(s))
 })
 
-test_that("check_path_exists honors its `needed` gate", {
-  s <- make_state(
-    run_simulations = FALSE,
-    metadata_file = file.path("nonexistent", "path.csv")
-  )
-  check <- check_path_exists("metadata_file", needed = metadata_file_needed)
+test_that("check_path_exists passes when the field is NULL", {
+  s <- make_state(metadata_file = NULL)
+  check <- check_path_exists("metadata_file")
   expect_true(check(s))
 })
 
@@ -399,7 +363,6 @@ make_valid_list <- function(...) {
     usms_workspace = NULL,
     metadata_file = NULL,
     output_dir = NULL,
-    run_simulations = FALSE,
     init_workspace = FALSE,
     parallel = FALSE,
     verbose = 1L,
@@ -421,7 +384,7 @@ test_that("validate_schema returns invisible TRUE for a valid config", {
 })
 
 test_that("validate_schema stops with message for wrong type", {
-  cfg <- make_valid_list(run_simulations = "yes")
+  cfg <- make_valid_list(parallel = "yes")
   expect_error(validate_schema(cfg), "expected type")
 })
 
@@ -441,7 +404,7 @@ test_that(
 test_that("validate_schema collects multiple errors before stopping", {
   cfg <- make_valid_list()
   cfg$eval_workspace <- NULL
-  cfg$run_simulations <- "bad"
+  cfg$parallel <- "bad"
   err <- tryCatch(validate_schema(cfg), error = function(e) e$message)
   # Both errors should appear in the same message
   expect_match(err, "eval_workspace")
@@ -474,7 +437,6 @@ test_that("schema_initialize applies defaults for unspecified fields", {
     list(eval_workspace = "/path"),
     config_schema
   )
-  expect_false(obj$run_simulations)
   expect_false(obj$parallel)
   expect_identical(obj$percentage, 5)
 })
@@ -505,7 +467,6 @@ test_that("Configuration initializes with minimal required args", {
 
 test_that("Configuration applies defaults correctly", {
   cfg <- Configuration$new(eval_workspace = "ws")
-  expect_false(cfg$run_simulations)
   expect_false(cfg$parallel)
   expect_identical(cfg$percentage, 5)
   expect_identical(cfg$verbose, 1L)
@@ -550,20 +511,53 @@ test_that("Configuration accepts valid cores when parallel = TRUE", {
 # ---------------------------------------------------------------------------
 
 test_that(
-  "validate_eval passes when eval_workspace, stics_exe and usms_workspace is
-  set",
+  "validate_eval passes when eval_workspace, usms_workspace, sim_rds, obs_rds
+  and ref_sim_rds are set",
   {
-    rds_file <- tempfile(fileext = ".rds")
-    file.create(rds_file)
+    sim_file <- tempfile(fileext = ".rds")
+    file.create(sim_file)
+    obs_file <- tempfile(fileext = ".rds")
+    file.create(obs_file)
+    ref_sim_file <- tempfile(fileext = ".rds")
+    file.create(ref_sim_file)
     cfg <- Configuration$new(
       eval_workspace = "ws",
-      stics_exe = "stics",
       usms_workspace = "usms_ws",
-      ref_sim_rds = rds_file
+      sim_rds = sim_file,
+      obs_rds = obs_file,
+      ref_sim_rds = ref_sim_file
     )
     expect_r6_class(cfg$validate_eval(), "Configuration")
   }
 )
+
+test_that("validate_eval stops when sim_rds is NULL", {
+  obs_file <- tempfile(fileext = ".rds")
+  file.create(obs_file)
+  ref_sim_file <- tempfile(fileext = ".rds")
+  file.create(ref_sim_file)
+  cfg <- Configuration$new(
+    eval_workspace = "ws",
+    usms_workspace = "usms_ws",
+    obs_rds = obs_file,
+    ref_sim_rds = ref_sim_file
+  )
+  expect_error(cfg$validate_eval(), "sim_rds")
+})
+
+test_that("validate_eval stops when obs_rds is NULL", {
+  sim_file <- tempfile(fileext = ".rds")
+  file.create(sim_file)
+  ref_sim_file <- tempfile(fileext = ".rds")
+  file.create(ref_sim_file)
+  cfg <- Configuration$new(
+    eval_workspace = "ws",
+    usms_workspace = "usms_ws",
+    sim_rds = sim_file,
+    ref_sim_rds = ref_sim_file
+  )
+  expect_error(cfg$validate_eval(), "obs_rds")
+})
 
 # ---------------------------------------------------------------------------
 # validate_balance_closure
@@ -577,7 +571,17 @@ test_that("validate_balance_closure stops when usms_workspace is NULL", {
 test_that("validate_balance_closure stops when stics_exe is NULL", {
   cfg <- Configuration$new(
     eval_workspace = "ws",
-    usms_workspace = "usms_ws"
+    usms_workspace = "usms_ws",
+    metadata_file = build_metadata_file()
   )
   expect_error(cfg$validate_balance_closure(), "stics_exe")
+})
+
+test_that("validate_balance_closure stops when metadata_file is NULL", {
+  cfg <- Configuration$new(
+    eval_workspace = "ws",
+    usms_workspace = "usms_ws",
+    stics_exe = build_metadata_file()
+  )
+  expect_error(cfg$validate_balance_closure(), "metadata_file")
 })

@@ -24,8 +24,7 @@ validate_rds_path <- function(val) {
 }
 
 # Cross-field constraint checkers
-# These express dependencies BETWEEN fields (e.g. "metadata_file is
-# required only if run_simulations is TRUE"), which is different from
+# These express dependencies BETWEEN fields, which is different from
 # "this field is required for the eval workflow" (see required_for in
 # field_spec() and validate_for() below). Both mechanisms are needed:
 # required_for is static (depends only on which workflow is being run),
@@ -39,32 +38,6 @@ validate_rds_path <- function(val) {
 # filesystem.
 
 #' @keywords internal
-metadata_file_needed <- function(s) {
-  isTRUE(s$run_simulations) && !sim_rds_given(s) # sim_rds bypasses simulation
-}
-
-#' @keywords internal
-stics_exe_needed <- function(s) {
-  isTRUE(s$run_simulations)
-}
-
-#' @keywords internal
-check_metadata_file_required <- function(s) {
-  if (!metadata_file_needed(s)) return(TRUE)
-  if (is.null(s$metadata_file))
-    return("metadata_file is required")
-  TRUE
-}
-
-#' @keywords internal
-check_stics_exe_required <- function(s) {
-  if (!stics_exe_needed(s)) return(TRUE)
-  if (is.null(s$stics_exe))
-    return("stics_exe is required when run_simulations = TRUE")
-  TRUE
-}
-
-#' @keywords internal
 check_parallel_cores <- function(s) {
   if (!isTRUE(s$parallel)) return(TRUE)
   cores_missing <- is.null(s$cores) ||
@@ -73,16 +46,6 @@ check_parallel_cores <- function(s) {
   if (cores_missing)
     return("cores must be an integer >= 1 when parallel = TRUE")
   TRUE
-}
-
-#' @keywords internal
-sim_rds_given <- function(self) {
-  !is.null(self$sim_rds)
-}
-
-#' @keywords internal
-obs_rds_given <- function(self) {
-  !is.null(self$obs_rds)
 }
 
 #' @keywords internal
@@ -115,6 +78,7 @@ config_schema <- list(
       default = NULL,
       type = "character",
       nullable = TRUE,
+      required_for = "balance_closure",
       group = "paths"
     ),
 
@@ -134,13 +98,6 @@ config_schema <- list(
     ),
 
     # --- execution -------------------------------------------------------
-    run_simulations = field_spec(
-      default = FALSE,
-      type = "logical",
-      nullable = FALSE,
-      group = "execution"
-    ),
-
     parallel = field_spec(
       default = FALSE,
       type = "logical",
@@ -203,7 +160,8 @@ config_schema <- list(
       type = "character",
       nullable = TRUE,
       validator = validate_rds_path,
-      group = "data"
+      group = "data",
+      required_for = "eval"
     ),
 
     obs_rds = field_spec(
@@ -211,7 +169,8 @@ config_schema <- list(
       type = "character",
       nullable = TRUE,
       validator = validate_rds_path,
-      group = "data"
+      group = "data",
+      required_for = "eval"
     ),
 
     ref_sim_rds = field_spec(
@@ -228,14 +187,6 @@ config_schema <- list(
   # construction time (see validate_schema()).
   cross_validators = list(
     list(
-      desc = "If run_simulations = TRUE, metadata_file is required",
-      check = check_metadata_file_required
-    ),
-    list(
-      desc = "If run_simulations = TRUE, stics_exe is required",
-      check = check_stics_exe_required
-    ),
-    list(
       desc = "If parallel = TRUE, cores must be an integer >= 1",
       check = check_parallel_cores
     )
@@ -245,14 +196,12 @@ config_schema <- list(
   # validate_eval() / validate_balance_closure()), never at construction.
   filesystem_checks = list(
     list(
-      desc = "If run_simulations = TRUE, stics_exe must point to an existing
-        file",
-      check = check_path_exists("stics_exe", needed = stics_exe_needed)
+      desc = "stics_exe must point to an existing file",
+      check = check_path_exists("stics_exe")
     ),
     list(
-      desc = "If run_simulations = TRUE (and no sim_rds), metadata_file must
-        point to an existing file",
-      check = check_path_exists("metadata_file", needed = metadata_file_needed)
+      desc = "metadata_file must point to an existing file",
+      check = check_path_exists("metadata_file")
     ),
     list(
       desc = "sim_rds must point to an existing file",
@@ -274,15 +223,12 @@ config_schema <- list(
 #' The same object is used for all workflows, with
 #' workflow-specific validation methods.
 #'
-#' @field stics_exe Path to STICS executable (required)
+#' @field stics_exe Path to STICS executable (required for balance_closure)
 #' @field usms_workspace Path to USMs workspace (required)
-#' @field metadata_file Path to metadata file (required if
-#'  run_simulations = TRUE)
+#' @field metadata_file Path to metadata file (required for balance_closure)
 #' @field eval_workspace Path to evaluation workspace (required)
 #' @field output_dir Path to output directory for export workflow (required for
 #'  export)
-#' @field run_simulations Logical. Whether to run simulations or just prepare
-#'  the workspace.
 #' @field parallel Logical. Whether to run workflow in parallel.
 #' @field verbose Integer. Verbosity level (0 = silent, 1 = info, 2 = debug).
 #' @field cores Integer or NA. Number of CPU cores to use for parallel
@@ -295,12 +241,12 @@ config_schema <- list(
 #'  be included in export and plots.
 #' @field var2exclude Character vector or NULL. If specified, these variables
 #'  will be excluded from export and plots.
-#' @field sim_rds Character or NULL. Path to an .rds file containing
-#'  pre-computed simulation results. If supplied, bypasses the need to
-#'  run simulations (see `validate_eval()`). Independent of `obs_rds`.
-#' @field obs_rds Character or NULL. Path to an .rds file containing
-#'  observation data used as reference for evaluation, plots and balance
-#'  closure. Independent of `sim_rds` — has no effect on required fields.
+#' @field sim_rds Character. Path to an .rds file containing pre-computed
+#'  simulation results (required for evaluation). Use
+#'  \code{\link{run_simulations}} to produce it.
+#' @field obs_rds Character. Path to an .rds file containing pre-computed
+#'  observation data (required for evaluation). Use
+#'  \code{\link{run_simulations}} to produce it.
 #' @field ref_sim_rds Character or NULL. Path to an .rds file containing
 #'  reference simulation results used for evaluation and plots. Required for
 #'  evaluation.
@@ -336,27 +282,14 @@ Configuration <- R6::R6Class("Configuration", # nolint: object_name_linter
       },
 
       #' @description
-      #' TRUE if `sim_rds` was supplied, meaning precomputed simulation
-      #' results are available and the simulation step can be bypassed.
-      has_precomputed_sim = function() sim_rds_given(self),
-
-      #' @description
-      #' TRUE if `obs_rds` was supplied, meaning precomputed observation
-      #' data is available and doesn't need to be extracted from the
-      #' USMs workspace.
-      has_precomputed_obs = function() obs_rds_given(self),
-
-      #' @description
       #' TRUE if `ref_sim_rds` was supplied, meaning reference simulation
       #' results are available for evaluation.
       has_reference_sim = function() ref_sim_rds_given(self),
 
       #' @description
-      #' Validate configuration for evaluation workflow.
-      #' Note: if `sim_rds` is supplied, it bypasses the need to run
-      #' simulations (see `check_metadata_file_required`). `obs_rds` is
-      #' independent and has no effect on required fields. `usms_workspace`
-      #' remains required for eval regardless of `sim_rds`/`obs_rds`.
+      #' Validate configuration for evaluation workflow. Evaluation always
+      #' reads simulation and observation data from `sim_rds` / `obs_rds`
+      #' — see `\link{run_simulations}` to produce them.
       validate_eval = function() {
         validate_for(self, "eval")
         self$check_filesystem()

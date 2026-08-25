@@ -15,20 +15,16 @@ workflow-specific validation methods.
 \section{Public fields}{
   \if{html}{\out{<div class="r6-fields">}}
   \describe{
-    \item{\code{stics_exe}}{Path to STICS executable (required)}
+    \item{\code{stics_exe}}{Path to STICS executable (required for balance_closure)}
 
     \item{\code{usms_workspace}}{Path to USMs workspace (required)}
 
-    \item{\code{metadata_file}}{Path to metadata file (required if
-run_simulations = TRUE)}
+    \item{\code{metadata_file}}{Path to metadata file (required for balance_closure)}
 
     \item{\code{eval_workspace}}{Path to evaluation workspace (required)}
 
     \item{\code{output_dir}}{Path to output directory for export workflow (required for
 export)}
-
-    \item{\code{run_simulations}}{Logical. Whether to run simulations or just prepare
-the workspace.}
 
     \item{\code{parallel}}{Logical. Whether to run workflow in parallel.}
 
@@ -49,13 +45,13 @@ be included in export and plots.}
     \item{\code{var2exclude}}{Character vector or NULL. If specified, these variables
 will be excluded from export and plots.}
 
-    \item{\code{sim_rds}}{Character or NULL. Path to an .rds file containing
-pre-computed simulation results. If supplied, bypasses the need to
-run simulations (see \code{validate_eval()}). Independent of \code{obs_rds}.}
+    \item{\code{sim_rds}}{Character. Path to an .rds file containing pre-computed
+simulation results (required for evaluation). Use \code{\link{run_simulations}}
+to produce it.}
 
-    \item{\code{obs_rds}}{Character or NULL. Path to an .rds file containing
-observation data used as reference for evaluation, plots and balance
-closure. Independent of \code{sim_rds} — has no effect on required fields.}
+    \item{\code{obs_rds}}{Character. Path to an .rds file containing pre-computed
+observation data (required for evaluation). Use \code{\link{run_simulations}}
+to produce it.}
 
     \item{\code{ref_sim_rds}}{Character or NULL. Path to an .rds file containing
 reference simulation results used for evaluation and plots. Required for
@@ -68,8 +64,6 @@ evaluation.}
   \itemize{
     \item \href{#method-Configuration-initialize}{\code{Configuration$new()}}
     \item \href{#method-Configuration-check_filesystem}{\code{Configuration$check_filesystem()}}
-    \item \href{#method-Configuration-has_precomputed_sim}{\code{Configuration$has_precomputed_sim()}}
-    \item \href{#method-Configuration-has_precomputed_obs}{\code{Configuration$has_precomputed_obs()}}
     \item \href{#method-Configuration-has_reference_sim}{\code{Configuration$has_reference_sim()}}
     \item \href{#method-Configuration-validate_eval}{\code{Configuration$validate_eval()}}
     \item \href{#method-Configuration-validate_balance_closure}{\code{Configuration$validate_balance_closure()}}
@@ -116,33 +110,6 @@ explicitly, e.g. from \code{validate_eval()} /
 }
 
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-Configuration-has_precomputed_sim"></a>}}
-\if{latex}{\out{\hypertarget{method-Configuration-has_precomputed_sim}{}}}
-\subsection{\code{Configuration$has_precomputed_sim()}}{
-  TRUE if \code{sim_rds} was supplied, meaning precomputed simulation
-results are available and the simulation step can be bypassed.
-  \subsection{Usage}{
-    \if{html}{\out{<div class="r">}}
-    \preformatted{Configuration$has_precomputed_sim()}
-    \if{html}{\out{</div>}}
-  }
-}
-
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-Configuration-has_precomputed_obs"></a>}}
-\if{latex}{\out{\hypertarget{method-Configuration-has_precomputed_obs}{}}}
-\subsection{\code{Configuration$has_precomputed_obs()}}{
-  TRUE if \code{obs_rds} was supplied, meaning precomputed observation
-data is available and doesn't need to be extracted from the
-USMs workspace.
-  \subsection{Usage}{
-    \if{html}{\out{<div class="r">}}
-    \preformatted{Configuration$has_precomputed_obs()}
-    \if{html}{\out{</div>}}
-  }
-}
-
-\if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Configuration-has_reference_sim"></a>}}
 \if{latex}{\out{\hypertarget{method-Configuration-has_reference_sim}{}}}
 \subsection{\code{Configuration$has_reference_sim()}}{
@@ -159,11 +126,9 @@ results are available for evaluation.
 \if{html}{\out{<a id="method-Configuration-validate_eval"></a>}}
 \if{latex}{\out{\hypertarget{method-Configuration-validate_eval}{}}}
 \subsection{\code{Configuration$validate_eval()}}{
-  Validate configuration for evaluation workflow.
-Note: if \code{sim_rds} is supplied, it bypasses the need to run
-simulations (see \code{check_metadata_file_required}). \code{obs_rds} is
-independent and has no effect on required fields. \code{usms_workspace}
-remains required for eval regardless of \code{sim_rds}/\code{obs_rds}.
+  Validate configuration for evaluation workflow. Evaluation always
+reads simulation and observation data from \code{sim_rds} / \code{obs_rds}
+— see \verb{\link{run_simulations}} to produce them.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{Configuration$validate_eval()}

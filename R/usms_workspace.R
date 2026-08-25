@@ -21,7 +21,7 @@ USMSWorkspace <- R6::R6Class("USMSWorkspace", # nolint: object_name_linter
       sorted
     },
 
-    get_rotation_list = function() {
+    get_rotation_list = function(usm_names = NULL) {
       if (!file.exists(private$config$metadata_file)) {
         stop(
           "Metadata file not found: ",
@@ -59,6 +59,13 @@ USMSWorkspace <- R6::R6Class("USMSWorkspace", # nolint: object_name_linter
         dplyr::summarise(usm_vec = list(.data$usm)) |>
         dplyr::pull("usm_vec")
 
+      if (!is.null(usm_names)) {
+        # Only keep rotations whose USMs are all part of the current run: a
+        # rotation chains successive USMs together, so a partially available
+        # chain cannot be simulated anyway.
+        rotations <- Filter(function(usms) all(usms %in% usm_names), rotations)
+      }
+
       logger::log_debug("Found ", length(rotations), " rotations")
       rotations
     },
@@ -76,27 +83,13 @@ USMSWorkspace <- R6::R6Class("USMSWorkspace", # nolint: object_name_linter
     },
 
     load_sim = function() {
+      logger::log_info("Loading simulations data...")
       species_situations <- private$workspace$get_species_situations(
         species = NULL
       )
-      if (private$config$has_precomputed_sim()) {
-        logger::log_info("Loading simulations data...")
-        sim <- readRDS(private$config$sim_rds)[
-          unique(species_situations$situation)
-        ]
-      } else if (private$config$run_simulations) {
-        logger::log_info("Running simulations...")
-        sim <- self$run_simulations(species_situations$situation)
-      } else {
-        logger::log_info("Loading simulations data...")
-        sim <- SticsRFiles::get_sim(
-          workspace = private$config$usms_workspace,
-          usm = unique(species_situations$situation),
-          verbose = is_debug(),
-          parallel = private$backend$parallel,
-          cores = private$backend$cores
-        )
-      }
+      sim <- readRDS(private$config$sim_rds)[
+        unique(species_situations$situation)
+      ]
       private$workspace$save_sim(sim, species_situations)
       rm(sim)
       gc()
@@ -107,19 +100,9 @@ USMSWorkspace <- R6::R6Class("USMSWorkspace", # nolint: object_name_linter
       species_situations <- private$workspace$get_species_situations(
         species = NULL
       )
-      if (private$config$has_precomputed_obs()) {
-        obs <- readRDS(private$config$obs_rds)[
-          unique(species_situations$situation)
-        ]
-      } else {
-        obs <- SticsRFiles::get_obs(
-          workspace = private$config$usms_workspace,
-          usm = unique(species_situations$situation),
-          verbose = is_debug(),
-          parallel = private$backend$parallel,
-          cores = private$backend$cores
-        )
-      }
+      obs <- readRDS(private$config$obs_rds)[
+        unique(species_situations$situation)
+      ]
       private$workspace$save_obs(obs, species_situations)
       rm(obs)
       gc()
@@ -138,15 +121,6 @@ USMSWorkspace <- R6::R6Class("USMSWorkspace", # nolint: object_name_linter
         rm(ref_sim)
         gc()
       }
-    },
-
-    get_var_from_obs = function() {
-      var2exclude <- c("Date", "situation", "species", "version", "Plant")
-      obs <- private$workspace$get_obs(var2exclude = var2exclude)
-      if (is.null(obs)) {
-        stop("Observations data not found in workspace.", call. = FALSE)
-      }
-      names(obs)
     }
   ),
 
@@ -163,11 +137,8 @@ USMSWorkspace <- R6::R6Class("USMSWorkspace", # nolint: object_name_linter
       private$config <- config
     },
 
-    run_simulations = function(usms, var = NULL) {
-      if (is.null(var)) {
-        var <- private$get_var_from_obs()
-      }
-      rotations <- private$get_rotation_list()
+    run_simulations = function(usms, var) {
+      rotations <- private$get_rotation_list(unique(usms))
       wrapper_options <- SticsOnR::stics_wrapper_options(
         stics_exe = private$config$stics_exe,
         workspace = private$config$usms_workspace,
