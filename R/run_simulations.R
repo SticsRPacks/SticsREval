@@ -146,6 +146,29 @@ get_obs_files <- function(usms_workspace, usms, parallel, cores) {
 }
 
 
+#' Derive variable names from observation data
+#'
+#' Returns the variable names found in \code{obs} (e.g. as returned by
+#' \code{SticsRFiles::get_obs()}), excluding metadata columns
+#' (\code{Date}, \code{situation}, \code{species}, \code{version},
+#' \code{Plant}). This is how \code{\link{run_simulations}} derives the
+#' variables to simulate when its \code{vars} argument isn't provided.
+#' Useful to inspect that default list, or to extend it — e.g. to combine
+#' the observed variables with extra ones (such as the balance closure
+#' variables) into a single \code{\link{run_simulations}} call:
+#'
+#' \preformatted{
+#' obs <- SticsRFiles::get_obs(usms_workspace, usm = usms)
+#' vars <- c(get_var_from_obs(obs), balance_vars)
+#' run_simulations(..., vars = vars)
+#' }
+#'
+#' @param obs a list of observation data frames, one per USM, as returned
+#'  by \code{SticsRFiles::get_obs()}
+#'
+#' @returns a character vector of variable names
+#'
+#' @export
 get_var_from_obs <- function(obs) {
   var2exclude <- c("Date", "situation", "species", "version", "Plant")
   setdiff(unique(unlist(lapply(obs, names))), var2exclude)

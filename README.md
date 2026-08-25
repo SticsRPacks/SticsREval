@@ -157,7 +157,24 @@ run_simulations(
 | `vars` | Character vector of variable names to simulate. `NULL` (default) derives them automatically from the observation files found in `usms_workspace`. Pass this explicitly to simulate variables that aren't observed, e.g. the balance closure variables consumed by `balance_closure_test()` |
 | `parallel` / `cores` | Parallel execution options |
 
-By default, the variables to simulate are derived automatically from the observation files found in `usms_workspace`. The resulting `simulations.rds` / `observations.rds` files can be passed as `sim_rds` / `obs_rds` (or `ref_sim_rds` for a reference version) to `evaluate()` — see [From raw SMS data to evaluation](#from-raw-sms-data-to-evaluation) below.
+By default, the variables to simulate are derived automatically from the observation files found in `usms_workspace`, using `get_var_from_obs()`. The resulting `simulations.rds` / `observations.rds` files can be passed as `sim_rds` / `obs_rds` (or `ref_sim_rds` for a reference version) to `evaluate()` — see [From raw SMS data to evaluation](#from-raw-sms-data-to-evaluation) below.
+
+#### `get_var_from_obs()`
+
+Returns the variable names found in a list of observation data frames (e.g. as returned by `SticsRFiles::get_obs()`), excluding metadata columns (`Date`, `situation`, `species`, `version`, `Plant`). This is exactly how `run_simulations()` derives its default `vars` — exposed so you can inspect that list, or extend it with extra variables (such as the balance closure ones) into a single `run_simulations()` call instead of running simulations twice:
+
+```r
+obs <- SticsRFiles::get_obs("workspace/", usm = usms)
+vars <- c(get_var_from_obs(obs), balance_vars)
+
+run_simulations(
+  stics_exe      = "/path/to/stics",
+  usms_workspace = "workspace/",
+  metadata_file  = "metadata.csv",
+  output_dir     = "outputs/",
+  vars           = vars
+)
+```
 
 ---
 
@@ -350,21 +367,17 @@ run_simulations(
   output_dir     = "reference/"
 )
 
-# 3. Run the candidate version's simulations (observed variables)
-#    and balance closure variables (separate output_dir, since both are
-#    written to simulations.rds / observations.rds)
+# 3. Run the candidate version's simulations, combining the observed
+#    variables with the balance closure ones into a single call
+obs  <- SticsRFiles::get_obs("workspace/")
+vars <- c(get_var_from_obs(obs), balance_vars)
+
 run_simulations(
   stics_exe      = "/path/to/stics_candidate",
   usms_workspace = "workspace/",
   metadata_file  = "metadata.csv",
-  output_dir     = "outputs/"
-)
-run_simulations(
-  stics_exe      = "/path/to/stics_candidate",
-  usms_workspace = "workspace/",
-  metadata_file  = "metadata.csv",
-  output_dir     = "outputs/balance/",
-  vars           = balance_vars
+  output_dir     = "outputs/",
+  vars           = vars
 )
 
 # 4. Evaluate the candidate version against the reference
@@ -379,7 +392,7 @@ evaluate(
 
 # 5. Check water and nitrogen balance closure
 balance_closure_test(
-  sim_rds    = "outputs/balance/simulations.rds",
+  sim_rds    = "outputs/simulations.rds",
   output_dir = "outputs/"
 )
 ```
@@ -404,7 +417,7 @@ evaluate(
 
 # 2. Check water and nitrogen balance closure
 balance_closure_test(
-  sim_rds    = "outputs/balance/simulations.rds",
+  sim_rds    = "outputs/simulations.rds",
   output_dir = "outputs/"
 )
 ```

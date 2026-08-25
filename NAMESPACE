@@ -3,5 +3,6 @@
 export(balance_closure_test)
 export(evaluate)
 export(gen_workspace_from_sms)
+export(get_var_from_obs)
 export(run_simulations)
 importFrom(rlang,.data)
