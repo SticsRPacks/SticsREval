@@ -1,10 +1,10 @@
 #' USMEvaluation class
 #'
 #' @description
-#' The \code{USMEvaluation} class detects USMs (situations) where the model
-#' performance on a given variable is very degraded compared to a reference
-#' version, relative to the overall performance of the species on that
-#' variable.
+#' Internal class. Detects USMs (situations) where the model performance
+#' on a given variable is very degraded compared to a reference version,
+#' relative to the overall performance of the species on that variable.
+#' Instantiated internally by \code{\link{evaluate}}.
 #'
 #' @details
 #' For each variable and each USM, the following ratio is computed:
@@ -35,44 +35,24 @@
 #'
 #' The class can be used in two ways:
 #' \itemize{
-#'   \item Driven by a \code{Configuration} + workspace, like
-#'   \code{SpeciesEvaluation}: create with \code{config} (and optionally
-#'   \code{workspace}/\code{backend}/\code{logger}), then call \code{run()}.
+#'   \item Driven by \code{eval_workspace}/\code{workspace}, like
+#'   \code{SpeciesEvaluation}: create with \code{eval_workspace} (or a
+#'   pre-built \code{workspace}), then call \code{run()}.
 #'   \item Manually, by directly providing \code{stats_usm} and
 #'   \code{stats_species} (or a pre-computed \code{data}) for a single
 #'   species, useful for unit testing.
 #' }
 #'
-#' @examples
-#' \dontrun{
-#' # Driven by config/workspace, like SpeciesEvaluation
-#' config <- list(
-#'   eval_workspace = "path/to/eval_workspace",
-#'   usms = c("USM1", "USM2"),
-#'   species = c("Species1", "Species2"),
-#'   var2exclude = c("var1", "var2"),
-#'   parallel = TRUE,
-#'   cores = 4,
-#'   output_dir = "path/to/output"
-#' )
-#' usm_eval <- USMEvaluation$new(config = config)
-#' usm_eval$run()
-#' usm_eval$summary()
-#' usm_eval$get_data()
-#' usm_eval$failed_usms
-#'
-#' # Manual mode (unit tests)
-#' usm_eval <- USMEvaluation$new(
-#'   species = "Species1",
-#'   stats_usm = stats_usm,
-#'   stats_species = stats_species
-#' )
-#' usm_eval$summary()
-#' }
-#' @export
+#' @keywords internal
 USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
   private = list(
-    config = NULL,
+    eval_mode = FALSE,
+    eval_workspace = NULL,
+    species_filter = NULL,
+    usms = NULL,
+    var2exclude = NULL,
+    percentage = NULL,
+    output_dir = NULL,
     backend = NULL,
     workspace = NULL,
     logger = NULL,
@@ -153,13 +133,13 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
       species
     },
     filter_species_config = function(species) {
-      if (is.null(private$config$species)) {
+      if (is.null(private$species_filter)) {
         return(species)
       }
-      intersect(species, private$config$species)
+      intersect(species, private$species_filter)
     },
     filter_species_usms = function(species) {
-      if (is.null(private$config$usms)) {
+      if (is.null(private$usms)) {
         return(species)
       }
 
@@ -167,7 +147,7 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
         vapply(species, function(sp) {
           private$logger$debug(sprintf("Checking USMs for species %s...", sp))
           species_usms <- private$workspace$get_species_situations(
-            sp, private$config$usms
+            sp, private$usms
           )
           private$logger$debug(sprintf(
             "Species %s has USMs: %s",
@@ -192,24 +172,24 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
         "Generating RMSE and rRMSE per USM for species ",
         species
       )
-      exclude <- c("version", "species", private$config$var2exclude)
+      exclude <- c("version", "species", private$var2exclude)
 
       splited_sim <- CroPlotR::split_df2sim(
         private$workspace$get_sim(
           species,
-          usms = private$config$usms, var2exclude = exclude
+          usms = private$usms, var2exclude = exclude
         )
       )
       splited_ref_sim <- CroPlotR::split_df2sim(
         private$workspace$get_ref_sim(
           species,
-          usms = private$config$usms, var2exclude = exclude
+          usms = private$usms, var2exclude = exclude
         )
       )
       splited_obs <- CroPlotR::split_df2sim(
         private$workspace$get_obs(
           species,
-          usms = private$config$usms, var2exclude = exclude
+          usms = private$usms, var2exclude = exclude
         )
       )
       private$logger$info("Generating RMSE statistics for ", species)
@@ -260,7 +240,7 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
           deteriorated_usm <- DeterioratedUSMComparison$new(
             species = spec,
             stats = stats$stats_usm,
-            percentage = private$config$percentage
+            percentage = private$percentage
           )
           if (is.null(stats$stats_species)) {
             private$logger$warn(
@@ -359,14 +339,24 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
   public = list(
     #' @description
     #' Create a new USMEvaluation object.
-    #' @param config A Configuration object containing the necessary
-    #' parameters for the evaluation (same as \code{SpeciesEvaluation}).
-    #' Required to use \code{run()}.
+    #' @param eval_workspace Path to the evaluation workspace. Only used to
+    #' build a default `workspace` when one isn't supplied. Providing this
+    #' or `workspace` selects the evaluation mode; otherwise the object is
+    #' built in manual mode from `data`/`stats_usm`+`stats_species`.
+    #' @param species_filter Optional character vector of species to
+    #' evaluate.
+    #' @param usms Optional character vector of USMs to evaluate.
+    #' @param var2exclude Optional character vector of variables to exclude.
+    #' @param percentage Threshold (%) above which a variable is flagged as
+    #' deteriorated vs. the reference.
+    #' @param output_dir Output directory for the CSV export.
+    #' @param parallel,cores Parallel execution options. Only used to build
+    #' a default `backend` when one isn't supplied.
     #' @param workspace An optional EvalWorkspace object. If not provided, a
-    #' new EvalWorkspace will be created using the provided configuration.
+    #' new EvalWorkspace will be created from `eval_workspace`.
     #' @param backend An optional ParallelBackend object for parallel
     #' processing. If not provided, a new ParallelBackend will be created
-    #' using the provided configuration.
+    #' from `parallel`/`cores`.
     #' @param logger An optional logger object for logging messages. If not
     #' provided, the default logger will be used.
     #' @param species_evaluation Optional \code{SpeciesEvaluation} instance.
@@ -383,8 +373,8 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
     #' @param max_degraded_vars Maximum number of degraded variables (ratio >
     #' \code{degraded_threshold}) tolerated per USM before it is considered
     #' failed. Default 3 (i.e. fails starting at 4 degraded variables).
-    #' @param species Optional species name, used in manual mode (ignored if
-    #' \code{config} is provided).
+    #' @param species Optional species name, used in manual mode (ignored in
+    #' evaluation mode).
     #' @param stats_usm Manual mode: data frame of per-USM stats (RMSE,
     #' n_obs), for \code{evaluated} and \code{reference} groups, e.g. as
     #' returned by CroPlotR's summary method with \code{all_situations =
@@ -394,7 +384,14 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
     #' \code{all_situations = TRUE} (default).
     #' @param data Manual mode: optional pre-computed data frame (bypasses
     #' \code{stats_usm}/\code{stats_species} computation).
-    initialize = function(config = NULL,
+    initialize = function(eval_workspace = NULL,
+                          species_filter = NULL,
+                          usms = NULL,
+                          var2exclude = NULL,
+                          percentage = 5,
+                          output_dir = NULL,
+                          parallel = FALSE,
+                          cores = NA,
                           workspace = NULL,
                           backend = NULL,
                           logger = default_logger,
@@ -410,16 +407,16 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
       private$degraded_threshold <- degraded_threshold
       private$max_degraded_vars <- max_degraded_vars
 
-      if (!is.null(config)) {
-        init_logger(config$verbose %||% 1L)
-        config$validate_eval()
-        private$config <- config
-        private$backend <- backend %||% ParallelBackend$new(
-          config$parallel, config$cores
-        )
-        private$workspace <- workspace %||% EvalWorkspace$new(
-          config$eval_workspace
-        )
+      if (!is.null(eval_workspace) || !is.null(workspace)) {
+        private$eval_mode <- TRUE
+        private$eval_workspace <- eval_workspace
+        private$species_filter <- species_filter
+        private$usms <- usms
+        private$var2exclude <- var2exclude
+        private$percentage <- percentage
+        private$output_dir <- output_dir
+        private$backend <- backend %||% ParallelBackend$new(parallel, cores)
+        private$workspace <- workspace %||% EvalWorkspace$new(eval_workspace)
         private$logger <- logger
         private$species_evaluation <- species_evaluation
         return(invisible(self))
@@ -435,8 +432,8 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
         )
       } else {
         stop(
-          "`config`, `data`, or `stats_usm` and `stats_species`",
-          "must be defined",
+          "`eval_workspace` (or `workspace`), `data`, or `stats_usm` and ",
+          "`stats_species` must be defined",
           call. = FALSE
         )
       }
@@ -445,12 +442,13 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
     #' @description
     #' Run the USM evaluation.
     #' This method computes, for each species found in the workspace
-    #' (filtered according to the configuration), the RMSE_ratio per variable
-    #' and per USM, and stores the results internally.
+    #' (filtered according to `species_filter`/`usms`), the RMSE_ratio per
+    #' variable and per USM, and stores the results internally.
     run = function() {
-      if (is.null(private$config)) {
+      if (!private$eval_mode) {
         stop(
-          "`run()` requires the object to be initialized with a `config`",
+          "`run()` requires the object to be initialized in evaluation ",
+          "mode (`eval_workspace` or `workspace`)",
           call. = FALSE
         )
       }
@@ -481,7 +479,7 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
 
           private$logger$info(
             "Found ", length(species), " species in workspace ",
-            private$config$eval_workspace, ": ", format_species(species)
+            private$eval_workspace, ": ", format_species(species)
           )
 
           private$logger$info("Computing RMSE per USM comparison.")
@@ -554,7 +552,7 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
 
       safe_write_csv(
         merged_data,
-        file.path(private$config$output_dir, "Deteriorated_USM.csv")
+        file.path(private$output_dir, "Deteriorated_USM.csv")
       )
     },
 

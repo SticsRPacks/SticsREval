@@ -33,13 +33,16 @@ make_fake_backend <- function() {
 make_loader <- function(
   workspace = make_fake_workspace(),
   backend = make_fake_backend(),
-  config = make_base_cfg()
-
+  usms_workspace = "usms_ws",
+  metadata_file = NULL,
+  ...
 ) {
   USMSWorkspace$new(
+    usms_workspace = usms_workspace,
+    metadata_file = metadata_file,
     workspace = workspace,
     backend = backend,
-    config = config
+    ...
   )
 }
 
@@ -58,10 +61,9 @@ call_private <- function(loader, name, ...) {
 # ---- get_rotation_list ----
 
 test_that("get_rotation_list errors when metadata file does not exist", {
-  config <- make_base_cfg(
+  loader <- make_loader(
     metadata_file = file.path("nonexistent", "path.csv")
   )
-  loader <- make_loader(config = config)
   expect_error(
     call_private(loader, "get_rotation_list"),
     "Metadata file not found"
@@ -72,9 +74,7 @@ test_that("get_rotation_list errors on missing required columns", {
   path <- withr::local_tempfile(fileext = ".csv")
   write_metadata(path, "usm;other_col\nusm1;val")
 
-  config <- make_base_cfg(metadata_file = path)
-
-  loader <- make_loader(config = config)
+  loader <- make_loader(metadata_file = path)
   expect_error(
     call_private(loader, "get_rotation_list"),
     "Missing columns in metadata file"
@@ -85,9 +85,7 @@ test_that("get_rotation_list errors when rotation_order is non-numeric", {
   path <- withr::local_tempfile(fileext = ".csv")
   write_metadata(path, "usm;rotation;rotation_order\nusm1;rot1;abc")
 
-  config <- make_base_cfg(metadata_file = path)
-
-  loader <- make_loader(config = config)
+  loader <- make_loader(metadata_file = path)
   expect_error(
     call_private(loader, "get_rotation_list"),
     "Column must be numeric: rotation_order"
@@ -98,9 +96,7 @@ test_that("get_rotation_list returns empty list when no rows", {
   path <- withr::local_tempfile(fileext = ".csv")
   write_metadata(path, "usm;rotation;rotation_order")
 
-  config <- make_base_cfg(metadata_file = path)
-
-  loader <- make_loader(config = config)
+  loader <- make_loader(metadata_file = path)
   result <- call_private(loader, "get_rotation_list")
   expect_identical(result, list())
 })
@@ -114,9 +110,7 @@ test_that("get_rotation_list excludes rows where rotation is NA or '0'", {
     "usm3;;3"
   ))
 
-  config <- make_base_cfg(metadata_file = path)
-
-  loader <- make_loader(config = config)
+  loader <- make_loader(metadata_file = path)
   result <- call_private(loader, "get_rotation_list")
 
   usms_in_rotations <- unlist(result)
@@ -133,9 +127,7 @@ test_that("get_rotation_list groups USMs by rotation in order", {
     "usm3;rot2;1"
   ))
 
-  config <- make_base_cfg(metadata_file = path)
-
-  loader <- make_loader(config = config)
+  loader <- make_loader(metadata_file = path)
   result <- call_private(loader, "get_rotation_list")
 
   expect_length(result, 2)
@@ -150,9 +142,7 @@ test_that("get_rotation_list handles single-USM rotations", {
     "usm1;rot1;1"
   ))
 
-  config <- make_base_cfg(metadata_file = path)
-
-  loader <- make_loader(config = config)
+  loader <- make_loader(metadata_file = path)
   result <- call_private(loader, "get_rotation_list")
 
   expect_length(result, 1)
@@ -169,12 +159,11 @@ test_that("load discovers USMs from usms_workspace subdirectories", {
   meta_path <- withr::local_tempfile(fileext = ".csv")
   write_metadata(meta_path, "usm;rotation;rotation_order")
 
-  seen_usms <- NULL
-  config <- make_base_cfg(usms_workspace = ws_dir, metadata_file = meta_path)
   workspace <- make_fake_workspace()
   workspace$remove_init_obs <- function() {}
   loader <- make_loader(
-    config = config,
+    usms_workspace = ws_dir,
+    metadata_file = meta_path,
     workspace = workspace
   )
 
@@ -186,7 +175,6 @@ test_that("load discovers USMs from usms_workspace subdirectories", {
     data.frame(usm = usms, species = "wheat", stringsAsFactors = FALSE)
   })
 
-  replace_private(loader, "load_stics_version", function() "v1")
   replace_private(loader, "load_sim", function(...) invisible(NULL))
   replace_private(loader, "load_obs", function(...) invisible(NULL))
   replace_private(loader, "load_ref_sim", function(...) invisible(NULL))

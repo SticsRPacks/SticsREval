@@ -1,16 +1,11 @@
 test_that("SpeciesEvaluation initializes correctly", {
-  config <- list(
+  eval <- SpeciesEvaluation$new(
     parallel = FALSE,
     cores = 1,
     eval_workspace = tempdir(),
     species = NULL,
     usms = NULL,
-    percentage = 10
-  )
-  config$validate_eval <- function() {}
-
-  eval <- SpeciesEvaluation$new(
-    config = config,
+    percentage = 10,
     workspace = mock(),
     backend = mock()
   )
@@ -20,18 +15,13 @@ test_that("SpeciesEvaluation initializes correctly", {
 
 
 test_that("success is TRUE before any comparison is run", {
-  config <- list(
+  eval <- SpeciesEvaluation$new(
     parallel = FALSE,
     cores = 1,
     eval_workspace = tempdir(),
     species = NULL,
     usms = NULL,
-    percentage = 10
-  )
-  config$validate_eval <- function() {}
-
-  eval <- SpeciesEvaluation$new(
-    config = config,
+    percentage = 10,
     workspace = mock(),
     backend = mock()
   )
@@ -41,18 +31,13 @@ test_that("success is TRUE before any comparison is run", {
 
 
 test_that("summary works when no comparison was generated", {
-  config <- list(
+  eval <- SpeciesEvaluation$new(
     parallel = FALSE,
     cores = 1,
     eval_workspace = tempdir(),
     species = NULL,
     usms = NULL,
-    percentage = 10
-  )
-  config$validate_eval <- function() {}
-
-  eval <- SpeciesEvaluation$new(
-    config = config,
+    percentage = 10,
     workspace = mock(),
     backend = mock()
   )
@@ -68,19 +53,14 @@ test_that("run returns without error when no species are available", {
 
   backend <- list()
 
-  config <- list(
+  eval <- SpeciesEvaluation$new(
     parallel = FALSE,
     cores = 1,
     eval_workspace = tempdir(),
     species = NULL,
     usms = NULL,
     percentage = 10,
-    var2exclude = NULL
-  )
-  config$validate_eval <- function() {}
-
-  eval <- SpeciesEvaluation$new(
-    config = config,
+    var2exclude = NULL,
     workspace = workspace,
     backend = backend
   )
@@ -97,7 +77,7 @@ test_that("export works when no comparison exists", {
     run = function(...) NULL
   )
 
-  config <- list(
+  eval <- SpeciesEvaluation$new(
     parallel = FALSE,
     cores = 1,
     output_dir = output_dir,
@@ -105,12 +85,7 @@ test_that("export works when no comparison exists", {
     species = NULL,
     usms = NULL,
     percentage = 10,
-    var2exclude = NULL
-  )
-  config$validate_eval <- function() {}
-
-  eval <- SpeciesEvaluation$new(
-    config = config,
+    var2exclude = NULL,
     workspace = mock(),
     backend = backend
   )
@@ -136,19 +111,14 @@ test_that("run propagates backend errors", {
     }
   )
 
-  config <- list(
+  eval <- SpeciesEvaluation$new(
     parallel = FALSE,
     cores = 1,
     eval_workspace = tempdir(),
     species = NULL,
     usms = NULL,
     percentage = 10,
-    var2exclude = NULL
-  )
-  config$validate_eval <- function() {}
-
-  eval <- SpeciesEvaluation$new(
-    config = config,
+    var2exclude = NULL,
     workspace = workspace,
     backend = backend
   )

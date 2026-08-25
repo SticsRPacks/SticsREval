@@ -4,32 +4,17 @@
 \alias{SpeciesEvaluation}
 \title{SpeciesEvaluation class}
 \description{
-The \code{SpeciesEvaluation} class is responsible for evaluating the
-performance of a model across different species. It computes statistics,
-generates comparisons, and produces reports for each species based on the
-provided configuration and workspace.
+Internal class. Evaluates the performance of a model across different
+species: computes statistics, generates comparisons, and produces
+reports for each species. Instantiated internally by
+\code{\link{evaluate}}.
 }
 \details{
 The class uses a backend for parallel processing and a workspace to
 access simulation and observation data. It provides methods to run
 evaluations, summarize results, and export findings.
 }
-\examples{
-\dontrun{
-config <- list(
-   eval_workspace = "path/to/eval_workspace",
-   usms = c("USM1", "USM2"),
-   species = c("Species1", "Species2"),
-   var2exclude = c("var1", "var2"),
-   percentage = 10,
-   parallel = TRUE,
-   cores = 4,
-   output_dir = "path/to/output"
-)
-species_eval <- SpeciesEvaluation$new(config = config)
-species_eval$run()
-}
-}
+\keyword{internal}
 \section{Active bindings}{
   \if{html}{\out{<div class="r6-active-bindings">}}
   \describe{
@@ -59,7 +44,14 @@ comparisons.}
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{SpeciesEvaluation$new(
-  config,
+  eval_workspace = NULL,
+  species = NULL,
+  usms = NULL,
+  var2exclude = NULL,
+  percentage = 5,
+  output_dir = NULL,
+  parallel = FALSE,
+  cores = NA,
   workspace = NULL,
   backend = NULL,
   logger = default_logger
@@ -69,14 +61,21 @@ comparisons.}
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
-      \item{\code{config}}{A Configuration object containing the necessary parameters
-for the evaluation.}
-      \item{\code{workspace}}{An optional EvalWorkspace object. If not provided, a new
-EvalWorkspace will be created using the provided configuration.}
+      \item{\code{eval_workspace}}{Path to the evaluation workspace. Only used to
+build a default \code{workspace} when one isn't supplied.}
+      \item{\code{species}}{Optional character vector of species to evaluate.}
+      \item{\code{usms}}{Optional character vector of USMs to evaluate.}
+      \item{\code{var2exclude}}{Optional character vector of variables to exclude.}
+      \item{\code{percentage}}{Threshold (\%) above which a variable is flagged as
+deteriorated vs. the reference.}
+      \item{\code{output_dir}}{Output directory for CSV/plot exports.}
+      \item{\code{parallel, cores}}{Parallel execution options. Only used to build
+a default \code{backend} when one isn't supplied.}
+      \item{\code{workspace}}{An optional EvalWorkspace object. If not provided, a
+new EvalWorkspace will be created from \code{eval_workspace}.}
       \item{\code{backend}}{An optional ParallelBackend object for parallel
-processing.
-If not provided, a new ParallelBackend will be created using the provided
-configuration.}
+processing. If not provided, a new ParallelBackend will be created
+from \code{parallel}/\code{cores}.}
       \item{\code{logger}}{An optional logger object for logging messages. If not
 provided, the default logger will be used.}
     }

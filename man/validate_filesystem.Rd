@@ -4,20 +4,23 @@
 \alias{validate_filesystem}
 \title{Validate filesystem-dependent fields (I/O)}
 \usage{
-validate_filesystem(self, schema = config_schema)
+validate_filesystem(self, schema)
 }
 \arguments{
-\item{self}{A named list or R6 object.}
+\item{self}{A named list, typically \code{as.list(environment())} taken
+at the top of the calling function.}
 
-\item{schema}{A schema produced by config_schema.}
+\item{schema}{A list with a \code{filesystem_checks} element: a list of
+\code{list(desc = ..., check = function(self) ...)}, e.g. built with
+\code{check_path_exists()}.}
 }
 \value{
 invisible(TRUE) if valid, otherwise stop() with all errors.
 }
 \description{
 Checks that path fields point to files that actually exist on disk.
-Kept separate from \code{validate_schema()} so that constructing a
-Configuration never touches the filesystem: callers decide when this
-I/O-bound check runs (see \code{Configuration$check_filesystem()}).
+Kept separate from \code{validate_schema()} so that plain structural
+validation never touches the filesystem: callers decide when this
+I/O-bound check runs.
 }
 \keyword{internal}

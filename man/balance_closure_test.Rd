@@ -34,19 +34,17 @@ are the names of this list, optionally restricted by \code{usms}}
 2 = debug}
 }
 \value{
-Invisibly, the \code{BalanceClosureTest} object. Called for its side
+Invisibly, the internal test object. Called for its side
 effects: logging a summary of the test, exporting detailed balance
 errors to \code{output_dir} (if defined), and stopping with an error if any
 USM failed the test.
 }
 \description{
-Builds a \code{Configuration} from its arguments, then instantiates a
-\code{BalanceClosureTest} with it and runs it: checks that the initial and
-final water and nitrogen balances are equal (or NA) for each USM, using
-pre-computed simulation data from \code{sim_rds} — see
-\code{\link{run_simulations}} to produce it. If there are discrepancies,
-it logs a warning with the details of the issue and stops with an error
-listing the affected USMs.
+Checks that the initial and final water and nitrogen balances are equal
+(or NA) for each USM, using pre-computed simulation data from
+\code{sim_rds} — see \code{\link{run_simulations}} to produce it. If
+there are discrepancies, it logs a warning with the details of the issue
+and stops with an error listing the affected USMs.
 }
 \examples{
 \dontrun{

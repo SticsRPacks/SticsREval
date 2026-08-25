@@ -121,7 +121,7 @@ test_that("run_simulations runs simulations and saves sim and obs as RDS", {
 
   mockery::stub(
     run_simulations, "USMSWorkspace$new",
-    function(config) fake_workspace
+    function(...) fake_workspace
   )
   mockery::stub(
     run_simulations, "get_obs_files",
@@ -176,7 +176,7 @@ test_that(
 
     mockery::stub(
       run_simulations, "USMSWorkspace$new",
-      function(config) fake_workspace
+      function(...) fake_workspace
     )
     mockery::stub(
       run_simulations, "get_obs_files",
@@ -219,7 +219,7 @@ test_that("run_simulations restricts to USMs listed in usms_files", {
 
   mockery::stub(
     run_simulations, "USMSWorkspace$new",
-    function(config) fake_workspace
+    function(...) fake_workspace
   )
   mockery::stub(
     run_simulations, "get_obs_files",

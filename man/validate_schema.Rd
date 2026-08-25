@@ -2,21 +2,28 @@
 % Please edit documentation in R/schema.R
 \name{validate_schema}
 \alias{validate_schema}
-\title{Validate an object against a schema}
+\title{Validate a named list of values against a local schema}
 \usage{
-validate_schema(self, schema = config_schema)
+validate_schema(self, schema)
 }
 \arguments{
-\item{self}{A named list or R6 object.}
+\item{self}{A named list, typically \code{as.list(environment())} taken
+at the top of the calling function, i.e. its already-resolved
+arguments.}
 
-\item{schema}{A schema produced by config_schema.}
+\item{schema}{A list with a \code{fields} element (named list of
+\code{field_spec()}) and an optional \code{cross_validators} element
+(list of \code{list(desc = ..., check = function(self) ...)}).}
 }
 \value{
 invisible(TRUE) if valid, otherwise stop() with all errors.
 }
 \description{
-Collects ALL errors before raising them, rather than stopping at the first.
-Purely structural: never touches the filesystem (see
-\code{validate_filesystem()} for that).
+Collects ALL errors before raising them, rather than stopping at the
+first. Purely structural: never touches the filesystem (see
+\code{validate_filesystem()} for that). Callers build a small,
+function-scoped \code{schema} (\code{list(fields = list(...),
+cross_validators = list(...))}) for just the arguments they need to
+validate — there is no single shared schema across the package.
 }
 \keyword{internal}

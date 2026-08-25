@@ -1,7 +1,9 @@
-#' Describe a configuration field
+#' Describe a function argument's validation rules
 #'
 #' @param default Default value for the field. Use \code{required()} for
 #'   fields that must be explicitly provided and have no sensible default.
+#'   Purely informational unless the caller applies it itself — validation
+#'   functions here only look at the value actually supplied.
 #' @param type Character vector. Accepted R types (e.g. "character", "logical").
 #' @param nullable Logical. Is NULL a valid value? Defaults to TRUE.
 #' @param choices Vector. If provided, the value must belong to this set.
@@ -9,24 +11,6 @@
 #' @param max Numeric. Maximum allowed value (for numeric types).
 #' @param validator Function. Custom validation: function(val) returns
 #'   TRUE if valid, or a character error message otherwise.
-#' @param required_for Character vector. Names of workflow contexts (e.g.
-#'   "eval", "balance_closure") in which this field must be
-#'   non-NULL. Checked by \code{validate_for()}. This is independent of
-#'   \code{nullable}, which only governs whether NULL is an acceptable
-#'   value in general (outside of any specific workflow).
-#' @param required_unless Function(self, context) or NULL. If provided and
-#'   it returns TRUE for the context currently being validated, the
-#'   \code{required_for} requirement is waived for that context (the field
-#'   may be NULL). General escape hatch for conditional requirements that
-#'   depend on other field values (e.g. "field X is required for context Y,
-#'   UNLESS some other field Z is set"). Not currently used by any field in
-#'   this schema, but kept available for future cases like this. Evaluated
-#'   only when \code{context \%in\% required_for}; ignored otherwise.
-#' @param group Character scalar. Purely organisational: which thematic
-#'   group this field belongs to (e.g. "paths", "execution", "filtering").
-#'   Has no effect on validation; used to group fields when printing a
-#'   Configuration, generating docs, or browsing the schema. Defaults to
-#'   "other" if not specified.
 #' @return A list of class "field_spec"
 #'
 #' @keywords internal
@@ -37,10 +21,7 @@ field_spec <- function(
   choices = NULL,
   min = NULL,
   max = NULL,
-  validator = NULL,
-  required_for = character(0),
-  required_unless = NULL,
-  group = "other"
+  validator = NULL
 ) {
   is_required <- inherits(default, "required_field")
   if (is_required) nullable <- FALSE
@@ -53,10 +34,7 @@ field_spec <- function(
     choices = choices,
     min = min,
     max = max,
-    validator = validator,
-    required_for = required_for,
-    required_unless = required_unless,
-    group = group
+    validator = validator
   )
   class(field) <- "field_spec"
   field
@@ -77,15 +55,50 @@ required <- function() {
 # to an existing file. Only run on demand (see validate_filesystem()),
 # never as a side effect of validate_schema().
 #' @keywords internal
-check_path_exists <- function(field_name, needed = function(s) TRUE) {
+check_path_exists <- function(field_name) {
   function(s) {
-    if (!needed(s)) return(TRUE)
     val <- s[[field_name]]
     if (is.null(val)) return(TRUE)
     if (!file.exists(val))
       return(paste0(field_name, " not found: ", val))
     TRUE
   }
+}
+
+#' @keywords internal
+validate_cores <- function(val) {
+  if (identical(val, NA) || identical(val, NA_integer_)) return(TRUE)
+  if (!is.numeric(val) || val < 1) return("must be an integer >= 1 or NA")
+  TRUE
+}
+
+#' @keywords internal
+validate_nonempty_chr <- function(val) {
+  if (is.null(val)) return(TRUE)
+  if (length(val) == 0) return("must be a non-empty character vector or NULL")
+  TRUE
+}
+
+#' @keywords internal
+validate_rds_path <- function(val) {
+  if (is.null(val)) return(TRUE)
+  if (!is.character(val) || length(val) != 1)
+    return("must be a single file path (character)")
+  if (!grepl("\\.rds$", val, ignore.case = TRUE))
+    return("must point to a .rds file")
+  TRUE
+}
+
+#' Cross-field check: if parallel = TRUE, cores must be an integer >= 1
+#' @keywords internal
+check_parallel_cores <- function(s) {
+  if (!isTRUE(s$parallel)) return(TRUE)
+  cores_missing <- is.null(s$cores) ||
+    identical(s$cores, NA) ||
+    identical(s$cores, NA_integer_)
+  if (cores_missing)
+    return("cores must be an integer >= 1 when parallel = TRUE")
+  TRUE
 }
 
 # Validate a single NULL value against its spec (required / nullable rules).
@@ -186,17 +199,24 @@ validate_cross <- function(self, cross_validators) {
   errors
 }
 
-#' Validate an object against a schema
+#' Validate a named list of values against a local schema
 #'
-#' Collects ALL errors before raising them, rather than stopping at the first.
-#' Purely structural: never touches the filesystem (see
-#' \code{validate_filesystem()} for that).
+#' Collects ALL errors before raising them, rather than stopping at the
+#' first. Purely structural: never touches the filesystem (see
+#' \code{validate_filesystem()} for that). Callers build a small,
+#' function-scoped \code{schema} (\code{list(fields = list(...),
+#' cross_validators = list(...))}) for just the arguments they need to
+#' validate — there is no single shared schema across the package.
 #'
-#' @param self A named list or R6 object.
-#' @param schema A schema produced by config_schema.
+#' @param self A named list, typically \code{as.list(environment())} taken
+#'   at the top of the calling function, i.e. its already-resolved
+#'   arguments.
+#' @param schema A list with a \code{fields} element (named list of
+#'   \code{field_spec()}) and an optional \code{cross_validators} element
+#'   (list of \code{list(desc = ..., check = function(self) ...)}).
 #' @return invisible(TRUE) if valid, otherwise stop() with all errors.
 #' @keywords internal
-validate_schema <- function(self, schema = config_schema) {
+validate_schema <- function(self, schema) {
   field_errors <- unlist(lapply(
     names(schema$fields),
     function(field_name) {
@@ -212,7 +232,7 @@ validate_schema <- function(self, schema = config_schema) {
 
   if (length(errors) > 0)
     stop(
-      "Invalid configuration:\n", paste(errors, collapse = "\n"),
+      "Invalid arguments:\n", paste(errors, collapse = "\n"),
       call. = FALSE
     )
 
@@ -222,16 +242,18 @@ validate_schema <- function(self, schema = config_schema) {
 #' Validate filesystem-dependent fields (I/O)
 #'
 #' Checks that path fields point to files that actually exist on disk.
-#' Kept separate from \code{validate_schema()} so that building a
-#' configuration never touches the filesystem: callers decide when this
-#' I/O-bound check runs (see \code{check_filesystem()}).
+#' Kept separate from \code{validate_schema()} so that plain structural
+#' validation never touches the filesystem: callers decide when this
+#' I/O-bound check runs.
 #'
-#' @param self A named list (typically a configuration built by
-#'   \code{\link{Configuration}}).
-#' @param schema A schema produced by config_schema.
+#' @param self A named list, typically \code{as.list(environment())} taken
+#'   at the top of the calling function.
+#' @param schema A list with a \code{filesystem_checks} element: a list of
+#'   \code{list(desc = ..., check = function(self) ...)}, e.g. built with
+#'   \code{check_path_exists()}.
 #' @return invisible(TRUE) if valid, otherwise stop() with all errors.
 #' @keywords internal
-validate_filesystem <- function(self, schema = config_schema) {
+validate_filesystem <- function(self, schema) {
   errors <- character(0)
   for (cv in schema$filesystem_checks) {
     result <- cv$check(self)
@@ -241,89 +263,9 @@ validate_filesystem <- function(self, schema = config_schema) {
 
   if (length(errors) > 0)
     stop(
-      "Invalid configuration:\n", paste(errors, collapse = "\n"),
+      "Invalid arguments:\n", paste(errors, collapse = "\n"),
       call. = FALSE
     )
 
   invisible(TRUE)
-}
-
-#' Validate that all fields required for a given workflow context are set
-#'
-#' Looks up, for every field in the schema, whether \code{context} appears
-#' in that field's \code{required_for}. If so, the field must be non-NULL
-#' on \code{self} — unless the field's \code{required_unless(self, context)}
-#' function is defined and returns TRUE, in which case the requirement is
-#' waived for that field/context pair.
-#' This replaces the hand-written \code{if (is.null(...)) stop(...)}
-#' checks that used to live in each \code{validate_*} method, so that
-#' "which fields are required for which workflow, and under which
-#' exceptions" has a single source of truth: the schema itself.
-#'
-#' @param self A named list (typically a configuration built by
-#'   \code{\link{Configuration}}).
-#' @param context Character scalar naming the workflow, e.g. "eval",
-#'   "balance_closure".
-#' @param schema A schema produced by config_schema.
-#' @return invisible(TRUE) if valid, otherwise stop() with all errors found.
-#' @keywords internal
-validate_for <- function(self, context, schema = config_schema) {
-  errors <- unlist(lapply(
-    names(schema$fields),
-    function(field_name) {
-      spec <- schema$fields[[field_name]]
-      if (!context %in% spec$required_for) return(NULL)
-      waived <- !is.null(spec$required_unless) &&
-        isTRUE(spec$required_unless(self, context))
-      if (waived) return(NULL)
-      if (is.null(self[[field_name]]))
-        sprintf("- %s: required for the '%s' workflow", field_name, context)
-      else
-        NULL
-    }
-  ))
-
-  if (length(errors) > 0)
-    stop(
-      "Invalid configuration for '", context, "':\n",
-      paste(errors, collapse = "\n"),
-      call. = FALSE
-    )
-
-  invisible(TRUE)
-}
-
-#' List field names grouped by their `group` attribute
-#'
-#' @param schema A schema produced by config_schema.
-#' @return A named list: group name -> character vector of field names,
-#'   in the order groups first appear in the schema.
-#' @keywords internal
-fields_by_group <- function(schema = config_schema) {
-  groups <- vapply(schema$fields, function(spec) spec$group, character(1))
-  split(names(schema$fields), factor(groups, levels = unique(groups)))
-}
-
-#' Build a validated configuration list from named arguments
-#'
-#' For every field in the schema, takes the corresponding value from
-#' \code{args} if provided, or the field's default otherwise, then
-#' validates the resulting list against the schema (see
-#' \code{\link{validate_schema}}).
-#'
-#' @param args A named list of field values, e.g. from \code{list(...)}.
-#' @param schema A schema produced by config_schema.
-#' @return The validated, fully-populated configuration list.
-#' @keywords internal
-schema_initialize <- function(args, schema = config_schema) {
-  self <- lapply(names(schema$fields), function(field_name) {
-    if (field_name %in% names(args)) {
-      args[[field_name]]
-    } else {
-      schema$fields[[field_name]]$default
-    }
-  })
-  names(self) <- names(schema$fields)
-  validate_schema(self, schema)
-  self
 }

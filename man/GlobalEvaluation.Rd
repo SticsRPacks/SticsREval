@@ -4,11 +4,11 @@
 \alias{GlobalEvaluation}
 \title{GlobalEvaluation class}
 \description{
-The \code{GlobalEvaluation} class is responsible for evaluating the
-global performance of the STICS model across multiple USMs (User
-Simulation Models).
-It computes global statistics and performs a comparison of the relative
-Root Mean Square Error (rRMSE) for the specified variables.
+Internal class. Evaluates the global performance of the STICS model
+across multiple USMs (User Simulation Models): computes global
+statistics and performs a comparison of the relative Root Mean Square
+Error (rRMSE) for the specified variables. Instantiated internally by
+\code{\link{evaluate}}.
 }
 \details{
 The evaluation process involves the following steps:
@@ -19,22 +19,7 @@ data.
 \item Logging the results and providing a summary of the evaluation.
 }
 }
-\examples{
-\dontrun{
-config <- Configuration$new(
-  eval_workspace = "path/to/eval_workspace",
-  usms_workspace = "path/to/usms_workspace",
-  usms = c("USM1", "USM2"),
-  var2exclude = c("var1", "var2"),
-  percentage = 0.1,
-  output_dir = "path/to/output_dir"
-)
-global_eval <- GlobalEvaluation$new(config = config)
-global_eval$run()
-global_eval$summary()
-global_eval$export()
-}
-}
+\keyword{internal}
 \section{Active bindings}{
   \if{html}{\out{<div class="r6-active-bindings">}}
   \describe{
@@ -62,16 +47,29 @@ comparison.}
   Create a new GlobalEvaluation object.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
-    \preformatted{GlobalEvaluation$new(config, workspace = NULL, logger = default_logger)}
+    \preformatted{GlobalEvaluation$new(
+  eval_workspace = NULL,
+  usms = NULL,
+  var2exclude = NULL,
+  percentage = 5,
+  output_dir = NULL,
+  workspace = NULL,
+  logger = default_logger
+)}
     \if{html}{\out{</div>}}
   }
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
-      \item{\code{config}}{A Configuration object containing the necessary parameters
-for the evaluation.}
-      \item{\code{workspace}}{An optional EvalWorkspace object. If not provided, a new
-EvalWorkspace will be created using the provided configuration.}
+      \item{\code{eval_workspace}}{Path to the evaluation workspace. Only used to
+build a default \code{workspace} when one isn't supplied.}
+      \item{\code{usms}}{Optional character vector of USMs to evaluate.}
+      \item{\code{var2exclude}}{Optional character vector of variables to exclude.}
+      \item{\code{percentage}}{Threshold (\%) above which a variable is flagged as
+deteriorated vs. the reference.}
+      \item{\code{output_dir}}{Output directory for the CSV export.}
+      \item{\code{workspace}}{An optional EvalWorkspace object. If not provided, a
+new EvalWorkspace will be created from \code{eval_workspace}.}
       \item{\code{logger}}{An optional logger object for logging messages. If not
 provided, the default logger will be used.}
     }

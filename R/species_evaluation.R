@@ -1,36 +1,26 @@
 #' SpeciesEvaluation class
 #'
 #' @description
-#' The \code{SpeciesEvaluation} class is responsible for evaluating the
-#' performance of a model across different species. It computes statistics,
-#' generates comparisons, and produces reports for each species based on the
-#' provided configuration and workspace.
+#' Internal class. Evaluates the performance of a model across different
+#' species: computes statistics, generates comparisons, and produces
+#' reports for each species. Instantiated internally by
+#' \code{\link{evaluate}}.
 #'
 #' @details
 #' The class uses a backend for parallel processing and a workspace to
 #' access simulation and observation data. It provides methods to run
 #' evaluations, summarize results, and export findings.
 #'
-#' @examples
-#' \dontrun{
-#' config <- list(
-#'    eval_workspace = "path/to/eval_workspace",
-#'    usms = c("USM1", "USM2"),
-#'    species = c("Species1", "Species2"),
-#'    var2exclude = c("var1", "var2"),
-#'    percentage = 10,
-#'    parallel = TRUE,
-#'    cores = 4,
-#'    output_dir = "path/to/output"
-#' )
-#' species_eval <- SpeciesEvaluation$new(config = config)
-#' species_eval$run()
-#' }
-#' @export
+#' @keywords internal
 SpeciesEvaluation <- R6::R6Class("SpeciesEvaluation", # nolint: object_name_linter
 
   private = list(
-    config = NULL,
+    species = NULL,
+    usms = NULL,
+    var2exclude = NULL,
+    percentage = NULL,
+    output_dir = NULL,
+    eval_workspace = NULL,
     backend = NULL,
     workspace = NULL,
     logger = NULL,
@@ -72,7 +62,7 @@ SpeciesEvaluation <- R6::R6Class("SpeciesEvaluation", # nolint: object_name_lint
         comparison <- RRmseComparison$new(
           species = spec,
           stats = stats$stats,
-          percentage = private$config$percentage
+          percentage = private$percentage
         )
         private$rrmse_comparisons[[spec]] <- comparison
         private$logger$info(
@@ -82,18 +72,18 @@ SpeciesEvaluation <- R6::R6Class("SpeciesEvaluation", # nolint: object_name_lint
     },
 
     filter_species_config = function(species) {
-      if (is.null(private$config$species)) return(species)
-      intersect(species, private$config$species)
+      if (is.null(private$species)) return(species)
+      intersect(species, private$species)
     },
 
     filter_species_usms = function(species) {
-      if (is.null(private$config$usms)) return(species)
+      if (is.null(private$usms)) return(species)
 
       species <- species[
         vapply(species, function(sp) {
           private$logger$debug(sprintf("Checking USMs for species %s...", sp))
           species_usms <- private$workspace$get_species_situations(
-            sp, private$config$usms
+            sp, private$usms
           )
           private$logger$debug(sprintf(
             "Species %s has USMs: %s",
@@ -114,21 +104,21 @@ SpeciesEvaluation <- R6::R6Class("SpeciesEvaluation", # nolint: object_name_lint
             "Splitting simulations and observations data for species ", spec
           )
 
-          exclude <- c("version", "species", private$config$var2exclude)
+          exclude <- c("version", "species", private$var2exclude)
 
           splited_sim <- CroPlotR::split_df2sim(
             private$workspace$get_sim(
-              spec, usms = private$config$usms, var2exclude = exclude
+              spec, usms = private$usms, var2exclude = exclude
             )
           )
           splited_ref_sim <- CroPlotR::split_df2sim(
             private$workspace$get_ref_sim(
-              spec, usms = private$config$usms, var2exclude = exclude
+              spec, usms = private$usms, var2exclude = exclude
             )
           )
           splited_obs <- CroPlotR::split_df2sim(
             private$workspace$get_obs(
-              spec, usms = private$config$usms, var2exclude = exclude
+              spec, usms = private$usms, var2exclude = exclude
             )
           )
 
@@ -179,28 +169,44 @@ SpeciesEvaluation <- R6::R6Class("SpeciesEvaluation", # nolint: object_name_lint
   public = list(
     #' @description
     #' Create a new SpeciesEvaluation object.
-    #' @param config A Configuration object containing the necessary parameters
-    #' for the evaluation.
-    #' @param workspace An optional EvalWorkspace object. If not provided, a new
-    #' EvalWorkspace will be created using the provided configuration.
+    #' @param eval_workspace Path to the evaluation workspace. Only used to
+    #' build a default `workspace` when one isn't supplied.
+    #' @param species Optional character vector of species to evaluate.
+    #' @param usms Optional character vector of USMs to evaluate.
+    #' @param var2exclude Optional character vector of variables to exclude.
+    #' @param percentage Threshold (%) above which a variable is flagged as
+    #' deteriorated vs. the reference.
+    #' @param output_dir Output directory for CSV/plot exports.
+    #' @param parallel,cores Parallel execution options. Only used to build
+    #' a default `backend` when one isn't supplied.
+    #' @param workspace An optional EvalWorkspace object. If not provided, a
+    #' new EvalWorkspace will be created from `eval_workspace`.
     #' @param backend An optional ParallelBackend object for parallel
-    #' processing.
-    #' If not provided, a new ParallelBackend will be created using the provided
-    #' configuration.
+    #' processing. If not provided, a new ParallelBackend will be created
+    #' from `parallel`/`cores`.
     #' @param logger An optional logger object for logging messages. If not
     #' provided, the default logger will be used.
     initialize = function(
-      config, workspace = NULL, backend = NULL, logger = default_logger
+      eval_workspace = NULL,
+      species = NULL,
+      usms = NULL,
+      var2exclude = NULL,
+      percentage = 5,
+      output_dir = NULL,
+      parallel = FALSE,
+      cores = NA,
+      workspace = NULL,
+      backend = NULL,
+      logger = default_logger
     ) {
-      init_logger(config$verbose %||% 1L)
-      config$validate_eval()
-      private$config <- config
-      private$backend <- backend %||% ParallelBackend$new(
-        config$parallel, config$cores
-      )
-      private$workspace <- workspace %||% EvalWorkspace$new(
-        config$eval_workspace
-      )
+      private$eval_workspace <- eval_workspace
+      private$species <- species
+      private$usms <- usms
+      private$var2exclude <- var2exclude
+      private$percentage <- percentage
+      private$output_dir <- output_dir
+      private$backend <- backend %||% ParallelBackend$new(parallel, cores)
+      private$workspace <- workspace %||% EvalWorkspace$new(eval_workspace)
       private$logger <- logger
     },
 
@@ -248,7 +254,7 @@ SpeciesEvaluation <- R6::R6Class("SpeciesEvaluation", # nolint: object_name_lint
 
         private$logger$info(
           "Found ", length(species), " species in workspace ",
-          private$config$eval_workspace, ": ", format_species(species)
+          private$eval_workspace, ": ", format_species(species)
         )
 
         private$logger$info("Computing species comparison.")
@@ -326,7 +332,7 @@ SpeciesEvaluation <- R6::R6Class("SpeciesEvaluation", # nolint: object_name_lint
     #' subdirectory.
     export = function() {
       private$logger$info("Exporting species evaluation data")
-      plots_dir <- file.path(private$config$output_dir, "plots")
+      plots_dir <- file.path(private$output_dir, "plots")
       dir.create(
         plots_dir,
         recursive = TRUE,
@@ -351,20 +357,20 @@ SpeciesEvaluation <- R6::R6Class("SpeciesEvaluation", # nolint: object_name_lint
           )
           if (length(deteriorated) > 0) {
             spec_usms <- private$workspace$get_species_situations(spec)
-            var2exclude <- c("version", "species", private$config$var2exclude)
+            var2exclude <- c("version", "species", private$var2exclude)
             sim <- CroPlotR::split_df2sim(
               private$workspace$get_sim(
-                spec, usms = private$config$usms, var2exclude = var2exclude
+                spec, usms = private$usms, var2exclude = var2exclude
               )
             )
             ref_sim <- CroPlotR::split_df2sim(
               private$workspace$get_ref_sim(
-                spec, usms = private$config$usms, var2exclude = var2exclude
+                spec, usms = private$usms, var2exclude = var2exclude
               )
             )
             obs <- CroPlotR::split_df2sim(
               private$workspace$get_obs(
-                spec, usms = private$config$usms, var2exclude = var2exclude
+                spec, usms = private$usms, var2exclude = var2exclude
               )
             )
             gen_scatter_plot(
@@ -380,11 +386,11 @@ SpeciesEvaluation <- R6::R6Class("SpeciesEvaluation", # nolint: object_name_lint
       )
       safe_write_csv(
         dplyr::bind_rows(private$stats, .id = "species"),
-        file.path(private$config$output_dir, "species_stats.csv")
+        file.path(private$output_dir, "species_stats.csv")
       )
       safe_write_csv(
         dplyr::bind_rows(private$rrmse_per_usm, .id = "species"),
-        file.path(private$config$output_dir, "rRMSE_per_usm.csv")
+        file.path(private$output_dir, "rRMSE_per_usm.csv")
       )
       private$logger$info("Species evaluation export done")
     }
