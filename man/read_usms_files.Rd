@@ -17,4 +17,3 @@ a character vector of unique USM names
 \description{
 Read one or more USM list files.
 }
-\keyword{internal}

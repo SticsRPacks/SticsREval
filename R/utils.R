@@ -163,19 +163,3 @@ cli_indent_end <- function(ids) {
   cli::cli_end(ids$inner)
   cli::cli_end(ids$outer)
 }
-
-#' Read one or more USM list files.
-#'
-#' @param usms_files character vector of one or more paths to text
-#'  files, each containing one USM name per line (e.g. the output of
-#'  \code{get_usms_files.R})
-#'
-#' @returns a character vector of unique USM names
-#'
-#' @export
-read_usms_files <- function(usms_files) {
-  usms <- unique(unlist(
-    lapply(usms_files, function(f) trimws(readLines(f)))
-  ))
-  usms[nzchar(usms)]
-}

@@ -165,7 +165,7 @@ set_intercrop_code_shape <- function(workspace, usm_df) {
 #'
 #' @returns a character vector of unique USM names
 #'
-#' @keywords internal
+#' @export
 read_usms_files <- function(usms_files) {
   usms <- unique(unlist(
     lapply(usms_files, function(f) trimws(readLines(f)))
