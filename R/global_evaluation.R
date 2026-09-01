@@ -168,7 +168,8 @@ GlobalEvaluation <- R6::R6Class("GlobalEvaluation", # nolint: object_name_linter
     #' @description
     #' Export the global evaluation results to CSV files.
     #' This method exports the global statistics and rRMSE comparison results
-    #' to CSV files in the specified output directory.
+    #' to CSV files in the `csv` subdirectory of the specified output
+    #' directory.
     export = function() {
       private$logger$info("Exporting global evaluation data")
       if (is.null(private$stats)) {
@@ -177,7 +178,7 @@ GlobalEvaluation <- R6::R6Class("GlobalEvaluation", # nolint: object_name_linter
       }
       safe_write_csv(
         private$stats,
-        file.path(private$output_dir, "global_stats.csv")
+        csv_output_path(private$output_dir, "global_stats.csv")
       )
       private$logger$info("Global evaluation export done")
     }

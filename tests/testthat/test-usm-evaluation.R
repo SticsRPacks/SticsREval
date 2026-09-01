@@ -295,5 +295,7 @@ test_that("export does not error when no species has a deteriorated USM", {
   replace_private(eval, "logger", default_logger)
 
   expect_no_error(eval$export())
-  expect_false(file.exists(file.path(output_dir, "Deteriorated_USM.csv")))
+  expect_false(
+    file.exists(file.path(output_dir, "csv", "Deteriorated_USM.csv"))
+  )
 })

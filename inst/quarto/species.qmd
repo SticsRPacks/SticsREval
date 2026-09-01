@@ -1,0 +1,162 @@
+---
+title: "`r params$species`"
+params:
+  species: null
+  output_dir: null
+  species_list: null
+format:
+  html:
+    toc: true
+    toc-location: left
+    theme: cosmo
+    page-layout: full
+---
+
+```{r}
+#| label: setup
+#| include: false
+
+sp <- params$species
+csv_dir <- file.path(params$output_dir, "csv")
+
+read_csv_safe <- function(path) {
+  if (!file.exists(path)) return(NULL)
+  csv_df <- utils::read.csv(
+    path, stringsAsFactors = FALSE, check.names = FALSE
+  )
+  if (nrow(csv_df) == 0) NULL else csv_df
+}
+
+dt <- function(df) {
+  if (is.null(df) || nrow(df) == 0) {
+    return(htmltools::tags$p(htmltools::em("No data.")))
+  }
+  DT::datatable(
+    df,
+    rownames = FALSE,
+    filter = "top",
+    options = list(pageLength = 10, scrollX = TRUE)
+  )
+}
+
+species_stats <- read_csv_safe(file.path(csv_dir, "species_stats.csv"))
+rrmse_per_usm <- read_csv_safe(file.path(csv_dir, "rRMSE_per_usm.csv"))
+rrmse_comparison <- read_csv_safe(
+  file.path(csv_dir, "species_rrmse_comparison.csv")
+)
+
+# Scatter plot files for this species live alongside this rendered page, so
+# bare filenames resolve directly. Ordered from most to least degraded using
+# `rrmse_comparison`'s species-level rRMSE ratio (falls back to filesystem
+# order - alphabetical by variable - if that data isn't available).
+scatter_paths <- Sys.glob("*_scatter_plot.html")
+scatter_vars <- tools::file_path_sans_ext(basename(scatter_paths))
+scatter_vars <- sub("_scatter_plot$", "", scatter_vars)
+
+ratio <- rep(NA_real_, length(scatter_vars))
+has_ratio <- !is.null(rrmse_comparison) &&
+  all(c("species", "variable", "rrmse_ratio") %in% names(rrmse_comparison))
+if (has_ratio) {
+  sp_comp <- rrmse_comparison[rrmse_comparison$species == sp, , drop = FALSE]
+  ratio <- sp_comp$rrmse_ratio[match(scatter_vars, sp_comp$variable)]
+}
+ord <- order(-ifelse(is.na(ratio), -Inf, ratio))
+scatter_paths <- scatter_paths[ord]
+scatter_vars <- scatter_vars[ord]
+```
+
+<style>
+.back-link {
+  display: inline-flex; align-items: center; gap: 0.4em;
+  padding: 0.4em 1em; margin-bottom: 0.5em;
+  border-radius: 6px; background: #f0f0f0; color: #2c3e50;
+  text-decoration: none; font-weight: 600; font-size: 0.9em;
+}
+.back-link:hover { background: #e0e0e0; }
+</style>
+<a class="back-link" href="../../dashboard.html">&larr; Back to dashboard</a>
+
+```{r}
+#| echo: false
+#| results: asis
+other_species <- params$species_list
+if (length(other_species) > 1) {
+  cat(paste(
+    "\n<style>",
+    ".species-nav {",
+    "  display: flex; flex-wrap: wrap; gap: 0.4em; margin: 0.75em 0 1.25em;",
+    "}",
+    ".species-nav a, .species-nav .species-nav-current {",
+    "  padding: 0.3em 0.9em; border-radius: 999px; font-size: 0.9em;",
+    "  text-decoration: none;",
+    "}",
+    ".species-nav a { background: #f0f0f0; color: #2c3e50; }",
+    ".species-nav a:hover { background: #e0e0e0; }",
+    ".species-nav .species-nav-current {",
+    "  background: #2c3e50; color: white; font-weight: 600;",
+    "}",
+    "</style>\n",
+    sep = "\n"
+  ))
+
+  cat('<nav class="species-nav">\n')
+  for (other in other_species) {
+    if (identical(other, sp)) {
+      cat(sprintf('<span class="species-nav-current">%s</span>\n', other))
+    } else {
+      cat(sprintf('<a href="../%s/species.html">%s</a>\n', other, other))
+    }
+  }
+  cat("</nav>\n\n")
+}
+```
+
+## `r sp`
+
+**Species statistics**
+
+```{r}
+#| echo: false
+dt(species_stats[species_stats$species == sp, , drop = FALSE])
+```
+
+```{r}
+#| echo: false
+#| results: asis
+if (!is.null(rrmse_per_usm) && "species" %in% names(rrmse_per_usm)) {
+  cat("**rRMSE per USM**\n\n")
+  print(htmltools::tagList(
+    dt(rrmse_per_usm[rrmse_per_usm$species == sp, , drop = FALSE])
+  ))
+  cat("\n\n")
+}
+
+comparison_path <- "species_comparison.png"
+if (file.exists(comparison_path)) {
+  cat("**Comparison plot**\n\n")
+  cat(sprintf(
+    '<img src="%s" style="max-width:100%%; border:1px solid #ddd;">\n\n', # nolint: line_length_linter
+    comparison_path
+  ))
+  cat(paste0(
+    "::: {.callout-note}\n",
+    "Why some variables above have no scatter plot below: a variable ",
+    "is colored Critical or Warning here as soon as its species-level ",
+    "rRMSE ratio crosses the threshold, but the evaluation system ",
+    "additionally requires more than 10 observations (`n_obs > 10`) ",
+    "before flagging a variable as deteriorated. A variable with fewer ",
+    "observations can still show up as Critical or Warning above, but ",
+    "won't get an individual scatter plot below - it isn't considered ",
+    "statistically reliable enough to trigger one.\n",
+    ":::\n\n"
+  ))
+}
+
+for (i in seq_along(scatter_paths)) {
+  cat(sprintf("**Scatter plot: %s**\n\n", scatter_vars[i]))
+  cat(sprintf(
+    '<iframe src="%s" style="width:100%%; height:450px; border:none;"></iframe>\n\n', # nolint: line_length_linter
+    scatter_paths[i]
+  ))
+}
+```

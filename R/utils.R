@@ -47,6 +47,14 @@ safe_write_csv <- function(data, path) {
   })
 }
 
+csv_output_path <- function(output_dir, filename) {
+  csv_dir <- file.path(output_dir, "csv")
+  if (!dir.exists(csv_dir) && !dir.create(csv_dir, recursive = TRUE)) {
+    stop("Can't create ", csv_dir, " directory", call. = FALSE)
+  }
+  file.path(csv_dir, filename)
+}
+
 read_csv <- function(filepath, delimiter = ",") {
   csv_data <- readr::read_delim(
     filepath,
@@ -62,7 +70,16 @@ read_csv <- function(filepath, delimiter = ",") {
   csv_data
 }
 
-gen_scatter_plot <- function(output_path, sim, obs, ref_sim, vars) {
+#' Generate one independent scatter plot HTML file per variable
+#'
+#' @description
+#' Unlike a single combined page, each variable in \code{vars} gets its own
+#' standalone HTML file, named \code{<var>_scatter_plot.html} in
+#' \code{output_dir}, so it can be viewed, shared or embedded independently
+#' of the others (e.g. one per tab/card in a dashboard).
+#'
+#' @keywords internal
+gen_scatter_plot <- function(output_dir, sim, obs, ref_sim, vars) {
   plots <- plot(
     "New version" = sim,
     "Ref version" = ref_sim,
@@ -71,19 +88,15 @@ gen_scatter_plot <- function(output_path, sim, obs, ref_sim, vars) {
     select_scat = "sim",
     var = vars
   )
-  page_list <- htmltools::tagList(
-    lapply(vars, function(var) {
-      suppressWarnings(
-        plotly::ggplotly(
-          CroPlotR::extract_plot(plots, var = var)[[1]]
-        )
-      )
-    })
-  )
-  htmltools::save_html(
-    page_list,
-    file = output_path
-  )
+  for (var in vars) {
+    widget <- suppressWarnings(
+      plotly::ggplotly(CroPlotR::extract_plot(plots, var = var)[[1]])
+    )
+    htmltools::save_html(
+      htmltools::tagList(widget),
+      file = file.path(output_dir, paste0(var, "_scatter_plot.html"))
+    )
+  }
   invisible(NULL)
 }
 

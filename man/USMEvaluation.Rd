@@ -197,9 +197,9 @@ rmse_ref, rmse_species, ratio, n_obs).
 \subsection{\code{USMEvaluation$export()}}{
   Export the USM evaluation data for deteriorated USMs to a CSV file.
 
-The exported file is written to the configured output directory and is
-named \code{Deteriorated_USM.csv}. Only USMs that contain evaluation data are
-included in the export.
+The exported file is written to the \code{csv} subdirectory of the
+configured output directory and is named \code{Deteriorated_USM.csv}. Only
+USMs that contain evaluation data are included in the export.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{USMEvaluation$export()}

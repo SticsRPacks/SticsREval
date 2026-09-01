@@ -521,9 +521,9 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
     #' @description
     #' Export the USM evaluation data for deteriorated USMs to a CSV file.
     #'
-    #' The exported file is written to the configured output directory and is
-    #' named `Deteriorated_USM.csv`. Only USMs that contain evaluation data are
-    #' included in the export.
+    #' The exported file is written to the `csv` subdirectory of the
+    #' configured output directory and is named `Deteriorated_USM.csv`. Only
+    #' USMs that contain evaluation data are included in the export.
     export = function() {
       private$logger$info("Exporting USM evaluation data")
 
@@ -552,7 +552,7 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
 
       safe_write_csv(
         merged_data,
-        file.path(private$output_dir, "Deteriorated_USM.csv")
+        csv_output_path(private$output_dir, "Deteriorated_USM.csv")
       )
     },
 

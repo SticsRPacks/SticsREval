@@ -109,7 +109,8 @@ statistics and comparing the rRMSE values for the specified variables.
 \subsection{\code{GlobalEvaluation$export()}}{
   Export the global evaluation results to CSV files.
 This method exports the global statistics and rRMSE comparison results
-to CSV files in the specified output directory.
+to CSV files in the \code{csv} subdirectory of the specified output
+directory.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{GlobalEvaluation$export()}

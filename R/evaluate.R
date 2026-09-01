@@ -22,6 +22,9 @@
 #'  comparison against a reference
 #' @param output_dir directory where CSV exports and plots are written. If
 #'  NULL (default), results are not exported
+#' @param report Boolean. If \code{TRUE} and \code{output_dir} is set,
+#'  renders an HTML dashboard (see \code{\link{render_report}}) summarizing
+#'  the exported results once evaluation is done. Default \code{FALSE}.
 #' @param percentage threshold (%) above which a variable is flagged as
 #'  deteriorated vs. the reference (default 5)
 #' @param species optional character vector of species to evaluate. NULL
@@ -65,6 +68,7 @@ evaluate <- function(
   obs_rds,
   ref_sim_rds = NULL,
   output_dir = NULL,
+  report = FALSE,
   percentage = 5,
   species = NULL,
   usms = NULL,
@@ -90,6 +94,7 @@ evaluate <- function(
       ),
       ref_sim_rds = field_spec(type = "character", validator = validate_rds_path), # nolint: line_length_linter
       output_dir = field_spec(type = "character"),
+      report = field_spec(type = "logical", nullable = FALSE),
       percentage = field_spec(
         type = "numeric", nullable = FALSE, min = 0, max = 100
       ),
@@ -167,6 +172,7 @@ evaluate <- function(
 
   if (!is.null(output_dir)) {
     export_evaluations(evaluations, output_dir)
+    if (report) render_report(output_dir, open = FALSE)
   }
 
   summarize_evaluations(evaluations)

@@ -10,6 +10,7 @@ evaluate(
   obs_rds,
   ref_sim_rds = NULL,
   output_dir = NULL,
+  report = FALSE,
   percentage = 5,
   species = NULL,
   usms = NULL,
@@ -41,6 +42,10 @@ comparison against a reference}
 
 \item{output_dir}{directory where CSV exports and plots are written. If
 NULL (default), results are not exported}
+
+\item{report}{Boolean. If \code{TRUE} and \code{output_dir} is set,
+renders an HTML dashboard (see \code{\link{render_report}}) summarizing
+the exported results once evaluation is done. Default \code{FALSE}.}
 
 \item{percentage}{threshold (\%) above which a variable is flagged as
 deteriorated vs. the reference (default 5)}

@@ -144,10 +144,11 @@ workspace.
 \if{latex}{\out{\hypertarget{method-SpeciesEvaluation-export}{}}}
 \subsection{\code{SpeciesEvaluation$export()}}{
   Export the species evaluation results to CSV files and plots.
-This method exports the statistics, rRMSE comparisons, and deteriorated
-USM data to CSV files in the specified output directory. It also
-generates plots for each species and saves them in the "plots"
-subdirectory.
+This method exports the statistics, rRMSE comparisons (including the
+species-level rRMSE ratio per variable, in \verb{species_rrmse_comparison .csv}), and deteriorated USM data to CSV files in the "csv"
+subdirectory. It also generates a static rRMSE comparison plot and
+interactive per-variable scatter plots for each species, saved in
+their own subdirectory under "plots" (one per species).
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{SpeciesEvaluation$export()}

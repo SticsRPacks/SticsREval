@@ -1,0 +1,130 @@
+---
+title: "STICS Evaluation Dashboard"
+date: last-modified
+format:
+  html:
+    toc: true
+    toc-location: left
+    theme: cosmo
+    page-layout: full
+---
+
+```{r}
+#| label: setup
+#| include: false
+
+read_csv_safe <- function(path) {
+  if (!file.exists(path)) return(NULL)
+  csv_df <- utils::read.csv(
+    path, stringsAsFactors = FALSE, check.names = FALSE
+  )
+  if (nrow(csv_df) == 0) NULL else csv_df
+}
+
+dt <- function(df) {
+  if (is.null(df) || nrow(df) == 0) {
+    return(htmltools::tags$p(htmltools::em("No data.")))
+  }
+  DT::datatable(
+    df,
+    rownames = FALSE,
+    filter = "top",
+    options = list(pageLength = 10, scrollX = TRUE)
+  )
+}
+
+global_stats <- read_csv_safe(file.path("csv", "global_stats.csv"))
+species_stats <- read_csv_safe(file.path("csv", "species_stats.csv"))
+deteriorated_usm <- read_csv_safe(file.path("csv", "Deteriorated_USM.csv"))
+rrmse_comparison <- read_csv_safe(
+  file.path("csv", "species_rrmse_comparison.csv")
+)
+
+species_list <- if (!is.null(species_stats) && "species" %in% names(species_stats)) { # nolint: line_length_linter
+  sort(unique(species_stats$species))
+} else {
+  character(0)
+}
+
+# Species with at least one Critical variable (matches RRmseComparison's
+# critical_vars: status == "Critical" *and* n_obs > 10 - a variable can show
+# Critical in the comparison plot without meeting that n_obs bar, see the
+# callout note on the species page).
+has_status <- !is.null(rrmse_comparison) &&
+  all(c("species", "status", "n_obs") %in% names(rrmse_comparison))
+species_with_critical_vars <- if (has_status) {
+  critical <- rrmse_comparison[
+    rrmse_comparison$status == "Critical" & rrmse_comparison$n_obs > 10, ,
+    drop = FALSE
+  ]
+  unique(critical$species)
+} else {
+  character(0)
+}
+```
+
+## Global
+
+```{r}
+#| echo: false
+dt(global_stats)
+```
+
+## Deteriorated USMs
+
+```{r}
+#| echo: false
+#| results: asis
+if (is.null(deteriorated_usm)) {
+  cat("\n\n::: {.callout-note}\nNo deteriorated USM detected.\n:::\n\n")
+} else {
+  print(htmltools::tagList(dt(deteriorated_usm)))
+}
+```
+
+## Species
+
+```{r}
+#| echo: false
+#| results: asis
+
+if (length(species_list) == 0) {
+  cat("\n\nNo species-level data available.\n\n")
+} else {
+  cat(paste(
+    "\n\n<style>",
+    ".species-list { list-style: none; padding: 0; margin: 0; max-width: 32em; }", # nolint: line_length_linter
+    ".species-list li {",
+    "  display: flex; align-items: center; justify-content: space-between;",
+    "  padding: 0.6em 1em; margin-bottom: 0.4em;",
+    "  border: 1px solid #e2e2e2; border-radius: 6px;",
+    "  transition: background-color 0.15s ease;",
+    "}",
+    ".species-list li:hover { background-color: #f7f7f7; }",
+    ".species-list a {",
+    "  text-decoration: none; font-weight: 600; color: #2c3e50;",
+    "}",
+    ".species-list a:hover { text-decoration: underline; }",
+    ".species-badge {",
+    "  font-size: 0.8em; color: #c0392b; background: #fdecea;",
+    "  border-radius: 999px; padding: 0.2em 0.7em;",
+    "}",
+    "</style>\n\n",
+    sep = "\n"
+  ))
+
+  cat('<ul class="species-list">\n')
+  for (sp in species_list) {
+    badge <- if (sp %in% species_with_critical_vars) {
+      ' <span class="species-badge">critical variables</span>'
+    } else {
+      ""
+    }
+    cat(sprintf(
+      '<li><a href="%s">%s</a>%s</li>\n',
+      file.path("plots", sp, "species.html"), sp, badge
+    ))
+  }
+  cat("</ul>\n\n")
+}
+```

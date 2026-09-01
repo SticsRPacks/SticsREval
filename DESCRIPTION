@@ -40,7 +40,9 @@ Remotes:
     github::SticsRPacks/SticsOnR,
     github::SticsRPacks/SticsRFiles
 Suggests:
+    DT,
     mockery,
+    quarto,
     testthat (>= 3.0.0),
     withr
 Config/testthat/edition: 3
@@ -57,6 +59,7 @@ Collate:
     'global_evaluation.R'
     'logger.R'
     'parallelism.R'
+    'render_report.R'
     'rrmse_comparison.R'
     'run_simulations.R'
     'species_evaluation.R'
