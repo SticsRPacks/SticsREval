@@ -195,11 +195,20 @@ rmse_ref, rmse_species, ratio, n_obs).
 \if{html}{\out{<a id="method-USMEvaluation-export"></a>}}
 \if{latex}{\out{\hypertarget{method-USMEvaluation-export}{}}}
 \subsection{\code{USMEvaluation$export()}}{
-  Export the USM evaluation data for deteriorated USMs to a CSV file.
+  Export the USM evaluation data for deteriorated USMs, and a per-species
+USM pass/fail count summary, to CSV files.
 
-The exported file is written to the \code{csv} subdirectory of the
-configured output directory and is named \code{Deteriorated_USM.csv}. Only
-USMs that contain evaluation data are included in the export.
+The exported files are written to the \code{csv} subdirectory of the
+configured output directory: \code{usm_thresholds.csv} (the
+\code{ratio_threshold}/\code{degraded_threshold}/
+\code{max_degraded_vars} this evaluation was configured with, so
+downstream reports can explain what "failed" means for this run),
+\code{Deteriorated_USM.csv} (only if at least one USM has deteriorated
+data), \code{usm_summary.csv} (species, total USMs, failed USMs, passed
+USMs), and \code{failed_usms.csv} (species, situation - the same USMs
+counted as "failed" in \code{usm_summary.csv} and reported by
+\code{summary()}, i.e. \code{self$failed_usms}; only written if at
+least one USM failed).
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{USMEvaluation$export()}

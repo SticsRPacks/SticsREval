@@ -15,37 +15,118 @@ read_csv_safe <- function(path) {
   if (nrow(csv_df) == 0) NULL else csv_df
 }
 
-dt <- function(df) {
-  if (is.null(df) || nrow(df) == 0) {
-    return(htmltools::tags$p(htmltools::em("No data.")))
+tag_class <- c(
+  Critical = "tag-critical", Warning = "tag-warning", OK = "tag-ok",
+  Failed = "tag-critical", Passed = "tag-ok"
+)
+
+# Renders `items` (e.g. species names) as colored pill badges, echoing the
+# colored lists `cli` prints to the console for the same
+# critical/warning/ok-or-passed groupings, styled for HTML instead.
+tag_list <- function(items, status) {
+  if (length(items) == 0) {
+    return('<span class="tag-empty">None</span>')
   }
-  DT::datatable(
-    df,
-    rownames = FALSE,
-    filter = "top",
-    options = list(pageLength = 10, scrollX = TRUE)
+  paste(
+    sprintf('<span class="tag %s">%s</span>', tag_class[[status]], items),
+    collapse = " "
   )
 }
 
-global_stats <- read_csv_safe(file.path("csv", "global_stats.csv"))
-deteriorated_usm <- read_csv_safe(file.path("csv", "Deteriorated_USM.csv"))
+evaluation_status <- read_csv_safe(file.path("csv", "evaluation_status.csv"))
+species_summary <- read_csv_safe(file.path("csv", "species_summary.csv"))
+usm_summary <- read_csv_safe(file.path("csv", "usm_summary.csv"))
 ```
 
-## Global statistics
-
-```{r}
-#| echo: false
-dt(global_stats)
+```{=html}
+<style>
+.tag {
+  display: inline-block; padding: 0.15em 0.7em; margin: 0.15em 0.25em 0.15em 0; # nolint: line_length_linter
+  border-radius: 999px; font-size: 0.9em; font-weight: 600;
+}
+.tag-critical { background: #fdecea; color: #c0392b; }
+.tag-warning { background: #fef5e7; color: #b9770e; }
+.tag-ok { background: #eafaf1; color: #1e8449; }
+.tag-empty { color: #888; font-style: italic; }
+.summary-block { margin: 0.5em 0 1.5em; }
+.summary-block > p:first-child { margin-bottom: 0.3em; }
+</style>
 ```
 
-## Deteriorated USMs
+## Evaluation status
 
 ```{r}
 #| echo: false
 #| results: asis
-if (is.null(deteriorated_usm)) {
-  cat("\n\n::: {.callout-note}\nNo deteriorated USM detected.\n:::\n\n")
+if (!is.null(evaluation_status)) {
+  for (i in seq_len(nrow(evaluation_status))) {
+    icon <- if (isTRUE(evaluation_status$success[i])) {
+      '<span style="color:#2ecc71;">&#10004;</span>'
+    } else {
+      '<span style="color:#e74c3c;">&#10008;</span>'
+    }
+    cat(sprintf(
+      "%s %s&emsp;", icon, evaluation_status$evaluation[i]
+    ))
+  }
+  cat("\n\n")
+}
+```
+
+## Species evaluation
+
+```{r}
+#| echo: false
+#| results: asis
+if (is.null(species_summary)) {
+  cat("::: {.callout-note}\nNo comparison done.\n:::\n\n")
 } else {
-  print(htmltools::tagList(dt(deteriorated_usm)))
+  cat('<div class="summary-block">\n')
+  cat("<p>The following species show at least one variable with:</p>\n")
+  cat(sprintf(
+    "<p><strong>Major degradation</strong><br>\n%s</p>\n",
+    tag_list(
+      species_summary$species[species_summary$status == "Critical"],
+      "Critical"
+    )
+  ))
+  cat(sprintf(
+    "<p><strong>Minor degradation</strong><br>\n%s</p>\n",
+    tag_list(
+      species_summary$species[species_summary$status == "Warning"],
+      "Warning"
+    )
+  ))
+  cat(sprintf(
+    "<p><strong>No degradation</strong><br>\n%s</p>\n",
+    tag_list(species_summary$species[species_summary$status == "OK"], "OK")
+  ))
+  cat("</div>\n\n")
+}
+```
+
+## USM evaluation
+
+```{r}
+#| echo: false
+#| results: asis
+if (is.null(usm_summary)) {
+  cat("::: {.callout-note}\nNo USM evaluation data.\n:::\n\n")
+} else {
+  cat('<div class="summary-block">\n')
+  cat("<p>The following species have at least one failed USM:</p>\n")
+  cat(sprintf(
+    "<p><strong>Failed</strong><br>\n%s</p>\n",
+    tag_list(
+      usm_summary$species[usm_summary$failed_usms > 0], "Failed"
+    )
+  ))
+  cat(sprintf(
+    "<p><strong>Passed</strong> (all USMs ok)<br>\n%s</p>\n",
+    tag_list(
+      usm_summary$species[usm_summary$failed_usms == 0], "Passed"
+    )
+  ))
+  cat("</div>\n\n")
 }
 ```

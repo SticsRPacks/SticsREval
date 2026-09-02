@@ -107,10 +107,13 @@ statistics and comparing the rRMSE values for the specified variables.
 \if{html}{\out{<a id="method-GlobalEvaluation-export"></a>}}
 \if{latex}{\out{\hypertarget{method-GlobalEvaluation-export}{}}}
 \subsection{\code{GlobalEvaluation$export()}}{
-  Export the global evaluation results to CSV files.
-This method exports the global statistics and rRMSE comparison results
-to CSV files in the \code{csv} subdirectory of the specified output
-directory.
+  Export the global evaluation results to CSV files and a comparison
+plot. This method exports the global statistics
+(\code{global_stats.csv}) and, if a comparison against a reference version
+was performed, the per-variable rRMSE comparison
+(\code{global_rrmse_comparison.csv}, with each variable's status:
+Critical/Warning/Improved/Other) to the \code{csv} subdirectory, plus a
+static rRMSE comparison plot (\code{plots/global_comparison.png}).
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{GlobalEvaluation$export()}

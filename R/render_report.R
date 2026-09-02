@@ -3,17 +3,21 @@
 #' @description
 #' Renders an HTML site summarizing the evaluation results written to
 #' \code{output_dir} by \code{\link{evaluate}} (called with \code{output_dir}
-#' set): a homepage (\code{index.html}) showing the global stats
-#' (\code{global_stats.csv}) and deteriorated USMs
-#' (\code{Deteriorated_USM.csv}) from \code{output_dir/csv}, and one page per
-#' species (\code{output_dir/plots/<species>/species.html}) with that
-#' species' statistics, rRMSE comparison plot and scatter plots. It's a
-#' single Quarto website project (a generated \code{_quarto.yml}), so every
-#' page shares the same navigation sidebar - but each species page is still
-#' rendered and loaded separately, so a browser only has to load one
-#' species' plots at a time, instead of every species' plots at once on a
-#' single page. Nothing is recomputed or replotted: only the files
-#' \code{evaluate()} already wrote are read.
+#' set): a homepage (\code{index.html}) showing the evaluation summary
+#' (pass/fail status, and per-species status/USM counts), a global page
+#' (\code{global.html}) showing the degraded variables and global stats
+#' (\code{global_stats.csv}) from \code{output_dir/csv}, and one page per
+#' species (\code{output_dir/species/<species>.html}) with that species'
+#' statistics, degraded variables, deteriorated/failed USMs, rRMSE
+#' comparison plot and scatter plots - the plots themselves stay under
+#' \code{output_dir/plots/<species>/} (where \code{\link{evaluate}} wrote
+#' them), the species page just links to them. It's a single Quarto
+#' website project (a generated \code{_quarto.yml}), so every page shares
+#' the same navigation sidebar - but each species page is still rendered
+#' and loaded separately, so a browser only has to load one species' plots
+#' at a time, instead of every species' plots at once on a single page.
+#' Nothing is recomputed or replotted: only the files \code{evaluate()}
+#' already wrote are read.
 #'
 #' None of the pages are standalone files: they link to the PNG/HTML plots
 #' via relative paths (and Quarto writes its own JS/CSS assets to a shared
@@ -70,12 +74,15 @@ render_report <- function(output_dir, open = interactive()) {
   quarto::quarto_render(
     input = file.path(output_dir, "index.qmd"), quiet = !is_debug()
   )
+  quarto::quarto_render(
+    input = file.path(output_dir, "global.qmd"), quiet = !is_debug()
+  )
 
   abs_output_dir <- normalizePath(output_dir)
   for (sp in species_list) {
     logger::log_info("Rendering evaluation page for species {sp}...")
     quarto::quarto_render(
-      input = file.path(output_dir, "plots", sp, "species.qmd"),
+      input = file.path(output_dir, "species", paste0(sp, ".qmd")),
       execute_params = list(species = sp, output_dir = abs_output_dir),
       quiet = !is_debug()
     )
@@ -108,9 +115,13 @@ get_species_list <- function(output_dir) {
 # only included when there's species data), a copy of `index.qmd` (the
 # homepage - named that way, rather than e.g. "dashboard.qmd", so Quarto
 # renders it straight to `index.html` instead of generating a redirect stub
-# there pointing at whichever page it picks first), and one
-# `plots/<species>/species.qmd` per species (colocated with that species'
-# own plots, so its `img`/`iframe` src can stay a bare filename). Templates
+# there pointing at whichever page it picks first), a copy of `global.qmd`
+# (degraded variables and global stats, kept off the homepage), and one
+# `species/<species>.qmd` per species (so it renders to
+# `species/<species>.html`) - kept separate from `plots/<species>/` (where
+# the species' own PNG/HTML plots were written by `evaluate()`) so report
+# pages and raw plot assets don't mix; species.qmd links to its plots via a
+# relative `../plots/<species>/` path instead of a bare filename. Templates
 # are copied verbatim - the `species`/`output_dir` params they declare are
 # filled in at render time via `execute_params`, not by rewriting the file.
 # Returns every path written, for the caller to clean up after rendering.
@@ -122,16 +133,22 @@ write_project_files <- function(output_dir, species_list) {
   file.copy(
     file.path(quarto_dir, "index.qmd"), index_path, overwrite = TRUE
   )
-  written <- c(yml_path, index_path)
+  global_path <- file.path(output_dir, "global.qmd")
+  file.copy(
+    file.path(quarto_dir, "global.qmd"), global_path, overwrite = TRUE
+  )
+  written <- c(yml_path, index_path, global_path)
 
-  for (sp in species_list) {
-    sp_dir <- file.path(output_dir, "plots", sp)
-    dir.create(sp_dir, recursive = TRUE, showWarnings = FALSE)
-    sp_qmd_path <- file.path(sp_dir, "species.qmd")
-    file.copy(
-      file.path(quarto_dir, "species.qmd"), sp_qmd_path, overwrite = TRUE
-    )
-    written <- c(written, sp_qmd_path)
+  if (length(species_list) > 0) {
+    species_dir <- file.path(output_dir, "species")
+    dir.create(species_dir, recursive = TRUE, showWarnings = FALSE)
+    for (sp in species_list) {
+      sp_qmd_path <- file.path(species_dir, paste0(sp, ".qmd"))
+      file.copy(
+        file.path(quarto_dir, "species.qmd"), sp_qmd_path, overwrite = TRUE
+      )
+      written <- c(written, sp_qmd_path)
+    }
   }
 
   written
@@ -148,13 +165,18 @@ write_quarto_yml <- function(output_dir, species_list) {
     entries <- lapply(species_list, function(sp) {
       list(
         text = sp,
-        href = file.path("plots", sp, "species.qmd")
+        href = file.path("species", paste0(sp, ".qmd"))
       )
     })
     species_section <- list(section = "Species", contents = entries)
-    quarto_content$website$sidebar$contents <- list(
-      quarto_content$website$sidebar$contents,
-      species_section
+    # `read_yaml()` collapses a sequence of plain strings (e.g. the static
+    # `index.qmd`/`global.qmd` entries) into an atomic character vector
+    # rather than a list, so it must go through `as.list()` before being
+    # combined with `species_section` - otherwise `c()`/`list()` would nest
+    # it as a single array-within-array entry instead of flattening it.
+    quarto_content$website$sidebar$contents <- c(
+      as.list(quarto_content$website$sidebar$contents),
+      list(species_section)
     )
   }
 

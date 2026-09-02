@@ -20,17 +20,21 @@ invisibly, the path to the rendered \code{index.html} file
 \description{
 Renders an HTML site summarizing the evaluation results written to
 \code{output_dir} by \code{\link{evaluate}} (called with \code{output_dir}
-set): a homepage (\code{index.html}) showing the global stats
-(\code{global_stats.csv}) and deteriorated USMs
-(\code{Deteriorated_USM.csv}) from \code{output_dir/csv}, and one page per
-species (\code{output_dir/plots/<species>/species.html}) with that
-species' statistics, rRMSE comparison plot and scatter plots. It's a
-single Quarto website project (a generated \code{_quarto.yml}), so every
-page shares the same navigation sidebar - but each species page is still
-rendered and loaded separately, so a browser only has to load one
-species' plots at a time, instead of every species' plots at once on a
-single page. Nothing is recomputed or replotted: only the files
-\code{evaluate()} already wrote are read.
+set): a homepage (\code{index.html}) showing the evaluation summary
+(pass/fail status, and per-species status/USM counts), a global page
+(\code{global.html}) showing the degraded variables and global stats
+(\code{global_stats.csv}) from \code{output_dir/csv}, and one page per
+species (\code{output_dir/species/<species>.html}) with that species'
+statistics, degraded variables, deteriorated/failed USMs, rRMSE
+comparison plot and scatter plots - the plots themselves stay under
+\code{output_dir/plots/<species>/} (where \code{\link{evaluate}} wrote
+them), the species page just links to them. It's a single Quarto
+website project (a generated \code{_quarto.yml}), so every page shares
+the same navigation sidebar - but each species page is still rendered
+and loaded separately, so a browser only has to load one species' plots
+at a time, instead of every species' plots at once on a single page.
+Nothing is recomputed or replotted: only the files \code{evaluate()}
+already wrote are read.
 
 None of the pages are standalone files: they link to the PNG/HTML plots
 via relative paths (and Quarto writes its own JS/CSS assets to a shared

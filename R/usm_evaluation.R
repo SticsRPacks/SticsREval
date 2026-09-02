@@ -62,6 +62,28 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
     ratio_threshold = NULL,
     degraded_threshold = NULL,
     max_degraded_vars = NULL,
+
+    # Per-species USM pass/fail counts, used by both `summary()` (console
+    # report) and `export()` (`usm_summary.csv`).
+    usm_summary_table = function() {
+      failed <- self$failed_usms
+      all_species <- names(private$data)
+
+      summary_table <- dplyr::bind_rows(lapply(all_species, function(spec) {
+        all_usms <- unique(private$data[[spec]]$situation)
+        n_failed <- sum(failed$species == spec)
+
+        data.frame(
+          species = spec,
+          total_usms = length(all_usms),
+          failed_usms = n_failed,
+          passed_usms = length(all_usms) - n_failed,
+          stringsAsFactors = FALSE
+        )
+      }))
+      dplyr::arrange(summary_table, dplyr::desc(.data$failed_usms))
+    },
+
     # If a SpeciesEvaluation instance was injected and it has already
     # computed statistics for this species (i.e. it was run() before this
     # USMEvaluation), reuse them instead of re-reading the sim/obs/ref data
@@ -519,13 +541,44 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
     },
 
     #' @description
-    #' Export the USM evaluation data for deteriorated USMs to a CSV file.
+    #' Export the USM evaluation data for deteriorated USMs, and a per-species
+    #' USM pass/fail count summary, to CSV files.
     #'
-    #' The exported file is written to the `csv` subdirectory of the
-    #' configured output directory and is named `Deteriorated_USM.csv`. Only
-    #' USMs that contain evaluation data are included in the export.
+    #' The exported files are written to the `csv` subdirectory of the
+    #' configured output directory: `usm_thresholds.csv` (the
+    #' \code{ratio_threshold}/\code{degraded_threshold}/
+    #' \code{max_degraded_vars} this evaluation was configured with, so
+    #' downstream reports can explain what "failed" means for this run),
+    #' `Deteriorated_USM.csv` (only if at least one USM has deteriorated
+    #' data), `usm_summary.csv` (species, total USMs, failed USMs, passed
+    #' USMs), and `failed_usms.csv` (species, situation - the same USMs
+    #' counted as "failed" in `usm_summary.csv` and reported by
+    #' \code{summary()}, i.e. \code{self$failed_usms}; only written if at
+    #' least one USM failed).
     export = function() {
       private$logger$info("Exporting USM evaluation data")
+
+      safe_write_csv(
+        data.frame(
+          ratio_threshold = private$ratio_threshold,
+          degraded_threshold = private$degraded_threshold,
+          max_degraded_vars = private$max_degraded_vars
+        ),
+        csv_output_path(private$output_dir, "usm_thresholds.csv")
+      )
+
+      if (!self$is_empty) {
+        safe_write_csv(
+          private$usm_summary_table(),
+          csv_output_path(private$output_dir, "usm_summary.csv")
+        )
+        if (nrow(self$failed_usms) > 0) {
+          safe_write_csv(
+            self$failed_usms,
+            csv_output_path(private$output_dir, "failed_usms.csv")
+          )
+        }
+      }
 
       deteriorated_data <- do.call(rbind, lapply(private$deteriorated_usm, function(x) { # nolint
         if (!is.null(x$get_data())) x$get_data()
@@ -542,7 +595,7 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
       merged_data <- dplyr::left_join(
         deteriorated_data,
         usm_eval_data,
-        by = c("species", "situation", "variable")
+        by = c("species", "situation", "variable", "n_obs")
       )
 
       if (nrow(merged_data) == 0) {

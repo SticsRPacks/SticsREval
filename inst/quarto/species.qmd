@@ -11,6 +11,10 @@ params:
 
 sp <- params$species
 csv_dir <- file.path(params$output_dir, "csv")
+# This page is rendered to `output_dir/species/<species>.html`, while its
+# PNG/HTML plots were written by `evaluate()` to
+# `output_dir/plots/<species>/` - a sibling of `species/`, hence `..`.
+plots_dir <- file.path("..", "plots", sp)
 
 read_csv_safe <- function(path) {
   if (!file.exists(path)) return(NULL)
@@ -32,25 +36,52 @@ dt <- function(df) {
   )
 }
 
+tag_class <- c(Critical = "tag-critical", Warning = "tag-warning", Improved = "tag-ok") # nolint: line_length_linter
+
+# Renders `items` as colored pill badges, echoing the colored lists `cli`
+# prints to the console for the same critical/warning groupings.
+tag_list <- function(items, status) {
+  if (length(items) == 0) {
+    return('<span class="tag-empty">None</span>')
+  }
+  paste(
+    sprintf('<span class="tag %s">%s</span>', tag_class[[status]], items),
+    collapse = " "
+  )
+}
+
 species_stats <- read_csv_safe(file.path(csv_dir, "species_stats.csv"))
-rrmse_per_usm <- read_csv_safe(file.path(csv_dir, "rRMSE_per_usm.csv"))
 rrmse_comparison <- read_csv_safe(
   file.path(csv_dir, "species_rrmse_comparison.csv")
 )
+failed_usms <- read_csv_safe(file.path(csv_dir, "failed_usms.csv"))
+deteriorated_usm <- read_csv_safe(file.path(csv_dir, "Deteriorated_USM.csv"))
+usm_thresholds <- read_csv_safe(file.path(csv_dir, "usm_thresholds.csv"))
 
-# Scatter plot files for this species live alongside this rendered page, so
-# bare filenames resolve directly. Ordered from most to least degraded using
-# `rrmse_comparison`'s species-level rRMSE ratio (falls back to filesystem
-# order - alphabetical by variable - if that data isn't available).
-scatter_paths <- Sys.glob("*_scatter_plot.html")
+# Mirrors `RRmseComparison$critical_vars`/`warning_vars` (and thus what
+# `SpeciesEvaluation$summary()` prints, and which variables get a scatter
+# plot below): `status` alone isn't enough, `n_obs > 10` is also required.
+sp_comp <- if (!is.null(rrmse_comparison)) {
+  rrmse_comparison[rrmse_comparison$species == sp, , drop = FALSE]
+}
+sp_failed_usms <- if (!is.null(failed_usms)) {
+  failed_usms$situation[failed_usms$species == sp]
+}
+sp_deteriorated <- if (!is.null(deteriorated_usm)) {
+  deteriorated_usm[deteriorated_usm$species == sp, , drop = FALSE]
+}
+
+# Scatter plot files for this species live under `plots_dir`. Ordered from
+# most to least degraded using `sp_comp`'s rRMSE ratio (falls back to
+# filesystem order - alphabetical by variable - if that data isn't
+# available).
+scatter_paths <- Sys.glob(file.path(plots_dir, "*_scatter_plot.html"))
 scatter_vars <- tools::file_path_sans_ext(basename(scatter_paths))
 scatter_vars <- sub("_scatter_plot$", "", scatter_vars)
 
 ratio <- rep(NA_real_, length(scatter_vars))
-has_ratio <- !is.null(rrmse_comparison) &&
-  all(c("species", "variable", "rrmse_ratio") %in% names(rrmse_comparison))
+has_ratio <- !is.null(sp_comp) && "rrmse_ratio" %in% names(sp_comp)
 if (has_ratio) {
-  sp_comp <- rrmse_comparison[rrmse_comparison$species == sp, , drop = FALSE]
   ratio <- sp_comp$rrmse_ratio[match(scatter_vars, sp_comp$variable)]
 }
 ord <- order(-ifelse(is.na(ratio), -Inf, ratio))
@@ -58,7 +89,54 @@ scatter_paths <- scatter_paths[ord]
 scatter_vars <- scatter_vars[ord]
 ```
 
-## Species statistics
+```{=html}
+<style>
+.tag {
+  display: inline-block; padding: 0.15em 0.7em; margin: 0.15em 0.25em 0.15em 0; # nolint: line_length_linter
+  border-radius: 999px; font-size: 0.9em; font-weight: 600;
+}
+.tag-critical { background: #fdecea; color: #c0392b; }
+.tag-warning { background: #fef5e7; color: #b9770e; }
+.tag-ok { background: #eafaf1; color: #1e8449; }
+.tag-empty { color: #888; font-style: italic; }
+</style>
+```
+
+## Variables
+
+### Degraded variables
+
+```{r}
+#| echo: false
+#| results: asis
+if (is.null(sp_comp)) {
+  cat("::: {.callout-note}\nNo comparison done.\n:::\n\n")
+} else {
+  # Mirrors `RRmseComparison$critical_vars`/`warning_vars`/`improved_vars`
+  # (and thus what `SpeciesEvaluation$summary()` prints to the console, and
+  # which variables get a scatter plot below): `status` alone isn't enough,
+  # `n_obs > 10` is also required.
+  reliable <- sp_comp[sp_comp$n_obs > 10, ]
+  by_status <- split(reliable$variable, reliable$status)
+  cat(sprintf(
+    "<p><strong>%d variable(s) critical</strong> (major rRMSE increase)<br>\n%s</p>\n", # nolint: line_length_linter
+    length(by_status[["Critical"]]),
+    tag_list(by_status[["Critical"]], "Critical")
+  ))
+  cat(sprintf(
+    "<p><strong>%d variable(s) warning</strong> (minor rRMSE increase)<br>\n%s</p>\n", # nolint: line_length_linter
+    length(by_status[["Warning"]]),
+    tag_list(by_status[["Warning"]], "Warning")
+  ))
+  cat(sprintf(
+    "<p><strong>%d variable(s) improved</strong> (rRMSE stable or improved)<br>\n%s</p>\n", # nolint: line_length_linter
+    length(by_status[["Improved"]]),
+    tag_list(by_status[["Improved"]], "Improved")
+  ))
+}
+```
+
+### Statistics (all situations)
 
 ```{r}
 #| echo: false
@@ -68,17 +146,9 @@ dt(species_stats[species_stats$species == sp, , drop = FALSE])
 ```{r}
 #| echo: false
 #| results: asis
-if (!is.null(rrmse_per_usm) && "species" %in% names(rrmse_per_usm)) {
-  cat("## rRMSE per USM\n\n")
-  print(htmltools::tagList(
-    dt(rrmse_per_usm[rrmse_per_usm$species == sp, , drop = FALSE])
-  ))
-  cat("\n\n")
-}
-
-comparison_path <- "species_comparison.png"
+comparison_path <- file.path(plots_dir, "species_comparison.png")
 if (file.exists(comparison_path)) {
-  cat("## Comparison plot\n\n")
+  cat("### Comparison plot\n\n")
   cat(sprintf(
     '<img src="%s" style="max-width:100%%; border:1px solid #ddd;">\n\n', # nolint: line_length_linter
     comparison_path
@@ -98,13 +168,57 @@ if (file.exists(comparison_path)) {
 }
 
 if (length(scatter_paths) > 0) {
-  cat("## Scatter plots\n\n")
+  cat("### Scatter plots\n\n")
 }
 for (i in seq_along(scatter_paths)) {
-  cat(sprintf("### %s\n\n", scatter_vars[i]))
+  cat(sprintf("#### %s\n\n", scatter_vars[i]))
   cat(sprintf(
     '<iframe src="%s" style="width:100%%; height:450px; border:none;"></iframe>\n\n', # nolint: line_length_linter
     scatter_paths[i]
   ))
+}
+```
+
+## USMs
+
+```{r}
+#| echo: false
+#| results: asis
+if (!is.null(failed_usms)) {
+  cat("### Failed USMs\n\n")
+  explanation <- if (!is.null(usm_thresholds)) {
+    sprintf(
+      paste(
+        "A USM (situation) is flagged as **failed** if at least one of",
+        "these holds, for at least one variable on that USM (with more",
+        "than 10 observations):\n\n",
+        "- its rRMSE ratio vs. the reference version exceeds",
+        "**%s%%** (the *critical* threshold), or\n",
+        "- **more than %s variables** on that USM individually exceed a",
+        "lower **%s%%** *degraded* threshold.\n"
+      ),
+      usm_thresholds$ratio_threshold, usm_thresholds$max_degraded_vars,
+      usm_thresholds$degraded_threshold
+    )
+  } else {
+    paste(
+      "A USM (situation) is flagged as **failed** if at least one",
+      "variable on that USM crosses a critical rRMSE ratio threshold, or",
+      "if too many variables individually cross a lower degradation",
+      "threshold.\n"
+    )
+  }
+  cat(sprintf("<p>%s</p>\n\n", tag_list(sp_failed_usms, "Critical")))
+  cat(paste0("::: {.callout-note}\n", explanation, ":::\n\n"))
+}
+```
+
+```{r}
+#| echo: false
+#| results: asis
+if (!is.null(sp_deteriorated) && nrow(sp_deteriorated) > 0) {
+  cat("### Deteriorated USMs\n\n")
+  print(htmltools::tagList(dt(sp_deteriorated)))
+  cat("\n\n")
 }
 ```

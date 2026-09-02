@@ -8,6 +8,7 @@ website:
     style: docked
     contents:
       - index.qmd
+      - global.qmd
 
 format:
   html:

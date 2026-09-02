@@ -46,4 +46,16 @@ test_that("render_report renders an index.html from evaluation exports", {
   expect_true(file.exists(html_path))
   expect_identical(html_path, file.path(tmp, "index.html"))
   expect_gt(file.info(html_path)$size, 0)
+
+  global_path <- file.path(tmp, "global.html")
+  expect_true(file.exists(global_path))
+  expect_gt(file.info(global_path)$size, 0)
+
+  species_path <- file.path(tmp, "species", "wheat.html")
+  expect_true(file.exists(species_path))
+  expect_gt(file.info(species_path)$size, 0)
+  expect_false(file.exists(file.path(tmp, "plots", "wheat", "species.html")))
+  expect_false(
+    file.exists(file.path(tmp, "species", "wheat", "species.html"))
+  )
 })

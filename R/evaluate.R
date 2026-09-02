@@ -259,6 +259,15 @@ export_evaluations <- function(evaluations, output_dir) {
   prepare_output_dir(output_dir)
 
   lapply(evaluations, function(eval) eval$export())
+
+  safe_write_csv(
+    data.frame(
+      evaluation = names(evaluations),
+      success = vapply(evaluations, function(eval) eval$success, logical(1)),
+      stringsAsFactors = FALSE
+    ),
+    csv_output_path(output_dir, "evaluation_status.csv")
+  )
 }
 
 
