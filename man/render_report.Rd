@@ -2,39 +2,40 @@
 % Please edit documentation in R/render_report.R
 \name{render_report}
 \alias{render_report}
-\title{Render an HTML evaluation dashboard}
+\title{Render an HTML evaluation site}
 \usage{
 render_report(output_dir, open = interactive())
 }
 \arguments{
 \item{output_dir}{path to a directory previously populated by
 \code{\link{evaluate}} (i.e. \code{evaluate(..., output_dir = output_dir)}
-must have been run beforehand). The rendered dashboard is written there.}
+must have been run beforehand). The rendered site is written there.}
 
 \item{open}{Boolean. Open the rendered dashboard in a browser once done.
 Defaults to \code{TRUE} in interactive sessions.}
 }
 \value{
-invisibly, the path to the rendered \code{dashboard.html} file
+invisibly, the path to the rendered \code{index.html} file
 }
 \description{
-Renders an HTML dashboard (\code{dashboard.html}) summarizing the
-evaluation results written to \code{output_dir} by \code{\link{evaluate}}
-(called with \code{output_dir} set). The dashboard shows the global stats
+Renders an HTML site summarizing the evaluation results written to
+\code{output_dir} by \code{\link{evaluate}} (called with \code{output_dir}
+set): a homepage (\code{index.html}) showing the global stats
 (\code{global_stats.csv}) and deteriorated USMs
-(\code{Deteriorated_USM.csv}) from \code{output_dir/csv}, and links to one
-page per species (\code{output_dir/plots/<species>/species.html}) with
-that species' statistics, rRMSE comparison plot and scatter plots -
-species pages are rendered separately so a browser only has to load one
+(\code{Deteriorated_USM.csv}) from \code{output_dir/csv}, and one page per
+species (\code{output_dir/plots/<species>/species.html}) with that
+species' statistics, rRMSE comparison plot and scatter plots. It's a
+single Quarto website project (a generated \code{_quarto.yml}), so every
+page shares the same navigation sidebar - but each species page is still
+rendered and loaded separately, so a browser only has to load one
 species' plots at a time, instead of every species' plots at once on a
 single page. Nothing is recomputed or replotted: only the files
 \code{evaluate()} already wrote are read.
 
 None of the pages are standalone files: they link to the PNG/HTML plots
-via relative paths (and Quarto writes its own JS/CSS assets to
-\code{dashboard_files/} and \code{plots/<species>/species_files/}
-subfolders), so keep \code{output_dir} intact when sharing or moving
-results.
+via relative paths (and Quarto writes its own JS/CSS assets to a shared
+\code{site_libs/} subfolder), so keep \code{output_dir} intact when
+sharing or moving results.
 
 Requires the Quarto CLI (\url{https://quarto.org}) to be installed, along
 with the \pkg{quarto} and \pkg{DT} R packages.

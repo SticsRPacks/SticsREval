@@ -3,13 +3,6 @@ title: "`r params$species`"
 params:
   species: null
   output_dir: null
-  species_list: null
-format:
-  html:
-    toc: true
-    toc-location: left
-    theme: cosmo
-    page-layout: full
 ---
 
 ```{r}
@@ -65,55 +58,7 @@ scatter_paths <- scatter_paths[ord]
 scatter_vars <- scatter_vars[ord]
 ```
 
-<style>
-.back-link {
-  display: inline-flex; align-items: center; gap: 0.4em;
-  padding: 0.4em 1em; margin-bottom: 0.5em;
-  border-radius: 6px; background: #f0f0f0; color: #2c3e50;
-  text-decoration: none; font-weight: 600; font-size: 0.9em;
-}
-.back-link:hover { background: #e0e0e0; }
-</style>
-<a class="back-link" href="../../dashboard.html">&larr; Back to dashboard</a>
-
-```{r}
-#| echo: false
-#| results: asis
-other_species <- params$species_list
-if (length(other_species) > 1) {
-  cat(paste(
-    "\n<style>",
-    ".species-nav {",
-    "  display: flex; flex-wrap: wrap; gap: 0.4em; margin: 0.75em 0 1.25em;",
-    "}",
-    ".species-nav a, .species-nav .species-nav-current {",
-    "  padding: 0.3em 0.9em; border-radius: 999px; font-size: 0.9em;",
-    "  text-decoration: none;",
-    "}",
-    ".species-nav a { background: #f0f0f0; color: #2c3e50; }",
-    ".species-nav a:hover { background: #e0e0e0; }",
-    ".species-nav .species-nav-current {",
-    "  background: #2c3e50; color: white; font-weight: 600;",
-    "}",
-    "</style>\n",
-    sep = "\n"
-  ))
-
-  cat('<nav class="species-nav">\n')
-  for (other in other_species) {
-    if (identical(other, sp)) {
-      cat(sprintf('<span class="species-nav-current">%s</span>\n', other))
-    } else {
-      cat(sprintf('<a href="../%s/species.html">%s</a>\n', other, other))
-    }
-  }
-  cat("</nav>\n\n")
-}
-```
-
-## `r sp`
-
-**Species statistics**
+## Species statistics
 
 ```{r}
 #| echo: false
@@ -124,7 +69,7 @@ dt(species_stats[species_stats$species == sp, , drop = FALSE])
 #| echo: false
 #| results: asis
 if (!is.null(rrmse_per_usm) && "species" %in% names(rrmse_per_usm)) {
-  cat("**rRMSE per USM**\n\n")
+  cat("## rRMSE per USM\n\n")
   print(htmltools::tagList(
     dt(rrmse_per_usm[rrmse_per_usm$species == sp, , drop = FALSE])
   ))
@@ -133,7 +78,7 @@ if (!is.null(rrmse_per_usm) && "species" %in% names(rrmse_per_usm)) {
 
 comparison_path <- "species_comparison.png"
 if (file.exists(comparison_path)) {
-  cat("**Comparison plot**\n\n")
+  cat("## Comparison plot\n\n")
   cat(sprintf(
     '<img src="%s" style="max-width:100%%; border:1px solid #ddd;">\n\n', # nolint: line_length_linter
     comparison_path
@@ -152,8 +97,11 @@ if (file.exists(comparison_path)) {
   ))
 }
 
+if (length(scatter_paths) > 0) {
+  cat("## Scatter plots\n\n")
+}
 for (i in seq_along(scatter_paths)) {
-  cat(sprintf("**Scatter plot: %s**\n\n", scatter_vars[i]))
+  cat(sprintf("### %s\n\n", scatter_vars[i]))
   cat(sprintf(
     '<iframe src="%s" style="width:100%%; height:450px; border:none;"></iframe>\n\n', # nolint: line_length_linter
     scatter_paths[i]

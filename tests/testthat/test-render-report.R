@@ -17,7 +17,7 @@ test_that("render_report errors when output_dir has no evaluation results", {
   )
 })
 
-test_that("render_report renders a dashboard.html from evaluation exports", {
+test_that("render_report renders an index.html from evaluation exports", {
   testthat::skip_if_not_installed("quarto")
   testthat::skip_if_not_installed("DT")
   testthat::skip_if(
@@ -44,6 +44,6 @@ test_that("render_report renders a dashboard.html from evaluation exports", {
   html_path <- render_report(tmp, open = FALSE)
 
   expect_true(file.exists(html_path))
-  expect_identical(html_path, file.path(tmp, "dashboard.html"))
+  expect_identical(html_path, file.path(tmp, "index.html"))
   expect_gt(file.info(html_path)$size, 0)
 })

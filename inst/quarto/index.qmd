@@ -1,0 +1,51 @@
+---
+title: "STICS Evaluation Dashboard"
+date: last-modified
+---
+
+```{r}
+#| label: setup
+#| include: false
+
+read_csv_safe <- function(path) {
+  if (!file.exists(path)) return(NULL)
+  csv_df <- utils::read.csv(
+    path, stringsAsFactors = FALSE, check.names = FALSE
+  )
+  if (nrow(csv_df) == 0) NULL else csv_df
+}
+
+dt <- function(df) {
+  if (is.null(df) || nrow(df) == 0) {
+    return(htmltools::tags$p(htmltools::em("No data.")))
+  }
+  DT::datatable(
+    df,
+    rownames = FALSE,
+    filter = "top",
+    options = list(pageLength = 10, scrollX = TRUE)
+  )
+}
+
+global_stats <- read_csv_safe(file.path("csv", "global_stats.csv"))
+deteriorated_usm <- read_csv_safe(file.path("csv", "Deteriorated_USM.csv"))
+```
+
+## Global statistics
+
+```{r}
+#| echo: false
+dt(global_stats)
+```
+
+## Deteriorated USMs
+
+```{r}
+#| echo: false
+#| results: asis
+if (is.null(deteriorated_usm)) {
+  cat("\n\n::: {.callout-note}\nNo deteriorated USM detected.\n:::\n\n")
+} else {
+  print(htmltools::tagList(dt(deteriorated_usm)))
+}
+```
