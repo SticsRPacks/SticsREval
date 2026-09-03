@@ -17,6 +17,22 @@ test_that("render_report errors when output_dir has no evaluation results", {
   )
 })
 
+test_that("render_report errors when parallel = TRUE and cores is NA", {
+  tmp <- withr::local_tempdir()
+  csv_dir <- file.path(tmp, "csv")
+  dir.create(csv_dir)
+  write.csv(
+    data.frame(variable = "lai", RMSE = 0.5, stringsAsFactors = FALSE),
+    file.path(csv_dir, "global_stats.csv"),
+    row.names = FALSE
+  )
+
+  expect_error(
+    render_report(tmp, open = FALSE, parallel = TRUE, cores = NA),
+    regexp = "cores"
+  )
+})
+
 test_that("render_report renders an index.html from evaluation exports", {
   testthat::skip_if_not_installed("quarto")
   testthat::skip_if_not_installed("DT")
@@ -58,4 +74,36 @@ test_that("render_report renders an index.html from evaluation exports", {
   expect_false(
     file.exists(file.path(tmp, "species", "wheat", "species.html"))
   )
+})
+
+test_that("render_report renders species pages in parallel", {
+  testthat::skip_if_not_installed("quarto")
+  testthat::skip_if_not_installed("DT")
+  testthat::skip_if_not_installed("future")
+  testthat::skip_if(
+    is.null(quarto::quarto_path()), "Quarto CLI not installed"
+  )
+
+  tmp <- withr::local_tempdir()
+  csv_dir <- file.path(tmp, "csv")
+  dir.create(csv_dir)
+  write.csv(
+    data.frame(variable = "lai", RMSE = 0.5, stringsAsFactors = FALSE),
+    file.path(csv_dir, "global_stats.csv"),
+    row.names = FALSE
+  )
+  write.csv(
+    data.frame(
+      species = c("wheat", "maize"), variable = "lai", RMSE = 0.5,
+      stringsAsFactors = FALSE
+    ),
+    file.path(csv_dir, "species_stats.csv"),
+    row.names = FALSE
+  )
+
+  html_path <- render_report(tmp, open = FALSE, parallel = TRUE, cores = 2)
+
+  expect_true(file.exists(html_path))
+  expect_true(file.exists(file.path(tmp, "species", "wheat.html")))
+  expect_true(file.exists(file.path(tmp, "species", "maize.html")))
 })

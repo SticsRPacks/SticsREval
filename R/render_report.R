@@ -32,11 +32,17 @@
 #'  must have been run beforehand). The rendered site is written there.
 #' @param open Boolean. Open the rendered dashboard in a browser once done.
 #'  Defaults to \code{TRUE} in interactive sessions.
+#' @param parallel Boolean. Render the per-species pages in parallel ?
+#'  Default \code{FALSE}. The homepage and global page are always rendered
+#'  first and sequentially.
+#' @param cores Number of cores to use when \code{parallel = TRUE}.
 #'
 #' @return invisibly, the path to the rendered \code{index.html} file
 #'
 #' @export
-render_report <- function(output_dir, open = interactive()) {
+render_report <- function(
+  output_dir, open = interactive(), parallel = FALSE, cores = NA
+) {
   if (!dir.exists(output_dir)) {
     stop("output_dir does not exist: ", output_dir, call. = FALSE)
   }
@@ -47,6 +53,21 @@ render_report <- function(output_dir, open = interactive()) {
       call. = FALSE
     )
   }
+
+  arg_values <- list(parallel = parallel, cores = cores)
+  schema <- list(
+    fields = list(
+      parallel = field_spec(type = "logical", nullable = FALSE),
+      cores = field_spec(validator = validate_cores)
+    ),
+    cross_validators = list(
+      list(
+        desc = "If parallel = TRUE, cores must be an integer >= 1",
+        check = check_parallel_cores
+      )
+    )
+  )
+  validate_schema(arg_values, schema)
 
   rlang::check_installed(
     c("quarto", "DT", "yaml"),
@@ -79,14 +100,19 @@ render_report <- function(output_dir, open = interactive()) {
   )
 
   abs_output_dir <- normalizePath(output_dir)
-  for (sp in species_list) {
-    logger::log_info("Rendering evaluation page for species {sp}...")
-    quarto::quarto_render(
-      input = file.path(output_dir, "species", paste0(sp, ".qmd")),
-      execute_params = list(species = sp, output_dir = abs_output_dir),
-      quiet = !is_debug()
-    )
-  }
+  backend <- ParallelBackend$new(parallel, cores)
+  backend$run(
+    length(species_list),
+    function(i) {
+      sp <- species_list[i]
+      logger::log_info("Rendering evaluation page for species {sp}...")
+      quarto::quarto_render(
+        input = file.path(output_dir, "species", paste0(sp, ".qmd")),
+        execute_params = list(species = sp, output_dir = abs_output_dir),
+        quiet = !is_debug()
+      )
+    }
+  )
 
   html_path <- file.path(output_dir, "index.html")
   if (!file.exists(html_path)) {

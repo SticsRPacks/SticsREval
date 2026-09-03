@@ -45,7 +45,8 @@ NULL (default), results are not exported}
 
 \item{report}{Boolean. If \code{TRUE} and \code{output_dir} is set,
 renders an HTML dashboard (see \code{\link{render_report}}) summarizing
-the exported results once evaluation is done. Default \code{FALSE}.}
+the exported results once evaluation is done. Default \code{FALSE}. The
+per-species pages are rendered according to \code{parallel}/\code{cores}.}
 
 \item{percentage}{threshold (\%) above which a variable is flagged as
 deteriorated vs. the reference (default 5)}

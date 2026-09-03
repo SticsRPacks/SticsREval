@@ -4,7 +4,7 @@
 \alias{render_report}
 \title{Render an HTML evaluation site}
 \usage{
-render_report(output_dir, open = interactive())
+render_report(output_dir, open = interactive(), parallel = FALSE, cores = NA)
 }
 \arguments{
 \item{output_dir}{path to a directory previously populated by
@@ -13,6 +13,12 @@ must have been run beforehand). The rendered site is written there.}
 
 \item{open}{Boolean. Open the rendered dashboard in a browser once done.
 Defaults to \code{TRUE} in interactive sessions.}
+
+\item{parallel}{Boolean. Render the per-species pages in parallel ?
+Default \code{FALSE}. The homepage and global page are always rendered
+first and sequentially.}
+
+\item{cores}{Number of cores to use when \code{parallel = TRUE}.}
 }
 \value{
 invisibly, the path to the rendered \code{index.html} file
