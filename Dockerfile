@@ -37,10 +37,18 @@ RUN R -e "\
 # --- Stage 2 : runtime ---
 FROM rocker/r-ver:4
 
+ARG QUARTO_VERSION=1.10.18
+
 RUN apt-get update -y && \
     apt-get install -y --no-install-recommends \
+      curl ca-certificates gdebi-core \
       libcurl4 libssl3 libxml2 libxslt1.1 \
       libx11-6 pandoc \
+    && curl -Lo /tmp/quarto.deb \
+      "https://github.com/quarto-dev/quarto-cli/releases/download/v${QUARTO_VERSION}/quarto-${QUARTO_VERSION}-linux-$(dpkg --print-architecture).deb" \
+    && gdebi -n /tmp/quarto.deb \
+    && rm /tmp/quarto.deb \
+    && apt-get purge -y --auto-remove gdebi-core \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /stics-r-eval

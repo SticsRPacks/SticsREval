@@ -79,6 +79,16 @@ RRmseComparison <- R6::R6Class("RRmseComparison", # nolint: object_name_linter
           call. = FALSE
         )
       }
+      # Exposed via get_data() (and thus species_rrmse_comparison.csv) so
+      # consumers (e.g. the dashboard) can tell critical/warning variables
+      # apart without duplicating this threshold logic.
+      private$data <- private$data |>
+        dplyr::mutate(status = dplyr::case_when(
+          .data$rrmse_ratio >= private$percentage ~ "Critical",
+          .data$rrmse_ratio > 0 & .data$rrmse_ratio < private$percentage ~ "Warning", # nolint: line_length_linter
+          .data$rrmse_ratio <= 0 ~ "Improved",
+          TRUE ~ "Other"
+        ))
     },
 
     log = function() {
@@ -119,30 +129,29 @@ RRmseComparison <- R6::R6Class("RRmseComparison", # nolint: object_name_linter
 
     get_data = function() private$data,
 
+    # Renders the rRMSE comparison (new version vs reference version, one
+    # point per variable, colored by status) as a static PNG at
+    # `output_path`. Each point is labeled with its variable name and
+    # number of observations (`ggrepel` keeps labels apart and away from
+    # their point).
     plot_comparison = function(output_path) {
       p <- private$data |>
         dplyr::mutate(
-          status = dplyr::case_when(
-            .data$rrmse_ratio >= private$percentage ~ "Critical",
-            .data$rrmse_ratio > 0 & .data$rrmse_ratio < private$percentage ~ "Warning", # nolint
-            .data$rrmse_ratio <= 0 ~ "Improved",
-            TRUE ~ "Other"
-          )
+          label = paste0(.data$variable, " (n=", .data$n_obs, ")")
         ) |>
         ggplot2::ggplot(
           ggplot2::aes(
             x = .data$rrmse_ref,
             y = .data$rrmse_eval,
-            color = .data$status,
-            text = .data$variable
-          ),
-          ggplot2::labs(x = "Ref rRMSE", y = "New rRMSE", color = "Status")
+            color = .data$status
+          )
         ) +
+        ggplot2::labs(x = "Ref rRMSE", y = "New rRMSE", color = "Status") +
         ggplot2::geom_point() +
         ggplot2::scale_color_manual(values = c(
           Critical = "red",
           Warning = "orange",
-          Improved = "green",
+          Improved = "forestgreen",
           Other = "grey50"
         )) +
         ggplot2::geom_abline(intercept = 0, slope = 1) +
@@ -152,7 +161,7 @@ RRmseComparison <- R6::R6Class("RRmseComparison", # nolint: object_name_linter
           linetype = "dashed"
         ) +
         ggrepel::geom_text_repel(
-          ggplot2::aes(label = .data$variable),
+          ggplot2::aes(label = .data$label),
           na.rm = TRUE,
           show.legend = FALSE,
           max.overlaps = 100

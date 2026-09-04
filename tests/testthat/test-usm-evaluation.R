@@ -295,5 +295,64 @@ test_that("export does not error when no species has a deteriorated USM", {
   replace_private(eval, "logger", default_logger)
 
   expect_no_error(eval$export())
-  expect_false(file.exists(file.path(output_dir, "Deteriorated_USM.csv")))
+  expect_false(
+    file.exists(file.path(output_dir, "csv", "Deteriorated_USM.csv"))
+  )
+})
+
+test_that("export writes failed_usms.csv matching `failed_usms`", {
+  output_dir <- file.path(tempdir(), "usm_eval_failed_usms")
+  unlink(output_dir, recursive = TRUE)
+  dir.create(output_dir, recursive = TRUE)
+
+  eval <- USMEvaluation$new(
+    species = "wheat",
+    data = data.frame(
+      species = "wheat",
+      situation = c("USM1", "USM2"),
+      variable = "lai",
+      rmse_eval = 2,
+      rmse_ref = 2,
+      rmse_species = 4,
+      rmse_ratio = c(60, 0),
+      n_obs = 20,
+      stringsAsFactors = FALSE
+    )
+  )
+  replace_private(eval, "output_dir", output_dir)
+  replace_private(eval, "logger", default_logger)
+
+  eval$export()
+
+  written <- read.csv(
+    file.path(output_dir, "csv", "failed_usms.csv"), stringsAsFactors = FALSE
+  )
+  expect_identical(written, eval$failed_usms)
+})
+
+test_that("export does not write failed_usms.csv when no USM failed", {
+  output_dir <- file.path(tempdir(), "usm_eval_no_failed_usms")
+  unlink(output_dir, recursive = TRUE)
+  dir.create(output_dir, recursive = TRUE)
+
+  eval <- USMEvaluation$new(
+    species = "wheat",
+    data = data.frame(
+      species = "wheat",
+      situation = "USM1",
+      variable = "lai",
+      rmse_eval = 2,
+      rmse_ref = 2,
+      rmse_species = 4,
+      rmse_ratio = 0,
+      n_obs = 20,
+      stringsAsFactors = FALSE
+    )
+  )
+  replace_private(eval, "output_dir", output_dir)
+  replace_private(eval, "logger", default_logger)
+
+  eval$export()
+
+  expect_false(file.exists(file.path(output_dir, "csv", "failed_usms.csv")))
 })

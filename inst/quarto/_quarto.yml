@@ -1,0 +1,17 @@
+project:
+  type: website
+  output-dir: "."
+
+website:
+  title: "STICS Evaluation Dashboard"
+  sidebar:
+    style: docked
+    contents:
+      - index.qmd
+      - global.qmd
+
+format:
+  html:
+    theme: cosmo
+    toc: true
+    page-layout: full

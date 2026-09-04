@@ -183,7 +183,7 @@ test_that("get_data returns expected columns", {
   cmp <- make_comparison()
   expected_cols <- c(
     "situation", "variable", "rrmse_eval", "rrmse_ref", "rrmse_ratio",
-    "n_obs", "species"
+    "n_obs", "species", "status"
   )
   expect_named(cmp$get_data(), expected_cols)
 })
