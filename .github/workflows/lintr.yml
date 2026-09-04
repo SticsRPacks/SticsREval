@@ -7,25 +7,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+
       - uses: r-lib/actions/setup-r@v2
         with:
           use-public-rspm: true
-      - name: Cache R packages
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.local/share/r-lib
-            ~/.cache/R/pkgcache
-          key: ${{ runner.os }}-r-linter-${{ hashFiles('DESCRIPTION') }}
-          restore-keys: |
-            ${{ runner.os }}-r-linter-
-      - name: Install dependencies
+
+      - name: Install system dependencies
         run: |
-          install.packages("pak")
+          sudo apt-get update
+          sudo apt-get install -y cmake libcurl4-openssl-dev libx11-dev libxslt-dev
+
+      - uses: r-lib/actions/setup-renv@v2
+        with:
+          cache-version: 1
+        env:
+          RENV_CONFIG_CACHE_SYMLINKS: "TRUE"
+
+      - name: Install lint deps
+        run: |
           install.packages(c("lintr", "cyclocomp"))
-          pak::local_install_deps(dependencies = TRUE)
-          pak::local_install()
+          install.packages(".", repos = NULL, type = "source")
         shell: Rscript {0}
+
       - name: Run lintr
         run: lintr::lint_package()
         shell: Rscript {0}
