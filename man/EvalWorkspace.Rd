@@ -4,9 +4,9 @@
 \alias{EvalWorkspace}
 \title{EvalWorkspace class}
 \description{
-Internal class. Manages the evaluation workspace (a Parquet-backed
-staging area for simulation/observation/reference data), used
-internally by \code{\link{evaluate}}.
+Internal class. Manages the evaluation workspace (a CSV-backed,
+DuckDB-queried staging area for simulation/observation/reference data),
+used internally by \code{\link{evaluate}}.
 }
 \keyword{internal}
 \section{Methods}{
@@ -193,12 +193,13 @@ USMs}
       \item{\code{var2exclude}}{Optional, if defined remove the variables from
 the returned simulations}
       \item{\code{collect}}{Optional, if \code{TRUE} a dataframe will be returned,
-otherwise the lazy arrow data object will be returned}
+otherwise the lazy dataset object (a dbplyr tbl) will be returned}
     }
     \if{html}{\out{</div>}}
   }
   \subsection{Returns}{
-    a dataframe if collect is \code{TRUE}, a lazy arrow data object
+    a dataframe if collect is \code{TRUE}, otherwise a lazy dataset
+object (a dbplyr tbl)
   }
 }
 
@@ -227,12 +228,13 @@ USMs}
       \item{\code{var2exclude}}{Optional, if defined remove the variables from
 the returned observations}
       \item{\code{collect}}{Optional, if \code{TRUE} a dataframe will be returned,
-otherwise the lazy arrow data object will be returned}
+otherwise the lazy dataset object (a dbplyr tbl) will be returned}
     }
     \if{html}{\out{</div>}}
   }
   \subsection{Returns}{
-    a dataframe if collect is \code{TRUE}, a lazy arrow data object
+    a dataframe if collect is \code{TRUE}, otherwise a lazy dataset
+object (a dbplyr tbl)
   }
 }
 
@@ -261,7 +263,7 @@ these USMs}
       \item{\code{var2exclude}}{Optional, if defined remove the variables from
 the returned reference simulations}
       \item{\code{collect}}{Optional, if \code{TRUE} a dataframe will be returned,
-otherwise the lazy arrow data object will be returned}
+otherwise the lazy dataset object (a dbplyr tbl) will be returned}
     }
     \if{html}{\out{</div>}}
   }

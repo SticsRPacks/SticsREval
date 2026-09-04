@@ -9,7 +9,11 @@ EvalDataReader <- R6::R6Class("EvalDataReader", # nolint: object_name_linter
         }
         return(NULL)
       }
-      arrow::open_dataset(path)
+      con <- DBI::dbConnect(duckdb::duckdb(shared_home = FALSE))
+      dplyr::tbl(con, dplyr::sql(sprintf(
+        "SELECT * FROM read_csv('%s/**/*.csv', hive_partitioning = true, union_by_name = true)", # nolint: line_length_linter
+        escape_sql_literal(normalizePath(path, mustWork = FALSE))
+      )))
     },
 
     apply_filters = function(
@@ -37,7 +41,10 @@ EvalDataReader <- R6::R6Class("EvalDataReader", # nolint: object_name_linter
 
     post_process = function(ds, collect) {
       if (is.null(ds)) return(NULL)
-      if (collect) dplyr::collect(ds) else ds # nolint: coalesce_linter
+      if (!collect) return(ds)
+      con <- dbplyr::remote_con(ds)
+      on.exit(DBI::dbDisconnect(con, shutdown = TRUE))
+      dplyr::collect(ds)
     }
   ),
 
@@ -94,22 +101,34 @@ EvalDataWriter <- R6::R6Class("EvalDataWriter", # nolint: object_name_linter
     },
 
     write_dataset = function(data, path, partitioning) {
-      arrow::write_dataset(
-        data,
-        path = path,
-        format = "parquet",
-        partitioning = partitioning,
-        existing_data_behavior = "delete_matching"
-      )
+      con <- DBI::dbConnect(duckdb::duckdb(shared_home = FALSE))
+      on.exit(DBI::dbDisconnect(con, shutdown = TRUE))
+
+      duckdb::duckdb_register(con, "eval_write_view", data)
+      on.exit(duckdb::duckdb_unregister(con, "eval_write_view"), add = TRUE)
+
+      DBI::dbExecute(con, sprintf(
+        "COPY eval_write_view TO '%s' (FORMAT CSV, PARTITION_BY (%s), OVERWRITE_OR_IGNORE true, HEADER true)", # nolint: line_length_linter
+        escape_sql_literal(path), toString(partitioning)
+      ))
+
+      invisible(NULL)
     }
   )
 )
 
+# Escapes single quotes in a path so it can be safely embedded as a SQL
+# string literal in a DuckDB query (paths are internal, not user-controlled,
+# but this keeps the query construction defensively correct).
+escape_sql_literal <- function(path) {
+  gsub("'", "''", path, fixed = TRUE)
+}
+
 #' EvalWorkspace class
 #'
-#' Internal class. Manages the evaluation workspace (a Parquet-backed
-#' staging area for simulation/observation/reference data), used
-#' internally by \code{\link{evaluate}}.
+#' Internal class. Manages the evaluation workspace (a CSV-backed,
+#' DuckDB-queried staging area for simulation/observation/reference data),
+#' used internally by \code{\link{evaluate}}.
 #'
 #' @keywords internal
 EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
@@ -230,9 +249,10 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
     #' @param var2exclude Optional, if defined remove the variables from
     #'  the returned simulations
     #' @param collect Optional, if `TRUE` a dataframe will be returned,
-    #'  otherwise the lazy arrow data object will be returned
+    #'  otherwise the lazy dataset object (a dbplyr tbl) will be returned
     #'
-    #' @returns a dataframe if collect is `TRUE`, a lazy arrow data object
+    #' @returns a dataframe if collect is `TRUE`, otherwise a lazy dataset
+    #' object (a dbplyr tbl)
     get_sim = function(
       species = NULL, usms = NULL, var2exclude = NULL, collect = TRUE
     ) {
@@ -256,9 +276,10 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
     #' @param var2exclude Optional, if defined remove the variables from
     #'  the returned observations
     #' @param collect Optional, if `TRUE` a dataframe will be returned,
-    #'  otherwise the lazy arrow data object will be returned
+    #'  otherwise the lazy dataset object (a dbplyr tbl) will be returned
     #'
-    #' @returns a dataframe if collect is `TRUE`, a lazy arrow data object
+    #' @returns a dataframe if collect is `TRUE`, otherwise a lazy dataset
+    #' object (a dbplyr tbl)
     get_obs = function(
       species = NULL, usms = NULL, var2exclude = NULL, collect = TRUE
     ) {
@@ -282,7 +303,7 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
     #' @param var2exclude Optional, if defined remove the variables from
     #'  the returned reference simulations
     #' @param collect Optional, if `TRUE` a dataframe will be returned,
-    #'  otherwise the lazy arrow data object will be returned
+    #'  otherwise the lazy dataset object (a dbplyr tbl) will be returned
     get_ref_sim = function(
       species = NULL, usms = NULL, var2exclude = NULL, collect = TRUE
     ) {
@@ -310,12 +331,12 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
     remove_init_obs = function() {
       sim <- private$.reader$read(
         path = sim_ds_path(private$.data_dir),
-        collect = FALSE
+        collect = TRUE
       )
 
       obs <- private$.reader$read(
         path = obs_ds_path(private$.data_dir),
-        collect = FALSE
+        collect = TRUE
       )
       if (is.null(sim) || is.null(obs)) {
         logger::log_warn(
@@ -337,7 +358,7 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
         names(obs)
       )
 
-      obs |>
+      updated_obs <- obs |>
         dplyr::left_join(init_dates, by = "situation") |>
         dplyr::mutate(
           dplyr::across(
@@ -345,12 +366,13 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
             ~ dplyr::if_else(.data$Date == .data$init_date, NA_real_, .x)
           )
         ) |>
-        dplyr::select(-"init_date") |>
-        arrow::write_dataset(
-          obs_ds_path(private$.data_dir),
-          format = "parquet",
-          partitioning = "species"
-        )
+        dplyr::select(-"init_date")
+
+      private$.writer$write_dataset(
+        updated_obs,
+        obs_ds_path(private$.data_dir),
+        partitioning = "species"
+      )
     },
     #' @description
     #' Remove all the simulations from the evaluation workspace

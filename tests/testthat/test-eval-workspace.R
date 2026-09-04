@@ -4,19 +4,9 @@ make_ws <- function(dir) {
   EvalWorkspace$new(dir)
 }
 
-write_metadata <- function(dir, rows) {
-  arrow::write_parquet(
-    data.frame(rows),
-    sink = metadata_ds_path(dir)
-  )
-}
-
-write_parquet_ds <- function(data, path, partitioning = NULL) {
-  arrow::write_dataset(
-    data,
-    path = path,
-    format = "parquet",
-    partitioning = partitioning
+write_csv_ds <- function(data, path, partitioning = NULL) {
+  EvalDataWriter$new(dirname(path))$write_dataset(
+    data, path = path, partitioning = partitioning
   )
 }
 
@@ -36,7 +26,7 @@ test_that("get_species returns sorted distinct species from obs dataset", {
     species = c("wheat", "wheat", "barley"),
     stringsAsFactors = FALSE
   )
-  write_parquet_ds(
+  write_csv_ds(
     species_usm, species_usm_ds_path(dir), partitioning = "species"
   )
 
@@ -51,7 +41,7 @@ test_that("get_species_situations returns USMs for a species", {
     species = c("wheat", "wheat", "barley"),
     stringsAsFactors = FALSE
   )
-  write_parquet_ds(
+  write_csv_ds(
     species_usm, species_usm_ds_path(dir), partitioning = "species"
   )
 
@@ -73,7 +63,7 @@ test_that("get_species_situations filters by usms when provided", {
     situation = c("usm1", "usm2", "usm3"),
     stringsAsFactors = FALSE
   )
-  write_parquet_ds(
+  write_csv_ds(
     species_usm, species_usm_ds_path(dir), partitioning = "species"
   )
 

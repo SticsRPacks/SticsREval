@@ -18,10 +18,12 @@ Roxygen: list(markdown = TRUE)
 Depends:
     R (>= 4.1.0)
 Imports:
-    arrow,
     cli,
     CroPlotR,
+    DBI,
+    dbplyr,
     dplyr,
+    duckdb,
     future,
     future.apply,
     ggplot2,
