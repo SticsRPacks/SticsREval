@@ -101,6 +101,8 @@ EvalDataWriter <- R6::R6Class("EvalDataWriter", # nolint: object_name_linter
     },
 
     write_dataset = function(data, path, partitioning) {
+      delete_matching_partitions(data, path, partitioning)
+
       con <- DBI::dbConnect(duckdb::duckdb(shared_home = FALSE))
       on.exit(DBI::dbDisconnect(con, shutdown = TRUE))
 
@@ -122,6 +124,28 @@ EvalDataWriter <- R6::R6Class("EvalDataWriter", # nolint: object_name_linter
 # but this keeps the query construction defensively correct).
 escape_sql_literal <- function(path) {
   gsub("'", "''", path, fixed = TRUE)
+}
+
+# DuckDB's OVERWRITE_OR_IGNORE only replaces files it happens to name the
+# same way as a previous write; it doesn't clear a partition first the way
+# arrow's `existing_data_behavior = "delete_matching"` did. Without this, a
+# partition written as multiple files (e.g. by a previous run with more
+# threads/rows) could keep stale extra files after a smaller rewrite,
+# silently resurfacing old rows when the dataset is read back. So for every
+# partition key combination present in `data`, wipe its directory before
+# writing. Partitions absent from `data` are left untouched, matching
+# arrow's own delete_matching semantics.
+delete_matching_partitions <- function(data, path, partitioning) {
+  if (!dir.exists(path)) return(invisible(NULL))
+
+  keys <- unique(data[partitioning])
+  key_segments <- lapply(
+    partitioning, function(col) paste0(col, "=", keys[[col]])
+  )
+  partition_dirs <- file.path(path, do.call(file.path, key_segments))
+  unlink(partition_dirs, recursive = TRUE)
+
+  invisible(NULL)
 }
 
 #' EvalWorkspace class

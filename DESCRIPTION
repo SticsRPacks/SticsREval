@@ -8,8 +8,8 @@ Description: Provides a streamlined workflow for evaluating the performance of
     STICS, the package runs simulations, compares the outputs against field
     observations and against statistics from a reference model version, and
     flags variables or simulation units (USMs) where performance has
-    deteriorated. Results are stored in Apache Arrow/Parquet format and can
-    be exported as CSV files and diagnostic plots. Relies on 'SticsOnR' for
+    deteriorated. Results are stored in CSV format, queried via 'DuckDB', and
+    can be exported as CSV files and diagnostic plots. Relies on 'SticsOnR' for
     running simulations, 'SticsRFiles' for reading input and output data, and
     'CroPlotR' for computing statistical criteria and generating plots.
 License: LGPL (>= 3) + file LICENSE
