@@ -93,6 +93,10 @@ extract_sms_data <- function(sms_path, stics_path, destination_dir) {
     file.path(stics_input_files_path, "plant"),
     full.names = TRUE
   )
+  plant_path <- c(plant_path, list.files(
+    file.path(sms_path, "Plant"),
+    full.names = TRUE
+  ))
   if (!dir.exists(file.path(destination_dir, "plant"))) {
     dir.create(file.path(destination_dir, "plant"))
   }
