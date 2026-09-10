@@ -19,7 +19,8 @@ evaluate(
   max_degraded_vars = 3,
   parallel = FALSE,
   cores = NA,
-  verbose = 1L
+  verbose = 1L,
+  stop_on_failure = FALSE
 )
 }
 \arguments{
@@ -70,6 +71,9 @@ failed (default 3, i.e. fails starting at 4 degraded variables)}
 
 \item{verbose}{Integer. Logging verbosity level: 0 = silent, 1 = info,
 2 = debug}
+
+\item{stop_on_failure}{Boolean. If TRUE, stops with an error if at least
+one evaluation did not succeed. If FALSE (default), returns normally}
 }
 \value{
 Invisibly \code{NULL}. Called for its side effects: workspace
