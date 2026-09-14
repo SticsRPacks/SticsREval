@@ -45,6 +45,8 @@
 #' @param cores Number of cores to use for parallel computation
 #' @param verbose Integer. Logging verbosity level: 0 = silent, 1 = info,
 #'  2 = debug
+#' @param stop_on_failure Boolean. If TRUE, stops with an error if at least
+#' one evaluation did not succeed. If FALSE (default), returns normally
 #'
 #' @return Invisibly \code{NULL}. Called for its side effects: workspace
 #'   creation, evaluation runs, and console reporting.
@@ -79,7 +81,8 @@ evaluate <- function(
   max_degraded_vars = 3,
   parallel = FALSE,
   cores = NA,
-  verbose = 1L
+  verbose = 1L,
+  stop_on_failure = FALSE
 ) {
   init_logger(verbose)
 
@@ -107,7 +110,8 @@ evaluate <- function(
       max_degraded_vars = field_spec(type = "numeric", nullable = FALSE),
       parallel = field_spec(type = "logical", nullable = FALSE),
       cores = field_spec(validator = validate_cores),
-      verbose = field_spec(type = "integer", nullable = FALSE, min = 0L)
+      verbose = field_spec(type = "integer", nullable = FALSE, min = 0L),
+      stop_on_failure = field_spec(type = "logical", nullable = FALSE)
     ),
     cross_validators = list(
       list(
@@ -183,6 +187,13 @@ evaluate <- function(
   cat("\n")
 
   report_evaluation_status(evaluations)
+
+  if (
+    stop_on_failure &&
+      !all(vapply(evaluations, function(x) x$success, logical(1)))
+  ) {
+    stop("At least one test failed, see details above.", call. = FALSE)
+  }
 }
 
 
@@ -296,8 +307,4 @@ report_evaluation_status <- function(evaluations) {
 
   cli::cli_end()
   cli::cli_rule()
-
-  if (!all(vapply(evaluations, function(x) x$success, logical(1)))) {
-    stop("At least one test failed, see details above.", call. = FALSE)
-  }
 }
