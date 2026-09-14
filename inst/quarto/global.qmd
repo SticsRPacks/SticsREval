@@ -1,0 +1,99 @@
+---
+title: "Global"
+date: last-modified
+---
+
+```{r}
+#| label: setup
+#| include: false
+
+read_csv_safe <- function(path) {
+  if (!file.exists(path)) return(NULL)
+  csv_df <- utils::read.csv(
+    path, stringsAsFactors = FALSE, check.names = FALSE
+  )
+  if (nrow(csv_df) == 0) NULL else csv_df
+}
+
+dt <- function(df) {
+  if (is.null(df) || nrow(df) == 0) {
+    return(htmltools::tags$p(htmltools::em("No data.")))
+  }
+  DT::datatable(
+    df,
+    rownames = FALSE,
+    filter = "top",
+    options = list(pageLength = 10, scrollX = TRUE)
+  )
+}
+
+tag_class <- c(Critical = "tag-critical", Warning = "tag-warning", Improved = "tag-ok") # nolint: line_length_linter
+
+# Renders `items` as colored pill badges, echoing the colored lists `cli`
+# prints to the console for the same critical/warning/improved groupings.
+tag_list <- function(items, status) {
+  if (length(items) == 0) {
+    return('<span class="tag-empty">None</span>')
+  }
+  paste(
+    sprintf('<span class="tag %s">%s</span>', tag_class[[status]], items),
+    collapse = " "
+  )
+}
+
+global_stats <- read_csv_safe(file.path("csv", "global_stats.csv"))
+global_rrmse_comparison <- read_csv_safe(
+  file.path("csv", "global_rrmse_comparison.csv")
+)
+```
+
+```{=html}
+<style>
+.tag {
+  display: inline-block; padding: 0.15em 0.7em; margin: 0.15em 0.25em 0.15em 0; # nolint: line_length_linter
+  border-radius: 999px; font-size: 0.9em; font-weight: 600;
+}
+.tag-critical { background: #fdecea; color: #c0392b; }
+.tag-warning { background: #fef5e7; color: #b9770e; }
+.tag-ok { background: #eafaf1; color: #1e8449; }
+.tag-empty { color: #888; font-style: italic; }
+</style>
+```
+
+## Degraded variables
+
+```{r}
+#| echo: false
+#| results: asis
+if (is.null(global_rrmse_comparison)) {
+  cat("::: {.callout-note}\nNo comparison done.\n:::\n\n")
+} else {
+  # Mirrors `RRmseComparison$critical_vars`/`warning_vars`/`improved_vars`
+  # (and thus what `GlobalEvaluation$summary()` prints to the console):
+  # `status` alone isn't enough, `n_obs > 10` is also required.
+  reliable <- global_rrmse_comparison[global_rrmse_comparison$n_obs > 10, ]
+  by_status <- split(reliable$variable, reliable$status)
+  cat(sprintf(
+    "<p><strong>%d variable(s) critical</strong> (major rRMSE increase)<br>\n%s</p>\n", # nolint: line_length_linter
+    length(by_status[["Critical"]]),
+    tag_list(by_status[["Critical"]], "Critical")
+  ))
+  cat(sprintf(
+    "<p><strong>%d variable(s) warning</strong> (minor rRMSE increase)<br>\n%s</p>\n", # nolint: line_length_linter
+    length(by_status[["Warning"]]),
+    tag_list(by_status[["Warning"]], "Warning")
+  ))
+  cat(sprintf(
+    "<p><strong>%d variable(s) improved</strong> (rRMSE stable or improved)<br>\n%s</p>\n", # nolint: line_length_linter
+    length(by_status[["Improved"]]),
+    tag_list(by_status[["Improved"]], "Improved")
+  ))
+}
+```
+
+## Global statistics
+
+```{r}
+#| echo: false
+dt(global_stats)
+```

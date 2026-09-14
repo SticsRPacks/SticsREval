@@ -102,6 +102,6 @@ test_that("export does not create csv when stats are NULL", {
   eval$export()
 
   expect_false(file.exists(
-    file.path(output_dir, "global_stats.csv")
+    file.path(output_dir, "csv", "global_stats.csv")
   ))
 })

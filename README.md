@@ -20,6 +20,8 @@ The package currently provides the following evaluation workflows:
   - USM-level evaluation
 - **Balance Closure Test** — checks the internal consistency of water and nitrogen balances in the simulations
 
+It can also render evaluation results as a browsable HTML dashboard via `render_report()`.
+
 ---
 
 ## Installation
@@ -62,6 +64,8 @@ This will install all required packages at the versions specified in `renv.lock`
 | [`SticsRFiles`](https://github.com/SticsRPacks/SticsRFiles) | Reading simulated and observed data |
 | [`SticsOnR`](https://github.com/SticsRPacks/SticsOnR) | Running STICS simulations (optional) |
 | [`CroPlotR`](https://github.com/SticsRPacks/CroPlotR) | Computing statistical criteria and generating plots |
+
+> **Note:** `render_report()` additionally requires the [Quarto CLI](https://quarto.org) to be installed on your system (it's not an R package, so `renv::restore()` / `install.packages()` won't install it). It's already included in the [Docker image](#docker).
 
 ---
 
@@ -205,6 +209,7 @@ evaluate(
   obs_rds            = "outputs/observations.rds",
   ref_sim_rds        = "reference/simulations.rds",
   output_dir         = "outputs/",
+  report             = FALSE,
   percentage         = 5,
   species            = NULL,
   usms               = NULL,
@@ -225,6 +230,7 @@ evaluate(
 | `obs_rds` | Path to an RDS file containing pre-computed observation data (required). Produced by `run_simulations()` |
 | `ref_sim_rds` | Path to an RDS file containing the reference version's simulation outputs, used for regression detection. `NULL` = evaluate against observations only, without regression comparison |
 | `output_dir` | Output directory for CSV exports and plots. `NULL` = results are not exported |
+| `report` | If `TRUE` and `output_dir` is set, renders an HTML [dashboard](#dashboard) summarizing the exported results once evaluation is done (default: `FALSE`) |
 | `percentage` | Threshold (%) above which a variable is flagged as deteriorated vs. the reference (default: `5`) |
 | `species` | Optional character vector of species to evaluate. `NULL` = all available |
 | `usms` | Optional character vector of USMs to evaluate. `NULL` = all available |
@@ -281,6 +287,41 @@ A USM fails the evaluation if at least one of the following conditions is met:
 - more than `max_degraded_vars` variables have `RMSE_ratio > degraded_threshold` (default: 20%)
 
 USMs and variables with fewer than 10 observations (`n_obs`) are ignored when determining failed USMs. Writes `Deteriorated_USM.csv` to `output_dir`. Considered successful if no USM fails the evaluation.
+
+#### Dashboard
+
+`render_report(output_dir)` turns the CSV/plot files written by `evaluate(..., output_dir = output_dir)` into a browsable HTML site: a homepage with the evaluation summary (pass/fail status, per-species status/USM counts), a global page with the degraded variables and global stats, and one page per species with that species' statistics, degraded variables, deteriorated/failed USMs, rRMSE comparison plot and scatter plots. Nothing is recomputed — only the files `evaluate()` already wrote are read.
+
+It can be called on its own once `evaluate(..., output_dir = output_dir)` has run:
+
+```r
+evaluate(
+  usms_workspace = "workspace/",
+  output_dir     = "outputs/",
+  sim_rds        = "outputs/simulations.rds",
+  obs_rds        = "outputs/observations.rds",
+  ref_sim_rds    = "reference/simulations.rds"
+)
+
+render_report("outputs/")
+```
+
+or triggered directly from `evaluate()` by passing `report = TRUE` (requires `output_dir` to be set):
+
+```r
+evaluate(
+  usms_workspace = "workspace/",
+  output_dir     = "outputs/",
+  sim_rds        = "outputs/simulations.rds",
+  obs_rds        = "outputs/observations.rds",
+  ref_sim_rds    = "reference/simulations.rds",
+  report         = TRUE
+)
+```
+
+Requires the Quarto CLI and the `quarto`/`DT` R packages (see [Dependencies](#dependencies)). The rendered site (`outputs/index.html`) links to plots via relative paths, so keep `output_dir` intact when sharing or moving results.
+
+The homepage and global page are always rendered first and sequentially, but the per-species pages can be rendered in parallel with `parallel = TRUE` / `cores` (same convention as the other workflow functions — `render_report(output_dir, parallel = TRUE, cores = 4)`). When triggered via `evaluate(..., report = TRUE)`, the species pages inherit `evaluate()`'s own `parallel`/`cores` arguments.
 
 ---
 
@@ -395,6 +436,9 @@ balance_closure_test(
   sim_rds    = "outputs/simulations.rds",
   output_dir = "outputs/"
 )
+
+# 6. Render the results as a browsable HTML dashboard
+render_report("outputs/")
 ```
 
 ### Simple usage
@@ -420,13 +464,16 @@ balance_closure_test(
   sim_rds    = "outputs/simulations.rds",
   output_dir = "outputs/"
 )
+
+# 3. Render the results as a browsable HTML dashboard
+render_report("outputs/")
 ```
 
 ---
 
 ## Docker
 
-A pre-built Docker image is available on the GitHub Container Registry, so you can run `SticsREval` without installing R or any dependencies locally.
+A pre-built Docker image is available on the GitHub Container Registry, so you can run `SticsREval` without installing R or any dependencies locally. It also bundles the [Quarto CLI](https://quarto.org), so `render_report()` works out of the box.
 
 ### Pull the image
 

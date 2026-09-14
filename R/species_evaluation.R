@@ -148,6 +148,42 @@ SpeciesEvaluation <- R6::R6Class("SpeciesEvaluation", # nolint: object_name_lint
       )
       results <- Filter(Negate(is.null), results)
       results
+    },
+
+    # Species-level degradation status ("Critical"/"Warning"/"OK"), used by
+    # both `summary()` (console report) and `export()` (`species_summary
+    # .csv`).
+    species_status_table = function() {
+      comparisons <- Filter(Negate(is.null), private$rrmse_comparisons)
+      if (length(comparisons) == 0) {
+        return(data.frame(
+          species = character(0), status = character(0),
+          stringsAsFactors = FALSE
+        ))
+      }
+
+      all_crit <- unique(unlist(lapply(comparisons, function(c) {
+        if (length(c$critical_vars) > 0) c$get_data()$species[1]
+      })))
+      all_warn <- unique(unlist(lapply(comparisons, function(c) {
+        if (length(c$warning_vars) > 0) c$get_data()$species[1]
+      })))
+      all_warn <- setdiff(all_warn, all_crit)
+      all_ok <- unique(unlist(lapply(comparisons, function(c) {
+        if (length(c$critical_vars) == 0 && length(c$warning_vars) == 0) {
+          c$get_data()$species[1]
+        }
+      })))
+
+      data.frame(
+        species = c(all_crit, all_warn, all_ok),
+        status = c(
+          rep("Critical", length(all_crit)),
+          rep("Warning", length(all_warn)),
+          rep("OK", length(all_ok))
+        ),
+        stringsAsFactors = FALSE
+      )
     }
   ),
 
@@ -278,18 +314,10 @@ SpeciesEvaluation <- R6::R6Class("SpeciesEvaluation", # nolint: object_name_lint
         return(invisible(self))
       }
 
-      all_crit <- unique(unlist(lapply(comparisons, function(c) {
-        if (length(c$critical_vars) > 0) c$get_data()$species[1]
-      })))
-      all_warn <- unique(unlist(lapply(comparisons, function(c) {
-        if (length(c$warning_vars) > 0) c$get_data()$species[1]
-      })))
-      all_warn <- setdiff(all_warn, all_crit)
-      all_ok <- unique(unlist(lapply(comparisons, function(c) {
-        if (length(c$critical_vars) == 0 && length(c$warning_vars) == 0) {
-          c$get_data()$species[1]
-        }
-      })))
+      status <- private$species_status_table()
+      all_crit <- status$species[status$status == "Critical"]
+      all_warn <- status$species[status$status == "Warning"]
+      all_ok <- status$species[status$status == "OK"]
 
       for (comp in comparisons) comp$log()
 
@@ -326,10 +354,13 @@ SpeciesEvaluation <- R6::R6Class("SpeciesEvaluation", # nolint: object_name_lint
 
     #' @description
     #' Export the species evaluation results to CSV files and plots.
-    #' This method exports the statistics, rRMSE comparisons, and deteriorated
-    #' USM data to CSV files in the specified output directory. It also
-    #' generates plots for each species and saves them in the "plots"
-    #' subdirectory.
+    #' This method exports the statistics, rRMSE comparisons (including the
+    #' species-level rRMSE ratio per variable, in `species_rrmse_comparison
+    #' .csv`), and a per-species degradation status summary (`species_summary
+    #' .csv`) to CSV files in the "csv" subdirectory. It also generates a
+    #' static rRMSE comparison plot and interactive per-variable scatter
+    #' plots for each species, saved in their own subdirectory under "plots"
+    #' (one per species).
     export = function() {
       private$logger$info("Exporting species evaluation data")
       plots_dir <- file.path(private$output_dir, "plots")
@@ -345,11 +376,11 @@ SpeciesEvaluation <- R6::R6Class("SpeciesEvaluation", # nolint: object_name_lint
           comp <- private$rrmse_comparisons[[spec]]
           if (is.null(comp$get_data())) return()
 
+          spec_plots_dir <- file.path(plots_dir, spec)
+          dir.create(spec_plots_dir, recursive = TRUE, showWarnings = FALSE)
+
           comp$plot_comparison(
-            file.path(
-              plots_dir,
-              paste0(spec, "_species_comparison.png")
-            )
+            file.path(spec_plots_dir, "species_comparison.png")
           )
           deteriorated <- c(
             comp$critical_vars,
@@ -374,7 +405,7 @@ SpeciesEvaluation <- R6::R6Class("SpeciesEvaluation", # nolint: object_name_lint
               )
             )
             gen_scatter_plot(
-              file.path(plots_dir, paste0(spec, "_scatter_plots.html")),
+              spec_plots_dir,
               sim[spec_usms$situation],
               Filter(Negate(is.null), obs[spec_usms$situation]),
               ref_sim[spec_usms$situation],
@@ -386,11 +417,21 @@ SpeciesEvaluation <- R6::R6Class("SpeciesEvaluation", # nolint: object_name_lint
       )
       safe_write_csv(
         dplyr::bind_rows(private$stats, .id = "species"),
-        file.path(private$output_dir, "species_stats.csv")
+        csv_output_path(private$output_dir, "species_stats.csv")
       )
       safe_write_csv(
         dplyr::bind_rows(private$rrmse_per_usm, .id = "species"),
-        file.path(private$output_dir, "rRMSE_per_usm.csv")
+        csv_output_path(private$output_dir, "rRMSE_per_usm.csv")
+      )
+      safe_write_csv(
+        dplyr::bind_rows(
+          lapply(private$rrmse_comparisons, function(comp) comp$get_data())
+        ),
+        csv_output_path(private$output_dir, "species_rrmse_comparison.csv")
+      )
+      safe_write_csv(
+        private$species_status_table(),
+        csv_output_path(private$output_dir, "species_summary.csv")
       )
       private$logger$info("Species evaluation export done")
     }
