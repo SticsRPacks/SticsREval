@@ -196,10 +196,11 @@ workspace.</p><div class="section">
 <p></p><hr><a id="method-SpeciesEvaluation-export"></a><div class="section">
 <h3 id="speciesevaluation-export-"><code>SpeciesEvaluation$export()</code><a class="anchor" aria-label="anchor" href="#speciesevaluation-export-"></a></h3>
 <p>Export the species evaluation results to CSV files and plots.
-This method exports the statistics, rRMSE comparisons, and deteriorated
-USM data to CSV files in the specified output directory. It also
-generates plots for each species and saves them in the "plots"
-subdirectory.</p><div class="section">
+This method exports the statistics, rRMSE comparisons (including the
+species-level rRMSE ratio per variable, in <code>species_rrmse_comparison .csv</code>), and a per-species degradation status summary (<code>species_summary .csv</code>) to CSV files in the "csv" subdirectory. It also generates a
+static rRMSE comparison plot and interactive per-variable scatter
+plots for each species, saved in their own subdirectory under "plots"
+(one per species).</p><div class="section">
 <h4 id="usage-4">Usage<a class="anchor" aria-label="anchor" href="#usage-4"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">SpeciesEvaluation</span><span class="op">$</span><span class="fu">export</span><span class="op">(</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div>

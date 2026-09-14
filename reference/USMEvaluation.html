@@ -260,10 +260,19 @@ rmse_ref, rmse_species, ratio, n_obs).</p><div class="section">
 
 <p></p><hr><a id="method-USMEvaluation-export"></a><div class="section">
 <h3 id="usmevaluation-export-"><code>USMEvaluation$export()</code><a class="anchor" aria-label="anchor" href="#usmevaluation-export-"></a></h3>
-<p>Export the USM evaluation data for deteriorated USMs to a CSV file.</p>
-<p>The exported file is written to the configured output directory and is
-named <code>Deteriorated_USM.csv</code>. Only USMs that contain evaluation data are
-included in the export.</p><div class="section">
+<p>Export the USM evaluation data for deteriorated USMs, and a per-species
+USM pass/fail count summary, to CSV files.</p>
+<p>The exported files are written to the <code>csv</code> subdirectory of the
+configured output directory: <code>usm_thresholds.csv</code> (the
+<code>ratio_threshold</code>/<code>degraded_threshold</code>/
+<code>max_degraded_vars</code> this evaluation was configured with, so
+downstream reports can explain what "failed" means for this run),
+<code>Deteriorated_USM.csv</code> (only if at least one USM has deteriorated
+data), <code>usm_summary.csv</code> (species, total USMs, failed USMs, passed
+USMs), and <code>failed_usms.csv</code> (species, situation - the same USMs
+counted as "failed" in <code>usm_summary.csv</code> and reported by
+<code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code>, i.e. <code>self$failed_usms</code>; only written if at
+least one USM failed).</p><div class="section">
 <h4 id="usage-3">Usage<a class="anchor" aria-label="anchor" href="#usage-3"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">USMEvaluation</span><span class="op">$</span><span class="fu">export</span><span class="op">(</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div>

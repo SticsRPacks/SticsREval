@@ -68,6 +68,7 @@ to produce <code>sim_rds</code> / <code>obs_rds</code> beforehand.</p>
 <span>  <span class="va">obs_rds</span>,</span>
 <span>  ref_sim_rds <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  output_dir <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  report <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  percentage <span class="op">=</span> <span class="fl">5</span>,</span>
 <span>  species <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  usms <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -77,7 +78,8 @@ to produce <code>sim_rds</code> / <code>obs_rds</code> beforehand.</p>
 <span>  max_degraded_vars <span class="op">=</span> <span class="fl">3</span>,</span>
 <span>  parallel <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  cores <span class="op">=</span> <span class="cn">NA</span>,</span>
-<span>  verbose <span class="op">=</span> <span class="fl">1L</span></span>
+<span>  verbose <span class="op">=</span> <span class="fl">1L</span>,</span>
+<span>  stop_on_failure <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -112,6 +114,13 @@ comparison against a reference</p></dd>
 <dt id="arg-output-dir">output_dir<a class="anchor" aria-label="anchor" href="#arg-output-dir"></a></dt>
 <dd><p>directory where CSV exports and plots are written. If
 NULL (default), results are not exported</p></dd>
+
+
+<dt id="arg-report">report<a class="anchor" aria-label="anchor" href="#arg-report"></a></dt>
+<dd><p>Boolean. If <code>TRUE</code> and <code>output_dir</code> is set,
+renders an HTML dashboard (see <code><a href="render_report.html">render_report</a></code>) summarizing
+the exported results once evaluation is done. Default <code>FALSE</code>. The
+per-species pages are rendered according to <code>parallel</code>/<code>cores</code>.</p></dd>
 
 
 <dt id="arg-percentage">percentage<a class="anchor" aria-label="anchor" href="#arg-percentage"></a></dt>
@@ -161,6 +170,11 @@ failed (default 3, i.e. fails starting at 4 degraded variables)</p></dd>
 <dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>
 <dd><p>Integer. Logging verbosity level: 0 = silent, 1 = info,
 2 = debug</p></dd>
+
+
+<dt id="arg-stop-on-failure">stop_on_failure<a class="anchor" aria-label="anchor" href="#arg-stop-on-failure"></a></dt>
+<dd><p>Boolean. If TRUE, stops with an error if at least
+one evaluation did not succeed. If FALSE (default), returns normally</p></dd>
 
 </dl></div>
     <div id="value">

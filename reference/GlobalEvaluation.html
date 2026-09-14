@@ -154,9 +154,13 @@ statistics and comparing the rRMSE values for the specified variables.</p><div c
 
 <p></p><hr><a id="method-GlobalEvaluation-export"></a><div class="section">
 <h3 id="globalevaluation-export-"><code>GlobalEvaluation$export()</code><a class="anchor" aria-label="anchor" href="#globalevaluation-export-"></a></h3>
-<p>Export the global evaluation results to CSV files.
-This method exports the global statistics and rRMSE comparison results
-to CSV files in the specified output directory.</p><div class="section">
+<p>Export the global evaluation results to CSV files and a comparison
+plot. This method exports the global statistics
+(<code>global_stats.csv</code>) and, if a comparison against a reference version
+was performed, the per-variable rRMSE comparison
+(<code>global_rrmse_comparison.csv</code>, with each variable's status:
+Critical/Warning/Improved/Other) to the <code>csv</code> subdirectory, plus a
+static rRMSE comparison plot (<code>plots/global_comparison.png</code>).</p><div class="section">
 <h4 id="usage-3">Usage<a class="anchor" aria-label="anchor" href="#usage-3"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">GlobalEvaluation</span><span class="op">$</span><span class="fu">export</span><span class="op">(</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div>
