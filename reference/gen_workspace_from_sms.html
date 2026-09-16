@@ -56,7 +56,8 @@
 <span>  <span class="va">output_dir</span>,</span>
 <span>  usms_files <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  parallel <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  cores <span class="op">=</span> <span class="cn">NA</span></span>
+<span>  cores <span class="op">=</span> <span class="cn">NA</span>,</span>
+<span>  force_code_shape <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -88,6 +89,12 @@ all evaluation and calibration USMs are generated.</p></dd>
 
 <dt id="arg-cores">cores<a class="anchor" aria-label="anchor" href="#arg-cores"></a></dt>
 <dd><p>Number of cores to use for parallel computation</p></dd>
+
+
+<dt id="arg-force-code-shape">force_code_shape<a class="anchor" aria-label="anchor" href="#arg-force-code-shape"></a></dt>
+<dd><p>Boolean. Should the code_shape parameter be forced
+to 2 for intercrop plant files (see <code>set_intercrop_code_shape</code>) ?
+Default TRUE.</p></dd>
 
 </dl></div>
     <div id="value">

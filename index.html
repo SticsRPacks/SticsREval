@@ -187,7 +187,8 @@
 <span>  output_dir <span class="op">=</span> <span class="st">"workspace/"</span>,</span>
 <span>  usms_files <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  parallel   <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  cores      <span class="op">=</span> <span class="cn">NA</span></span>
+<span>  cores      <span class="op">=</span> <span class="cn">NA</span>,</span>
+<span>  force_code_shape <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <colgroup>
@@ -220,6 +221,11 @@
 <code>parallel</code> / <code>cores</code>
 </td>
 <td>Parallel execution options</td>
+</tr>
+<tr>
+<td><code>force_code_shape</code></td>
+<td>Whether to force the <code>code_shape</code> parameter to 2 for intercrop plant files. Default <code>TRUE</code>
+</td>
 </tr>
 </tbody>
 </table>
