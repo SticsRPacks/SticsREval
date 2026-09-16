@@ -211,6 +211,9 @@ filter_usms_by_list <- function(usm_df, usms_files) {
 #'  all evaluation and calibration USMs are generated.
 #' @param parallel Boolean. Is the computation to be done in parallel ?
 #' @param cores Number of cores to use for parallel computation
+#' @param force_code_shape Boolean. Should the code_shape parameter be forced
+#'  to 2 for intercrop plant files (see \code{set_intercrop_code_shape}) ?
+#'  Default TRUE.
 #'
 #' @returns NULL (invisibly)
 #'
@@ -221,7 +224,8 @@ gen_workspace_from_sms <- function(
   output_dir,
   usms_files = NULL,
   parallel = FALSE,
-  cores = NA
+  cores = NA,
+  force_code_shape = TRUE
 ) {
   logger::log_info("Generating SMS workspace...")
 
@@ -276,7 +280,9 @@ gen_workspace_from_sms <- function(
     cores = cores
   )
 
-  set_intercrop_code_shape(output_dir, usm_df)
+  if (force_code_shape) {
+    set_intercrop_code_shape(output_dir, usm_df)
+  }
 
   typo_file_path <- file.path(sms_path, "typo_usms.csv")
   typo_grass_file_path <- file.path(

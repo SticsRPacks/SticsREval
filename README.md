@@ -122,7 +122,8 @@ gen_workspace_from_sms(
   output_dir = "workspace/",
   usms_files = NULL,
   parallel   = FALSE,
-  cores      = NA
+  cores      = NA,
+  force_code_shape = TRUE
 )
 ```
 
@@ -133,6 +134,7 @@ gen_workspace_from_sms(
 | `output_dir` | Path to the Stics text workspace to generate |
 | `usms_files` | Character vector of one or more paths to text files, each listing USM names (one per line), to restrict which USMs are generated. `NULL` (default) generates all evaluation and calibration USMs |
 | `parallel` / `cores` | Parallel execution options |
+| `force_code_shape` | Whether to force the `code_shape` parameter to 2 for intercrop plant files. Default `TRUE` |
 
 ### `run_simulations()`
 

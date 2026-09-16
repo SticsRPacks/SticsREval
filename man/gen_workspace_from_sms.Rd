@@ -10,7 +10,8 @@ gen_workspace_from_sms(
   output_dir,
   usms_files = NULL,
   parallel = FALSE,
-  cores = NA
+  cores = NA,
+  force_code_shape = TRUE
 )
 }
 \arguments{
@@ -27,6 +28,10 @@ all evaluation and calibration USMs are generated.}
 \item{parallel}{Boolean. Is the computation to be done in parallel ?}
 
 \item{cores}{Number of cores to use for parallel computation}
+
+\item{force_code_shape}{Boolean. Should the code_shape parameter be forced
+to 2 for intercrop plant files (see \code{set_intercrop_code_shape}) ?
+Default TRUE.}
 }
 \value{
 NULL (invisibly)
