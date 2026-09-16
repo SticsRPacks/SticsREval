@@ -106,11 +106,17 @@ render_report <- function(
     function(i) {
       sp <- species_list[i]
       logger::log_info("Rendering evaluation page for species {sp}...")
-      quarto::quarto_render(
-        input = file.path(output_dir, "species", paste0(sp, ".qmd")),
-        execute_params = list(species = sp, output_dir = abs_output_dir),
-        quiet = !is_debug()
-      )
+      if (parallel) {
+        render_species_page_isolated(
+          output_dir, abs_output_dir, sp, species_list, quiet = !is_debug()
+        )
+      } else {
+        quarto::quarto_render(
+          input = file.path(output_dir, "species", paste0(sp, ".qmd")),
+          execute_params = list(species = sp, output_dir = abs_output_dir),
+          quiet = !is_debug()
+        )
+      }
     }
   )
 
@@ -125,6 +131,34 @@ render_report <- function(
   }
 
   invisible(html_path)
+}
+
+# Renders one species page in its own throwaway Quarto project instead of
+# `output_dir`'s, so parallel workers don't race on a shared `.quarto/`
+# cache or `site_libs/` (which intermittently crashes the quarto CLI).
+# `embed-resources` makes the output self-contained, so it needs no
+# `site_libs/` once copied into `output_dir/species/`.
+render_species_page_isolated <- function(
+  output_dir, abs_output_dir, sp, species_list, quiet
+) {
+  temp_dir <- tempfile(pattern = paste0("quarto_", sp, "_"))
+  dir.create(temp_dir, recursive = TRUE)
+  on.exit(unlink(temp_dir, recursive = TRUE), add = TRUE)
+
+  write_project_files(temp_dir, species_list)
+
+  quarto::quarto_render(
+    input = file.path(temp_dir, "species", paste0(sp, ".qmd")),
+    execute_params = list(species = sp, output_dir = abs_output_dir),
+    metadata = list(format = list(html = list(`embed-resources` = TRUE))),
+    quiet = quiet
+  )
+
+  file.copy(
+    file.path(temp_dir, "species", paste0(sp, ".html")),
+    file.path(output_dir, "species", paste0(sp, ".html")),
+    overwrite = TRUE
+  )
 }
 
 get_species_list <- function(output_dir) {
