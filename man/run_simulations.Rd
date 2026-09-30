@@ -12,7 +12,8 @@ run_simulations(
   usms_files = NULL,
   vars = NULL,
   parallel = FALSE,
-  cores = NA
+  cores = NA,
+  verbose = 1L
 )
 }
 \arguments{
@@ -41,6 +42,9 @@ consumed by \code{\link{balance_closure_test}}.}
 \item{parallel}{Boolean. Is the computation to be done in parallel ?}
 
 \item{cores}{Number of cores to use for parallel computation}
+
+\item{verbose}{Integer. Logging verbosity level: 0 = warnings and errors
+only, 1 = info, 2 = debug}
 }
 \value{
 invisibly, a list with two elements: \code{sim} and \code{obs},

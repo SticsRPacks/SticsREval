@@ -214,6 +214,8 @@ filter_usms_by_list <- function(usm_df, usms_files) {
 #' @param force_code_shape Boolean. Should the code_shape parameter be forced
 #'  to 2 for intercrop plant files (see \code{set_intercrop_code_shape}) ?
 #'  Default TRUE.
+#' @param verbose Integer. Logging verbosity level: 0 = warnings and errors
+#'  only, 1 = info, 2 = debug
 #'
 #' @returns NULL (invisibly)
 #'
@@ -225,8 +227,10 @@ gen_workspace_from_sms <- function(
   usms_files = NULL,
   parallel = FALSE,
   cores = NA,
-  force_code_shape = TRUE
+  force_code_shape = TRUE,
+  verbose = 1L
 ) {
+  init_logger(verbose)
   logger::log_info("Generating SMS workspace...")
 
   if (!dir.exists(sms_path)) {
@@ -274,7 +278,7 @@ gen_workspace_from_sms <- function(
   SticsRFiles::gen_usms_xml2txt(
     workspace = workspace_tmp_actual,
     out_dir = output_dir,
-    verbose = FALSE,
+    verbose = is_debug(),
     usm = usms,
     parallel = parallel,
     cores = cores

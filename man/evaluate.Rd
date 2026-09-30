@@ -75,8 +75,8 @@ failed (default 3, i.e. fails starting at 4 degraded variables)}
 
 \item{cores}{Number of cores to use for parallel computation}
 
-\item{verbose}{Integer. Logging verbosity level: 0 = silent, 1 = info,
-2 = debug}
+\item{verbose}{Integer. Logging verbosity level: 0 = warnings and errors
+only, 1 = info, 2 = debug}
 
 \item{stop_on_failure}{Boolean. If TRUE, stops with an error if at least
 one evaluation did not succeed. If FALSE (default), returns normally}

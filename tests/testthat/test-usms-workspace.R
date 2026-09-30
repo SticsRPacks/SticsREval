@@ -183,3 +183,53 @@ test_that("load discovers USMs from usms_workspace subdirectories", {
 
   expect_setequal(seen_usms$value, c("usm1", "usm2"))
 })
+
+# ---- run_simulations ----
+
+make_sim_loader <- function() {
+  loader <- make_loader(stics_exe = "stics")
+  replace_private(loader, "get_rotation_list", function(usms) list())
+  loader
+}
+
+test_that("run_simulations returns sim_list from the Stics wrapper", {
+  loader <- make_sim_loader()
+  fake_sim <- list(usm1 = data.frame(Date = 1, LAI = 1))
+  local_mocked_bindings(
+    stics_wrapper_options = function(...) list(),
+    stics_wrapper = function(...) list(error = FALSE, sim_list = fake_sim),
+    .package = "SticsOnR"
+  )
+
+  expect_identical(loader$run_simulations("usm1", "LAI"), fake_sim)
+})
+
+test_that("run_simulations catches and rethrows Stics wrapper errors", {
+  loader <- make_sim_loader()
+  local_mocked_bindings(
+    stics_wrapper_options = function(...) list(),
+    stics_wrapper = function(...) stop("boom", call. = FALSE),
+    .package = "SticsOnR"
+  )
+  logs <- make_log_capture()
+
+  expect_error(
+    loader$run_simulations("usm1", "LAI"),
+    "Error while running simulations: boom"
+  )
+  expect_true(any(grepl("Stics wrapper failed.*boom", logs$logs)))
+})
+
+test_that("run_simulations errors when the Stics wrapper reports an error", {
+  loader <- make_sim_loader()
+  local_mocked_bindings(
+    stics_wrapper_options = function(...) list(),
+    stics_wrapper = function(...) list(error = TRUE, sim_list = list()),
+    .package = "SticsOnR"
+  )
+
+  expect_error(
+    loader$run_simulations("usm1", "LAI"),
+    "Error while running simulations"
+  )
+})

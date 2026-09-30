@@ -161,12 +161,24 @@ USMSWorkspace <- R6::R6Class("USMSWorkspace", # nolint: object_name_linter
         verbose = is_debug(),
         time_display = is_debug()
       )
-      res <- SticsOnR::stics_wrapper(
-        wrapper_options, situation = unique(usms), var = var
+      res <- tryCatch(
+        SticsOnR::stics_wrapper(
+          wrapper_options, situation = unique(usms), var = var
+        ),
+        error = function(e) {
+          logger::log_error(
+            "Stics wrapper failed while running simulations: ",
+            conditionMessage(e)
+          )
+          stop(
+            "Error while running simulations: ", conditionMessage(e),
+            call. = FALSE
+          )
+        }
       )
       if (res$error) {
         stop(
-          "Error running simulations. Set verbose = 2L for more details.",
+          "Error while running simulations. Set verbose = 2L for more details.",
           call. = FALSE
         )
       }
