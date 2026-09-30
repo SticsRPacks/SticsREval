@@ -1,6 +1,61 @@
 #' @importFrom rlang .data
 NULL
 
+#' Resolve the deprecated `usms_files` argument into `usms`.
+#'
+#' Must be called directly from the exported function \code{fn_name}, so
+#' that lifecycle reports the deprecation against the user's call.
+#'
+#' @keywords internal
+resolve_usms_files <- function(usms, usms_files, fn_name) {
+  if (!lifecycle::is_present(usms_files)) {
+    return(usms)
+  }
+  lifecycle::deprecate_warn(
+    when = "0.0.0.9000",
+    what = paste0(fn_name, "(usms_files)"),
+    with = paste0(fn_name, "(usms)"),
+    details = "To read USMs from list files, use `usms = read_usms_files(usms_files)`.", # nolint: line_length_linter
+    user_env = rlang::caller_env(2)
+  )
+  if (!is.null(usms)) {
+    stop("`usms` and `usms_files` can't both be supplied.", call. = FALSE)
+  }
+  if (is.null(usms_files)) {
+    return(NULL)
+  }
+  read_usms_files(usms_files)
+}
+
+#' Keep the wanted USMs that are available.
+#'
+#' Logs a warning listing the wanted USMs that aren't available, and stops
+#' if none of them are.
+#'
+#' @param available_usms character vector of available USM names
+#' @param wanted_usms character vector of requested USM names
+#' @param location description of where the USMs are looked for, used in
+#'  messages (e.g. a workspace path)
+#'
+#' @returns the unique wanted USMs that are available
+#'
+#' @keywords internal
+select_available_usms <- function(available_usms, wanted_usms, location) {
+  wanted_usms <- unique(wanted_usms)
+  missing_usms <- setdiff(wanted_usms, available_usms)
+  if (length(missing_usms) > 0) {
+    logger::log_warn(
+      "The following USMs are not found in ", location, ": ",
+      toString(missing_usms)
+    )
+  }
+  found_usms <- intersect(wanted_usms, available_usms)
+  if (length(found_usms) == 0) {
+    stop("None of the requested USMs are found in ", location, call. = FALSE)
+  }
+  found_usms
+}
+
 remove_null_values <- function(l) {
   result <- l[!vapply(l, is.null, logical(1))]
   if (length(result) == 0) list() else result

@@ -1,6 +1,6 @@
 # ---- get_usms_to_simulate ----
 
-test_that("get_usms_to_simulate returns all USMs when usms_files is NULL", {
+test_that("get_usms_to_simulate returns all USMs when wanted_usms is NULL", {
   ws_dir <- withr::local_tempdir()
   dir.create(file.path(ws_dir, "usm1"))
   dir.create(file.path(ws_dir, "usm2"))
@@ -9,27 +9,34 @@ test_that("get_usms_to_simulate returns all USMs when usms_files is NULL", {
   expect_setequal(get_usms_to_simulate(ws_dir, NULL), c("usm1", "usm2"))
 })
 
-test_that("get_usms_to_simulate restricts to the USMs listed in usms_files", {
+test_that("get_usms_to_simulate restricts to the wanted USMs", {
   ws_dir <- withr::local_tempdir()
   dir.create(file.path(ws_dir, "usm1"))
   dir.create(file.path(ws_dir, "usm2"))
 
-  list_file <- withr::local_tempfile()
-  writeLines("usm1", list_file)
-
-  expect_identical(get_usms_to_simulate(ws_dir, list_file), "usm1")
+  expect_identical(get_usms_to_simulate(ws_dir, c("usm1", "usm1")), "usm1")
 })
 
-test_that("get_usms_to_simulate errors when a listed USM is missing", {
+test_that("get_usms_to_simulate warns and skips missing wanted USMs", {
   ws_dir <- withr::local_tempdir()
   dir.create(file.path(ws_dir, "usm1"))
 
-  list_file <- withr::local_tempfile()
-  writeLines(c("usm1", "usm2"), list_file)
+  logger::log_threshold(logger::WARN)
+  on.exit(logger::log_threshold(logger::FATAL), add = TRUE)
+  log_env <- make_log_capture()
+  on.exit(logger::log_appender(logger::appender_console), add = TRUE)
+
+  expect_identical(get_usms_to_simulate(ws_dir, c("usm1", "usm2")), "usm1")
+  expect_match(log_env$logs, "not found in .*: usm2", all = FALSE)
+})
+
+test_that("get_usms_to_simulate errors when no wanted USM is found", {
+  ws_dir <- withr::local_tempdir()
+  dir.create(file.path(ws_dir, "usm1"))
 
   expect_error(
-    get_usms_to_simulate(ws_dir, list_file),
-    "The following USMs are not found in the workspace: usm2"
+    get_usms_to_simulate(ws_dir, "usm2"),
+    "None of the requested USMs are found in"
   )
 })
 
@@ -203,20 +210,13 @@ test_that(
   }
 )
 
-test_that("run_simulations restricts to USMs listed in usms_files", {
-  fx <- make_run_simulations_fixture()
-
-  list_file <- withr::local_tempfile()
-  writeLines("usm1", list_file)
-
-  seen <- new.env()
+stub_restricted_run <- function(seen) {
   fake_workspace <- list(
     run_simulations = function(usms, var) {
       seen$usms <- usms
       list(usm1 = data.frame(Date = as.Date("2024-01-01"), LAI = 1))
     }
   )
-
   mockery::stub(
     run_simulations, "USMSWorkspace$new",
     function(...) fake_workspace
@@ -229,16 +229,62 @@ test_that("run_simulations restricts to USMs listed in usms_files", {
     run_simulations, "get_var_from_obs",
     function(...) "LAI"
   )
+  run_simulations
+}
 
-  run_simulations(
+test_that("run_simulations restricts to the USMs given in usms", {
+  fx <- make_run_simulations_fixture()
+  seen <- new.env()
+  run_sims <- stub_restricted_run(seen)
+
+  run_sims(
     stics_exe = fx$stics_exe,
     usms_workspace = fx$ws_dir,
     metadata_file = fx$metadata_file,
     output_dir = fx$output_dir,
-    usms_files = list_file
+    usms = "usm1"
   )
 
   expect_identical(seen$usms, "usm1")
+})
+
+test_that("run_simulations still accepts the deprecated usms_files", {
+  fx <- make_run_simulations_fixture()
+  seen <- new.env()
+  run_sims <- stub_restricted_run(seen)
+
+  list_file <- withr::local_tempfile()
+  writeLines("usm1", list_file)
+
+  lifecycle::expect_deprecated(
+    run_sims(
+      stics_exe = fx$stics_exe,
+      usms_workspace = fx$ws_dir,
+      metadata_file = fx$metadata_file,
+      output_dir = fx$output_dir,
+      usms_files = list_file
+    )
+  )
+
+  expect_identical(seen$usms, "usm1")
+})
+
+test_that("run_simulations errors when both usms and usms_files are given", {
+  fx <- make_run_simulations_fixture()
+  list_file <- withr::local_tempfile()
+  writeLines("usm1", list_file)
+
+  expect_error(
+    suppressWarnings(run_simulations(
+      stics_exe = fx$stics_exe,
+      usms_workspace = fx$ws_dir,
+      metadata_file = fx$metadata_file,
+      output_dir = fx$output_dir,
+      usms = "usm1",
+      usms_files = list_file
+    )),
+    "`usms` and `usms_files` can't both be supplied"
+  )
 })
 
 test_that("run_simulations errors when stics_exe does not exist on disk", {

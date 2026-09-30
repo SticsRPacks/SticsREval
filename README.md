@@ -120,10 +120,11 @@ gen_workspace_from_sms(
   sms_path   = "/path/to/sms_repository",
   stics_path = "/path/to/stics_distribution",
   output_dir = "workspace/",
-  usms_files = NULL,
+  usms       = NULL,
   parallel   = FALSE,
   cores      = NA,
-  force_code_shape = TRUE
+  force_code_shape = TRUE,
+  verbose    = 1L
 )
 ```
 
@@ -132,9 +133,11 @@ gen_workspace_from_sms(
 | `sms_path` | Path to the SMS repository |
 | `stics_path` | Path to the Stics distribution (used to copy model input files) |
 | `output_dir` | Path to the Stics text workspace to generate |
-| `usms_files` | Character vector of one or more paths to text files, each listing USM names (one per line), to restrict which USMs are generated. `NULL` (default) generates all evaluation and calibration USMs |
+| `usms` | Character vector of USM names to restrict which USMs are generated. `NULL` (default) generates all evaluation and calibration USMs. Use `read_usms_files()` to read them from text files listing one USM per line |
 | `parallel` / `cores` | Parallel execution options |
 | `force_code_shape` | Whether to force the `code_shape` parameter to 2 for intercrop plant files. Default `TRUE` |
+| `verbose` | Logging verbosity level: `0` = warnings and errors only, `1` = info (default), `2` = debug |
+| `usms_files` | **Deprecated.** Use `usms = read_usms_files(usms_files)` instead |
 
 ### `run_simulations()`
 
@@ -146,10 +149,11 @@ run_simulations(
   usms_workspace = "workspace/",
   metadata_file  = "metadata.csv",
   output_dir     = "outputs/",
-  usms_files     = NULL,
+  usms           = NULL,
   vars           = NULL,
   parallel       = FALSE,
-  cores          = NA
+  cores          = NA,
+  verbose        = 1L
 )
 ```
 
@@ -159,9 +163,11 @@ run_simulations(
 | `usms_workspace` | Path to the Stics text workspace containing the USMs to simulate |
 | `metadata_file` | Path to the metadata CSV file describing USM rotations |
 | `output_dir` | Directory where `simulations.rds` and `observations.rds` are written |
-| `usms_files` | Character vector of one or more paths to text files listing the USMs to simulate. `NULL` (default) simulates all USMs found in `usms_workspace` |
+| `usms` | Character vector of USM names to simulate. `NULL` (default) simulates all USMs found in `usms_workspace`. Use `read_usms_files()` to read them from text files listing one USM per line |
 | `vars` | Character vector of variable names to simulate. `NULL` (default) derives them automatically from the observation files found in `usms_workspace`. Pass this explicitly to simulate variables that aren't observed, e.g. the balance closure variables consumed by `balance_closure_test()` |
 | `parallel` / `cores` | Parallel execution options |
+| `verbose` | Logging verbosity level: `0` = warnings and errors only, `1` = info (default), `2` = debug |
+| `usms_files` | **Deprecated.** Use `usms = read_usms_files(usms_files)` instead |
 
 By default, the variables to simulate are derived automatically from the observation files found in `usms_workspace`, using `get_var_from_obs()`. The resulting `simulations.rds` / `observations.rds` files can be passed as `sim_rds` / `obs_rds` (or `ref_sim_rds` for a reference version) to `evaluate()` — see [From raw SMS data to evaluation](#from-raw-sms-data-to-evaluation) below.
 

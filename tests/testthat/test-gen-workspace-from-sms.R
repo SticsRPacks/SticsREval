@@ -221,15 +221,12 @@ test_that("filter_usms_by_list keeps wanted USMs, warns about missing ones", {
     source = "sms",
     stringsAsFactors = FALSE
   )
-  list_file <- withr::local_tempfile()
-  writeLines(c("usm1", "usm4"), list_file)
-
   logger::log_threshold(logger::WARN)
   on.exit(logger::log_threshold(logger::FATAL), add = TRUE)
   log_env <- make_log_capture()
   on.exit(logger::log_appender(logger::appender_console), add = TRUE)
 
-  result <- filter_usms_by_list(usm_df, list_file)
+  result <- filter_usms_by_list(usm_df, c("usm1", "usm4"))
 
   expect_identical(result$usm, "usm1")
   expect_match(log_env$logs, "usm4", all = FALSE)
@@ -271,10 +268,12 @@ test_that("gen_workspace_from_sms generates a text workspace from SMS data", {
   )))
 })
 
-test_that("gen_workspace_from_sms restricts USMs using usms_files", {
-  sms_path <- withr::local_tempdir()
-  stics_path <- withr::local_tempdir()
-  output_dir <- file.path(withr::local_tempdir(), "workspace")
+make_two_usms_sms_fixture <- function(.local_envir = parent.frame()) {
+  sms_path <- withr::local_tempdir(.local_envir = .local_envir)
+  stics_path <- withr::local_tempdir(.local_envir = .local_envir)
+  output_dir <- file.path(
+    withr::local_tempdir(.local_envir = .local_envir), "workspace"
+  )
 
   write_sms_fixture(sms_path, stics_path)
   write_typo_usms(sms_path, list(
@@ -285,10 +284,10 @@ test_that("gen_workspace_from_sms restricts USMs using usms_files", {
     sms_path, "typo_usms_FR_14_12_2017_pour_tri_evaluation_officielle.csv"
   ))
 
-  list_file <- withr::local_tempfile()
-  writeLines("usm1", list_file)
+  list(sms_path = sms_path, stics_path = stics_path, output_dir = output_dir)
+}
 
-  seen <- new.env()
+stub_gen_usms_xml2txt <- function(seen) {
   mockery::stub(
     gen_workspace_from_sms, "SticsRFiles::gen_usms_xml2txt",
     function(workspace, out_dir, verbose, usm, parallel, cores) {
@@ -296,12 +295,46 @@ test_that("gen_workspace_from_sms restricts USMs using usms_files", {
       dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
     }
   )
+  gen_workspace_from_sms
+}
 
-  gen_workspace_from_sms(
-    sms_path, stics_path, output_dir, usms_files = list_file
+test_that("gen_workspace_from_sms restricts to the USMs given in usms", {
+  fx <- make_two_usms_sms_fixture()
+  seen <- new.env()
+  gen_ws <- stub_gen_usms_xml2txt(seen)
+
+  gen_ws(fx$sms_path, fx$stics_path, fx$output_dir, usms = "usm1")
+
+  expect_identical(seen$usm, "usm1")
+})
+
+test_that("gen_workspace_from_sms still accepts the deprecated usms_files", {
+  fx <- make_two_usms_sms_fixture()
+  seen <- new.env()
+  gen_ws <- stub_gen_usms_xml2txt(seen)
+
+  list_file <- withr::local_tempfile()
+  writeLines("usm1", list_file)
+
+  lifecycle::expect_deprecated(
+    gen_ws(fx$sms_path, fx$stics_path, fx$output_dir, usms_files = list_file)
   )
 
   expect_identical(seen$usm, "usm1")
+})
+
+test_that("gen_workspace_from_sms errors when both usms and usms_files set", {
+  fx <- make_two_usms_sms_fixture()
+  list_file <- withr::local_tempfile()
+  writeLines("usm1", list_file)
+
+  expect_error(
+    suppressWarnings(gen_workspace_from_sms(
+      fx$sms_path, fx$stics_path, fx$output_dir,
+      usms = "usm1", usms_files = list_file
+    )),
+    "`usms` and `usms_files` can't both be supplied"
+  )
 })
 
 test_that("gen_workspace_from_sms copies intercrop_links.xml when present", {
