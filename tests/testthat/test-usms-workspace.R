@@ -208,7 +208,7 @@ test_that("run_simulations catches and rethrows Stics wrapper errors", {
   loader <- make_sim_loader()
   local_mocked_bindings(
     stics_wrapper_options = function(...) list(),
-    stics_wrapper = function(...) stop("boom"),
+    stics_wrapper = function(...) stop("boom", call. = FALSE),
     .package = "SticsOnR"
   )
   logs <- make_log_capture()
