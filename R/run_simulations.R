@@ -17,9 +17,9 @@
 #' @param output_dir directory where the simulation results
 #'  (\code{simulations.rds}) and observation data (\code{observations.rds})
 #'  will be written. Created if it doesn't exist.
-#' @param usms_files character vector of one or more paths to text files,
-#'  each containing one USM name per line. If NULL (default), all USMs
-#'  found in \code{usms_workspace} are simulated.
+#' @param usms character vector of USM names to simulate. If NULL
+#'  (default), all USMs found in \code{usms_workspace} are simulated. Use
+#'  \code{\link{read_usms_files}} to read them from USM list files.
 #' @param vars character vector of variable names to simulate. If NULL
 #'  (default), the variables are derived automatically from the observation
 #'  files found in \code{usms_workspace}. Pass this explicitly to simulate
@@ -29,6 +29,8 @@
 #' @param cores Number of cores to use for parallel computation
 #' @param verbose Integer. Logging verbosity level: 0 = warnings and errors
 #'  only, 1 = info, 2 = debug
+#' @param usms_files Deprecated. Use
+#'  \code{usms = read_usms_files(usms_files)} instead.
 #'
 #' @returns invisibly, a list with two elements: \code{sim} and \code{obs},
 #'  each a list of results (one tibble per USM), as returned by
@@ -41,13 +43,15 @@ run_simulations <- function(
   usms_workspace,
   metadata_file,
   output_dir,
-  usms_files = NULL,
+  usms = NULL,
   vars = NULL,
   parallel = FALSE,
   cores = NA,
-  verbose = 1L
+  verbose = 1L,
+  usms_files = lifecycle::deprecated()
 ) {
   init_logger(verbose)
+  usms <- resolve_usms_files(usms, usms_files, "run_simulations")
   logger::log_info("Running simulations...")
 
   arg_values <- as.list(environment())
@@ -57,7 +61,7 @@ run_simulations <- function(
       usms_workspace = field_spec(type = "character", nullable = FALSE),
       metadata_file = field_spec(type = "character", nullable = FALSE),
       output_dir = field_spec(type = "character", nullable = FALSE),
-      usms_files = field_spec(type = "character", validator = validate_nonempty_chr), # nolint: line_length_linter
+      usms = field_spec(type = "character", validator = validate_nonempty_chr),
       vars = field_spec(type = "character", validator = validate_nonempty_chr),
       parallel = field_spec(type = "logical", nullable = FALSE),
       cores = field_spec(validator = validate_cores),
@@ -87,7 +91,7 @@ run_simulations <- function(
   validate_schema(arg_values, schema)
   validate_filesystem(arg_values, schema)
 
-  usms <- get_usms_to_simulate(usms_workspace, usms_files)
+  usms <- get_usms_to_simulate(usms_workspace, usms)
 
   logger::log_info("Found {length(usms)} USMs in {usms_workspace}")
 
@@ -122,21 +126,13 @@ save_rds <- function(data, output_dir, file_name) {
 }
 
 
-get_usms_to_simulate <- function(usms_workspace, usms_files) {
+get_usms_to_simulate <- function(usms_workspace, wanted_usms) {
   all_usms <- list.dirs(usms_workspace, full.names = FALSE, recursive = FALSE)
-  if (is.null(usms_files)) {
+  if (is.null(wanted_usms)) {
     return(all_usms)
   }
 
-  wanted_usms <- read_usms_files(usms_files)
-  missing_usms <- setdiff(wanted_usms, all_usms)
-  if (length(missing_usms) > 0) {
-    stop(
-      "The following USMs are not found in the workspace: ",
-      toString(missing_usms), call. = FALSE
-    )
-  }
-  wanted_usms
+  select_available_usms(all_usms, wanted_usms, usms_workspace)
 }
 
 

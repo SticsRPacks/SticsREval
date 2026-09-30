@@ -2,21 +2,20 @@
 % Please edit documentation in R/gen_workspace_from_sms.R
 \name{filter_usms_by_list}
 \alias{filter_usms_by_list}
-\title{Restrict a USM data frame to the USMs listed in one or more USM list files.}
+\title{Restrict a USM data frame to the given USMs.}
 \usage{
-filter_usms_by_list(usm_df, usms_files)
+filter_usms_by_list(usm_df, wanted_usms)
 }
 \arguments{
 \item{usm_df}{data frame containing USM information, as returned by
 \code{get_sms_usms_list}}
 
-\item{usms_files}{character vector of one or more paths to text
-files, each containing one USM name per line}
+\item{wanted_usms}{character vector of USM names to keep}
 }
 \value{
 the filtered data frame
 }
 \description{
-Restrict a USM data frame to the USMs listed in one or more USM list files.
+Restrict a USM data frame to the given USMs.
 }
 \keyword{internal}

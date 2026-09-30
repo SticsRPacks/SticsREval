@@ -206,3 +206,33 @@ test_that("read_csv parses dates with format %Y-%m-%d", {
   expect_identical(result$date[1], as.Date("2024-06-15"))
   unlink(tmp)
 })
+
+# ---- select_available_usms ----
+
+test_that("select_available_usms keeps the unique available wanted USMs", {
+  expect_identical(
+    select_available_usms(c("usm1", "usm2"), c("usm2", "usm2", "usm1"), "ws"),
+    c("usm2", "usm1")
+  )
+})
+
+test_that("select_available_usms warns about missing USMs", {
+  logger::log_threshold(logger::WARN)
+  on.exit(logger::log_threshold(logger::FATAL), add = TRUE)
+  log_env <- make_log_capture()
+  on.exit(logger::log_appender(logger::appender_console), add = TRUE)
+
+  result <- select_available_usms("usm1", c("usm1", "usm3"), "ws")
+
+  expect_identical(result, "usm1")
+  expect_match(
+    log_env$logs, "The following USMs are not found in ws: usm3", all = FALSE
+  )
+})
+
+test_that("select_available_usms errors when no wanted USM is available", {
+  expect_error(
+    select_available_usms("usm1", "usm3", "ws"),
+    "None of the requested USMs are found in ws"
+  )
+})

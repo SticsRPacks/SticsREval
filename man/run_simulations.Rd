@@ -9,11 +9,12 @@ run_simulations(
   usms_workspace,
   metadata_file,
   output_dir,
-  usms_files = NULL,
+  usms = NULL,
   vars = NULL,
   parallel = FALSE,
   cores = NA,
-  verbose = 1L
+  verbose = 1L,
+  usms_files = lifecycle::deprecated()
 )
 }
 \arguments{
@@ -29,9 +30,9 @@ rotations (successive USMs)}
 (\code{simulations.rds}) and observation data (\code{observations.rds})
 will be written. Created if it doesn't exist.}
 
-\item{usms_files}{character vector of one or more paths to text files,
-each containing one USM name per line. If NULL (default), all USMs
-found in \code{usms_workspace} are simulated.}
+\item{usms}{character vector of USM names to simulate. If NULL
+(default), all USMs found in \code{usms_workspace} are simulated. Use
+\code{\link{read_usms_files}} to read them from USM list files.}
 
 \item{vars}{character vector of variable names to simulate. If NULL
 (default), the variables are derived automatically from the observation
@@ -45,6 +46,9 @@ consumed by \code{\link{balance_closure_test}}.}
 
 \item{verbose}{Integer. Logging verbosity level: 0 = warnings and errors
 only, 1 = info, 2 = debug}
+
+\item{usms_files}{Deprecated. Use
+\code{usms = read_usms_files(usms_files)} instead.}
 }
 \value{
 invisibly, a list with two elements: \code{sim} and \code{obs},

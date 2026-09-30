@@ -8,11 +8,12 @@ gen_workspace_from_sms(
   sms_path,
   stics_path,
   output_dir,
-  usms_files = NULL,
+  usms = NULL,
   parallel = FALSE,
   cores = NA,
   force_code_shape = TRUE,
-  verbose = 1L
+  verbose = 1L,
+  usms_files = lifecycle::deprecated()
 )
 }
 \arguments{
@@ -22,9 +23,9 @@ gen_workspace_from_sms(
 
 \item{output_dir}{path to the Stics workspace to generate}
 
-\item{usms_files}{character vector of one or more paths to text
-files listing the USMs (one per line) to generate. If NULL (default),
-all evaluation and calibration USMs are generated.}
+\item{usms}{character vector of USM names to generate. If NULL
+(default), all evaluation and calibration USMs are generated. Use
+\code{\link{read_usms_files}} to read them from USM list files.}
 
 \item{parallel}{Boolean. Is the computation to be done in parallel ?}
 
@@ -36,6 +37,9 @@ Default TRUE.}
 
 \item{verbose}{Integer. Logging verbosity level: 0 = warnings and errors
 only, 1 = info, 2 = debug}
+
+\item{usms_files}{Deprecated. Use
+\code{usms = read_usms_files(usms_files)} instead.}
 }
 \value{
 NULL (invisibly)

@@ -177,28 +177,20 @@ read_usms_files <- function(usms_files) {
   usms[nzchar(usms)]
 }
 
-#' Restrict a USM data frame to the USMs listed in one or more USM list files.
+#' Restrict a USM data frame to the given USMs.
 #'
 #' @param usm_df data frame containing USM information, as returned by
 #'  \code{get_sms_usms_list}
-#' @param usms_files character vector of one or more paths to text
-#'  files, each containing one USM name per line
+#' @param wanted_usms character vector of USM names to keep
 #'
 #' @returns the filtered data frame
 #'
 #' @keywords internal
-filter_usms_by_list <- function(usm_df, usms_files) {
-  wanted_usms <- read_usms_files(usms_files)
-  missing_usms <- setdiff(wanted_usms, usm_df$usm)
-  if (length(missing_usms) > 0) {
-    logger::log_warn(
-      "USMs listed in ",
-      toString(usms_files),
-      " but not found in the SMS repository: ",
-      toString(missing_usms)
-    )
-  }
-  usm_df[usm_df$usm %in% wanted_usms, ]
+filter_usms_by_list <- function(usm_df, wanted_usms) {
+  found_usms <- select_available_usms(
+    usm_df$usm, wanted_usms, "the SMS repository"
+  )
+  usm_df[usm_df$usm %in% found_usms, ]
 }
 
 #' Generate a Stics workspace from SMS data, for evaluation and calibration.
@@ -206,9 +198,9 @@ filter_usms_by_list <- function(usm_df, usms_files) {
 #' @param sms_path path to the SMS repository
 #' @param stics_path path to Stics repository
 #' @param output_dir path to the Stics workspace to generate
-#' @param usms_files character vector of one or more paths to text
-#'  files listing the USMs (one per line) to generate. If NULL (default),
-#'  all evaluation and calibration USMs are generated.
+#' @param usms character vector of USM names to generate. If NULL
+#'  (default), all evaluation and calibration USMs are generated. Use
+#'  \code{\link{read_usms_files}} to read them from USM list files.
 #' @param parallel Boolean. Is the computation to be done in parallel ?
 #' @param cores Number of cores to use for parallel computation
 #' @param force_code_shape Boolean. Should the code_shape parameter be forced
@@ -216,6 +208,8 @@ filter_usms_by_list <- function(usm_df, usms_files) {
 #'  Default TRUE.
 #' @param verbose Integer. Logging verbosity level: 0 = warnings and errors
 #'  only, 1 = info, 2 = debug
+#' @param usms_files Deprecated. Use
+#'  \code{usms = read_usms_files(usms_files)} instead.
 #'
 #' @returns NULL (invisibly)
 #'
@@ -224,13 +218,15 @@ gen_workspace_from_sms <- function(
   sms_path,
   stics_path,
   output_dir,
-  usms_files = NULL,
+  usms = NULL,
   parallel = FALSE,
   cores = NA,
   force_code_shape = TRUE,
-  verbose = 1L
+  verbose = 1L,
+  usms_files = lifecycle::deprecated()
 ) {
   init_logger(verbose)
+  usms <- resolve_usms_files(usms, usms_files, "gen_workspace_from_sms")
   logger::log_info("Generating SMS workspace...")
 
   if (!dir.exists(sms_path)) {
@@ -241,8 +237,8 @@ gen_workspace_from_sms <- function(
   }
   usm_df <- get_sms_usms_list(sms_path)
 
-  if (!is.null(usms_files)) {
-    usm_df <- filter_usms_by_list(usm_df, usms_files)
+  if (!is.null(usms)) {
+    usm_df <- filter_usms_by_list(usm_df, usms)
   }
 
   usms <- usm_df$usm
