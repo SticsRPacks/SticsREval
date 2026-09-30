@@ -30,8 +30,8 @@ are the names of this list, optionally restricted by \code{usms}}
 
 \item{cores}{Number of cores to use for parallel computation}
 
-\item{verbose}{Integer. Logging verbosity level: 0 = silent, 1 = info,
-2 = debug}
+\item{verbose}{Integer. Logging verbosity level: 0 = warnings and errors
+only, 1 = info, 2 = debug}
 }
 \value{
 Invisibly, the internal test object. Called for its side

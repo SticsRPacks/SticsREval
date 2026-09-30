@@ -43,8 +43,8 @@
 #'  failed (default 3, i.e. fails starting at 4 degraded variables)
 #' @param parallel Boolean. Is the computation to be done in parallel ?
 #' @param cores Number of cores to use for parallel computation
-#' @param verbose Integer. Logging verbosity level: 0 = silent, 1 = info,
-#'  2 = debug
+#' @param verbose Integer. Logging verbosity level: 0 = warnings and errors
+#'  only, 1 = info, 2 = debug
 #' @param stop_on_failure Boolean. If TRUE, stops with an error if at least
 #' one evaluation did not succeed. If FALSE (default), returns normally
 #'

@@ -27,6 +27,8 @@
 #'  consumed by \code{\link{balance_closure_test}}.
 #' @param parallel Boolean. Is the computation to be done in parallel ?
 #' @param cores Number of cores to use for parallel computation
+#' @param verbose Integer. Logging verbosity level: 0 = warnings and errors
+#'  only, 1 = info, 2 = debug
 #'
 #' @returns invisibly, a list with two elements: \code{sim} and \code{obs},
 #'  each a list of results (one tibble per USM), as returned by
@@ -42,8 +44,10 @@ run_simulations <- function(
   usms_files = NULL,
   vars = NULL,
   parallel = FALSE,
-  cores = NA
+  cores = NA,
+  verbose = 1L
 ) {
+  init_logger(verbose)
   logger::log_info("Running simulations...")
 
   arg_values <- as.list(environment())
@@ -56,7 +60,8 @@ run_simulations <- function(
       usms_files = field_spec(type = "character", validator = validate_nonempty_chr), # nolint: line_length_linter
       vars = field_spec(type = "character", validator = validate_nonempty_chr),
       parallel = field_spec(type = "logical", nullable = FALSE),
-      cores = field_spec(validator = validate_cores)
+      cores = field_spec(validator = validate_cores),
+      verbose = field_spec(type = "integer", nullable = FALSE, min = 0L)
     ),
     cross_validators = list(
       list(

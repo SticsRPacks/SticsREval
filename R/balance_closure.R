@@ -17,8 +17,8 @@
 #'  (default), all USMs found in \code{sim_rds} are tested
 #' @param parallel Boolean. Is the computation to be done in parallel ?
 #' @param cores Number of cores to use for parallel computation
-#' @param verbose Integer. Logging verbosity level: 0 = silent, 1 = info,
-#'  2 = debug
+#' @param verbose Integer. Logging verbosity level: 0 = warnings and errors
+#'  only, 1 = info, 2 = debug
 #'
 #' @return Invisibly, the internal test object. Called for its side
 #'  effects: logging a summary of the test, exporting detailed balance

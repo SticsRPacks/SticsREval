@@ -11,7 +11,8 @@ gen_workspace_from_sms(
   usms_files = NULL,
   parallel = FALSE,
   cores = NA,
-  force_code_shape = TRUE
+  force_code_shape = TRUE,
+  verbose = 1L
 )
 }
 \arguments{
@@ -32,6 +33,9 @@ all evaluation and calibration USMs are generated.}
 \item{force_code_shape}{Boolean. Should the code_shape parameter be forced
 to 2 for intercrop plant files (see \code{set_intercrop_code_shape}) ?
 Default TRUE.}
+
+\item{verbose}{Integer. Logging verbosity level: 0 = warnings and errors
+only, 1 = info, 2 = debug}
 }
 \value{
 NULL (invisibly)
