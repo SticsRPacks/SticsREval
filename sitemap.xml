@@ -23,7 +23,9 @@
 <url><loc>/reference/read_usms_files.html</loc></url>
 <url><loc>/reference/render_report.html</loc></url>
 <url><loc>/reference/required.html</loc></url>
+<url><loc>/reference/resolve_usms_files.html</loc></url>
 <url><loc>/reference/run_simulations.html</loc></url>
+<url><loc>/reference/select_available_usms.html</loc></url>
 <url><loc>/reference/set_intercrop_code_shape.html</loc></url>
 <url><loc>/reference/validate_filesystem.html</loc></url>
 <url><loc>/reference/validate_schema.html</loc></url>

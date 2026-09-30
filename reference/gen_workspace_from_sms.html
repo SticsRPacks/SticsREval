@@ -54,10 +54,12 @@
 <span>  <span class="va">sms_path</span>,</span>
 <span>  <span class="va">stics_path</span>,</span>
 <span>  <span class="va">output_dir</span>,</span>
-<span>  usms_files <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  usms <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  parallel <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  cores <span class="op">=</span> <span class="cn">NA</span>,</span>
-<span>  force_code_shape <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  force_code_shape <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  verbose <span class="op">=</span> <span class="fl">1L</span>,</span>
+<span>  usms_files <span class="op">=</span> <span class="fu">lifecycle</span><span class="fu">::</span><span class="fu"><a href="https://lifecycle.r-lib.org/reference/deprecated.html" class="external-link">deprecated</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -77,10 +79,10 @@
 <dd><p>path to the Stics workspace to generate</p></dd>
 
 
-<dt id="arg-usms-files">usms_files<a class="anchor" aria-label="anchor" href="#arg-usms-files"></a></dt>
-<dd><p>character vector of one or more paths to text
-files listing the USMs (one per line) to generate. If NULL (default),
-all evaluation and calibration USMs are generated.</p></dd>
+<dt id="arg-usms">usms<a class="anchor" aria-label="anchor" href="#arg-usms"></a></dt>
+<dd><p>character vector of USM names to generate. If NULL
+(default), all evaluation and calibration USMs are generated. Use
+<code><a href="read_usms_files.html">read_usms_files</a></code> to read them from USM list files.</p></dd>
 
 
 <dt id="arg-parallel">parallel<a class="anchor" aria-label="anchor" href="#arg-parallel"></a></dt>
@@ -95,6 +97,16 @@ all evaluation and calibration USMs are generated.</p></dd>
 <dd><p>Boolean. Should the code_shape parameter be forced
 to 2 for intercrop plant files (see <code>set_intercrop_code_shape</code>) ?
 Default TRUE.</p></dd>
+
+
+<dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>
+<dd><p>Integer. Logging verbosity level: 0 = warnings and errors
+only, 1 = info, 2 = debug</p></dd>
+
+
+<dt id="arg-usms-files">usms_files<a class="anchor" aria-label="anchor" href="#arg-usms-files"></a></dt>
+<dd><p>Deprecated. Use
+<code>usms = read_usms_files(usms_files)</code> instead.</p></dd>
 
 </dl></div>
     <div id="value">

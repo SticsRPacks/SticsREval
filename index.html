@@ -185,10 +185,11 @@
 <span>  sms_path   <span class="op">=</span> <span class="st">"/path/to/sms_repository"</span>,</span>
 <span>  stics_path <span class="op">=</span> <span class="st">"/path/to/stics_distribution"</span>,</span>
 <span>  output_dir <span class="op">=</span> <span class="st">"workspace/"</span>,</span>
-<span>  usms_files <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  usms       <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  parallel   <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  cores      <span class="op">=</span> <span class="cn">NA</span>,</span>
-<span>  force_code_shape <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  force_code_shape <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  verbose    <span class="op">=</span> <span class="fl">1L</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <colgroup>
@@ -213,8 +214,8 @@
 <td>Path to the Stics text workspace to generate</td>
 </tr>
 <tr>
-<td><code>usms_files</code></td>
-<td>Character vector of one or more paths to text files, each listing USM names (one per line), to restrict which USMs are generated. <code>NULL</code> (default) generates all evaluation and calibration USMs</td>
+<td><code>usms</code></td>
+<td>Character vector of USM names to restrict which USMs are generated. <code>NULL</code> (default) generates all evaluation and calibration USMs. Use <code><a href="reference/read_usms_files.html">read_usms_files()</a></code> to read them from text files listing one USM per line</td>
 </tr>
 <tr>
 <td>
@@ -226,6 +227,15 @@
 <td><code>force_code_shape</code></td>
 <td>Whether to force the <code>code_shape</code> parameter to 2 for intercrop plant files. Default <code>TRUE</code>
 </td>
+</tr>
+<tr>
+<td><code>verbose</code></td>
+<td>Logging verbosity level: <code>0</code> = warnings and errors only, <code>1</code> = info (default), <code>2</code> = debug</td>
+</tr>
+<tr>
+<td><code>usms_files</code></td>
+<td>
+<strong>Deprecated.</strong> Use <code>usms = read_usms_files(usms_files)</code> instead</td>
 </tr>
 </tbody>
 </table>
@@ -241,10 +251,11 @@
 <span>  usms_workspace <span class="op">=</span> <span class="st">"workspace/"</span>,</span>
 <span>  metadata_file  <span class="op">=</span> <span class="st">"metadata.csv"</span>,</span>
 <span>  output_dir     <span class="op">=</span> <span class="st">"outputs/"</span>,</span>
-<span>  usms_files     <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  usms           <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  vars           <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  parallel       <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  cores          <span class="op">=</span> <span class="cn">NA</span></span>
+<span>  cores          <span class="op">=</span> <span class="cn">NA</span>,</span>
+<span>  verbose        <span class="op">=</span> <span class="fl">1L</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <table class="table">
 <colgroup>
@@ -273,9 +284,8 @@
 <td>Directory where <code>simulations.rds</code> and <code>observations.rds</code> are written</td>
 </tr>
 <tr>
-<td><code>usms_files</code></td>
-<td>Character vector of one or more paths to text files listing the USMs to simulate. <code>NULL</code> (default) simulates all USMs found in <code>usms_workspace</code>
-</td>
+<td><code>usms</code></td>
+<td>Character vector of USM names to simulate. <code>NULL</code> (default) simulates all USMs found in <code>usms_workspace</code>. Use <code><a href="reference/read_usms_files.html">read_usms_files()</a></code> to read them from text files listing one USM per line</td>
 </tr>
 <tr>
 <td><code>vars</code></td>
@@ -287,6 +297,15 @@
 <code>parallel</code> / <code>cores</code>
 </td>
 <td>Parallel execution options</td>
+</tr>
+<tr>
+<td><code>verbose</code></td>
+<td>Logging verbosity level: <code>0</code> = warnings and errors only, <code>1</code> = info (default), <code>2</code> = debug</td>
+</tr>
+<tr>
+<td><code>usms_files</code></td>
+<td>
+<strong>Deprecated.</strong> Use <code>usms = read_usms_files(usms_files)</code> instead</td>
 </tr>
 </tbody>
 </table>
