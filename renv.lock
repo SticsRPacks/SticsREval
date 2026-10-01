@@ -321,11 +321,11 @@
       "Author": "Patrice Lecharpentier [aut, cre] (ORCID: <https://orcid.org/0000-0002-4044-4322>), Remi Vezy [aut] (ORCID: <https://orcid.org/0000-0002-0808-1461>), Samuel Buis [aut] (ORCID: <https://orcid.org/0000-0002-8676-5447>), Michel Giner [aut] (ORCID: <https://orcid.org/0000-0002-9310-2377>), Timothee Flutre [aut] (ORCID: <https://orcid.org/0000-0003-4489-4782>), Thomas Robine [ctb], Amine Barkaoui [ctb], Patrick Chabrier [ctb], Julie Constantin [rev], Dominique Ripoche [rev], Marie Launay [rev], Alain Mollier [rev], Christine Le Bas [rev], Joel Leonard [rev]",
       "Maintainer": "Patrice Lecharpentier <patrice.lecharpentier@inrae.fr>",
       "RemoteType": "github",
+      "RemoteHost": "api.github.com",
       "RemoteUsername": "SticsRPacks",
       "RemoteRepo": "SticsRFiles",
-      "RemoteRef": "main",
-      "RemoteSha": "86af53f89d947877ae97fa739ab39968cdf2418e",
-      "RemoteHost": "api.github.com"
+      "RemoteRef": "77ab1a74dff9913297c9e3a9a3b4296e95ad1585",
+      "RemoteSha": "77ab1a74dff9913297c9e3a9a3b4296e95ad1585"
     },
     "XML": {
       "Package": "XML",
