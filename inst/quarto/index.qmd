@@ -60,14 +60,19 @@ usm_summary <- read_csv_safe(file.path("csv", "usm_summary.csv"))
 #| results: asis
 if (!is.null(evaluation_status)) {
   for (i in seq_len(nrow(evaluation_status))) {
-    icon <- if (isTRUE(evaluation_status$success[i])) {
+    status <- evaluation_status$status[i]
+    label <- evaluation_status$evaluation[i]
+    icon <- if (identical(status, "not evaluated")) {
+      label <- sprintf(
+        "%s (not evaluated: %s)", label, evaluation_status$reason[i]
+      )
+      '<span style="color:#888;">&#8211;</span>'
+    } else if (isTRUE(evaluation_status$success[i])) {
       '<span style="color:#2ecc71;">&#10004;</span>'
     } else {
       '<span style="color:#e74c3c;">&#10008;</span>'
     }
-    cat(sprintf(
-      "%s %s&emsp;", icon, evaluation_status$evaluation[i]
-    ))
+    cat(sprintf("%s %s&emsp;", icon, label))
   }
   cat("\n\n")
 }

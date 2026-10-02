@@ -356,3 +356,29 @@ test_that("export does not write failed_usms.csv when no USM failed", {
 
   expect_false(file.exists(file.path(output_dir, "csv", "failed_usms.csv")))
 })
+
+
+test_that("run skips species without reference data", {
+  d <- make_eval_data()
+  eval <- USMEvaluation$new(
+    workspace = mock_data_workspace(d$sim, d$obs, d$ref_sim),
+    backend = ParallelBackend$new(FALSE, NA)
+  )
+
+  expect_no_error(eval$run())
+  expect_identical(unique(eval$get_data()$species), "wheat")
+})
+
+
+test_that("skip_reason reports missing reference data", {
+  d <- make_eval_data()
+  eval <- USMEvaluation$new(
+    workspace = mock_data_workspace(d$sim, d$obs),
+    backend = ParallelBackend$new(FALSE, NA)
+  )
+  eval$run()
+
+  expect_identical(eval$skip_reason, "no reference data")
+  expect_identical(evaluation_status(eval), "not evaluated")
+  expect_no_error(eval$summary())
+})

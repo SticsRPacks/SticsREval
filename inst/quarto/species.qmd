@@ -109,7 +109,7 @@ scatter_vars <- scatter_vars[ord]
 ```{r}
 #| echo: false
 #| results: asis
-if (is.null(sp_comp)) {
+if (is.null(sp_comp) || nrow(sp_comp) == 0) {
   cat("::: {.callout-note}\nNo comparison done.\n:::\n\n")
 } else {
   # Mirrors `RRmseComparison$critical_vars`/`warning_vars`/`improved_vars`

@@ -65,6 +65,9 @@ above \code{degraded_threshold}.}
 for any species.}
 
     \item{\code{is_empty}}{TRUE if there is no data to evaluate.}
+
+    \item{\code{skip_reason}}{Why no USM was evaluated (e.g. \code{"no reference data"}), or NULL
+if at least one species was evaluated.}
   }
   \if{html}{\out{</div>}}
 }

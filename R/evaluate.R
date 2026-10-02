@@ -4,9 +4,12 @@
 #' \code{obs_rds} and \code{ref_sim_rds} into a temporary evaluation
 #' workspace, runs the global, per-species and per-USM evaluations,
 #' exports results to \code{output_dir} (if defined), prints a summary,
-#' and stops with an error if any evaluation failed. \code{evaluate()}
-#' never runs STICS simulations itself — use \code{\link{run_simulations}}
-#' to produce \code{sim_rds} / \code{obs_rds} beforehand.
+#' and stops with an error if any evaluation failed (if
+#' \code{stop_on_failure}). An evaluation that couldn't be done (e.g. no
+#' reference data) is reported as not evaluated, not as failed.
+#' \code{evaluate()} never runs STICS simulations itself — use
+#' \code{\link{run_simulations}} to produce \code{sim_rds} /
+#' \code{obs_rds} beforehand.
 #'
 #' @param usms_workspace path to the Stics text workspace containing the
 #'  USMs to evaluate. Used to determine the species associated with each
@@ -46,7 +49,9 @@
 #' @param verbose Integer. Logging verbosity level: 0 = warnings and errors
 #'  only, 1 = info, 2 = debug
 #' @param stop_on_failure Boolean. If TRUE, stops with an error if at least
-#' one evaluation did not succeed. If FALSE (default), returns normally
+#' one evaluation failed (evaluations that couldn't be done, e.g. for lack of
+#' reference data, don't count as failed). If FALSE (default), returns
+#' normally
 #'
 #' @return Invisibly \code{NULL}. Called for its side effects: workspace
 #'   creation, evaluation runs, and console reporting.
@@ -60,8 +65,11 @@
 #'   \item Exports results to \code{output_dir} if defined.
 #'   \item Prints their respective summaries.
 #'   \item Displays a CLI report listing each evaluation as
-#'     \strong{success} (green ✔) or \strong{failed} (red ✗).
-#'   \item Stops with an error if at least one evaluation did not succeed.
+#'     \strong{success} (green ✔), \strong{failed} (red ✗) or
+#'     \strong{not evaluated} (yellow, with the reason, e.g. no reference
+#'     data).
+#'   \item Stops with an error if at least one evaluation failed (if
+#'     \code{stop_on_failure}).
 #' }
 #'
 #' @export
@@ -190,7 +198,7 @@ evaluate <- function(
 
   if (
     stop_on_failure &&
-      !all(vapply(evaluations, function(x) x$success, logical(1)))
+      any(vapply(evaluations, evaluation_status, character(1)) == "failed")
   ) {
     stop("At least one test failed, see details above.", call. = FALSE)
   }
@@ -274,10 +282,16 @@ export_evaluations <- function(evaluations, output_dir) {
 
   lapply(evaluations, function(eval) eval$export())
 
+  status <- vapply(evaluations, evaluation_status, character(1))
   safe_write_csv(
     data.frame(
       evaluation = names(evaluations),
-      success = vapply(evaluations, function(eval) eval$success, logical(1)),
+      status = status,
+      reason = vapply(
+        evaluations, function(eval) eval$skip_reason %||% NA_character_,
+        character(1)
+      ),
+      success = ifelse(status == "not evaluated", NA, status == "success"),
       stringsAsFactors = FALSE
     ),
     csv_output_path(output_dir, "evaluation_status.csv")
@@ -293,6 +307,14 @@ summarize_evaluations <- function(evaluations) {
 }
 
 
+# "not evaluated" when the evaluation couldn't be done (see its
+# `skip_reason`, e.g. no reference data), "success" or "failed" otherwise.
+evaluation_status <- function(evaluation) {
+  if (!is.null(evaluation$skip_reason)) return("not evaluated")
+  if (evaluation$success) "success" else "failed"
+}
+
+
 report_evaluation_status <- function(evaluations) {
   ok <- paste(cli::col_green(cli::symbol$tick), cli::col_green("success"))
   nok <- paste(cli::col_red(cli::symbol$cross), cli::col_red("failed"))
@@ -301,7 +323,16 @@ report_evaluation_status <- function(evaluations) {
   cli::cli_ul()
 
   for (name in names(evaluations)) {
-    status <- if (evaluations[[name]]$success) ok else nok
+    status <- switch(evaluation_status(evaluations[[name]]),
+      success = ok,
+      failed = nok,
+      "not evaluated" = paste(
+        cli::col_yellow(cli::symbol$warning),
+        cli::col_yellow(sprintf(
+          "not evaluated (%s)", evaluations[[name]]$skip_reason
+        ))
+      )
+    )
     cli::cli_li("{name}: {status}")
   }
 
