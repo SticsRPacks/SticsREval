@@ -3,9 +3,12 @@
 obs_rds and ref_sim_rds into a temporary evaluation
 workspace, runs the global, per-species and per-USM evaluations,
 exports results to output_dir (if defined), prints a summary,
-and stops with an error if any evaluation failed. evaluate()
-never runs STICS simulations itself — use run_simulations
-to produce sim_rds / obs_rds beforehand."><!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
+and stops with an error if any evaluation failed (if
+stop_on_failure). An evaluation that couldn't be done (e.g. no
+reference data) is reported as not evaluated, not as failed.
+evaluate() never runs STICS simulations itself — use
+run_simulations to produce sim_rds /
+obs_rds beforehand."><!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
 <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
 <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
 <![endif]--></head><body data-spy="scroll" data-target="#toc">
@@ -47,7 +50,7 @@ to produce sim_rds / obs_rds beforehand."><!-- mathjax --><script src="https://c
   <div class="col-md-9 contents">
     <div class="page-header">
     <h1>Run All Evaluations</h1>
-    <small class="dont-index">Source: <a href="https://github.com/SticsRPacks/SticsREval/blob/main/R/evaluate.R" class="external-link"><code>R/evaluate.R</code></a></small>
+    <small class="dont-index">Source: <a href="https://github.com/SticsRPacks/SticsREval/blob/vrahier/pkgdown-uses-renv/R/evaluate.R" class="external-link"><code>R/evaluate.R</code></a></small>
     <div class="hidden name"><code>evaluate.Rd</code></div>
     </div>
 
@@ -56,9 +59,12 @@ to produce sim_rds / obs_rds beforehand."><!-- mathjax --><script src="https://c
 <code>obs_rds</code> and <code>ref_sim_rds</code> into a temporary evaluation
 workspace, runs the global, per-species and per-USM evaluations,
 exports results to <code>output_dir</code> (if defined), prints a summary,
-and stops with an error if any evaluation failed. <code>evaluate()</code>
-never runs STICS simulations itself — use <code><a href="run_simulations.html">run_simulations</a></code>
-to produce <code>sim_rds</code> / <code>obs_rds</code> beforehand.</p>
+and stops with an error if any evaluation failed (if
+<code>stop_on_failure</code>). An evaluation that couldn't be done (e.g. no
+reference data) is reported as not evaluated, not as failed.
+<code>evaluate()</code> never runs STICS simulations itself — use
+<code><a href="run_simulations.html">run_simulations</a></code> to produce <code>sim_rds</code> /
+<code>obs_rds</code> beforehand.</p>
     </div>
 
     <div id="ref-usage">
@@ -174,7 +180,9 @@ only, 1 = info, 2 = debug</p></dd>
 
 <dt id="arg-stop-on-failure">stop_on_failure<a class="anchor" aria-label="anchor" href="#arg-stop-on-failure"></a></dt>
 <dd><p>Boolean. If TRUE, stops with an error if at least
-one evaluation did not succeed. If FALSE (default), returns normally</p></dd>
+one evaluation failed (evaluations that couldn't be done, e.g. for lack of
+reference data, don't count as failed). If FALSE (default), returns
+normally</p></dd>
 
 </dl></div>
     <div id="value">
@@ -190,8 +198,11 @@ creation, evaluation runs, and console reporting.</p>
 <li><p>Exports results to <code>output_dir</code> if defined.</p></li>
 <li><p>Prints their respective summaries.</p></li>
 <li><p>Displays a CLI report listing each evaluation as
-<strong>success</strong> (green ✔) or <strong>failed</strong> (red ✗).</p></li>
-<li><p>Stops with an error if at least one evaluation did not succeed.</p></li>
+<strong>success</strong> (green ✔), <strong>failed</strong> (red ✗) or
+<strong>not evaluated</strong> (yellow, with the reason, e.g. no reference
+data).</p></li>
+<li><p>Stops with an error if at least one evaluation failed (if
+<code>stop_on_failure</code>).</p></li>
 </ol></div>
 
   </div>
