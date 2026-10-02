@@ -79,7 +79,9 @@ failed (default 3, i.e. fails starting at 4 degraded variables)}
 only, 1 = info, 2 = debug}
 
 \item{stop_on_failure}{Boolean. If TRUE, stops with an error if at least
-one evaluation did not succeed. If FALSE (default), returns normally}
+one evaluation failed (evaluations that couldn't be done, e.g. for lack of
+reference data, don't count as failed). If FALSE (default), returns
+normally}
 }
 \value{
 Invisibly \code{NULL}. Called for its side effects: workspace
@@ -90,9 +92,12 @@ Loads simulation, observation and reference data from \code{sim_rds},
 \code{obs_rds} and \code{ref_sim_rds} into a temporary evaluation
 workspace, runs the global, per-species and per-USM evaluations,
 exports results to \code{output_dir} (if defined), prints a summary,
-and stops with an error if any evaluation failed. \code{evaluate()}
-never runs STICS simulations itself — use \code{\link{run_simulations}}
-to produce \code{sim_rds} / \code{obs_rds} beforehand.
+and stops with an error if any evaluation failed (if
+\code{stop_on_failure}). An evaluation that couldn't be done (e.g. no
+reference data) is reported as not evaluated, not as failed.
+\code{evaluate()} never runs STICS simulations itself — use
+\code{\link{run_simulations}} to produce \code{sim_rds} /
+\code{obs_rds} beforehand.
 }
 \details{
 The function proceeds in the following steps:
@@ -103,7 +108,10 @@ The function proceeds in the following steps:
 \item Exports results to \code{output_dir} if defined.
 \item Prints their respective summaries.
 \item Displays a CLI report listing each evaluation as
-\strong{success} (green ✔) or \strong{failed} (red ✗).
-\item Stops with an error if at least one evaluation did not succeed.
+\strong{success} (green ✔), \strong{failed} (red ✗) or
+\strong{not evaluated} (yellow, with the reason, e.g. no reference
+data).
+\item Stops with an error if at least one evaluation failed (if
+\code{stop_on_failure}).
 }
 }

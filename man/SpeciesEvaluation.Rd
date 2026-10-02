@@ -22,6 +22,9 @@ evaluations, summarize results, and export findings.
 The evaluation is considered successful if all species comparisons were
 performed and there are no critical variables identified in any of the
 comparisons.}
+
+    \item{\code{skip_reason}}{Why no species rRMSE comparison was done (e.g. \code{"no reference
+data"}), or NULL if at least one was done.}
   }
   \if{html}{\out{</div>}}
 }

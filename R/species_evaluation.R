@@ -58,6 +58,13 @@ SpeciesEvaluation <- R6::R6Class("SpeciesEvaluation", # nolint: object_name_lint
         }
         private$stats[[spec]] <- stats$stats
         private$rrmse_per_usm[[spec]] <- stats$rrmse_per_usm
+        if (!has_reference_stats(stats$stats)) {
+          private$logger$warn(
+            "No reference simulation data for species ", spec,
+            ", skipping rRMSE comparison"
+          )
+          next
+        }
         private$logger$info("Comparing rRMSE for species ", spec)
         comparison <- RRmseComparison$new(
           species = spec,
@@ -103,45 +110,25 @@ SpeciesEvaluation <- R6::R6Class("SpeciesEvaluation", # nolint: object_name_lint
           private$logger$debug(
             "Splitting simulations and observations data for species ", spec
           )
-
-          exclude <- c("version", "species", private$var2exclude)
-
-          splited_sim <- CroPlotR::split_df2sim(
-            private$workspace$get_sim(
-              spec, usms = private$usms, var2exclude = exclude
-            )
+          eval_data <- read_split_eval_data(
+            private$workspace, spec, usms = private$usms,
+            var2exclude = private$var2exclude
           )
-          splited_ref_sim <- CroPlotR::split_df2sim(
-            private$workspace$get_ref_sim(
-              spec, usms = private$usms, var2exclude = exclude
+          if (is.null(eval_data$sim) || is.null(eval_data$obs)) {
+            private$logger$warn(
+              "No simulation or observation data for species ", spec,
+              ", skipping it"
             )
-          )
-          splited_obs <- CroPlotR::split_df2sim(
-            private$workspace$get_obs(
-              spec, usms = private$usms, var2exclude = exclude
-            )
-          )
+            return(NULL)
+          }
 
           private$logger$info("Generating statistics for ", spec)
-          loadNamespace("CroPlotR")
-          summary_method <- utils::getS3method("summary", class(splited_sim))
-
-          stats <- run_with_log_control(
-            summary_method(
-              evaluated = splited_sim,
-              reference = splited_ref_sim,
-              obs = splited_obs
-            )
+          stats <- compute_eval_stats(eval_data)
+          rrmse_per_usm <- compute_eval_stats(
+            eval_data,
+            all_situations = FALSE, stats = c("RMSE", "rRMSE", "n_obs")
           )
-          rrmse_per_usm <- run_with_log_control(
-            summary_method(
-              evaluated = splited_sim,
-              reference = splited_ref_sim,
-              obs = splited_obs,
-              all_situations = FALSE, stats = c("RMSE", "rRMSE", "n_obs")
-            )
-          )
-          rm(splited_sim, splited_ref_sim, splited_obs)
+          rm(eval_data)
           gc()
           list(species = spec, stats = stats, rrmse_per_usm = rrmse_per_usm)
         }
@@ -199,6 +186,15 @@ SpeciesEvaluation <- R6::R6Class("SpeciesEvaluation", # nolint: object_name_lint
         if (length(c$critical_vars) > 0) c$get_data()$species[1]
       })))
       length(all_crit) == 0
+    },
+
+    #' @field skip_reason
+    #' Why no species rRMSE comparison was done (e.g. \code{"no reference
+    #' data"}), or NULL if at least one was done.
+    skip_reason = function() {
+      comparisons <- Filter(Negate(is.null), private$rrmse_comparisons)
+      if (length(comparisons) > 0) return(NULL)
+      if (length(private$stats) > 0) "no reference data" else "no data to evaluate" # nolint: line_length_linter
     }
   ),
 
@@ -310,7 +306,7 @@ SpeciesEvaluation <- R6::R6Class("SpeciesEvaluation", # nolint: object_name_lint
       comparisons <- Filter(Negate(is.null), private$rrmse_comparisons)
       cli::cli_h1("Species comparisons")
       if (length(comparisons) == 0) {
-        cli::cli_alert_warning("No comparison done.")
+        cli::cli_alert_warning("No comparison done ({self$skip_reason}).")
         return(invisible(self))
       }
 
@@ -336,6 +332,12 @@ SpeciesEvaluation <- R6::R6Class("SpeciesEvaluation", # nolint: object_name_lint
         "{.strong No degradation} (rRMSE stable or improved):
         {format_species(all_ok)}"
       )
+      no_ref <- setdiff(names(private$stats), names(comparisons))
+      if (length(no_ref) > 0) {
+        cli::cli_li(
+          "{.strong No reference data} (not compared): {format_species(no_ref)}"
+        )
+      }
       cli::cli_end()
 
       if (length(all_crit) > 0) {
@@ -374,7 +376,7 @@ SpeciesEvaluation <- R6::R6Class("SpeciesEvaluation", # nolint: object_name_lint
         function(i) {
           spec <- names(private$rrmse_comparisons)[i]
           comp <- private$rrmse_comparisons[[spec]]
-          if (is.null(comp$get_data())) return()
+          if (is.null(comp) || comp$is_empty) return()
 
           spec_plots_dir <- file.path(plots_dir, spec)
           dir.create(spec_plots_dir, recursive = TRUE, showWarnings = FALSE)
@@ -388,27 +390,15 @@ SpeciesEvaluation <- R6::R6Class("SpeciesEvaluation", # nolint: object_name_lint
           )
           if (length(deteriorated) > 0) {
             spec_usms <- private$workspace$get_species_situations(spec)
-            var2exclude <- c("version", "species", private$var2exclude)
-            sim <- CroPlotR::split_df2sim(
-              private$workspace$get_sim(
-                spec, usms = private$usms, var2exclude = var2exclude
-              )
-            )
-            ref_sim <- CroPlotR::split_df2sim(
-              private$workspace$get_ref_sim(
-                spec, usms = private$usms, var2exclude = var2exclude
-              )
-            )
-            obs <- CroPlotR::split_df2sim(
-              private$workspace$get_obs(
-                spec, usms = private$usms, var2exclude = var2exclude
-              )
+            eval_data <- read_split_eval_data(
+              private$workspace, spec, usms = private$usms,
+              var2exclude = private$var2exclude
             )
             gen_scatter_plot(
               spec_plots_dir,
-              sim[spec_usms$situation],
-              Filter(Negate(is.null), obs[spec_usms$situation]),
-              ref_sim[spec_usms$situation],
+              eval_data$sim[spec_usms$situation],
+              Filter(Negate(is.null), eval_data$obs[spec_usms$situation]),
+              eval_data$ref_sim[spec_usms$situation],
               deteriorated
             )
           }

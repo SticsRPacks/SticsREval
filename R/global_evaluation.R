@@ -25,46 +25,39 @@ GlobalEvaluation <- R6::R6Class("GlobalEvaluation", # nolint: object_name_linter
     output_dir = NULL,
     rrmse_comparison = NULL,
     stats = NULL,
+    no_comparison_reason = NULL,
     workspace = NULL,
     logger = NULL,
 
     gen_global_stats = function() {
-      exclude <- c("version", "species", private$var2exclude)
-
-      splited_sim <- CroPlotR::split_df2sim(
-        private$workspace$get_sim(
-          species = NULL, usms = private$usms, var2exclude = exclude
-        )
+      eval_data <- read_split_eval_data(
+        private$workspace, usms = private$usms,
+        var2exclude = private$var2exclude
       )
-      splited_ref_sim <- CroPlotR::split_df2sim(
-        private$workspace$get_ref_sim(
-          species = NULL, usms = private$usms, var2exclude = exclude
+      if (is.null(eval_data$sim) || is.null(eval_data$obs)) {
+        private$logger$warn(
+          "No simulation or observation data, skipping global statistics"
         )
-      )
-      splited_obs <- CroPlotR::split_df2sim(
-        private$workspace$get_obs(
-          species = NULL, usms = private$usms, var2exclude = exclude
-        )
-      )
+        private$no_comparison_reason <- "no data to evaluate"
+        return(invisible(NULL))
+      }
 
       private$logger$info("Generating global statistics")
-      loadNamespace("CroPlotR")
-      summary_method <- utils::getS3method("summary", class(splited_sim))
-
-      private$stats <- run_with_log_control(
-        summary_method(
-          evaluated = splited_sim,
-          reference = splited_ref_sim,
-          obs = splited_obs
-        )
-      )
-      rm(splited_sim, splited_ref_sim, splited_obs)
+      private$stats <- compute_eval_stats(eval_data)
+      rm(eval_data)
       gc()
     },
 
     gen_global_comparison = function() {
       private$gen_global_stats()
       if (is.null(private$stats)) {
+        return(invisible(NULL))
+      }
+      if (!has_reference_stats(private$stats)) {
+        private$logger$warn(
+          "No reference simulation data, skipping global rRMSE comparison"
+        )
+        private$no_comparison_reason <- "no reference data"
         return(invisible(NULL))
       }
       private$logger$info("Comparing global rRMSE")
@@ -90,6 +83,14 @@ GlobalEvaluation <- R6::R6Class("GlobalEvaluation", # nolint: object_name_linter
     success = function() {
       !is.null(private$rrmse_comparison) &&
         length(private$rrmse_comparison$critical_vars) == 0
+    },
+
+    #' @field skip_reason
+    #' Why the rRMSE comparison was not done (e.g. \code{"no reference
+    #' data"}), or NULL if it was done.
+    skip_reason = function() {
+      if (!is.null(private$rrmse_comparison)) return(NULL)
+      private$no_comparison_reason %||% "no data to evaluate"
     }
   ),
 
@@ -157,7 +158,7 @@ GlobalEvaluation <- R6::R6Class("GlobalEvaluation", # nolint: object_name_linter
       cli::cli_h1("Global comparison")
 
       if (is.null(private$rrmse_comparison)) {
-        cli::cli_alert_warning("No comparison done.")
+        cli::cli_alert_warning("No comparison done ({self$skip_reason}).")
         return(invisible(self))
       }
       private$rrmse_comparison$log()

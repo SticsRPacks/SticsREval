@@ -128,3 +128,45 @@ test_that("run propagates backend errors", {
     "backend failure"
   )
 })
+
+
+test_that("run skips the comparison of species without reference data", {
+  d <- make_eval_data()
+  eval <- SpeciesEvaluation$new(
+    percentage = 10,
+    workspace = mock_data_workspace(d$sim, d$obs, d$ref_sim),
+    backend = ParallelBackend$new(FALSE, NA)
+  )
+
+  expect_no_error(eval$run())
+  expect_false(is.null(eval$get_species_stats("maize")$stats))
+  expect_false(is.null(eval$get_species_stats("wheat")$stats))
+  expect_no_error(eval$summary())
+
+  output_dir <- withr::local_tempdir()
+  eval_out <- SpeciesEvaluation$new(
+    percentage = 10,
+    output_dir = output_dir,
+    workspace = mock_data_workspace(d$sim, d$obs, d$ref_sim),
+    backend = ParallelBackend$new(FALSE, NA)
+  )
+  eval_out$run()
+  expect_no_error(eval_out$export())
+  comparison <- read.csv(
+    file.path(output_dir, "csv", "species_rrmse_comparison.csv")
+  )
+  expect_identical(unique(comparison$species), "wheat")
+})
+
+
+test_that("skip_reason reports missing reference data", {
+  d <- make_eval_data()
+  eval <- SpeciesEvaluation$new(
+    workspace = mock_data_workspace(d$sim, d$obs),
+    backend = ParallelBackend$new(FALSE, NA)
+  )
+  eval$run()
+
+  expect_identical(eval$skip_reason, "no reference data")
+  expect_identical(evaluation_status(eval), "not evaluated")
+})

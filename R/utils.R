@@ -56,6 +56,86 @@ select_available_usms <- function(available_usms, wanted_usms, location) {
   found_usms
 }
 
+# Reads the evaluated simulations, reference simulations and observations of
+# `species` (all species if NULL) from `workspace`, split per situation as
+# CroPlotR expects. A dataset with no data (e.g. a species without reference
+# simulations) is returned as NULL instead of failing in `split_df2sim()`.
+# When there are reference simulations, only the USMs simulated by both
+# versions are kept (see `keep_common_situations()`).
+read_split_eval_data <- function(
+  workspace, species = NULL, usms = NULL, var2exclude = NULL
+) {
+  exclude <- c("version", "species", var2exclude)
+  split_or_null <- function(df) {
+    if (is.null(df) || nrow(df) == 0) return(NULL)
+    CroPlotR::split_df2sim(df)
+  }
+  keep_common_situations(list(
+    sim = split_or_null(
+      workspace$get_sim(species, usms = usms, var2exclude = exclude)
+    ),
+    ref_sim = split_or_null(
+      workspace$get_ref_sim(species, usms = usms, var2exclude = exclude)
+    ),
+    obs = split_or_null(
+      workspace$get_obs(species, usms = usms, var2exclude = exclude)
+    )
+  ))
+}
+
+# Comparing the evaluated and reference versions on different sets of USMs
+# would bias their statistics (e.g. the global rRMSE when some species have
+# no reference simulations), so only the USMs simulated by both versions are
+# kept. Without any common USM, the reference is dropped, so the evaluated
+# version is still described but not compared.
+keep_common_situations <- function(data) {
+  if (is.null(data$sim) || is.null(data$ref_sim)) return(data)
+
+  common <- intersect(names(data$sim), names(data$ref_sim))
+  dropped <- setdiff(union(names(data$sim), names(data$ref_sim)), common)
+  if (length(dropped) == 0) return(data)
+
+  if (length(common) == 0) {
+    logger::log_warn(
+      "No USM simulated by both the evaluated and reference versions, ",
+      "the reference simulations are ignored"
+    )
+    data$ref_sim <- NULL
+    return(data)
+  }
+
+  logger::log_warn(
+    length(dropped), " USM(s) not simulated by both the evaluated and ",
+    "reference versions are excluded from the comparison"
+  )
+  logger::log_debug("Excluded USMs: ", toString(dropped))
+  data$sim <- data$sim[common]
+  data$ref_sim <- data$ref_sim[common]
+  if (!is.null(data$obs)) {
+    obs <- data$obs[intersect(names(data$obs), common)]
+    data$obs <- if (length(obs) > 0) obs
+  }
+  data
+}
+
+# Computes CroPlotR summary statistics on `data` (as returned by
+# `read_split_eval_data()`), `...` being passed to the summary method. The
+# "reference" group is left out when there are no reference simulations.
+# Returns NULL when there are no simulations or no observations to compare.
+compute_eval_stats <- function(data, ...) {
+  if (is.null(data$sim) || is.null(data$obs)) return(NULL)
+  loadNamespace("CroPlotR")
+  summary_method <- utils::getS3method("summary", class(data$sim))
+  summary_args <- remove_null_values(list(
+    evaluated = data$sim, reference = data$ref_sim, obs = data$obs, ...
+  ))
+  run_with_log_control(do.call(summary_method, summary_args))
+}
+
+has_reference_stats <- function(stats) {
+  !is.null(stats) && "reference" %in% stats$group
+}
+
 remove_null_values <- function(l) {
   result <- l[!vapply(l, is.null, logical(1))]
   if (length(result) == 0) list() else result

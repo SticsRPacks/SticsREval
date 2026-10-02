@@ -236,3 +236,73 @@ test_that("select_available_usms errors when no wanted USM is available", {
     "None of the requested USMs are found in ws"
   )
 })
+
+# ---- read_split_eval_data / compute_eval_stats ----
+
+test_that("read_split_eval_data returns NULL for missing datasets", {
+  d <- make_eval_data()
+  ws <- mock_data_workspace(d$sim, d$obs, d$ref_sim)
+
+  data <- read_split_eval_data(ws, "maize")
+
+  expect_null(data$ref_sim)
+  expect_named(data$sim, c("maize_1", "maize_2"))
+  expect_named(data$obs, c("maize_1", "maize_2"))
+})
+
+test_that("compute_eval_stats works without reference simulations", {
+  d <- make_eval_data()
+  ws <- mock_data_workspace(d$sim, d$obs, d$ref_sim)
+
+  stats <- compute_eval_stats(read_split_eval_data(ws, "maize"))
+
+  expect_identical(unique(stats$group), "evaluated")
+  expect_false(has_reference_stats(stats))
+  expect_true(has_reference_stats(
+    compute_eval_stats(read_split_eval_data(ws, "wheat"))
+  ))
+})
+
+test_that("compute_eval_stats returns NULL without observations", {
+  d <- make_eval_data()
+  ws <- mock_data_workspace(d$sim, d$obs[d$obs$species == "wheat", ])
+
+  expect_null(compute_eval_stats(read_split_eval_data(ws, "maize")))
+})
+
+# ---- keep_common_situations ----
+
+test_that("read_split_eval_data keeps only USMs simulated by both versions", {
+  d <- make_eval_data()
+  ws <- mock_data_workspace(d$sim, d$obs, d$ref_sim)
+
+  data <- read_split_eval_data(ws)
+
+  expect_named(data$sim, c("wheat_1", "wheat_2"))
+  expect_named(data$ref_sim, c("wheat_1", "wheat_2"))
+  expect_named(data$obs, c("wheat_1", "wheat_2"))
+  expect_s3_class(data$sim, "cropr_simulation")
+  expect_s3_class(data$obs, "cropr_simulation")
+})
+
+test_that("keep_common_situations drops the reference without common USMs", {
+  d <- make_eval_data()
+  ref_sim <- d$ref_sim
+  ref_sim$situation <- paste0(ref_sim$situation, "_other")
+  ws <- mock_data_workspace(d$sim, d$obs, ref_sim)
+
+  data <- read_split_eval_data(ws)
+
+  expect_null(data$ref_sim)
+  expect_named(data$sim, c("wheat_1", "wheat_2", "maize_1", "maize_2"))
+})
+
+test_that("keep_common_situations leaves data without reference unchanged", {
+  d <- make_eval_data()
+  ws <- mock_data_workspace(d$sim, d$obs)
+
+  data <- read_split_eval_data(ws)
+
+  expect_named(data$sim, c("wheat_1", "wheat_2", "maize_1", "maize_2"))
+  expect_named(data$obs, c("wheat_1", "wheat_2", "maize_1", "maize_2"))
+})

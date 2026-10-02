@@ -27,6 +27,9 @@ data.
 The evaluation is considered successful if the rRMSE comparison was
 performed and there are no critical variables identified in the
 comparison.}
+
+    \item{\code{skip_reason}}{Why the rRMSE comparison was not done (e.g. \code{"no reference
+data"}), or NULL if it was done.}
   }
   \if{html}{\out{</div>}}
 }

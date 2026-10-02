@@ -59,6 +59,7 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
     species_evaluation = NULL,
     data = list(),
     deteriorated_usm = list(),
+    no_reference_species = character(0),
     ratio_threshold = NULL,
     degraded_threshold = NULL,
     max_degraded_vars = NULL,
@@ -194,47 +195,18 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
         "Generating RMSE and rRMSE per USM for species ",
         species
       )
-      exclude <- c("version", "species", private$var2exclude)
-
-      splited_sim <- CroPlotR::split_df2sim(
-        private$workspace$get_sim(
-          species,
-          usms = private$usms, var2exclude = exclude
-        )
-      )
-      splited_ref_sim <- CroPlotR::split_df2sim(
-        private$workspace$get_ref_sim(
-          species,
-          usms = private$usms, var2exclude = exclude
-        )
-      )
-      splited_obs <- CroPlotR::split_df2sim(
-        private$workspace$get_obs(
-          species,
-          usms = private$usms, var2exclude = exclude
-        )
+      eval_data <- read_split_eval_data(
+        private$workspace, species, usms = private$usms,
+        var2exclude = private$var2exclude
       )
       private$logger$info("Generating RMSE statistics for ", species)
-      loadNamespace("CroPlotR")
-      summary_method <- utils::getS3method("summary", class(splited_sim))
-
-      stats_species <- run_with_log_control(
-        summary_method(
-          evaluated = splited_sim,
-          reference = splited_ref_sim,
-          obs = splited_obs
-        )
-      )
+      stats_species <- compute_eval_stats(eval_data)
       private$logger$info("Generating RMSE and rRMSE per USM for ", species)
-      stats_usm <- run_with_log_control(
-        summary_method(
-          evaluated = splited_sim,
-          reference = splited_ref_sim,
-          obs = splited_obs,
-          all_situations = FALSE, stats = c("RMSE", "rRMSE", "n_obs")
-        )
+      stats_usm <- compute_eval_stats(
+        eval_data,
+        all_situations = FALSE, stats = c("RMSE", "rRMSE", "n_obs")
       )
-      rm(splited_obs, splited_sim, splited_ref_sim)
+      rm(eval_data)
       gc()
       list(
         stats_species = stats_species,
@@ -258,6 +230,13 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
               "No stats generated for species ", spec, ". Skipping."
             )
             return(NULL)
+          }
+          if (!has_reference_stats(stats$stats_usm)) {
+            private$logger$warn(
+              "No reference simulation data for species ", spec,
+              ". Skipping."
+            )
+            return(list(species = spec, no_reference = TRUE))
           }
           deteriorated_usm <- DeterioratedUSMComparison$new(
             species = spec,
@@ -284,6 +263,12 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
       )
       results <- Filter(Negate(is.null), results)
       for (res in results) {
+        if (isTRUE(res$no_reference)) {
+          private$no_reference_species <- c(
+            private$no_reference_species, res$species
+          )
+          next
+        }
         private$data[[res$species]] <- res$data
         deteriorated_data <- res$deteriorated_usm$get_data()
         if (!is.null(deteriorated_data) && nrow(deteriorated_data) > 0) {
@@ -356,7 +341,19 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
 
     #' @field is_empty
     #' TRUE if there is no data to evaluate.
-    is_empty = function() isTRUE(length(private$data) == 0)
+    is_empty = function() isTRUE(length(private$data) == 0),
+
+    #' @field skip_reason
+    #' Why no USM was evaluated (e.g. \code{"no reference data"}), or NULL
+    #' if at least one species was evaluated.
+    skip_reason = function() {
+      if (!self$is_empty) return(NULL)
+      if (length(private$no_reference_species) > 0) {
+        "no reference data"
+      } else {
+        "no data to evaluate"
+      }
+    }
   ),
   public = list(
     #' @description
@@ -614,7 +611,7 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
     summary = function() {
       cli::cli_h1("USM comparisons (RMSE_ratio)")
       if (self$is_empty) {
-        cli::cli_alert_warning("No USM evaluation data.")
+        cli::cli_alert_warning("No USM evaluation data ({self$skip_reason}).")
         return(invisible(self))
       }
 
@@ -658,6 +655,12 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
       cli::cli_li(
         "{.strong Passed} (all USMs ok): {format_species(passed_species)}"
       )
+      if (length(private$no_reference_species) > 0) {
+        cli::cli_li(
+          "{.strong No reference data} (not evaluated):
+          {format_species(private$no_reference_species)}"
+        )
+      }
       cli::cli_end()
 
       if (length(failed_species) > 0) {
