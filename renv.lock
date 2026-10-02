@@ -324,8 +324,8 @@
       "RemoteHost": "api.github.com",
       "RemoteUsername": "SticsRPacks",
       "RemoteRepo": "SticsRFiles",
-      "RemoteRef": "77ab1a74dff9913297c9e3a9a3b4296e95ad1585",
-      "RemoteSha": "77ab1a74dff9913297c9e3a9a3b4296e95ad1585"
+      "RemoteRef": "main",
+      "RemoteSha": "30c5abb2ea33d92631d95b63b7592cb77bc707b1"
     },
     "XML": {
       "Package": "XML",
