@@ -32,7 +32,6 @@
         "ggrepel",
         "gridExtra",
         "lifecycle",
-        "plyr",
         "reshape2",
         "rlang",
         "tibble",
@@ -51,14 +50,14 @@
       "Language": "en-US",
       "LazyData": "true",
       "Roxygen": "list(markdown = TRUE)",
-      "RoxygenNote": "7.3.3",
+      "Config/roxygen2/version": "8.0.0",
       "Author": "Remi Vezy [aut, cre] (ORCID: <https://orcid.org/0000-0002-0808-1461>), Samuel Buis [aut] (ORCID: <https://orcid.org/0000-0002-8676-5447>), Cyrille Midingoyi [aut] (ORCID: <https://orcid.org/0009-0000-4411-7989>), Patrice Lecharpentier [aut] (ORCID: <https://orcid.org/0000-0002-4044-4322>), Michel Giner [aut] (ORCID: <https://orcid.org/0000-0002-9310-2377>), Valentine Rahier [ctb], Amine Barkaoui [ctb], Patrick Lutz [ctb]",
       "Maintainer": "Remi Vezy <remi.vezy@cirad.fr>",
       "RemoteType": "github",
       "RemoteUsername": "SticsRPacks",
       "RemoteRepo": "CroPlotR",
       "RemoteRef": "main",
-      "RemoteSha": "7df2b7d111388e0491fd5d58de28497dba47d224",
+      "RemoteSha": "8533aa28f541f56d357cac29155bdab5bf2026bd",
       "RemoteHost": "api.github.com"
     },
     "DT": {
@@ -267,10 +266,11 @@
     },
     "SticsRFiles": {
       "Package": "SticsRFiles",
-      "Version": "1.7.1",
+      "Version": "1.7.2",
       "Source": "GitHub",
       "Title": "Read and Modify STICS Input/Output Files",
-      "Authors@R": "c( person(\"Patrice\", \"Lecharpentier\", , \"patrice.lecharpentier@inrae.fr\", role = c(\"aut\", \"cre\"), comment = c(ORCID = \"0000-0002-4044-4322\")), person(\"Remi\", \"Vezy\", , \"remi.vezy@cirad.fr\", role = \"aut\", comment = c(ORCID = \"0000-0002-0808-1461\")), person(\"Samuel\", \"Buis\", , \"samuel.buis@inrae.fr\", role = \"aut\", comment = c(ORCID = \"0000-0002-8676-5447\")), person(\"Michel\", \"Giner\", , \"michel.giner@cirad.fr\", role = \"aut\", comment = c(ORCID = \"0000-0002-9310-2377\")), person(\"Timothee\", \"Flutre\", , \"timothee.flutre@inrae.fr\", role = \"aut\", comment = c(ORCID = \"0000-0003-4489-4782\")), person(\"Thomas\", \"Robine\", role = \"ctb\"), person(\"Amine\", \"Barkaoui\", role = \"ctb\"), person(\"Patrick\", \"Chabrier\", role = \"ctb\"), person(\"Julie\", \"Constantin\", role = \"rev\"), person(\"Dominique\", \"Ripoche\", role = \"rev\"), person(\"Marie\", \"Launay\", role = \"rev\"), person(\"Alain\", \"Mollier\", role = \"rev\"), person(\"Christine\", \"Le Bas\", role = \"rev\"), person(\"Joel\", \"Leonard\", role = \"rev\") )",
+      "Date": "2026-10-06",
+      "Authors@R": "c( person(\"Patrice\", \"Lecharpentier\", , \"patrice.lecharpentier@inrae.fr\", role = c(\"aut\", \"cre\"), comment = c(ORCID = \"0000-0002-4044-4322\")), person(\"Remi\", \"Vezy\", , \"remi.vezy@cirad.fr\", role = \"aut\", comment = c(ORCID = \"0000-0002-0808-1461\")), person(\"Samuel\", \"Buis\", , \"samuel.buis@inrae.fr\", role = \"aut\", comment = c(ORCID = \"0000-0002-8676-5447\")), person(\"Michel\", \"Giner\", , \"michel.giner@cirad.fr\", role = \"aut\", comment = c(ORCID = \"0000-0002-9310-2377\")), person(\"Timothee\", \"Flutre\", , \"timothee.flutre@inrae.fr\", role = \"aut\", comment = c(ORCID = \"0000-0003-4489-4782\")), person(\"Valentine\", \"Rahier\", , \"valentine.rahier@inrae.fr\", role = \"aut\"), person(\"Thomas\", \"Robine\", role = \"ctb\"), person(\"Amine\", \"Barkaoui\", role = \"ctb\"), person(\"Patrick\", \"Chabrier\", role = \"ctb\"), person(\"Julie\", \"Constantin\", role = \"rev\"), person(\"Dominique\", \"Ripoche\", role = \"rev\"), person(\"Marie\", \"Launay\", role = \"rev\"), person(\"Alain\", \"Mollier\", role = \"rev\"), person(\"Christine\", \"Le Bas\", role = \"rev\"), person(\"Joel\", \"Leonard\", role = \"rev\") )",
       "Description": "Manipulating input and output files of the 'STICS' crop model (Beaudouin et al. (2022) <doi:10.35690/978-2-7592-3679-4>).  The package is based on the model software, which is accessible, as well as resources, on its web site <https://stics.inrae.fr/eng/>.  Files are either 'JavaSTICS' XML files or text files used by the model 'fortran' executable. Most basic functionalities are reading or writing parameter names and values in both XML or text input files, and getting data from output files.  Advanced functionalities include XML files generation from XML templates and/or spreadsheets, or text files generation from XML files by using 'xslt' transformation.",
       "License": "LGPL (>= 3)",
       "URL": "https://github.com/SticsRPacks/SticsRFiles, https://doi.org/10.5281/zenodo.4443206",
@@ -299,7 +299,8 @@
         "utils",
         "XML",
         "xml2",
-        "xslt"
+        "xslt",
+        "httr"
       ],
       "Suggests": [
         "covr",
@@ -318,14 +319,14 @@
       "Language": "en-US",
       "Roxygen": "list(markdown = TRUE)",
       "Collate": "'add_node_to_doc.R' 'add_stics_nodes.R' 'all_in_par.R' 'all_out_var.R' 'approx_vapour_pressure.R' 'attributes_list2matrix.R' 'check_choice_param.R' 'check_java_path.R' 'check_java_workspace.R' 'check_output_files.R' 'check_param_names.R' 'check_upgrade_versions.R' 'col_names_to_var.R' 'compute_date_from_day.R' 'compute_day_number.R' 'convert_xml2txt.R' 'convert_xml2txt_int.R' 'download_data.R' 'download_usm_xl.R' 'exist_param_xml.R' 'exists_javastics_pref.R' 'exists_param.R' 'expand_stics_names.R' 'extract.R' 'extract_workspace.R' 'global.R' 'file_document.R' 'find_names.R' 'force_param_values.R' 'gen_climate.R' 'gen_general_param_xml.R' 'gen_ini_doc.R' 'gen_ini_xml.R' 'gen_new_travail.R' 'gen_obs.R' 'gen_paramsti.R' 'gen_sol_xsl_file.R' 'gen_sols_xml.R' 'gen_sta_doc.R' 'gen_sta_xml.R' 'gen_tec_doc.R' 'gen_tec_xml.R' 'gen_usms_sols_doc.R' 'gen_usms_xml.R' 'gen_usms_xml2txt.R' 'gen_varmod.R' 'get_climate_txt.R' 'get_cores_nb.R' 'get_cultivars_list.R' 'get_cultivars_param.R' 'get_dev_stages.R' 'get_file.R' 'get_file_int.R' 'get_files_list.R' 'get_formalisms_xml.R' 'get_java_workspace.R' 'get_lai_forcing.R' 'get_name_value_file_value.R' 'get_obs.R' 'get_option_choice_param_values.R' 'get_options_choices.R' 'get_options_names.R' 'get_param_bounds.R' 'get_param_bounds_xml.R' 'get_param_formalisms.R' 'get_param_info_xml.R' 'get_param_names.R' 'get_param_names_xml.R' 'get_param_number.R' 'get_param_txt.R' 'get_param_type.R' 'get_param_value.R' 'get_param_xml.R' 'get_params_dict.R' 'get_params_from_doc.R' 'get_params_from_doc_attr.R' 'get_params_from_doc_node.R' 'get_params_from_table.R' 'get_plant_name.R' 'get_plants_nb.R' 'get_report_results.R' 'get_sim.R' 'get_soils_list.R' 'get_stics_versions_compat.R' 'get_used_param.R' 'get_usms_list.R' 'get_values_by_param.R' 'get_varmod.R' 'get_xml_base_doc.R' 'get_xml_base_node.R' 'get_xml_doc_example.R' 'get_xml_files_param_df.R' 'get_xml_stics_version.R' 'init_javastics_pref.R' 'is_os_name.R' 'is_stics_doc.R' 'is_stics_xml.R' 'javastics_cmd_util.R' 'javastics_path.R' 'manage_stics_versions.R' 'merge_nodesets.R' 'read_params_table.R' 'remove_node_from_doc.R' 'remove_parent_from_doc.R' 'replace_string_in_file.R' 'replace_txt_param_value.R' 'rewrite_xml_files.R' 'set_codeoptim.R' 'set_file_executable.R' 'set_java_workspace.R' 'set_param_txt.R' 'set_param_value.R' 'set_param_xml.R' 'set_sols_param_xml.R' 'set_usms_param_xml.R' 'setup_parallelism.R' 'static_help.R' 'stics_environment.R' 'stics_files_utils.R' 'upgrade_v10_v11.R' 'upgrade_v9_v10.R' 'upgrade_xml_files.R' 'var_to_col_names.R' 'xml_document.R' 'xml_files_functions.R' 'zzz.R'",
-      "Author": "Patrice Lecharpentier [aut, cre] (ORCID: <https://orcid.org/0000-0002-4044-4322>), Remi Vezy [aut] (ORCID: <https://orcid.org/0000-0002-0808-1461>), Samuel Buis [aut] (ORCID: <https://orcid.org/0000-0002-8676-5447>), Michel Giner [aut] (ORCID: <https://orcid.org/0000-0002-9310-2377>), Timothee Flutre [aut] (ORCID: <https://orcid.org/0000-0003-4489-4782>), Thomas Robine [ctb], Amine Barkaoui [ctb], Patrick Chabrier [ctb], Julie Constantin [rev], Dominique Ripoche [rev], Marie Launay [rev], Alain Mollier [rev], Christine Le Bas [rev], Joel Leonard [rev]",
+      "Author": "Patrice Lecharpentier [aut, cre] (ORCID: <https://orcid.org/0000-0002-4044-4322>), Remi Vezy [aut] (ORCID: <https://orcid.org/0000-0002-0808-1461>), Samuel Buis [aut] (ORCID: <https://orcid.org/0000-0002-8676-5447>), Michel Giner [aut] (ORCID: <https://orcid.org/0000-0002-9310-2377>), Timothee Flutre [aut] (ORCID: <https://orcid.org/0000-0003-4489-4782>), Valentine Rahier [aut], Thomas Robine [ctb], Amine Barkaoui [ctb], Patrick Chabrier [ctb], Julie Constantin [rev], Dominique Ripoche [rev], Marie Launay [rev], Alain Mollier [rev], Christine Le Bas [rev], Joel Leonard [rev]",
       "Maintainer": "Patrice Lecharpentier <patrice.lecharpentier@inrae.fr>",
       "RemoteType": "github",
-      "RemoteHost": "api.github.com",
       "RemoteUsername": "SticsRPacks",
       "RemoteRepo": "SticsRFiles",
       "RemoteRef": "main",
-      "RemoteSha": "30c5abb2ea33d92631d95b63b7592cb77bc707b1"
+      "RemoteSha": "cadfde6570c3b18a5d8b4c00a98fe0dc61a9acf4",
+      "RemoteHost": "api.github.com"
     },
     "XML": {
       "Package": "XML",
@@ -2342,7 +2343,7 @@
     },
     "listenv": {
       "Package": "listenv",
-      "Version": "1.0.0",
+      "Version": "1.1.0",
       "Source": "Repository",
       "Depends": [
         "R (>= 3.1.2)"
@@ -2362,7 +2363,7 @@
       "BugReports": "https://github.com/futureverse/listenv/issues",
       "Encoding": "UTF-8",
       "Language": "en-US",
-      "Config/roxygen2/version": "8.0.0",
+      "Config/roxygen2/version": "8.1.0",
       "NeedsCompilation": "no",
       "Author": "Henrik Bengtsson [aut, cre, cph] (ORCID: <https://orcid.org/0000-0002-7579-5165>)",
       "Maintainer": "Henrik Bengtsson <henrikb@braju.com>",
@@ -3374,7 +3375,7 @@
     },
     "renv": {
       "Package": "renv",
-      "Version": "1.3.0",
+      "Version": "1.3.1",
       "Source": "Repository",
       "Type": "Package",
       "Title": "Project Environments",
