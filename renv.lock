@@ -32,7 +32,6 @@
         "ggrepel",
         "gridExtra",
         "lifecycle",
-        "plyr",
         "reshape2",
         "rlang",
         "tibble",
@@ -51,15 +50,15 @@
       "Language": "en-US",
       "LazyData": "true",
       "Roxygen": "list(markdown = TRUE)",
-      "RoxygenNote": "7.3.3",
+      "Config/roxygen2/version": "8.0.0",
       "Author": "Remi Vezy [aut, cre] (ORCID: <https://orcid.org/0000-0002-0808-1461>), Samuel Buis [aut] (ORCID: <https://orcid.org/0000-0002-8676-5447>), Cyrille Midingoyi [aut] (ORCID: <https://orcid.org/0009-0000-4411-7989>), Patrice Lecharpentier [aut] (ORCID: <https://orcid.org/0000-0002-4044-4322>), Michel Giner [aut] (ORCID: <https://orcid.org/0000-0002-9310-2377>), Valentine Rahier [ctb], Amine Barkaoui [ctb], Patrick Lutz [ctb]",
       "Maintainer": "Remi Vezy <remi.vezy@cirad.fr>",
       "RemoteType": "github",
+      "RemoteHost": "api.github.com",
       "RemoteUsername": "SticsRPacks",
       "RemoteRepo": "CroPlotR",
-      "RemoteRef": "main",
-      "RemoteSha": "7df2b7d111388e0491fd5d58de28497dba47d224",
-      "RemoteHost": "api.github.com"
+      "RemoteRef": "5b0ac80b9d1a928b4cc5f0efab05f2e6a013b33d",
+      "RemoteSha": "5b0ac80b9d1a928b4cc5f0efab05f2e6a013b33d"
     },
     "DT": {
       "Package": "DT",

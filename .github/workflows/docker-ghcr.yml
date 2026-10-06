@@ -33,7 +33,7 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ghcr.io/sticsrpacks/stics-r-eval:latest
+          tags: ghcr.io/sticsrpacks/stics-r-eval:test
           cache-from: type=gha
           cache-to: type=gha,mode=max
           secrets: |
