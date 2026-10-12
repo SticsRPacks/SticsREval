@@ -57,6 +57,7 @@ Collate:
     'schema.R'
     'eval_workspace.R'
     'evaluate.R'
+    'gen_workspace_from_idestics.R'
     'gen_workspace_from_sms.R'
     'global_evaluation.R'
     'logger.R'

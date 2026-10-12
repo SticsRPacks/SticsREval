@@ -2,6 +2,7 @@
 
 export(balance_closure_test)
 export(evaluate)
+export(gen_workspace_from_idestics)
 export(gen_workspace_from_sms)
 export(get_var_from_obs)
 export(read_usms_files)
