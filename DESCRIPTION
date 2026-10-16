@@ -1,6 +1,6 @@
 Package: SticsREval
 Title: Evaluate and Compare STICS Crop Model Versions
-Version: 0.0.0.9000
+Version: 0.1.0
 Authors@R: 
     person("Valentine", "Rahier", , "valentine.rahier@inrae.fr", role = c("aut", "cre"))
 Description: Provides a streamlined workflow for evaluating the performance of
