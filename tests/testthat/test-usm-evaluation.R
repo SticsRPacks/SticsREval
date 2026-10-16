@@ -12,6 +12,7 @@ test_that("USMEvaluation computes RMSE ratios correctly", {
     variable = "lai",
     group = "evaluated",
     RMSE = 4,
+    n_obs = 20,
     stringsAsFactors = FALSE
   )
 
@@ -201,7 +202,7 @@ test_that("initialize fails without inputs", {
   )
 })
 
-test_that("variables with fewer than 10 observations are ignored", {
+test_that("USMs with few observations are still tested", {
 
   stats_usm <- data.frame(
     situation = c("USM1", "USM1"),
@@ -213,9 +214,10 @@ test_that("variables with fewer than 10 observations are ignored", {
   )
 
   stats_species <- data.frame(
-    variable = "lai",
-    group = "evaluated",
-    RMSE = 4,
+    variable = c("lai", "lai"),
+    group = c("reference", "evaluated"),
+    RMSE = c(4, 4),
+    n_obs = c(20, 20),
     stringsAsFactors = FALSE
   )
 
@@ -225,6 +227,35 @@ test_that("variables with fewer than 10 observations are ignored", {
     stats_species = stats_species
   )
 
+  expect_identical(eval$failed_usms$situation, "USM1")
+})
+
+test_that("variables not tested at the species level are not tested on USMs", { # nolint: line_length_linter
+
+  stats_usm <- data.frame(
+    situation = c("USM1", "USM1"),
+    variable = c("lai", "lai"),
+    group = c("reference", "evaluated"),
+    RMSE = c(2, 5),
+    n_obs = c(5, 5),
+    stringsAsFactors = FALSE
+  )
+
+  stats_species <- data.frame(
+    variable = c("lai", "lai"),
+    group = c("reference", "evaluated"),
+    RMSE = c(4, 4),
+    n_obs = c(10, 10),
+    stringsAsFactors = FALSE
+  )
+
+  eval <- USMEvaluation$new(
+    species = "wheat",
+    stats_usm = stats_usm,
+    stats_species = stats_species
+  )
+
+  expect_identical(nrow(eval$get_data()), 0L)
   expect_identical(nrow(eval$failed_usms), 0L)
 })
 

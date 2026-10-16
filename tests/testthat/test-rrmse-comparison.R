@@ -40,6 +40,7 @@ test_that("initializes from precomputed data", {
     rrmse_eval = 0.12,
     rrmse_ref = 0.10,
     rrmse_ratio = 20.0,
+    n_obs = 20,
     stringsAsFactors = FALSE
   )
   cmp <- RRmseComparison$new(percentage = 10, data = data)
@@ -156,6 +157,38 @@ test_that("improved_vars does not return variables with n_obs < 10", {
   )
   cmp <- RRmseComparison$new(percentage = 10, species = "wheat", stats = stats)
   expect_false("LAI" %in% cmp$improved_vars)
+})
+
+test_that("variables with n_obs <= 10 get the 'Not tested' status", {
+  stats <- data.frame(
+    group = c("reference", "reference", "evaluated", "evaluated"),
+    situation = c("usm1", "usm1", "usm1", "usm1"),
+    variable = c("LAI", "MASEC", "LAI", "MASEC"),
+    rRMSE = c(0.10, 0.10, 0.30, 0.30),
+    n_obs = c(10, 11, 10, 11),
+    stringsAsFactors = FALSE
+  )
+  cmp <- RRmseComparison$new(percentage = 10, species = "wheat", stats = stats)
+  data <- cmp$get_data()
+  expect_identical(data$status[data$variable == "LAI"], "Not tested")
+  expect_identical(data$status[data$variable == "MASEC"], "Critical")
+  expect_identical(cmp$not_tested_vars, "LAI")
+  expect_identical(cmp$critical_vars, "MASEC")
+})
+
+test_that("DeterioratedUSMComparison does not apply the n_obs criterion", {
+  stats <- data.frame(
+    group = c("reference", "evaluated"),
+    situation = c("usm1", "usm1"),
+    variable = c("LAI", "LAI"),
+    rRMSE = c(0.10, 0.30),
+    n_obs = c(3, 3),
+    stringsAsFactors = FALSE
+  )
+  cmp <- DeterioratedUSMComparison$new(
+    species = "wheat", stats = stats, percentage = 10
+  )
+  expect_identical(cmp$get_data()$status, "Critical")
 })
 
 test_that("is_empty returns TRUE when no rows", {

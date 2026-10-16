@@ -33,8 +33,10 @@ variable:
 \code{RMSE_ratio > degraded_threshold} (default 20\%) on that USM.
 }
 
-USMs/variables with less than 10 observations (\code{n_obs}) are ignored,
-consistently with \code{RRmseComparison}/\code{DeterioratedUSMComparison}.
+There is no minimum number of observations per USM. However, a variable
+that is not tested at the species level (10 observations or less over the
+whole species, see \code{RRmseComparison}) is not tested on the USMs of
+that species either.
 
 The class can be used in two ways:
 \itemize{
@@ -156,7 +158,7 @@ n_obs), for \code{evaluated} and \code{reference} groups, e.g. as
 returned by CroPlotR's summary method with \code{all_situations =
 FALSE, stats = c("RMSE", "n_obs")}.}
       \item{\code{stats_species}}{Manual mode: data frame of species-level stats
-(RMSE), e.g. as returned by CroPlotR's summary method with
+(RMSE, n_obs), e.g. as returned by CroPlotR's summary method with
 \code{all_situations = TRUE} (default).}
       \item{\code{data}}{Manual mode: optional pre-computed data frame (bypasses
 \code{stats_usm}/\code{stats_species} computation).}

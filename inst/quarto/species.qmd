@@ -36,7 +36,10 @@ dt <- function(df) {
   )
 }
 
-tag_class <- c(Critical = "tag-critical", Warning = "tag-warning", Improved = "tag-ok") # nolint: line_length_linter
+tag_class <- c(
+  Critical = "tag-critical", Warning = "tag-warning", Improved = "tag-ok",
+  `Not tested` = "tag-not-tested"
+)
 
 # Renders `items` as colored pill badges, echoing the colored lists `cli`
 # prints to the console for the same critical/warning groupings.
@@ -58,9 +61,6 @@ failed_usms <- read_csv_safe(file.path(csv_dir, "failed_usms.csv"))
 deteriorated_usm <- read_csv_safe(file.path(csv_dir, "Deteriorated_USM.csv"))
 usm_thresholds <- read_csv_safe(file.path(csv_dir, "usm_thresholds.csv"))
 
-# Mirrors `RRmseComparison$critical_vars`/`warning_vars` (and thus what
-# `SpeciesEvaluation$summary()` prints, and which variables get a scatter
-# plot below): `status` alone isn't enough, `n_obs > 10` is also required.
 sp_comp <- if (!is.null(rrmse_comparison)) {
   rrmse_comparison[rrmse_comparison$species == sp, , drop = FALSE]
 }
@@ -98,6 +98,7 @@ scatter_vars <- scatter_vars[ord]
 .tag-critical { background: #fdecea; color: #c0392b; }
 .tag-warning { background: #fef5e7; color: #b9770e; }
 .tag-ok { background: #eafaf1; color: #1e8449; }
+.tag-not-tested { background: #f2f3f4; color: #707b7c; }
 .tag-empty { color: #888; font-style: italic; }
 </style>
 ```
@@ -112,12 +113,9 @@ scatter_vars <- scatter_vars[ord]
 if (is.null(sp_comp) || nrow(sp_comp) == 0) {
   cat("::: {.callout-note}\nNo comparison done.\n:::\n\n")
 } else {
-  # Mirrors `RRmseComparison$critical_vars`/`warning_vars`/`improved_vars`
-  # (and thus what `SpeciesEvaluation$summary()` prints to the console, and
-  # which variables get a scatter plot below): `status` alone isn't enough,
-  # `n_obs > 10` is also required.
-  reliable <- sp_comp[sp_comp$n_obs > 10, ]
-  by_status <- split(reliable$variable, reliable$status)
+  # `status` already accounts for the minimum number of observations
+  # (variables without enough of them are "Not tested").
+  by_status <- split(sp_comp$variable, sp_comp$status)
   cat(sprintf(
     "<p><strong>%d variable(s) critical</strong> (major rRMSE increase)<br>\n%s</p>\n", # nolint: line_length_linter
     length(by_status[["Critical"]]),
@@ -133,6 +131,13 @@ if (is.null(sp_comp) || nrow(sp_comp) == 0) {
     length(by_status[["Improved"]]),
     tag_list(by_status[["Improved"]], "Improved")
   ))
+  if (length(by_status[["Not tested"]]) > 0) {
+    cat(sprintf(
+      "<p><strong>%d variable(s) not tested</strong> (10 observations or less)<br>\n%s</p>\n", # nolint: line_length_linter
+      length(by_status[["Not tested"]]),
+      tag_list(by_status[["Not tested"]], "Not tested")
+    ))
+  }
 }
 ```
 
@@ -155,14 +160,11 @@ if (file.exists(comparison_path)) {
   ))
   cat(paste0(
     "::: {.callout-note}\n",
-    "Why some variables above have no scatter plot below: a variable ",
-    "is colored Critical or Warning here as soon as its species-level ",
-    "rRMSE ratio crosses the threshold, but the evaluation system ",
-    "additionally requires more than 10 observations (`n_obs > 10`) ",
-    "before flagging a variable as deteriorated. A variable with fewer ",
-    "observations can still show up as Critical or Warning above, but ",
-    "won't get an individual scatter plot below - it isn't considered ",
-    "statistically reliable enough to trigger one.\n",
+    "A variable is only tested if it has more than 10 observations ",
+    "(`n_obs > 10`) over the whole species. Variables with fewer ",
+    "observations are shown in grey (Not tested) above, get no scatter ",
+    "plot below, and are not tested on the USMs of this species ",
+    "either.\n",
     ":::\n\n"
   ))
 }
@@ -190,8 +192,9 @@ if (!is.null(failed_usms)) {
     sprintf(
       paste(
         "A USM (situation) is flagged as **failed** if at least one of",
-        "these holds, for at least one variable on that USM (with more",
-        "than 10 observations):\n\n",
+        "these holds, for at least one variable on that USM (among the",
+        "variables tested at the species level, i.e. with more than 10",
+        "observations over the whole species):\n\n",
         "- its rRMSE ratio vs. the reference version exceeds",
         "**%s%%** (the *critical* threshold), or\n",
         "- **more than %s variables** on that USM individually exceed a",

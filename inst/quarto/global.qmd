@@ -27,7 +27,10 @@ dt <- function(df) {
   )
 }
 
-tag_class <- c(Critical = "tag-critical", Warning = "tag-warning", Improved = "tag-ok") # nolint: line_length_linter
+tag_class <- c(
+  Critical = "tag-critical", Warning = "tag-warning", Improved = "tag-ok",
+  `Not tested` = "tag-not-tested"
+)
 
 # Renders `items` as colored pill badges, echoing the colored lists `cli`
 # prints to the console for the same critical/warning/improved groupings.
@@ -56,6 +59,7 @@ global_rrmse_comparison <- read_csv_safe(
 .tag-critical { background: #fdecea; color: #c0392b; }
 .tag-warning { background: #fef5e7; color: #b9770e; }
 .tag-ok { background: #eafaf1; color: #1e8449; }
+.tag-not-tested { background: #f2f3f4; color: #707b7c; }
 .tag-empty { color: #888; font-style: italic; }
 </style>
 ```
@@ -68,11 +72,11 @@ global_rrmse_comparison <- read_csv_safe(
 if (is.null(global_rrmse_comparison)) {
   cat("::: {.callout-note}\nNo comparison done.\n:::\n\n")
 } else {
-  # Mirrors `RRmseComparison$critical_vars`/`warning_vars`/`improved_vars`
-  # (and thus what `GlobalEvaluation$summary()` prints to the console):
-  # `status` alone isn't enough, `n_obs > 10` is also required.
-  reliable <- global_rrmse_comparison[global_rrmse_comparison$n_obs > 10, ]
-  by_status <- split(reliable$variable, reliable$status)
+  # `status` already accounts for the minimum number of observations
+  # (variables without enough of them are "Not tested").
+  by_status <- split(
+    global_rrmse_comparison$variable, global_rrmse_comparison$status
+  )
   cat(sprintf(
     "<p><strong>%d variable(s) critical</strong> (major rRMSE increase)<br>\n%s</p>\n", # nolint: line_length_linter
     length(by_status[["Critical"]]),
@@ -88,6 +92,13 @@ if (is.null(global_rrmse_comparison)) {
     length(by_status[["Improved"]]),
     tag_list(by_status[["Improved"]], "Improved")
   ))
+  if (length(by_status[["Not tested"]]) > 0) {
+    cat(sprintf(
+      "<p><strong>%d variable(s) not tested</strong> (10 observations or less)<br>\n%s</p>\n", # nolint: line_length_linter
+      length(by_status[["Not tested"]]),
+      tag_list(by_status[["Not tested"]], "Not tested")
+    ))
+  }
 }
 ```
 

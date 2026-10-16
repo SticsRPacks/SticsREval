@@ -30,8 +30,10 @@
 #'   \code{RMSE_ratio > degraded_threshold} (default 20%) on that USM.
 #' }
 #'
-#' USMs/variables with less than 10 observations (\code{n_obs}) are ignored,
-#' consistently with \code{RRmseComparison}/\code{DeterioratedUSMComparison}.
+#' There is no minimum number of observations per USM. However, a variable
+#' that is not tested at the species level (10 observations or less over the
+#' whole species, see \code{RRmseComparison}) is not tested on the USMs of
+#' that species either.
 #'
 #' The class can be used in two ways:
 #' \itemize{
@@ -99,7 +101,24 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
       }
       list(stats_species = cached$stats, stats_usm = cached$stats_usm)
     },
+    # Keeps only the per-USM stats of variables tested at the species level,
+    # i.e. with enough observations over the whole species. Uses the
+    # reference group's n_obs, like RRmseComparison.
+    filter_species_tested_vars = function(stats_usm, stats_species) {
+      group <- if ("reference" %in% stats_species$group) {
+        "reference"
+      } else {
+        "evaluated"
+      }
+      tested_vars <- stats_species |>
+        dplyr::filter(
+          .data$group == group, has_enough_obs(as.numeric(.data$n_obs))
+        ) |>
+        dplyr::pull("variable")
+      dplyr::filter(stats_usm, .data$variable %in% tested_vars)
+    },
     compute_ratio = function(species, stats_usm, stats_species) {
+      stats_usm <- private$filter_species_tested_vars(stats_usm, stats_species)
       ref_usm <- dplyr::filter(stats_usm, .data$group == "reference")
       eval_usm <- dplyr::filter(stats_usm, .data$group == "evaluated")
 
@@ -238,22 +257,26 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
             )
             return(list(species = spec, no_reference = TRUE))
           }
-          deteriorated_usm <- DeterioratedUSMComparison$new(
-            species = spec,
-            stats = stats$stats_usm,
-            percentage = private$percentage
-          )
           if (is.null(stats$stats_species)) {
             private$logger$warn(
               "No species-level stats generated for species ", spec,
               ". Skipping."
             )
+            stats_usm <- stats$stats_usm
             ratio <- NULL
           } else {
+            stats_usm <- private$filter_species_tested_vars(
+              stats$stats_usm, stats$stats_species
+            )
             ratio <- private$compute_ratio(
-              spec, stats$stats_usm, stats$stats_species
+              spec, stats_usm, stats$stats_species
             )
           }
+          deteriorated_usm <- DeterioratedUSMComparison$new(
+            species = spec,
+            stats = stats_usm,
+            percentage = private$percentage
+          )
           list(
             species = spec,
             deteriorated_usm = deteriorated_usm,
@@ -287,10 +310,7 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
     #' \code{rmse_ratio} exceeds \code{degraded_threshold} (default 20%).
     degraded_vars = function() {
       self$get_data() |>
-        dplyr::filter(
-          .data$rmse_ratio > private$degraded_threshold,
-          .data$n_obs >= 10
-        )
+        dplyr::filter(.data$rmse_ratio > private$degraded_threshold)
     },
 
     #' @field critical_vars
@@ -298,10 +318,7 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
     #' \code{rmse_ratio} exceeds \code{ratio_threshold} (default 50%).
     critical_vars = function() {
       self$get_data() |>
-        dplyr::filter(
-          .data$rmse_ratio > private$ratio_threshold,
-          .data$n_obs >= 10
-        )
+        dplyr::filter(.data$rmse_ratio > private$ratio_threshold)
     },
 
     #' @field failed_usms
@@ -399,7 +416,7 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
     #' returned by CroPlotR's summary method with \code{all_situations =
     #' FALSE, stats = c("RMSE", "n_obs")}.
     #' @param stats_species Manual mode: data frame of species-level stats
-    #' (RMSE), e.g. as returned by CroPlotR's summary method with
+    #' (RMSE, n_obs), e.g. as returned by CroPlotR's summary method with
     #' \code{all_situations = TRUE} (default).
     #' @param data Manual mode: optional pre-computed data frame (bypasses
     #' \code{stats_usm}/\code{stats_species} computation).
