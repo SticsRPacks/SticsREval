@@ -486,7 +486,7 @@ A pre-built Docker image is available on the GitHub Container Registry, so you c
 ### Pull the image
 
 ```bash
-docker pull ghcr.io/sticsrpacks/stics-r-eval:v0.1.0
+docker pull ghcr.io/sticsrpacks/stics-r-eval:v0.1.1
 ```
 
 ### Run an interactive R session
@@ -494,7 +494,7 @@ docker pull ghcr.io/sticsrpacks/stics-r-eval:v0.1.0
 ```bash
 docker run --rm -it \
   -v /path/to/your/workspace:/workspace \
-  ghcr.io/sticsrpacks/stics-r-eval:v0.1.0 \
+  ghcr.io/sticsrpacks/stics-r-eval:v0.1.1 \
   R
 ```
 
@@ -529,7 +529,7 @@ balance_closure_test(
 docker run --rm \
   -v /path/to/your/workspace:/workspace \
   -v /path/to/your/script.R:/script.R \
-  ghcr.io/sticsrpacks/stics-r-eval:v0.1.0 \
+  ghcr.io/sticsrpacks/stics-r-eval:v0.1.1 \
   Rscript /script.R
 ```
 
