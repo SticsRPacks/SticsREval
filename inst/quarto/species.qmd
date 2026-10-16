@@ -14,7 +14,12 @@ csv_dir <- file.path(params$output_dir, "csv")
 # This page is rendered to `output_dir/species/<species>.html`, while its
 # PNG/HTML plots were written by `evaluate()` to
 # `output_dir/plots/<species>/` - a sibling of `species/`, hence `..`.
+# `plots_dir` is only used as the link written into the page: files are
+# looked up under `plots_fs_dir` (absolute), since the page may be executed
+# from a throwaway project (parallel rendering) where `..` isn't
+# `output_dir`.
 plots_dir <- file.path("..", "plots", sp)
+plots_fs_dir <- file.path(params$output_dir, "plots", sp)
 
 read_csv_safe <- function(path) {
   if (!file.exists(path)) return(NULL)
@@ -75,8 +80,11 @@ sp_deteriorated <- if (!is.null(deteriorated_usm)) {
 # most to least degraded using `sp_comp`'s rRMSE ratio (falls back to
 # filesystem order - alphabetical by variable - if that data isn't
 # available).
-scatter_paths <- Sys.glob(file.path(plots_dir, "*_scatter_plot.html"))
-scatter_vars <- tools::file_path_sans_ext(basename(scatter_paths))
+scatter_files <- basename(
+  Sys.glob(file.path(plots_fs_dir, "*_scatter_plot.html"))
+)
+scatter_paths <- file.path(plots_dir, scatter_files)
+scatter_vars <- tools::file_path_sans_ext(scatter_files)
 scatter_vars <- sub("_scatter_plot$", "", scatter_vars)
 
 ratio <- rep(NA_real_, length(scatter_vars))
@@ -152,7 +160,7 @@ dt(species_stats[species_stats$species == sp, , drop = FALSE])
 #| echo: false
 #| results: asis
 comparison_path <- file.path(plots_dir, "species_comparison.png")
-if (file.exists(comparison_path)) {
+if (file.exists(file.path(plots_fs_dir, "species_comparison.png"))) {
   cat("### Comparison plot\n\n")
   cat(sprintf(
     '<img src="%s" style="max-width:100%%; border:1px solid #ddd;">\n\n', # nolint: line_length_linter
