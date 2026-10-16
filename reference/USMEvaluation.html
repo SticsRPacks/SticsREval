@@ -44,7 +44,7 @@ Instantiated internally by evaluate."><!-- mathjax --><script src="https://cdnjs
   <div class="col-md-9 contents">
     <div class="page-header">
     <h1>USMEvaluation class</h1>
-    <small class="dont-index">Source: <a href="https://github.com/SticsRPacks/SticsREval/blob/v0.1.0/R/usm_evaluation.R" class="external-link"><code>R/usm_evaluation.R</code></a></small>
+    <small class="dont-index">Source: <a href="https://github.com/SticsRPacks/SticsREval/blob/main/R/usm_evaluation.R" class="external-link"><code>R/usm_evaluation.R</code></a></small>
     <div class="hidden name"><code>USMEvaluation.Rd</code></div>
     </div>
 
@@ -71,8 +71,10 @@ variable, computed on the whole species (all USMs together).</p></li>
 variable:</p><ul><li><p><code>RMSE_ratio &gt; ratio_threshold</code> (default 50%), OR</p></li>
 <li><p>more than <code>max_degraded_vars</code> (default 3) variables have
 <code>RMSE_ratio &gt; degraded_threshold</code> (default 20%) on that USM.</p></li>
-</ul><p>USMs/variables with less than 10 observations (<code>n_obs</code>) are ignored,
-consistently with <code>RRmseComparison</code>/<code>DeterioratedUSMComparison</code>.</p>
+</ul><p>There is no minimum number of observations per USM. However, a variable
+that is not tested at the species level (fewer than 10 observations over
+the whole species, see <code>RRmseComparison</code>) is not tested on the USMs of
+that species either.</p>
 <p>The class can be used in two ways:</p><ul><li><p>Driven by <code>eval_workspace</code>/<code>workspace</code>, like
 <code>SpeciesEvaluation</code>: create with <code>eval_workspace</code> (or a
 pre-built <code>workspace</code>), then call <code>run()</code>.</p></li>
@@ -227,7 +229,7 @@ FALSE, stats = c("RMSE", "n_obs")</code>.</p></dd>
 
       <dt><code>stats_species</code></dt>
 <dd><p>Manual mode: data frame of species-level stats
-(RMSE), e.g. as returned by CroPlotR's summary method with
+(RMSE, n_obs), e.g. as returned by CroPlotR's summary method with
 <code>all_situations = TRUE</code> (default).</p></dd>
 
       <dt><code>data</code></dt>

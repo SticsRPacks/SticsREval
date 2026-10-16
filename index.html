@@ -527,7 +527,7 @@
 <li>one variable has <code>RMSE_ratio &gt; ratio_threshold</code> (default: 50%)</li>
 <li>more than <code>max_degraded_vars</code> variables have <code>RMSE_ratio &gt; degraded_threshold</code> (default: 20%)</li>
 </ul>
-<p>USMs and variables with fewer than 10 observations (<code>n_obs</code>) are ignored when determining failed USMs. Writes <code>Deteriorated_USM.csv</code> to <code>output_dir</code>. Considered successful if no USM fails the evaluation.</p>
+<p>There is no minimum number of observations per USM, but a variable that is not tested at the species level (fewer than 10 observations over the whole species) is not tested on the USMs of that species either. Writes <code>Deteriorated_USM.csv</code> to <code>output_dir</code>. Considered successful if no USM fails the evaluation.</p>
 </div>
 <div class="section level4">
 <h4 id="dashboard">Dashboard<a class="anchor" aria-label="anchor" href="#dashboard"></a>
