@@ -106,6 +106,15 @@ if (is.null(global_rrmse_comparison)) {
     ))
   }
 }
+
+comparison_path <- file.path("plots", "global_comparison.png")
+if (file.exists(comparison_path)) {
+  cat("### Comparison plot\n\n")
+  cat(sprintf(
+    '<img src="%s" style="max-width:100%%; border:1px solid #ddd;">\n\n', # nolint: line_length_linter
+    comparison_path
+  ))
+}
 ```
 
 ## Global statistics
