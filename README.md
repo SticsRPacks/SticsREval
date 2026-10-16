@@ -1,7 +1,8 @@
 # SticsREval <img src="man/figures/logo.png" align="right" height="139" alt="" />
 
 <!-- badges: start -->
-[![Project Status: WIP – Initial development is in progress, but there has not yet been a stable, usable release suitable for the public.](https://www.repostatus.org/badges/latest/wip.svg)](https://www.repostatus.org/#wip)
+[![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
+[![GitHub release](https://img.shields.io/github/v/release/SticsRPacks/SticsREval)](https://github.com/SticsRPacks/SticsREval/releases/latest)
 [![R-CMD-check](https://github.com/SticsRPacks/SticsREval/actions/workflows/R-CMD-check.yml/badge.svg)](https://github.com/SticsRPacks/SticsREval/actions/workflows/R-CMD-check.yml)
 [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 [![License: LGPL-3.0](https://img.shields.io/badge/License-LGPL%20v3-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0)
@@ -486,7 +487,7 @@ A pre-built Docker image is available on the GitHub Container Registry, so you c
 ### Pull the image
 
 ```bash
-docker pull ghcr.io/sticsrpacks/stics-r-eval:v0.1.0
+docker pull ghcr.io/sticsrpacks/stics-r-eval:v0.1.1
 ```
 
 ### Run an interactive R session
@@ -494,7 +495,7 @@ docker pull ghcr.io/sticsrpacks/stics-r-eval:v0.1.0
 ```bash
 docker run --rm -it \
   -v /path/to/your/workspace:/workspace \
-  ghcr.io/sticsrpacks/stics-r-eval:v0.1.0 \
+  ghcr.io/sticsrpacks/stics-r-eval:v0.1.1 \
   R
 ```
 
@@ -529,7 +530,7 @@ balance_closure_test(
 docker run --rm \
   -v /path/to/your/workspace:/workspace \
   -v /path/to/your/script.R:/script.R \
-  ghcr.io/sticsrpacks/stics-r-eval:v0.1.0 \
+  ghcr.io/sticsrpacks/stics-r-eval:v0.1.1 \
   Rscript /script.R
 ```
 
