@@ -294,7 +294,7 @@ A USM fails the evaluation if at least one of the following conditions is met:
 - one variable has `RMSE_ratio > ratio_threshold` (default: 50%)
 - more than `max_degraded_vars` variables have `RMSE_ratio > degraded_threshold` (default: 20%)
 
-There is no minimum number of observations per USM, but a variable that is not tested at the species level (10 observations or less over the whole species) is not tested on the USMs of that species either. Writes `Deteriorated_USM.csv` to `output_dir`. Considered successful if no USM fails the evaluation.
+There is no minimum number of observations per USM, but a variable that is not tested at the species level (fewer than 10 observations over the whole species) is not tested on the USMs of that species either. Writes `Deteriorated_USM.csv` to `output_dir`. Considered successful if no USM fails the evaluation.
 
 #### Dashboard
 

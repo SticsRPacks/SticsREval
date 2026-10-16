@@ -245,7 +245,7 @@ test_that("variables not tested at the species level are not tested on USMs", { 
     variable = c("lai", "lai"),
     group = c("reference", "evaluated"),
     RMSE = c(4, 4),
-    n_obs = c(10, 10),
+    n_obs = c(9, 9),
     stringsAsFactors = FALSE
   )
 

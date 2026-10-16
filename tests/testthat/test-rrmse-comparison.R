@@ -159,13 +159,13 @@ test_that("improved_vars does not return variables with n_obs < 10", {
   expect_false("LAI" %in% cmp$improved_vars)
 })
 
-test_that("variables with n_obs <= 10 get the 'Not tested' status", {
+test_that("variables with n_obs < 10 get the 'Not tested' status", {
   stats <- data.frame(
     group = c("reference", "reference", "evaluated", "evaluated"),
     situation = c("usm1", "usm1", "usm1", "usm1"),
     variable = c("LAI", "MASEC", "LAI", "MASEC"),
     rRMSE = c(0.10, 0.10, 0.30, 0.30),
-    n_obs = c(10, 11, 10, 11),
+    n_obs = c(9, 10, 9, 10),
     stringsAsFactors = FALSE
   )
   cmp <- RRmseComparison$new(percentage = 10, species = "wheat", stats = stats)

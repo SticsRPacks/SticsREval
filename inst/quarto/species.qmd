@@ -133,7 +133,7 @@ if (is.null(sp_comp) || nrow(sp_comp) == 0) {
   ))
   if (length(by_status[["Not tested"]]) > 0) {
     cat(sprintf(
-      "<p><strong>%d variable(s) not tested</strong> (10 observations or less)<br>\n%s</p>\n", # nolint: line_length_linter
+      "<p><strong>%d variable(s) not tested</strong> (fewer than 10 observations)<br>\n%s</p>\n", # nolint: line_length_linter
       length(by_status[["Not tested"]]),
       tag_list(by_status[["Not tested"]], "Not tested")
     ))
@@ -160,8 +160,8 @@ if (file.exists(comparison_path)) {
   ))
   cat(paste0(
     "::: {.callout-note}\n",
-    "A variable is only tested if it has more than 10 observations ",
-    "(`n_obs > 10`) over the whole species. Variables with fewer ",
+    "A variable is only tested if it has at least 10 observations ",
+    "(`n_obs >= 10`) over the whole species. Variables with fewer ",
     "observations are shown in grey (Not tested) above, get no scatter ",
     "plot below, and are not tested on the USMs of this species ",
     "either.\n",
@@ -193,7 +193,7 @@ if (!is.null(failed_usms)) {
       paste(
         "A USM (situation) is flagged as **failed** if at least one of",
         "these holds, for at least one variable on that USM (among the",
-        "variables tested at the species level, i.e. with more than 10",
+        "variables tested at the species level, i.e. with at least 10",
         "observations over the whole species):\n\n",
         "- its rRMSE ratio vs. the reference version exceeds",
         "**%s%%** (the *critical* threshold), or\n",
@@ -213,6 +213,24 @@ if (!is.null(failed_usms)) {
   }
   cat(sprintf("<p>%s</p>\n\n", tag_list(sp_failed_usms, "Critical")))
   cat(paste0("::: {.callout-note}\n", explanation, ":::\n\n"))
+}
+
+# Variables not tested at the species level aren't tested on its USMs
+# either (see `USMEvaluation`).
+sp_not_tested <- if (!is.null(sp_comp)) {
+  sp_comp$variable[sp_comp$status == "Not tested"]
+}
+if (length(sp_not_tested) > 0) {
+  cat("### Variables not tested\n\n")
+  cat(sprintf(
+    "<p>%s</p>\n\n", tag_list(sp_not_tested, "Not tested")
+  ))
+  cat(paste0(
+    "::: {.callout-note}\n",
+    "These variables have fewer than 10 observations over the whole ",
+    "species, so they are not tested on the USMs of this species.\n",
+    ":::\n\n"
+  ))
 }
 ```
 

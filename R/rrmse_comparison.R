@@ -1,11 +1,11 @@
-# Minimum number of observations (strictly greater than) a variable needs,
+# Minimum number of observations a variable needs,
 # at the global or species level, to be tested. Below it, the variable is
 # reported with the "Not tested" status, and, for the per-USM test, its
 # situations are not tested either for that species.
 min_obs_threshold <- 10
 
 has_enough_obs <- function(n_obs) {
-  !is.na(n_obs) & n_obs > min_obs_threshold
+  !is.na(n_obs) & n_obs >= min_obs_threshold
 }
 
 RRmseComparison <- R6::R6Class("RRmseComparison", # nolint: object_name_linter
@@ -141,7 +141,7 @@ RRmseComparison <- R6::R6Class("RRmseComparison", # nolint: object_name_linter
       n_not_tested <- length(self$not_tested_vars)
       if (n_not_tested > 0) {
         cli::cli_li(
-          "{.strong {n_not_tested} not tested} (<= {min_obs_threshold} obs)"
+          "{.strong {n_not_tested} not tested} (< {min_obs_threshold} obs)"
         )
         cli::cli_text(cli::col_grey("{toString(self$not_tested_vars)}"))
       }

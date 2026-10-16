@@ -94,9 +94,15 @@ if (is.null(global_rrmse_comparison)) {
   ))
   if (length(by_status[["Not tested"]]) > 0) {
     cat(sprintf(
-      "<p><strong>%d variable(s) not tested</strong> (10 observations or less)<br>\n%s</p>\n", # nolint: line_length_linter
+      "<p><strong>%d variable(s) not tested</strong> (fewer than 10 observations)<br>\n%s</p>\n", # nolint: line_length_linter
       length(by_status[["Not tested"]]),
       tag_list(by_status[["Not tested"]], "Not tested")
+    ))
+    cat(paste0(
+      "::: {.callout-note}\n",
+      "A variable is only tested if it has at least 10 observations ",
+      "(`n_obs >= 10`) over all the evaluated USMs.\n",
+      ":::\n\n"
     ))
   }
 }
