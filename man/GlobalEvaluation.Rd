@@ -115,8 +115,8 @@ plot. This method exports the global statistics
 (\code{global_stats.csv}) and, if a comparison against a reference version
 was performed, the per-variable rRMSE comparison
 (\code{global_rrmse_comparison.csv}, with each variable's status:
-Critical/Warning/Improved/Other) to the \code{csv} subdirectory, plus a
-static rRMSE comparison plot (\code{plots/global_comparison.png}).
+Critical/Warning/Improved/Not tested/Other) to the \code{csv} subdirectory,
+plus a static rRMSE comparison plot (\code{plots/global_comparison.png}).
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{GlobalEvaluation$export()}

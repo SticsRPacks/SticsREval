@@ -1,7 +1,18 @@
+# Minimum number of observations a variable needs,
+# at the global or species level, to be tested. Below it, the variable is
+# reported with the "Not tested" status, and, for the per-USM test, its
+# situations are not tested either for that species.
+min_obs_threshold <- 10
+
+has_enough_obs <- function(n_obs) {
+  !is.na(n_obs) & n_obs >= min_obs_threshold
+}
+
 RRmseComparison <- R6::R6Class("RRmseComparison", # nolint: object_name_linter
   private = list(
     data = NULL,
     percentage = NULL,
+    check_n_obs = TRUE,
 
     compare_rrmse = function(species, stats) {
       ref_stats <- dplyr::filter(stats, .data$group == "reference")
@@ -39,22 +50,22 @@ RRmseComparison <- R6::R6Class("RRmseComparison", # nolint: object_name_linter
   active = list(
     critical_vars = function() {
       private$data |>
-        dplyr::filter(
-          .data$rrmse_ratio >= private$percentage, .data$n_obs > 10
-        ) |>
+        dplyr::filter(.data$status == "Critical") |>
         dplyr::pull("variable")
     },
     warning_vars = function() {
       private$data |>
-        dplyr::filter(
-          .data$rrmse_ratio < private$percentage, .data$rrmse_ratio > 0,
-          .data$n_obs > 10
-        ) |>
+        dplyr::filter(.data$status == "Warning") |>
         dplyr::pull("variable")
     },
     improved_vars = function() {
       private$data |>
-        dplyr::filter(.data$rrmse_ratio <= 0, .data$n_obs > 10) |>
+        dplyr::filter(.data$status == "Improved") |>
+        dplyr::pull("variable")
+    },
+    not_tested_vars = function() {
+      private$data |>
+        dplyr::filter(.data$status == "Not tested") |>
         dplyr::pull("variable")
     },
     is_empty = function() isTRUE(nrow(private$data) == 0)
@@ -62,9 +73,11 @@ RRmseComparison <- R6::R6Class("RRmseComparison", # nolint: object_name_linter
 
   public = list(
     initialize = function(
-      percentage, species = NULL, stats = NULL, data = NULL
+      percentage, species = NULL, stats = NULL, data = NULL,
+      check_n_obs = TRUE
     ) {
       private$percentage <- percentage
+      private$check_n_obs <- check_n_obs
       if (!is.null(data)) {
         private$data <- data |>
           dplyr::arrange(dplyr::desc(.data$rrmse_ratio)) |>
@@ -81,9 +94,12 @@ RRmseComparison <- R6::R6Class("RRmseComparison", # nolint: object_name_linter
       }
       # Exposed via get_data() (and thus species_rrmse_comparison.csv) so
       # consumers (e.g. the dashboard) can tell critical/warning variables
-      # apart without duplicating this threshold logic.
+      # apart without duplicating this threshold logic. Variables without
+      # enough observations (see `min_obs_threshold`) are not tested.
+      check_n_obs <- private$check_n_obs
       private$data <- private$data |>
         dplyr::mutate(status = dplyr::case_when(
+          check_n_obs & !has_enough_obs(.data$n_obs) ~ "Not tested",
           .data$rrmse_ratio >= private$percentage ~ "Critical",
           .data$rrmse_ratio > 0 & .data$rrmse_ratio < private$percentage ~ "Warning", # nolint: line_length_linter
           .data$rrmse_ratio <= 0 ~ "Improved",
@@ -122,6 +138,14 @@ RRmseComparison <- R6::R6Class("RRmseComparison", # nolint: object_name_linter
         cli::cli_text(cli::col_green("{toString(self$improved_vars)}"))
       }
 
+      n_not_tested <- length(self$not_tested_vars)
+      if (n_not_tested > 0) {
+        cli::cli_li(
+          "{.strong {n_not_tested} not tested} (< {min_obs_threshold} obs)"
+        )
+        cli::cli_text(cli::col_grey("{toString(self$not_tested_vars)}"))
+      }
+
       if (!is.null(div_id)) cli_indent_end(div_id)
 
       invisible(self)
@@ -152,6 +176,7 @@ RRmseComparison <- R6::R6Class("RRmseComparison", # nolint: object_name_linter
           Critical = "red",
           Warning = "orange",
           Improved = "forestgreen",
+          `Not tested` = "grey75",
           Other = "grey50"
         )) +
         ggplot2::geom_abline(intercept = 0, slope = 1) +
@@ -191,11 +216,14 @@ DeterioratedUSMComparison <- R6::R6Class("DeterioratedUSMComparison", # nolint: 
       stats = NULL,
       data = NULL
     ) {
+      # The per-USM test has no minimum number of observations (the
+      # species-level criterion is applied upstream, by USMEvaluation).
       super$initialize(
         species = species,
         stats = stats,
         percentage = percentage,
-        data = data
+        data = data,
+        check_n_obs = FALSE
       )
       private$data <- private$data |>
         dplyr::filter(.data$rrmse_ratio > 0) |>
