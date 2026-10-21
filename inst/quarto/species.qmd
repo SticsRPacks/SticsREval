@@ -25,6 +25,7 @@ plots_fs_dir <- file.path(params$output_dir, "plots", sp)
 source(file.path("..", "_common.R"))
 
 species_stats <- read_csv_safe(file.path(csv_dir, "species_stats.csv"))
+min_obs <- read_min_obs(csv_dir)
 rrmse_comparison <- read_csv_safe(
   file.path(csv_dir, "species_rrmse_comparison.csv")
 )
@@ -130,8 +131,8 @@ if (is.null(sp_comp) || nrow(sp_comp) == 0) {
   ))
   if (length(by_status[["Not tested"]]) > 0) {
     cat(sprintf(
-      "<p><strong>%d variable(s) not tested</strong> (fewer than 10 observations)<br>\n%s</p>\n", # nolint: line_length_linter
-      length(by_status[["Not tested"]]),
+      "<p><strong>%d variable(s) not tested</strong> (fewer than %d observations)<br>\n%s</p>\n", # nolint: line_length_linter
+      length(by_status[["Not tested"]]), min_obs,
       tag_list(by_status[["Not tested"]], "Not tested")
     ))
   }
@@ -157,8 +158,14 @@ if (file.exists(file.path(plots_fs_dir, "species_comparison.png"))) {
   ))
   cat(paste0(
     "::: {.callout-note}\n",
-    "A variable is only tested if it has at least 10 observations ",
-    "(`n_obs >= 10`) over the whole species. Variables with fewer ",
+    sprintf(
+      "A variable is only tested if it has at least %d observations ",
+      min_obs
+    ),
+    sprintf(
+      "(`n_obs >= %d`) over the whole species. Variables with fewer ",
+      min_obs
+    ),
     "observations are shown in grey (Not tested) above, get no scatter ",
     "plot below, and are not tested on the USMs of this species ",
     "either.\n",
@@ -226,13 +233,14 @@ if (!is.null(failed_usms)) {
       paste(
         "A USM (situation) is flagged as **failed** if at least one of",
         "these holds, for at least one variable on that USM (among the",
-        "variables tested at the species level, i.e. with at least 10",
+        "variables tested at the species level, i.e. with at least %d",
         "observations over the whole species):\n\n",
         "- its rRMSE ratio vs. the reference version exceeds",
         "**%s%%** (the *critical* threshold), or\n",
         "- **more than %s variables** on that USM individually exceed a",
         "lower **%s%%** *degraded* threshold.\n"
       ),
+      min_obs,
       usm_thresholds$ratio_threshold, usm_thresholds$max_degraded_vars,
       usm_thresholds$degraded_threshold
     )
@@ -260,7 +268,10 @@ if (length(sp_not_tested) > 0) {
   ))
   cat(paste0(
     "::: {.callout-note}\n",
-    "These variables have fewer than 10 observations over the whole ",
+    sprintf(
+      "These variables have fewer than %d observations over the whole ",
+      min_obs
+    ),
     "species, so they are not tested on the USMs of this species.\n",
     ":::\n\n"
   ))

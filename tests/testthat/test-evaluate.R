@@ -29,6 +29,9 @@ test_that("export_evaluations writes the status and skip reason", {
   expect_identical(status$status, c("not evaluated", "success", "failed"))
   expect_identical(status$reason, c("no reference data", NA, NA))
   expect_identical(status$success, c(NA, TRUE, FALSE))
+
+  thresholds <- read.csv(file.path(output_dir, "csv", "thresholds.csv"))
+  expect_identical(thresholds$min_obs, as.integer(min_obs_threshold))
 })
 
 test_that("report_evaluation_status shows the skip reason", {

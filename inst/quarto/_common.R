@@ -11,6 +11,14 @@ read_csv_safe <- function(path) {
   if (nrow(csv_df) == 0) NULL else csv_df
 }
 
+# Minimum number of observations a variable needs to be tested
+# (`min_obs_threshold`, exported by `evaluate()` to `thresholds.csv`), or
+# its historical value of 10 for outputs written before that export.
+read_min_obs <- function(csv_dir) {
+  thresholds <- read_csv_safe(file.path(csv_dir, "thresholds.csv"))
+  if (is.null(thresholds$min_obs)) 10 else thresholds$min_obs[1]
+}
+
 dt <- function(df) {
   if (is.null(df) || nrow(df) == 0) {
     return(htmltools::tags$p(htmltools::em("No data.")))
