@@ -102,6 +102,7 @@ if (has_ratio) {
 ord <- order(-ifelse(is.na(ratio), -Inf, ratio))
 scatter_paths <- scatter_paths[ord]
 scatter_vars <- scatter_vars[ord]
+scatter_ratio <- ratio[ord]
 
 # Explicit anchor of each scatter plot heading: Pandoc's automatic ids
 # (lowercased, some characters dropped) can't be predicted reliably from
@@ -128,7 +129,39 @@ scatter_href <- function(vars) {
 .tag-empty { color: #888; font-style: italic; }
 a.tag-link { text-decoration: none; }
 a.tag-link .tag:hover { outline: 1px solid currentColor; }
+details.scatter { border-bottom: 1px solid #dee2e6; padding: 0.3em 0; }
+details.scatter > summary { cursor: pointer; }
+details.scatter > summary .scatter-ratio { color: #6c757d; font-size: 0.9em; }
+details.scatter > iframe { width: 100%; height: 450px; border: none; }
+.scatter-toggle { margin-bottom: 0.5em; }
 </style>
+<script>
+// Scatter plots are collapsible `<details>`: open the one targeted by a
+// link (e.g. a variable badge, or a cell of the homepage heatmap), whether
+// it comes from another page (URL hash) or from this one (click).
+function openScatter(id) {
+  var el = document.getElementById(decodeURIComponent(id));
+  if (el && el.tagName === "DETAILS") {
+    el.open = true;
+    el.scrollIntoView();
+  }
+}
+document.addEventListener("DOMContentLoaded", function() {
+  if (location.hash) openScatter(location.hash.slice(1));
+});
+window.addEventListener("hashchange", function() {
+  openScatter(location.hash.slice(1));
+});
+document.addEventListener("click", function(event) {
+  var link = event.target.closest('a[href^="#scatter-"]');
+  if (link) openScatter(link.getAttribute("href").slice(1));
+});
+function toggleScatters(open) {
+  document.querySelectorAll("details.scatter").forEach(function(el) {
+    el.open = open;
+  });
+}
+</script>
 ```
 
 ## Variables
@@ -199,14 +232,48 @@ if (file.exists(file.path(plots_fs_dir, "species_comparison.png"))) {
 
 if (length(scatter_paths) > 0) {
   cat("### Scatter plots\n\n")
+  cat(paste0(
+    '<div class="scatter-toggle">',
+    '<button type="button" class="btn btn-sm btn-outline-secondary" ',
+    'onclick="toggleScatters(true)">Expand all</button> ',
+    '<button type="button" class="btn btn-sm btn-outline-secondary" ',
+    'onclick="toggleScatters(false)">Collapse all</button>',
+    "</div>\n\n"
+  ))
+}
+# One collapsible block per variable, critical ones open by default. The
+# iframes are lazy-loaded, so a plot is only loaded once its block is open
+# and scrolled into view, instead of all of them when the page opens.
+scatter_status <- if (!is.null(sp_comp)) {
+  sp_comp$status[match(scatter_vars, sp_comp$variable)]
+} else {
+  rep(NA_character_, length(scatter_vars))
 }
 for (i in seq_along(scatter_paths)) {
+  status <- scatter_status[i]
+  badge <- if (!is.na(status) && status %in% names(tag_class)) {
+    tag_list(scatter_vars[i], status)
+  } else {
+    sprintf("<strong>%s</strong>", scatter_vars[i])
+  }
+  ratio_text <- if (!is.na(scatter_ratio[i])) {
+    sprintf(
+      '<span class="scatter-ratio">rRMSE ratio: %+.2f%%</span>',
+      scatter_ratio[i]
+    )
+  } else {
+    ""
+  }
   cat(sprintf(
-    "#### %s {#%s}\n\n", scatter_vars[i], scatter_id(scatter_vars[i])
-  ))
-  cat(sprintf(
-    '<iframe src="%s" style="width:100%%; height:450px; border:none;"></iframe>\n\n', # nolint: line_length_linter
-    scatter_paths[i]
+    paste0(
+      '<details class="scatter" id="%s"%s>\n',
+      "<summary>%s %s</summary>\n",
+      '<iframe src="%s" loading="lazy"></iframe>\n',
+      "</details>\n\n"
+    ),
+    scatter_id(scatter_vars[i]),
+    if (identical(status, "Critical")) " open" else "",
+    badge, ratio_text, scatter_paths[i]
   ))
 }
 ```
