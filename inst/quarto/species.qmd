@@ -47,15 +47,21 @@ tag_class <- c(
 )
 
 # Renders `items` as colored pill badges, echoing the colored lists `cli`
-# prints to the console for the same critical/warning groupings.
-tag_list <- function(items, status) {
+# prints to the console for the same critical/warning groupings. If `href`
+# is given, it maps `items` to the links of their badges (NA for no link).
+tag_list <- function(items, status, href = NULL) {
   if (length(items) == 0) {
     return('<span class="tag-empty">None</span>')
   }
-  paste(
-    sprintf('<span class="tag %s">%s</span>', tag_class[[status]], items),
-    collapse = " "
-  )
+  tags <- sprintf('<span class="tag %s">%s</span>', tag_class[[status]], items)
+  if (!is.null(href)) {
+    links <- href(items)
+    tags <- ifelse(
+      is.na(links), tags,
+      sprintf('<a href="%s" class="tag-link">%s</a>', links, tags)
+    )
+  }
+  paste(tags, collapse = " ")
 }
 
 species_stats <- read_csv_safe(file.path(csv_dir, "species_stats.csv"))
@@ -96,6 +102,17 @@ if (has_ratio) {
 ord <- order(-ifelse(is.na(ratio), -Inf, ratio))
 scatter_paths <- scatter_paths[ord]
 scatter_vars <- scatter_vars[ord]
+
+# Explicit anchor of each scatter plot heading: Pandoc's automatic ids
+# (lowercased, some characters dropped) can't be predicted reliably from
+# the variable name.
+scatter_id <- function(var) {
+  paste0("scatter-", gsub("[^A-Za-z0-9_-]", "-", var))
+}
+# Only the variables with a scatter plot (the degraded ones) get a link.
+scatter_href <- function(vars) {
+  ifelse(vars %in% scatter_vars, paste0("#", scatter_id(vars)), NA_character_)
+}
 ```
 
 ```{=html}
@@ -109,6 +126,8 @@ scatter_vars <- scatter_vars[ord]
 .tag-ok { background: #eafaf1; color: #1e8449; }
 .tag-not-tested { background: #f2f3f4; color: #707b7c; }
 .tag-empty { color: #888; font-style: italic; }
+a.tag-link { text-decoration: none; }
+a.tag-link .tag:hover { outline: 1px solid currentColor; }
 </style>
 ```
 
@@ -128,12 +147,12 @@ if (is.null(sp_comp) || nrow(sp_comp) == 0) {
   cat(sprintf(
     "<p><strong>%d variable(s) critical</strong> (major rRMSE increase)<br>\n%s</p>\n", # nolint: line_length_linter
     length(by_status[["Critical"]]),
-    tag_list(by_status[["Critical"]], "Critical")
+    tag_list(by_status[["Critical"]], "Critical", href = scatter_href)
   ))
   cat(sprintf(
     "<p><strong>%d variable(s) warning</strong> (minor rRMSE increase)<br>\n%s</p>\n", # nolint: line_length_linter
     length(by_status[["Warning"]]),
-    tag_list(by_status[["Warning"]], "Warning")
+    tag_list(by_status[["Warning"]], "Warning", href = scatter_href)
   ))
   cat(sprintf(
     "<p><strong>%d variable(s) improved</strong> (rRMSE stable or improved)<br>\n%s</p>\n", # nolint: line_length_linter
@@ -182,7 +201,9 @@ if (length(scatter_paths) > 0) {
   cat("### Scatter plots\n\n")
 }
 for (i in seq_along(scatter_paths)) {
-  cat(sprintf("#### %s\n\n", scatter_vars[i]))
+  cat(sprintf(
+    "#### %s {#%s}\n\n", scatter_vars[i], scatter_id(scatter_vars[i])
+  ))
   cat(sprintf(
     '<iframe src="%s" style="width:100%%; height:450px; border:none;"></iframe>\n\n', # nolint: line_length_linter
     scatter_paths[i]
