@@ -1,0 +1,31 @@
+url: https://sticsrpacks.github.io/SticsREval/
+
+template:
+  bootstrap: 5
+
+reference:
+
+  - title: "Prepare data"
+    desc: >
+      Build a STICS workspace from SMS data and run the simulations of a STICS
+      version on it.
+    contents:
+      - gen_workspace_from_sms
+      - read_usms_files
+      - get_var_from_obs
+      - run_simulations
+
+  - title: "Evaluate simulations"
+    desc: >
+      Compare a STICS version against observations and a reference version, and
+      check balance closure.
+    contents:
+      - evaluate
+      - balance_closure_test
+
+  - title: "Reports and plots"
+    desc: >
+      Visualize the evaluation results.
+    contents:
+      - plot_rrmse_comparison
+      - render_report
