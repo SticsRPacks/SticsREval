@@ -11,6 +11,7 @@ source("_common.R") # nolint: undesirable_function_linter.
 
 global_stats <- read_csv_safe(file.path("csv", "global_stats.csv"))
 min_obs <- read_min_obs("csv")
+percentage <- read_percentage("csv")
 global_rrmse_comparison <- read_csv_safe(
   file.path("csv", "global_rrmse_comparison.csv")
 )
@@ -39,18 +40,15 @@ if (is.null(global_rrmse_comparison)) {
 }
 ```
 
+### Comparison plot
+
 ```{r}
 #| echo: false
-#| results: asis
-#| eval: !expr file.exists(file.path("plots", "global_comparison.png"))
-writeLines(c(
-  "### Comparison plot",
-  "",
-  '![](plots/global_comparison.png){style="border:1px solid #ddd;"}',
-  "",
-  ""
-))
-
+#| fig-width: 10
+#| fig-height: 7
+#| out-width: 100%
+#| eval: !expr "!is.null(global_rrmse_comparison)"
+SticsREval::plot_rrmse_comparison(global_rrmse_comparison, percentage)
 ```
 
 ## Global statistics

@@ -381,9 +381,6 @@ SpeciesEvaluation <- R6::R6Class("SpeciesEvaluation", # nolint: object_name_lint
           spec_plots_dir <- file.path(plots_dir, spec)
           dir.create(spec_plots_dir, recursive = TRUE, showWarnings = FALSE)
 
-          comp$plot_comparison(
-            file.path(spec_plots_dir, "species_comparison.png")
-          )
           deteriorated <- c(
             comp$critical_vars,
             comp$warning_vars

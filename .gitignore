@@ -53,3 +53,6 @@ rsconnect/
 
 **/testthat-problems.rds
 .positai
+
+# Quarto/R editor virtual documents
+.vdoc.*
