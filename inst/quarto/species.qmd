@@ -12,7 +12,7 @@ params:
 sp <- params$species
 csv_dir <- file.path(params$output_dir, "csv")
 # This page is rendered to `output_dir/species/<species>.html`, while its
-# PNG/HTML plots were written by `evaluate()` to
+# HTML plots were written by `evaluate()` to
 # `output_dir/plots/<species>/` - a sibling of `species/`, hence `..`.
 # `plots_dir` is only used as the link written into the page: files are
 # looked up under `plots_fs_dir` (absolute), since the page may be executed

@@ -115,8 +115,8 @@ exports the global statistics (\code{global_stats.csv}) and, if a
 comparison against a reference version was performed, the
 per-variable rRMSE comparison (\code{global_rrmse_comparison.csv}, with
 each variable's status: Critical/Warning/Improved/Not tested/Other) to
-the \code{csv} subdirectory. The comparison plot is drawn by the report
-(see \code{\link[=plot_rrmse_comparison]{plot_rrmse_comparison()}}).
+the \code{csv} subdirectory. The rRMSE comparison can be plotted
+with \code{\link[=plot_rrmse_comparison]{plot_rrmse_comparison()}}.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{GlobalEvaluation$export()}

@@ -172,8 +172,8 @@ GlobalEvaluation <- R6::R6Class("GlobalEvaluation", # nolint: object_name_linter
     #' comparison against a reference version was performed, the
     #' per-variable rRMSE comparison (`global_rrmse_comparison.csv`, with
     #' each variable's status: Critical/Warning/Improved/Not tested/Other) to
-    #' the `csv` subdirectory. The comparison plot is drawn by the report
-    #' (see [plot_rrmse_comparison()]).
+    #' the `csv` subdirectory. The rRMSE comparison can be plotted
+    #' with [plot_rrmse_comparison()].
     export = function() {
       private$logger$info("Exporting global evaluation data")
       if (is.null(private$stats)) {

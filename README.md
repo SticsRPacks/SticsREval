@@ -252,26 +252,32 @@ evaluate(
 
 #### Global evaluation
 
-Computes statistics (RMSE, nRMSE, bias, R², etc.) across **all species and USMs combined**, against field observations and, when `ref_sim_rds` is provided, against the reference version's simulation outputs. Writes `global_stats.csv` to `output_dir`. Considered successful if no variable shows a critical deterioration.
+Computes statistics (RMSE, nRMSE, bias, R², etc.) across **all species and USMs combined**, against field observations and, when `ref_sim_rds` is provided, against the reference version's simulation outputs. Writes `global_stats.csv` (and, with a reference version, `global_rrmse_comparison.csv`) to `output_dir`. Considered successful if no variable shows a critical deterioration.
 
 #### Species evaluation
 
 Computes statistics per species (RMSE, nRMSE, bias, R², etc.) against field observations and, when `ref_sim_rds` is provided, against the reference version. Flags variables and USMs where performance has deteriorated beyond the `percentage` threshold, for the species/USMs selected via `species` and `usms`. Considered successful if no species shows a critical deterioration. Writes, to `output_dir`:
 - `species_stats.csv` — statistical metrics per species
-- `plots/<species>_species_comparison.png` — rRMSE comparison scatter plot (see below)
-- `plots/<species>_scatter_plots.html` — interactive scatter plots for deteriorated variables
+- `species_rrmse_comparison.csv` — rRMSE comparison per species and variable, with each variable's status (used for the rRMSE comparison plot, see below)
+- `plots/<species>/<variable>_scatter_plot.html` — interactive scatter plots for deteriorated variables
 
 ##### rRMSE comparison plot
 
-For each species, a scatter plot compares the **rRMSE of the new version vs. the reference version**, one point per variable, colour-coded by regression status:
+The [dashboard](#dashboard) shows, on the global page and on each species page, a scatter plot comparing the **rRMSE of the new version vs. the reference version**, one point per variable, colour-coded by regression status:
 
 | Colour | Status | Condition |
 |--------|--------|-----------|
 | 🔴 Red | Critical | ratio ≥ `percentage` % |
 | 🟠 Orange | Warning | 0 % < ratio < `percentage` % |
 | 🟢 Green | Improved | ratio ≤ 0 % |
+| ⚪ Grey | Not tested | fewer than 10 observations |
 
-A diagonal line (slope = 1) marks perfect parity; a dashed line (slope = 1 + `percentage`/100) marks the deterioration threshold. Variable names are displayed as repelled labels. The plot is only generated when a reference version (`ref_sim_rds`) is available.
+A diagonal line (slope = 1) marks perfect parity; a dashed line (slope = 1 + `percentage`/100) marks the deterioration threshold. Each point is labeled with its variable name and number of observations. The plot is only available when a reference version (`ref_sim_rds`) is provided. It can be generated from the exported CSV files with `plot_rrmse_comparison()`:
+
+```r
+comparison <- read.csv("outputs/csv/global_rrmse_comparison.csv")
+plot_rrmse_comparison(comparison, percentage = 5)
+```
 
 #### USM evaluation
 
@@ -299,7 +305,7 @@ There is no minimum number of observations per USM, but a variable that is not t
 
 #### Dashboard
 
-`render_report(output_dir)` turns the CSV/plot files written by `evaluate(..., output_dir = output_dir)` into a browsable HTML site: a homepage with the evaluation summary (pass/fail status, per-species status/USM counts), a global page with the degraded variables and global stats, and one page per species with that species' statistics, degraded variables, deteriorated/failed USMs, rRMSE comparison plot and scatter plots. Nothing is recomputed — only the files `evaluate()` already wrote are read.
+`render_report(output_dir)` turns the CSV/plot files written by `evaluate(..., output_dir = output_dir)` into a browsable HTML site: a homepage with the evaluation summary (pass/fail status, per-species status/USM counts), a global page with the degraded variables, rRMSE comparison plot and global stats, and one page per species with that species' statistics, degraded variables, deteriorated/failed USMs, rRMSE comparison plot and scatter plots. Nothing is recomputed — only the files `evaluate()` already wrote are read.
 
 It can be called on its own once `evaluate(..., output_dir = output_dir)` has run:
 

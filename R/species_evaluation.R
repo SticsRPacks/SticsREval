@@ -359,10 +359,10 @@ SpeciesEvaluation <- R6::R6Class("SpeciesEvaluation", # nolint: object_name_lint
     #' This method exports the statistics, rRMSE comparisons (including the
     #' species-level rRMSE ratio per variable, in `species_rrmse_comparison
     #' .csv`), and a per-species degradation status summary (`species_summary
-    #' .csv`) to CSV files in the "csv" subdirectory. It also generates a
-    #' static rRMSE comparison plot and interactive per-variable scatter
-    #' plots for each species, saved in their own subdirectory under "plots"
-    #' (one per species).
+    #' .csv`) to CSV files in the "csv" subdirectory. It also generates
+    #' interactive per-variable scatter plots for each species, saved in
+    #' their own subdirectory under "plots" (one per species). The rRMSE
+    #' comparison can be plotted with [plot_rrmse_comparison()].
     export = function() {
       private$logger$info("Exporting species evaluation data")
       plots_dir <- file.path(private$output_dir, "plots")

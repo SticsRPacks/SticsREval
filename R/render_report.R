@@ -5,8 +5,9 @@
 #' \code{output_dir} by \code{\link{evaluate}} (called with \code{output_dir}
 #' set): a homepage (\code{index.html}) showing the evaluation summary
 #' (pass/fail status, and per-species status/USM counts), a global page
-#' (\code{global.html}) showing the degraded variables and global stats
-#' (\code{global_stats.csv}) from \code{output_dir/csv}, and one page per
+#' (\code{global.html}) showing the degraded variables, rRMSE comparison
+#' plot and global stats (\code{global_stats.csv}) from
+#' \code{output_dir/csv}, and one page per
 #' species (\code{output_dir/species/<species>.html}) with that species'
 #' statistics, degraded variables, deteriorated/failed USMs, rRMSE
 #' comparison plot and scatter plots - the plots themselves stay under
@@ -16,10 +17,10 @@
 #' the same navigation sidebar - but each species page is still rendered
 #' and loaded separately, so a browser only has to load one species' plots
 #' at a time, instead of every species' plots at once on a single page.
-#' Nothing is recomputed or replotted: only the files \code{evaluate()}
-#' already wrote are read.
+#' Nothing is recomputed: only the files \code{evaluate()} already wrote are
+#' read.
 #'
-#' None of the pages are standalone files: they link to the PNG/HTML plots
+#' None of the pages are standalone files: they link to the HTML plots
 #' via relative paths (and Quarto writes its own JS/CSS assets to a shared
 #' \code{site_libs/} subfolder), so keep \code{output_dir} intact when
 #' sharing or moving results.
@@ -179,7 +180,7 @@ get_species_list <- function(output_dir) {
 # (degraded variables and global stats, kept off the homepage), and one
 # `species/<species>.qmd` per species (so it renders to
 # `species/<species>.html`) - kept separate from `plots/<species>/` (where
-# the species' own PNG/HTML plots were written by `evaluate()`) so report
+# the species' own HTML plots were written by `evaluate()`) so report
 # pages and raw plot assets don't mix; species.qmd links to its plots via a
 # relative `../plots/<species>/` path instead of a bare filename. Templates
 # are copied verbatim - the `species`/`output_dir` params they declare are
