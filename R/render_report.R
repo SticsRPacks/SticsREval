@@ -185,6 +185,7 @@ get_species_list <- function(output_dir) {
 # are copied verbatim - the `species`/`output_dir` params they declare are
 # filled in at render time via `execute_params`, not by rewriting the file.
 # The pages also share `_common.R` (R helpers, sourced by each page),
+# `_usm.qmd` (the USM section, included by species.qmd),
 # `styles.css` (declared in `_quarto.yml`) and `scatter.js` (loaded by
 # species.qmd), copied at the project root.
 # Returns every path written for the caller to clean up after rendering,
@@ -205,6 +206,10 @@ write_project_files <- function(output_dir, species_list) {
   file.copy(
     file.path(quarto_dir, "_common.R"), common_path, overwrite = TRUE
   )
+  usm_path <- file.path(output_dir, "_usm.qmd")
+  file.copy(
+    file.path(quarto_dir, "_usm.qmd"), usm_path, overwrite = TRUE
+  )
   file.copy(
     file.path(quarto_dir, "styles.css"), file.path(output_dir, "styles.css"),
     overwrite = TRUE
@@ -213,7 +218,7 @@ write_project_files <- function(output_dir, species_list) {
     file.path(quarto_dir, "scatter.js"), file.path(output_dir, "scatter.js"),
     overwrite = TRUE
   )
-  written <- c(yml_path, index_path, global_path, common_path)
+  written <- c(yml_path, index_path, global_path, common_path, usm_path)
 
   if (length(species_list) > 0) {
     species_dir <- file.path(output_dir, "species")
