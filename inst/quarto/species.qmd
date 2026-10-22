@@ -126,59 +126,6 @@ writeLines(c(
 ```{r}
 #| echo: false
 #| results: asis
-if (length(scatter_paths) > 0) {
-  cat("### Scatter plots\n\n")
-  cat(paste0(
-    '<div class="scatter-toggle">',
-    '<button type="button" class="btn btn-sm btn-outline-secondary" ',
-    'onclick="toggleScatters(true)">Expand all</button> ',
-    '<button type="button" class="btn btn-sm btn-outline-secondary" ',
-    'onclick="toggleScatters(false)">Collapse all</button>',
-    "</div>\n\n"
-  ))
-}
-# One collapsible block per variable, critical ones open by default. The
-# iframes are lazy-loaded, so a plot is only loaded once its block is open
-# and scrolled into view, instead of all of them when the page opens.
-scatter_status <- if (!is.null(sp_comp)) {
-  sp_comp$status[match(scatter_vars, sp_comp$variable)]
-} else {
-  rep(NA_character_, length(scatter_vars))
-}
-for (i in seq_along(scatter_paths)) {
-  status <- scatter_status[i]
-  badge <- if (!is.na(status) && status %in% names(tag_class)) {
-    tag_list(scatter_vars[i], status)
-  } else {
-    sprintf("<strong>%s</strong>", scatter_vars[i])
-  }
-  ratio_text <- if (!is.na(scatter_ratio[i])) {
-    sprintf(
-      '<span class="scatter-ratio">rRMSE ratio: %+.2f%%</span>',
-      scatter_ratio[i]
-    )
-  } else {
-    ""
-  }
-  cat(sprintf(
-    paste0(
-      '<details class="scatter" id="%s"%s>\n',
-      "<summary>%s %s</summary>\n",
-      '<iframe src="%s" loading="lazy"></iframe>\n',
-      "</details>\n\n"
-    ),
-    scatter_id(scatter_vars[i]),
-    if (identical(status, "Critical")) " open" else "",
-    badge, ratio_text, scatter_paths[i]
-  ))
-}
-```
-
-## USMs
-
-```{r}
-#| echo: false
-#| results: asis
 #| eval: !expr length(scatter_paths) > 0
 button <- '<button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleScatters(%s)">%s</button>' # nolint: line_length_linter
 writeLines(c(
@@ -219,6 +166,63 @@ for (i in seq_along(scatter_paths)) {
     sprintf('<iframe src="%s" loading="lazy"></iframe>', scatter_paths[i]),
     "</details>",
     ""
+  ))
+}
+```
+
+## USMs
+
+```{r}
+#| echo: false
+#| results: asis
+if (!is.null(failed_usms)) {
+  cat("### Failed USMs\n\n")
+  explanation <- if (!is.null(usm_thresholds)) {
+    sprintf(
+      paste(
+        "A USM (situation) is flagged as **failed** if at least one of",
+        "these holds, for at least one variable on that USM (among the",
+        "variables tested at the species level, i.e. with at least %d",
+        "observations over the whole species):\n\n",
+        "- its rRMSE ratio vs. the reference version exceeds",
+        "**%s%%** (the *critical* threshold), or\n",
+        "- **more than %s variables** on that USM individually exceed a",
+        "lower **%s%%** *degraded* threshold.\n"
+      ),
+      min_obs,
+      usm_thresholds$ratio_threshold, usm_thresholds$max_degraded_vars,
+      usm_thresholds$degraded_threshold
+    )
+  } else {
+    paste(
+      "A USM (situation) is flagged as **failed** if at least one",
+      "variable on that USM crosses a critical rRMSE ratio threshold, or",
+      "if too many variables individually cross a lower degradation",
+      "threshold.\n"
+    )
+  }
+  cat(sprintf("<p>%s</p>\n\n", tag_list(sp_failed_usms, "Critical")))
+  cat(paste0("::: {.callout-note}\n", explanation, ":::\n\n"))
+}
+
+# Variables not tested at the species level aren't tested on its USMs
+# either (see `USMEvaluation`).
+sp_not_tested <- if (!is.null(sp_comp)) {
+  sp_comp$variable[sp_comp$status == "Not tested"]
+}
+if (length(sp_not_tested) > 0) {
+  cat("### Variables not tested\n\n")
+  cat(sprintf(
+    "<p>%s</p>\n\n", tag_list(sp_not_tested, "Not tested")
+  ))
+  cat(paste0(
+    "::: {.callout-note}\n",
+    sprintf(
+      "These variables have fewer than %d observations over the whole ",
+      min_obs
+    ),
+    "species, so they are not tested on the USMs of this species.\n",
+    ":::\n\n"
   ))
 }
 ```
