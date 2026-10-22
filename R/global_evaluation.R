@@ -167,13 +167,13 @@ GlobalEvaluation <- R6::R6Class("GlobalEvaluation", # nolint: object_name_linter
     },
 
     #' @description
-    #' Export the global evaluation results to CSV files and a comparison
-    #' plot. This method exports the global statistics
-    #' (`global_stats.csv`) and, if a comparison against a reference version
-    #' was performed, the per-variable rRMSE comparison
-    #' (`global_rrmse_comparison.csv`, with each variable's status:
-    #' Critical/Warning/Improved/Not tested/Other) to the `csv` subdirectory,
-    #' plus a static rRMSE comparison plot (`plots/global_comparison.png`).
+    #' Export the global evaluation results to CSV files. This method
+    #' exports the global statistics (`global_stats.csv`) and, if a
+    #' comparison against a reference version was performed, the
+    #' per-variable rRMSE comparison (`global_rrmse_comparison.csv`, with
+    #' each variable's status: Critical/Warning/Improved/Not tested/Other) to
+    #' the `csv` subdirectory. The rRMSE comparison can be plotted
+    #' with [plot_rrmse_comparison()].
     export = function() {
       private$logger$info("Exporting global evaluation data")
       if (is.null(private$stats)) {
@@ -190,11 +190,6 @@ GlobalEvaluation <- R6::R6Class("GlobalEvaluation", # nolint: object_name_linter
         safe_write_csv(
           private$rrmse_comparison$get_data(),
           csv_output_path(private$output_dir, "global_rrmse_comparison.csv")
-        )
-        plots_dir <- file.path(private$output_dir, "plots")
-        dir.create(plots_dir, recursive = TRUE, showWarnings = FALSE)
-        private$rrmse_comparison$plot_comparison(
-          file.path(plots_dir, "global_comparison.png")
         )
       }
 

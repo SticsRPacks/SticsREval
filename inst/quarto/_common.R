@@ -19,6 +19,14 @@ read_min_obs <- function(csv_dir) {
   if (is.null(thresholds$min_obs)) 10 else thresholds$min_obs[1]
 }
 
+# Threshold (%) above which a variable is flagged as critical (`percentage`
+# argument of `evaluate()`, exported to `thresholds.csv`), or its default
+# value of 5 for outputs written before that export.
+read_percentage <- function(csv_dir) {
+  thresholds <- read_csv_safe(file.path(csv_dir, "thresholds.csv"))
+  if (is.null(thresholds$percentage)) 5 else thresholds$percentage[1]
+}
+
 dt <- function(df) {
   if (is.null(df) || nrow(df) == 0) {
     return(htmltools::tags$p(htmltools::em("No data.")))

@@ -12,7 +12,7 @@ params:
 sp <- params$species
 csv_dir <- file.path(params$output_dir, "csv")
 # This page is rendered to `output_dir/species/<species>.html`, while its
-# PNG/HTML plots were written by `evaluate()` to
+# HTML plots were written by `evaluate()` to
 # `output_dir/plots/<species>/` - a sibling of `species/`, hence `..`.
 # `plots_dir` is only used as the link written into the page: files are
 # looked up under `plots_fs_dir` (absolute), since the page may be executed
@@ -26,6 +26,7 @@ source(file.path("..", "_common.R")) # nolint: undesirable_function_linter.
 
 species_stats <- read_csv_safe(file.path(csv_dir, "species_stats.csv"))
 min_obs <- read_min_obs(csv_dir)
+percentage <- read_percentage(csv_dir)
 rrmse_comparison <- read_csv_safe(
   file.path(csv_dir, "species_rrmse_comparison.csv")
 )
@@ -96,32 +97,23 @@ if (isTRUE(nrow(sp_comp) > 0)) {
 dt(species_stats[species_stats$species == sp, , drop = FALSE])
 ```
 
+### Comparison plot
 ```{r}
 #| echo: false
-#| results: asis
-#| eval: !expr file.exists(file.path(plots_fs_dir, "species_comparison.png"))
-writeLines(c(
-  "### Comparison plot",
-  "",
-  sprintf(
-    '![](%s){style="border:1px solid #ddd;"}',
-    file.path(plots_dir, "species_comparison.png")
-  ),
-  "",
-  "::: {.callout-note}",
-  sprintf(
-    paste(
-      "A variable is only tested if it has at least %1$d observations",
-      "(`n_obs >= %1$d`) over the whole species. Variables with fewer",
-      "observations are shown in grey (Not tested) above, get no scatter",
-      "plot below, and are not tested on the USMs of this species either."
-    ),
-    min_obs
-  ),
-  ":::",
-  ""
-))
+#| fig-width: 10
+#| fig-height: 7
+#| out-width: 100%
+#| eval: !expr isTRUE(nrow(sp_comp) > 0)
+SticsREval::plot_rrmse_comparison(sp_comp, percentage)
 ```
+
+::: {.callout-note}
+A variable is only tested if it has at least `r min_obs` observations
+(`n_obs` ≥ `r min_obs`) over the whole species. Variables with fewer
+observations are shown in grey (Not tested) above, get no scatter plot
+below, and are not tested on the USMs of this species either.
+:::
+
 
 ```{r}
 #| echo: false

@@ -148,10 +148,10 @@ workspace.
 \subsection{\code{SpeciesEvaluation$export()}}{
   Export the species evaluation results to CSV files and plots.
 This method exports the statistics, rRMSE comparisons (including the
-species-level rRMSE ratio per variable, in \verb{species_rrmse_comparison .csv}), and a per-species degradation status summary (\verb{species_summary .csv}) to CSV files in the "csv" subdirectory. It also generates a
-static rRMSE comparison plot and interactive per-variable scatter
-plots for each species, saved in their own subdirectory under "plots"
-(one per species).
+species-level rRMSE ratio per variable, in \verb{species_rrmse_comparison .csv}), and a per-species degradation status summary (\verb{species_summary .csv}) to CSV files in the "csv" subdirectory. It also generates
+interactive per-variable scatter plots for each species, saved in
+their own subdirectory under "plots" (one per species). The rRMSE
+comparison can be plotted with \code{\link[=plot_rrmse_comparison]{plot_rrmse_comparison()}}.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{SpeciesEvaluation$export()}
