@@ -296,6 +296,12 @@ export_evaluations <- function(evaluations, output_dir) {
     ),
     csv_output_path(output_dir, "evaluation_status.csv")
   )
+  # Thresholds shared by all evaluations, so that the dashboard can explain
+  # the results without hard-coding them.
+  safe_write_csv(
+    data.frame(min_obs = min_obs_threshold),
+    csv_output_path(output_dir, "thresholds.csv")
+  )
 }
 
 

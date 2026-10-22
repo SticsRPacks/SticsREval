@@ -7,50 +7,30 @@ date: last-modified
 #| label: setup
 #| include: false
 
-read_csv_safe <- function(path) {
-  if (!file.exists(path)) return(NULL)
-  csv_df <- utils::read.csv(
-    path, stringsAsFactors = FALSE, check.names = FALSE
-  )
-  if (nrow(csv_df) == 0) NULL else csv_df
-}
-
-tag_class <- c(
-  Critical = "tag-critical", Warning = "tag-warning", OK = "tag-ok",
-  Failed = "tag-critical", Passed = "tag-ok"
-)
-
-# Renders `items` (e.g. species names) as colored pill badges, echoing the
-# colored lists `cli` prints to the console for the same
-# critical/warning/ok-or-passed groupings, styled for HTML instead.
-tag_list <- function(items, status) {
-  if (length(items) == 0) {
-    return('<span class="tag-empty">None</span>')
-  }
-  paste(
-    sprintf('<span class="tag %s">%s</span>', tag_class[[status]], items),
-    collapse = " "
-  )
-}
+source("_common.R") # nolint: undesirable_function_linter.
 
 evaluation_status <- read_csv_safe(file.path("csv", "evaluation_status.csv"))
 species_summary <- read_csv_safe(file.path("csv", "species_summary.csv"))
 usm_summary <- read_csv_safe(file.path("csv", "usm_summary.csv"))
-```
+species_comparison <- read_csv_safe(
+  file.path("csv", "species_rrmse_comparison.csv")
+)
 
-```{=html}
-<style>
-.tag {
-  display: inline-block; padding: 0.15em 0.7em; margin: 0.15em 0.25em 0.15em 0; # nolint: line_length_linter
-  border-radius: 999px; font-size: 0.9em; font-weight: 600;
+# Only the species of `species_stats.csv` get a page (see
+# `get_species_list()` in render_report.R).
+species_stats <- read_csv_safe(file.path("csv", "species_stats.csv"))
+species_href <- function(species) {
+  ifelse(
+    species %in% species_stats$species,
+    file.path("species", paste0(species, ".html")),
+    NA_character_
+  )
 }
-.tag-critical { background: #fdecea; color: #c0392b; }
-.tag-warning { background: #fef5e7; color: #b9770e; }
-.tag-ok { background: #eafaf1; color: #1e8449; }
-.tag-empty { color: #888; font-style: italic; }
-.summary-block { margin: 0.5em 0 1.5em; }
-.summary-block > p:first-child { margin-bottom: 0.3em; }
-</style>
+# Straight to the "Failed USMs" section of the species page.
+failed_usms_href <- function(species) {
+  links <- species_href(species)
+  ifelse(is.na(links), NA_character_, paste0(links, "#failed-usms"))
+}
 ```
 
 ## Evaluation status
@@ -58,24 +38,26 @@ usm_summary <- read_csv_safe(file.path("csv", "usm_summary.csv"))
 ```{r}
 #| echo: false
 #| results: asis
-if (!is.null(evaluation_status)) {
-  for (i in seq_len(nrow(evaluation_status))) {
-    status <- evaluation_status$status[i]
-    label <- evaluation_status$evaluation[i]
-    icon <- if (identical(status, "not evaluated")) {
-      label <- sprintf(
-        "%s (not evaluated: %s)", label, evaluation_status$reason[i]
-      )
-      '<span style="color:#888;">&#8211;</span>'
-    } else if (isTRUE(evaluation_status$success[i])) {
-      '<span style="color:#2ecc71;">&#10004;</span>'
-    } else {
-      '<span style="color:#e74c3c;">&#10008;</span>'
-    }
-    cat(sprintf("%s %s&emsp;", icon, label))
-  }
-  cat("\n\n")
-}
+#| eval: !expr '!is.null(evaluation_status)'
+icons <- c(
+  skip = '<span style="color:#888;">&#8211;</span>',
+  pass = '<span style="color:#2ecc71;">&#10004;</span>',
+  fail = '<span style="color:#e74c3c;">&#10008;</span>'
+)
+
+# `which()` drops NAs, so a missing status or success counts as FALSE.
+not_eval <- which(evaluation_status$status == "not evaluated")
+state <- rep("fail", nrow(evaluation_status))
+state[which(evaluation_status$success)] <- "pass"
+state[not_eval] <- "skip"
+
+label <- htmltools::htmlEscape(evaluation_status$evaluation)
+label[not_eval] <- sprintf(
+  "%s (not evaluated: %s)",
+  label[not_eval], htmltools::htmlEscape(evaluation_status$reason[not_eval])
+)
+
+cat(paste(icons[state], label, collapse = "&emsp;"), "\n\n")
 ```
 
 ## Species evaluation
@@ -86,27 +68,159 @@ if (!is.null(evaluation_status)) {
 if (is.null(species_summary)) {
   cat("::: {.callout-note}\nNo comparison done.\n:::\n\n")
 } else {
-  cat('<div class="summary-block">\n')
-  cat("<p>The following species show at least one variable with:</p>\n")
-  cat(sprintf(
-    "<p><strong>Major degradation</strong><br>\n%s</p>\n",
-    tag_list(
-      species_summary$species[species_summary$status == "Critical"],
-      "Critical"
+  categories <- c(
+    Critical = "Major degradation",
+    Warning = "Minor degradation",
+    OK = "No degradation"
+  )
+
+  blocks <- vapply(names(categories), function(status) {
+    species <- species_summary$species[species_summary$status %in% status]
+    sprintf(
+      "<p><strong>%s</strong><br>\n%s</p>",
+      categories[[status]], tag_list(species, status, href = species_href)
     )
+  }, character(1))
+  writeLines(c(
+    '<div class="summary-block">',
+    "<p>The following species show at least one variable with:</p>",
+    blocks,
+    "</div>\n\n"
   ))
-  cat(sprintf(
-    "<p><strong>Minor degradation</strong><br>\n%s</p>\n",
-    tag_list(
-      species_summary$species[species_summary$status == "Warning"],
-      "Warning"
+}
+```
+
+```{r}
+#| echo: false
+#| results: asis
+# Overview heatmap of the species-level status of every variable
+# (variables in rows, as there are many more of them than species; species
+# in columns), from `species_rrmse_comparison.csv`. Species are sorted like
+# the badges above (most degraded first), variables by the number of
+# species where they are critical, then warning.
+status_levels <- c("Not tested", "Improved", "Warning", "Critical")
+overview <- species_comparison
+if (!is.null(overview)) {
+  overview <- overview[overview$status %in% status_levels, , drop = FALSE]
+}
+show_overview <- !is.null(overview) && nrow(overview) > 0
+
+if (show_overview) {
+  severity <- function(status, by) {
+    tapply(overview$status == status, overview[[by]], sum)
+  }
+  species <- names(sort(
+    severity("Critical", "species") * 1000 + severity("Warning", "species"),
+    decreasing = TRUE
+  ))
+  n_crit <- severity("Critical", "variable")
+  n_warn <- severity("Warning", "variable")
+  vars <- names(n_crit)[order(-n_crit, -n_warn, names(n_crit))]
+
+  cells <- cbind(
+    match(overview$variable, vars), match(overview$species, species)
+  )
+  z <- matrix(NA_real_, length(vars), length(species))
+  z[cells] <- match(overview$status, status_levels)
+  hover <- matrix("Not evaluated", length(vars), length(species))
+  hover[cells] <- sprintf(
+    "Species: %s<br>Variable: %s<br>Status: %s<br>rRMSE ratio: %+.2f%%<br>rRMSE: %.3g (ref %.3g)<br>n_obs: %d", # nolint: line_length_linter
+    overview$species, overview$variable, overview$status,
+    overview$rrmse_ratio, overview$rrmse_eval, overview$rrmse_ref,
+    overview$n_obs
+  )
+  # Clicking a cell opens the species page, at the variable's scatter plot
+  # for the degraded ones (the only ones with a scatter plot, see the
+  # `scatter-<variable>` anchors of species.qmd).
+  links <- matrix("", length(vars), length(species))
+  degraded <- overview$status %in% c("Critical", "Warning")
+  links[cells] <- ifelse(
+    is.na(species_href(overview$species)), "",
+    paste0(
+      species_href(overview$species),
+      ifelse(
+        degraded,
+        paste0(
+          "#", scatter_id(overview$variable)
+        ),
+        ""
+      )
     )
+  )
+
+  # One flat color band per status, matching the badges.
+  status_colors <- c("#d5d8dc", "#82e0aa", "#f5b041", "#c0392b")
+  bands <- seq(0, 1, length.out = length(status_levels) + 1)
+  colorscale <- do.call(c, lapply(seq_along(status_colors), function(i) {
+    list(
+      list(bands[i], status_colors[i]), list(bands[i + 1], status_colors[i])
+    )
+  }))
+
+  overview_heatmap <- plotly::plot_ly(
+    x = species, y = vars, z = z,
+    type = "heatmap", text = hover, hoverinfo = "text",
+    zmin = 0.5, zmax = length(status_levels) + 0.5,
+    colorscale = colorscale,
+    colorbar = list(
+      tickvals = seq_along(status_levels), ticktext = status_levels,
+      len = 1, thickness = 15
+    ),
+    xgap = 1, ygap = 1,
+    # No fixed width: the plot fills the content column, so its color bar
+    # isn't cut off next to the sidebar and table of contents.
+    height = 120 + 18 * length(vars)
+  ) |>
+    plotly::layout(
+      xaxis = list(side = "top", type = "category"),
+      yaxis = list(autorange = "reversed", type = "category"),
+      plot_bgcolor = "#ffffff",
+      margin = list(t = 60)
+    ) |>
+    plotly::config(displaylogo = FALSE) |>
+    # `links` is passed to the JS callback as its third argument (plotly
+    # drops a matrix `customdata` on heatmaps), indexed by the clicked
+    # cell's [row, column].
+    htmlwidgets::onRender(
+      "function(el, x, links) {
+        el.classList.add('overview-heatmap');
+        el.on('plotly_click', function(data) {
+          var cell = data.points[0].pointIndex;
+          var url = links[cell[0]][cell[1]];
+          if (url) window.location.href = url;
+        });
+      }",
+      data = links
+    )
+
+  cat("### Overview by variable\n\n")
+}
+```
+
+```{r}
+#| echo: false
+# Printed from a regular (non-`asis`) chunk so that knitr registers the
+# widget's JS dependencies (plotly.js) in the page. The plot keeps one row
+# per variable at a readable height, inside a box of fixed height that
+# scrolls when there are many variables (see `.overview-scroll`).
+if (show_overview) {
+  htmltools::div(class = "overview-scroll", overview_heatmap)
+}
+```
+
+```{r}
+#| echo: false
+#| results: asis
+if (show_overview) {
+  cat(paste0(
+    "::: {.callout-note}\n",
+    "Species-level status of each variable (rRMSE ratio vs. the reference ",
+    "version, over all the USMs of the species). Hover a cell for the ",
+    "details, click it to open the species page (at the variable's ",
+    "scatter plot when it is degraded). White cells are variables not ",
+    "evaluated for that species.\n",
+    ":::\n\n"
   ))
-  cat(sprintf(
-    "<p><strong>No degradation</strong><br>\n%s</p>\n",
-    tag_list(species_summary$species[species_summary$status == "OK"], "OK")
-  ))
-  cat("</div>\n\n")
 }
 ```
 
@@ -123,13 +237,15 @@ if (is.null(usm_summary)) {
   cat(sprintf(
     "<p><strong>Failed</strong><br>\n%s</p>\n",
     tag_list(
-      usm_summary$species[usm_summary$failed_usms > 0], "Failed"
+      usm_summary$species[usm_summary$failed_usms > 0], "Failed",
+      href = failed_usms_href
     )
   ))
   cat(sprintf(
     "<p><strong>Passed</strong> (all USMs ok)<br>\n%s</p>\n",
     tag_list(
-      usm_summary$species[usm_summary$failed_usms == 0], "Passed"
+      usm_summary$species[usm_summary$failed_usms == 0], "Passed",
+      href = species_href
     )
   ))
   cat("</div>\n\n")
