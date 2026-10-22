@@ -21,7 +21,7 @@ reference:
       check balance closure.
     contents:
       - evaluate
-#      - balance_closure_test
+      - balance_closure_test
 
   - title: "Reports and plots"
     desc: >
