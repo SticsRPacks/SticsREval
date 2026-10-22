@@ -70,6 +70,26 @@ severity <- function(overview, status, by) {
 #'   the URL opened when clicking each row's cell (`NA` for none).
 #'
 #' @return A `plotly` htmlwidget.
+#' @examples
+#' overview <- data.frame(
+#'   species = rep(c("wheat", "maize"), each = 3),
+#'   variable = rep(c("lai_n", "masec_n", "mafruit"), 2),
+#'   status = c("Critical", "Improved", "Warning", "Improved", "Not tested",
+#'              "Warning"),
+#'   rrmse_ratio = c(12.4, -3.1, 2.7, -1.5, 0.8, 4.2),
+#'   rrmse_eval = c(0.42, 0.25, 0.31, 0.18, 0.40, 0.29),
+#'   rrmse_ref = c(0.37, 0.26, 0.30, 0.18, 0.40, 0.28),
+#'   n_obs = c(120L, 85L, 64L, 97L, 8L, 51L)
+#' )
+#' overview_heatmap(overview)
+#'
+#' # Open each species page when clicking a cell
+#' overview_heatmap(
+#'   overview,
+#'   href = function(species, variable, status) {
+#'     paste0("species/", species, ".html")
+#'   }
+#' )
 #' @export
 overview_heatmap <- function(
   overview,
@@ -147,6 +167,17 @@ overview_heatmap <- function(
 #' @param max_usms Maximum number of USMs shown.
 #'
 #' @return A `plotly` htmlwidget.
+#' @examples
+#' usm_ratio <- data.frame(
+#'   situation = rep(c("usm_1", "usm_2", "usm_3"), each = 2),
+#'   variable = rep(c("lai_n", "masec_n"), 3),
+#'   ratio = c(65.2, 24.8, -12.5, 3.1, 21.0, -30.4),
+#'   RMSE_eval = c(1.10, 2.35, 0.48, 1.62, 0.95, 1.05),
+#'   RMSE_ref = c(0.55, 1.90, 0.62, 1.57, 0.70, 1.60),
+#'   RMSE_species = c(0.84, 1.81, 1.12, 1.61, 1.19, 1.81),
+#'   n_obs = c(6L, 4L, 5L, 4L, 7L, 3L)
+#' )
+#' usm_ratio_heatmap(usm_ratio)
 #' @export
 usm_ratio_heatmap <- function(
   usm_ratio,

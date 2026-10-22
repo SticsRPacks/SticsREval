@@ -28,4 +28,6 @@ reference:
       Visualize the evaluation results.
     contents:
       - plot_rrmse_comparison
+      - overview_heatmap
+      - usm_ratio_heatmap
       - render_report

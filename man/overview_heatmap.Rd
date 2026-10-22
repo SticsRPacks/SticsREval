@@ -29,3 +29,24 @@ Variables in rows (there are many more of them than species), species in
 columns. Species are sorted most degraded first, variables by the number
 of species where they are critical, then warning.
 }
+\examples{
+overview <- data.frame(
+  species = rep(c("wheat", "maize"), each = 3),
+  variable = rep(c("lai_n", "masec_n", "mafruit"), 2),
+  status = c("Critical", "Improved", "Warning", "Improved", "Not tested",
+             "Warning"),
+  rrmse_ratio = c(12.4, -3.1, 2.7, -1.5, 0.8, 4.2),
+  rrmse_eval = c(0.42, 0.25, 0.31, 0.18, 0.40, 0.29),
+  rrmse_ref = c(0.37, 0.26, 0.30, 0.18, 0.40, 0.28),
+  n_obs = c(120L, 85L, 64L, 97L, 8L, 51L)
+)
+overview_heatmap(overview)
+
+# Open each species page when clicking a cell
+overview_heatmap(
+  overview,
+  href = function(species, variable, status) {
+    paste0("species/", species, ".html")
+  }
+)
+}

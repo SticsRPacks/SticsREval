@@ -41,3 +41,15 @@ ratio doesn't wash out every other cell (the exact value is in the hover
 text). It follows the test's thresholds: green = improved, white =
 unchanged, orange = degraded, red = critical.
 }
+\examples{
+usm_ratio <- data.frame(
+  situation = rep(c("usm_1", "usm_2", "usm_3"), each = 2),
+  variable = rep(c("lai_n", "masec_n"), 3),
+  ratio = c(65.2, 24.8, -12.5, 3.1, 21.0, -30.4),
+  RMSE_eval = c(1.10, 2.35, 0.48, 1.62, 0.95, 1.05),
+  RMSE_ref = c(0.55, 1.90, 0.62, 1.57, 0.70, 1.60),
+  RMSE_species = c(0.84, 1.81, 1.12, 1.61, 1.19, 1.81),
+  n_obs = c(6L, 4L, 5L, 4L, 7L, 3L)
+)
+usm_ratio_heatmap(usm_ratio)
+}
