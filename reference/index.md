@@ -31,5 +31,9 @@ Visualize the evaluation results.
 
 - [`plot_rrmse_comparison()`](https://sticsrpacks.github.io/SticsREval/reference/plot_rrmse_comparison.md)
   : Plot the rRMSE comparison
+- [`overview_heatmap()`](https://sticsrpacks.github.io/SticsREval/reference/overview_heatmap.md)
+  : Overview heatmap of the species-level status of every variable
+- [`usm_ratio_heatmap()`](https://sticsrpacks.github.io/SticsREval/reference/usm_ratio_heatmap.md)
+  : Heatmap of the per-USM RMSE ratio
 - [`render_report()`](https://sticsrpacks.github.io/SticsREval/reference/render_report.md)
   : Render an HTML evaluation site
