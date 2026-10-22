@@ -7,7 +7,7 @@ date: last-modified
 #| label: setup
 #| include: false
 
-source("_common.R")
+source("_common.R") # nolint: undesirable_function_linter.
 
 evaluation_status <- read_csv_safe(file.path("csv", "evaluation_status.csv"))
 species_summary <- read_csv_safe(file.path("csv", "species_summary.csv"))
@@ -45,8 +45,11 @@ icons <- c(
   fail = '<span style="color:#e74c3c;">&#10008;</span>'
 )
 
-not_eval <- evaluation_status$status %in% "not evaluated"
-state <- ifelse(not_eval, "skip", ifelse(evaluation_status$success %in% TRUE, "pass", "fail"))
+# `which()` drops NAs, so a missing status or success counts as FALSE.
+not_eval <- which(evaluation_status$status == "not evaluated")
+state <- rep("fail", nrow(evaluation_status))
+state[which(evaluation_status$success)] <- "pass"
+state[not_eval] <- "skip"
 
 label <- htmltools::htmlEscape(evaluation_status$evaluation)
 label[not_eval] <- sprintf(

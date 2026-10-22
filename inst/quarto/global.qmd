@@ -7,7 +7,7 @@ date: last-modified
 #| label: setup
 #| include: false
 
-source("_common.R")
+source("_common.R") # nolint: undesirable_function_linter.
 
 global_stats <- read_csv_safe(file.path("csv", "global_stats.csv"))
 min_obs <- read_min_obs("csv")
