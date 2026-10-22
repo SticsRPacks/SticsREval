@@ -90,6 +90,8 @@ if (is.null(species_summary)) {
 }
 ```
 
+### Overview by variable
+
 ```{r}
 #| echo: false
 #| results: asis
@@ -106,7 +108,6 @@ if (!is.null(overview)) {
 show_overview <- !is.null(overview) && nrow(overview) > 0
 
 if (show_overview) {
-  cat("### Overview by variable\n\n")
   # Clicking a cell opens the species page, at the variable's scatter plot
   # for the degraded ones (the only ones with a scatter plot, see the
   # `scatter-<variable>` anchors of species.qmd).
@@ -122,35 +123,17 @@ if (show_overview) {
   overview_plot <- SticsREval::overview_heatmap(
     overview, status_levels, href = heatmap_href
   )
-}
-```
-
-```{r}
-#| echo: false
-# Printed from a regular (non-`asis`) chunk so that knitr registers the
-# widget's JS dependencies (plotly.js) in the page. The plot keeps one row
-# per variable at a readable height, inside a box of fixed height that
-# scrolls when there are many variables (see `.overview-scroll`).
-if (show_overview) {
   htmltools::div(class = "overview-scroll", overview_plot)
+} else {
+  cat("::: {.callout-note}\nNo overview available.\n:::\n\n")
 }
 ```
 
-```{r}
-#| echo: false
-#| results: asis
-if (show_overview) {
-  cat(paste0(
-    "::: {.callout-note}\n",
-    "Species-level status of each variable (rRMSE ratio vs. the reference ",
-    "version, over all the USMs of the species). Hover a cell for the ",
-    "details, click it to open the species page (at the variable's ",
-    "scatter plot when it is degraded). White cells are variables not ",
-    "evaluated for that species.\n",
-    ":::\n\n"
-  ))
-}
-```
+::: {.callout-note}
+    
+Species-level status of each variable (rRMSE ratio vs. the reference version, over all the USMs of the species). Hover a cell for the details, click it to open the species page (at the variable's scatter plot when it is degraded). White cells are variables not evaluated for that species.
+
+:::
 
 ## USM evaluation
 
