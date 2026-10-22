@@ -118,57 +118,18 @@ if (show_heatmap) {
     50
   }
 
-  # Most degraded USMs first: number of variables above the degraded
-  # threshold, then highest ratio.
-  n_degraded <- tapply(
-    usm_ratio$ratio > degraded_threshold, usm_ratio$situation, sum
-  )
-  max_ratio <- tapply(usm_ratio$ratio, usm_ratio$situation, max)
-  usms <- names(n_degraded)[order(-n_degraded, -max_ratio)]
-  n_usms <- length(usms)
-  usms <- utils::head(usms, max_usms)
+  n_usms <- length(unique(usm_ratio$situation))
   # Variables in the same order as the species-level comparison (most
   # degraded first).
-  vars <- intersect(sp_comp$variable[order(-sp_comp$rrmse_ratio)], tested_vars)
-  vars <- intersect(vars, usm_ratio$variable)
-  usm_ratio <- usm_ratio[usm_ratio$situation %in% usms, , drop = FALSE]
-
-  cells <- cbind(
-    match(usm_ratio$situation, usms), match(usm_ratio$variable, vars)
-  )
-  z <- matrix(NA_real_, length(usms), length(vars))
-  z[cells] <- usm_ratio$ratio
-  hover <- matrix("No data", length(usms), length(vars))
-  hover[cells] <- sprintf(
-    "USM: %s<br>Variable: %s<br>Ratio: %+.1f%%<br>RMSE: %.3g (ref %.3g, species %.3g)<br>n_obs: %d", # nolint: line_length_linter
-    usm_ratio$situation, usm_ratio$variable, usm_ratio$ratio,
-    usm_ratio$RMSE_eval, usm_ratio$RMSE_ref, usm_ratio$RMSE_species,
-    usm_ratio$n_obs
-  )
-
-  # The color scale is capped at +/- the critical threshold so that a
-  # single huge ratio doesn't wash out every other cell (the exact value is
-  # in the hover text). It follows the test's thresholds: green = improved,
-  # white = unchanged, orange = degraded, red = critical.
-  heatmap <- plotly::plot_ly(
-    x = vars, y = usms, z = pmax(pmin(z, ratio_threshold), -ratio_threshold),
-    type = "heatmap", text = hover, hoverinfo = "text",
-    zmin = -ratio_threshold, zmax = ratio_threshold,
-    colorscale = list(
-      c(0, "#1e8449"), c(0.5, "#ffffff"),
-      c(0.5 + degraded_threshold / (2 * ratio_threshold), "#f5b041"),
-      c(1, "#c0392b")
+  heatmap <- SticsREval::usm_ratio_heatmap(
+    usm_ratio,
+    variables = intersect(
+      sp_comp$variable[order(-sp_comp$rrmse_ratio)], tested_vars
     ),
-    colorbar = list(title = "RMSE ratio (%)"),
-    xgap = 1, ygap = 1,
-    height = 150 + 16 * length(usms)
-  ) |>
-    plotly::layout(
-      xaxis = list(side = "top", tickangle = -45),
-      yaxis = list(autorange = "reversed", type = "category"),
-      plot_bgcolor = "#f2f3f4"
-    ) |>
-    plotly::config(displaylogo = FALSE)
+    degraded_threshold = degraded_threshold,
+    ratio_threshold = ratio_threshold,
+    max_usms = max_usms
+  )
 
   cat("### RMSE ratio of the failed USMs\n\n")
 }
@@ -196,7 +157,7 @@ if (show_heatmap) {
         "hover a cell for the exact value. Grey cells have no observation for",
         "that variable on that USM."
       ),
-      length(usms), n_usms, degraded_threshold, ratio_threshold
+      min(n_usms, max_usms), n_usms, degraded_threshold, ratio_threshold
     ),
     ":::"
   ))

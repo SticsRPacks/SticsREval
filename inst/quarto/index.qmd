@@ -106,94 +106,22 @@ if (!is.null(overview)) {
 show_overview <- !is.null(overview) && nrow(overview) > 0
 
 if (show_overview) {
-  severity <- function(status, by) {
-    tapply(overview$status == status, overview[[by]], sum)
-  }
-  species <- names(sort(
-    severity("Critical", "species") * 1000 + severity("Warning", "species"),
-    decreasing = TRUE
-  ))
-  n_crit <- severity("Critical", "variable")
-  n_warn <- severity("Warning", "variable")
-  vars <- names(n_crit)[order(-n_crit, -n_warn, names(n_crit))]
-
-  cells <- cbind(
-    match(overview$variable, vars), match(overview$species, species)
-  )
-  z <- matrix(NA_real_, length(vars), length(species))
-  z[cells] <- match(overview$status, status_levels)
-  hover <- matrix("Not evaluated", length(vars), length(species))
-  hover[cells] <- sprintf(
-    "Species: %s<br>Variable: %s<br>Status: %s<br>rRMSE ratio: %+.2f%%<br>rRMSE: %.3g (ref %.3g)<br>n_obs: %d", # nolint: line_length_linter
-    overview$species, overview$variable, overview$status,
-    overview$rrmse_ratio, overview$rrmse_eval, overview$rrmse_ref,
-    overview$n_obs
-  )
+  cat("### Overview by variable\n\n")
   # Clicking a cell opens the species page, at the variable's scatter plot
   # for the degraded ones (the only ones with a scatter plot, see the
   # `scatter-<variable>` anchors of species.qmd).
-  links <- matrix("", length(vars), length(species))
-  degraded <- overview$status %in% c("Critical", "Warning")
-  links[cells] <- ifelse(
-    is.na(species_href(overview$species)), "",
-    paste0(
-      species_href(overview$species),
-      ifelse(
-        degraded,
-        paste0(
-          "#", scatter_id(overview$variable)
-        ),
-        ""
-      )
+  heatmap_href <- function(species, variable, status) {
+    links <- species_href(species)
+    degraded <- status %in% c("Critical", "Warning")
+    ifelse(
+      !is.na(links) & degraded,
+      paste0(links, "#", scatter_id(variable)),
+      links
     )
+  }
+  overview_plot <- SticsREval::overview_heatmap(
+    overview, status_levels, href = heatmap_href
   )
-
-  # One flat color band per status, matching the badges.
-  status_colors <- c("#d5d8dc", "#82e0aa", "#f5b041", "#c0392b")
-  bands <- seq(0, 1, length.out = length(status_levels) + 1)
-  colorscale <- do.call(c, lapply(seq_along(status_colors), function(i) {
-    list(
-      list(bands[i], status_colors[i]), list(bands[i + 1], status_colors[i])
-    )
-  }))
-
-  overview_heatmap <- plotly::plot_ly(
-    x = species, y = vars, z = z,
-    type = "heatmap", text = hover, hoverinfo = "text",
-    zmin = 0.5, zmax = length(status_levels) + 0.5,
-    colorscale = colorscale,
-    colorbar = list(
-      tickvals = seq_along(status_levels), ticktext = status_levels,
-      len = 1, thickness = 15
-    ),
-    xgap = 1, ygap = 1,
-    # No fixed width: the plot fills the content column, so its color bar
-    # isn't cut off next to the sidebar and table of contents.
-    height = 120 + 18 * length(vars)
-  ) |>
-    plotly::layout(
-      xaxis = list(side = "top", type = "category"),
-      yaxis = list(autorange = "reversed", type = "category"),
-      plot_bgcolor = "#ffffff",
-      margin = list(t = 60)
-    ) |>
-    plotly::config(displaylogo = FALSE) |>
-    # `links` is passed to the JS callback as its third argument (plotly
-    # drops a matrix `customdata` on heatmaps), indexed by the clicked
-    # cell's [row, column].
-    htmlwidgets::onRender(
-      "function(el, x, links) {
-        el.classList.add('overview-heatmap');
-        el.on('plotly_click', function(data) {
-          var cell = data.points[0].pointIndex;
-          var url = links[cell[0]][cell[1]];
-          if (url) window.location.href = url;
-        });
-      }",
-      data = links
-    )
-
-  cat("### Overview by variable\n\n")
 }
 ```
 
@@ -204,7 +132,7 @@ if (show_overview) {
 # per variable at a readable height, inside a box of fixed height that
 # scrolls when there are many variables (see `.overview-scroll`).
 if (show_overview) {
-  htmltools::div(class = "overview-scroll", overview_heatmap)
+  htmltools::div(class = "overview-scroll", overview_plot)
 }
 ```
 

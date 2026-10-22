@@ -27,6 +27,7 @@ Imports:
     ggplot2,
     ggrepel,
     htmltools,
+    htmlwidgets,
     lifecycle,
     logger,
     methods,

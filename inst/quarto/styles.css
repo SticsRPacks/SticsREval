@@ -16,7 +16,7 @@ a.tag-link .tag:hover { outline: 1px solid currentColor; }
 /* Homepage */
 .summary-block { margin: 0.5em 0 1.5em; }
 .summary-block > p:first-child { margin-bottom: 0.3em; }
-.overview-heatmap .nsewdrag { cursor: pointer !important; }
+.clickable-heatmap .nsewdrag { cursor: pointer !important; }
 .overview-scroll {
   max-height: 600px; overflow-y: auto;
   border: 1px solid #dee2e6; border-radius: 4px;
