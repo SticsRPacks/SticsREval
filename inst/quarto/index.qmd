@@ -38,24 +38,23 @@ failed_usms_href <- function(species) {
 ```{r}
 #| echo: false
 #| results: asis
-if (!is.null(evaluation_status)) {
-  for (i in seq_len(nrow(evaluation_status))) {
-    status <- evaluation_status$status[i]
-    label <- evaluation_status$evaluation[i]
-    icon <- if (identical(status, "not evaluated")) {
-      label <- sprintf(
-        "%s (not evaluated: %s)", label, evaluation_status$reason[i]
-      )
-      '<span style="color:#888;">&#8211;</span>'
-    } else if (isTRUE(evaluation_status$success[i])) {
-      '<span style="color:#2ecc71;">&#10004;</span>'
-    } else {
-      '<span style="color:#e74c3c;">&#10008;</span>'
-    }
-    cat(sprintf("%s %s&emsp;", icon, label))
-  }
-  cat("\n\n")
-}
+#| eval: !expr '!is.null(evaluation_status)'
+icons <- c(
+  skip = '<span style="color:#888;">&#8211;</span>',
+  pass = '<span style="color:#2ecc71;">&#10004;</span>',
+  fail = '<span style="color:#e74c3c;">&#10008;</span>'
+)
+
+not_eval <- evaluation_status$status %in% "not evaluated"
+state <- ifelse(not_eval, "skip", ifelse(evaluation_status$success %in% TRUE, "pass", "fail"))
+
+label <- htmltools::htmlEscape(evaluation_status$evaluation)
+label[not_eval] <- sprintf(
+  "%s (not evaluated: %s)",
+  label[not_eval], htmltools::htmlEscape(evaluation_status$reason[not_eval])
+)
+
+cat(paste(icons[state], label, collapse = "&emsp;"), "\n\n")
 ```
 
 ## Species evaluation
@@ -66,30 +65,25 @@ if (!is.null(evaluation_status)) {
 if (is.null(species_summary)) {
   cat("::: {.callout-note}\nNo comparison done.\n:::\n\n")
 } else {
-  cat('<div class="summary-block">\n')
-  cat("<p>The following species show at least one variable with:</p>\n")
-  cat(sprintf(
-    "<p><strong>Major degradation</strong><br>\n%s</p>\n",
-    tag_list(
-      species_summary$species[species_summary$status == "Critical"],
-      "Critical", href = species_href
+  categories <- c(
+    Critical = "Major degradation",
+    Warning = "Minor degradation",
+    OK = "No degradation"
+  )
+
+  blocks <- vapply(names(categories), function(status) {
+    species <- species_summary$species[species_summary$status %in% status]
+    sprintf(
+      "<p><strong>%s</strong><br>\n%s</p>",
+      categories[[status]], tag_list(species, status, href = species_href)
     )
+  }, character(1))
+  writeLines(c(
+    '<div class="summary-block">',
+    "<p>The following species show at least one variable with:</p>",
+    blocks,
+    "</div>\n\n"
   ))
-  cat(sprintf(
-    "<p><strong>Minor degradation</strong><br>\n%s</p>\n",
-    tag_list(
-      species_summary$species[species_summary$status == "Warning"],
-      "Warning", href = species_href
-    )
-  ))
-  cat(sprintf(
-    "<p><strong>No degradation</strong><br>\n%s</p>\n",
-    tag_list(
-      species_summary$species[species_summary$status == "OK"], "OK",
-      href = species_href
-    )
-  ))
-  cat("</div>\n\n")
 }
 ```
 

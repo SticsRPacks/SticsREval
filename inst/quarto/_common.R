@@ -66,3 +66,34 @@ tag_list <- function(items, status, href = NULL) {
 scatter_id <- function(var) {
   paste0("scatter-", gsub("[^A-Za-z0-9_-]", "-", var))
 }
+
+# Writes one block per status: the number of variables, what the status
+# means, and their badges. `href` (optional) links the degraded variables.
+# `status` already accounts for the minimum number of observations
+# (variables without enough of them are "Not tested").
+# Returns the number of "Not tested" variables, invisibly.
+status_summary <- function(comparison, min_obs, href = NULL) {
+  by_status <- split(comparison$variable, comparison$status)
+  statuses <- c("Critical", "Warning", "Improved", "Not tested")
+  details <- c(
+    "major rRMSE increase", "minor rRMSE increase", "rRMSE stable or improved",
+    sprintf("fewer than %d observations", min_obs)
+  )
+
+  for (i in seq_along(statuses)) {
+    vars <- by_status[[statuses[i]]]
+    if (statuses[i] == "Not tested" && length(vars) == 0) next
+    degraded <- statuses[i] %in% c("Critical", "Warning")
+    tags <- if (degraded && !is.null(href)) {
+      tag_list(vars, statuses[i], href = href)
+    } else {
+      tag_list(vars, statuses[i])
+    }
+    cat(sprintf(
+      "<p><strong>%d variable(s) %s</strong> (%s)<br>\n%s</p>\n",
+      length(vars), tolower(statuses[i]), details[i], tags
+    ))
+  }
+
+  invisible(length(by_status[["Not tested"]]))
+}

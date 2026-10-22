@@ -72,33 +72,7 @@ scatter_href <- function(vars) {
 ```
 
 ```{=html}
-<script>
-// Scatter plots are collapsible `<details>`: open the one targeted by a
-// link (e.g. a variable badge, or a cell of the homepage heatmap), whether
-// it comes from another page (URL hash) or from this one (click).
-function openScatter(id) {
-  var el = document.getElementById(decodeURIComponent(id));
-  if (el && el.tagName === "DETAILS") {
-    el.open = true;
-    el.scrollIntoView();
-  }
-}
-document.addEventListener("DOMContentLoaded", function() {
-  if (location.hash) openScatter(location.hash.slice(1));
-});
-window.addEventListener("hashchange", function() {
-  openScatter(location.hash.slice(1));
-});
-document.addEventListener("click", function(event) {
-  var link = event.target.closest('a[href^="#scatter-"]');
-  if (link) openScatter(link.getAttribute("href").slice(1));
-});
-function toggleScatters(open) {
-  document.querySelectorAll("details.scatter").forEach(function(el) {
-    el.open = open;
-  });
-}
-</script>
+<script src="../scatter.js"></script>
 ```
 
 ## Variables
@@ -108,34 +82,10 @@ function toggleScatters(open) {
 ```{r}
 #| echo: false
 #| results: asis
-if (is.null(sp_comp) || nrow(sp_comp) == 0) {
+if (!isTRUE(nrow(sp_comp) > 0)) {
   cat("::: {.callout-note}\nNo comparison done.\n:::\n\n")
 } else {
-  # `status` already accounts for the minimum number of observations
-  # (variables without enough of them are "Not tested").
-  by_status <- split(sp_comp$variable, sp_comp$status)
-  cat(sprintf(
-    "<p><strong>%d variable(s) critical</strong> (major rRMSE increase)<br>\n%s</p>\n", # nolint: line_length_linter
-    length(by_status[["Critical"]]),
-    tag_list(by_status[["Critical"]], "Critical", href = scatter_href)
-  ))
-  cat(sprintf(
-    "<p><strong>%d variable(s) warning</strong> (minor rRMSE increase)<br>\n%s</p>\n", # nolint: line_length_linter
-    length(by_status[["Warning"]]),
-    tag_list(by_status[["Warning"]], "Warning", href = scatter_href)
-  ))
-  cat(sprintf(
-    "<p><strong>%d variable(s) improved</strong> (rRMSE stable or improved)<br>\n%s</p>\n", # nolint: line_length_linter
-    length(by_status[["Improved"]]),
-    tag_list(by_status[["Improved"]], "Improved")
-  ))
-  if (length(by_status[["Not tested"]]) > 0) {
-    cat(sprintf(
-      "<p><strong>%d variable(s) not tested</strong> (fewer than %d observations)<br>\n%s</p>\n", # nolint: line_length_linter
-      length(by_status[["Not tested"]]), min_obs,
-      tag_list(by_status[["Not tested"]], "Not tested")
-    ))
-  }
+  status_summary(sp_comp, min_obs, href = scatter_href)
 }
 ```
 
@@ -149,30 +99,33 @@ dt(species_stats[species_stats$species == sp, , drop = FALSE])
 ```{r}
 #| echo: false
 #| results: asis
-comparison_path <- file.path(plots_dir, "species_comparison.png")
-if (file.exists(file.path(plots_fs_dir, "species_comparison.png"))) {
-  cat("### Comparison plot\n\n")
-  cat(sprintf(
-    '<img src="%s" style="max-width:100%%; border:1px solid #ddd;">\n\n', # nolint: line_length_linter
-    comparison_path
-  ))
-  cat(paste0(
-    "::: {.callout-note}\n",
-    sprintf(
-      "A variable is only tested if it has at least %d observations ",
-      min_obs
+#| eval: !expr file.exists(file.path(plots_fs_dir, "species_comparison.png"))
+writeLines(c(
+  "### Comparison plot",
+  "",
+  sprintf(
+    '![](%s){style="border:1px solid #ddd;"}',
+    file.path(plots_dir, "species_comparison.png")
+  ),
+  "",
+  "::: {.callout-note}",
+  sprintf(
+    paste(
+      "A variable is only tested if it has at least %1$d observations",
+      "(`n_obs >= %1$d`) over the whole species. Variables with fewer",
+      "observations are shown in grey (Not tested) above, get no scatter",
+      "plot below, and are not tested on the USMs of this species either."
     ),
-    sprintf(
-      "(`n_obs >= %d`) over the whole species. Variables with fewer ",
-      min_obs
-    ),
-    "observations are shown in grey (Not tested) above, get no scatter ",
-    "plot below, and are not tested on the USMs of this species ",
-    "either.\n",
-    ":::\n\n"
-  ))
-}
+    min_obs
+  ),
+  ":::",
+  ""
+))
+```
 
+```{r}
+#| echo: false
+#| results: asis
 if (length(scatter_paths) > 0) {
   cat("### Scatter plots\n\n")
   cat(paste0(
@@ -226,54 +179,46 @@ for (i in seq_along(scatter_paths)) {
 ```{r}
 #| echo: false
 #| results: asis
-if (!is.null(failed_usms)) {
-  cat("### Failed USMs\n\n")
-  explanation <- if (!is.null(usm_thresholds)) {
-    sprintf(
-      paste(
-        "A USM (situation) is flagged as **failed** if at least one of",
-        "these holds, for at least one variable on that USM (among the",
-        "variables tested at the species level, i.e. with at least %d",
-        "observations over the whole species):\n\n",
-        "- its rRMSE ratio vs. the reference version exceeds",
-        "**%s%%** (the *critical* threshold), or\n",
-        "- **more than %s variables** on that USM individually exceed a",
-        "lower **%s%%** *degraded* threshold.\n"
-      ),
-      min_obs,
-      usm_thresholds$ratio_threshold, usm_thresholds$max_degraded_vars,
-      usm_thresholds$degraded_threshold
-    )
-  } else {
-    paste(
-      "A USM (situation) is flagged as **failed** if at least one",
-      "variable on that USM crosses a critical rRMSE ratio threshold, or",
-      "if too many variables individually cross a lower degradation",
-      "threshold.\n"
-    )
-  }
-  cat(sprintf("<p>%s</p>\n\n", tag_list(sp_failed_usms, "Critical")))
-  cat(paste0("::: {.callout-note}\n", explanation, ":::\n\n"))
+#| eval: !expr length(scatter_paths) > 0
+button <- '<button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleScatters(%s)">%s</button>' # nolint: line_length_linter
+writeLines(c(
+  "### Scatter plots",
+  "",
+  '<div class="scatter-toggle">',
+  sprintf(button, c("true", "false"), c("Expand all", "Collapse all")),
+  "</div>",
+  ""
+))
+
+# One collapsible block per variable, critical ones open by default. The
+# iframes are lazy-loaded, so a plot is only loaded once its block is open
+# and scrolled into view, instead of all of them when the page opens.
+scatter_status <- rep(NA_character_, length(scatter_vars))
+if (!is.null(sp_comp)) {
+  scatter_status <- sp_comp$status[match(scatter_vars, sp_comp$variable)]
 }
 
-# Variables not tested at the species level aren't tested on its USMs
-# either (see `USMEvaluation`).
-sp_not_tested <- if (!is.null(sp_comp)) {
-  sp_comp$variable[sp_comp$status == "Not tested"]
-}
-if (length(sp_not_tested) > 0) {
-  cat("### Variables not tested\n\n")
-  cat(sprintf(
-    "<p>%s</p>\n\n", tag_list(sp_not_tested, "Not tested")
-  ))
-  cat(paste0(
-    "::: {.callout-note}\n",
-    sprintf(
-      "These variables have fewer than %d observations over the whole ",
-      min_obs
-    ),
-    "species, so they are not tested on the USMs of this species.\n",
-    ":::\n\n"
+for (i in seq_along(scatter_paths)) {
+  var <- scatter_vars[i]
+  status <- scatter_status[i]
+  badge <- if (status %in% names(tag_class)) {
+    tag_list(var, status)
+  } else {
+    sprintf("<strong>%s</strong>", var)
+  }
+  ratio <- if (is.na(scatter_ratio[i])) {
+    ""
+  } else {
+    sprintf('<span class="scatter-ratio">rRMSE ratio: %+.2f%%</span>', scatter_ratio[i])
+  }
+  open <- if (identical(status, "Critical")) " open" else ""
+
+  writeLines(c(
+    sprintf('<details class="scatter" id="%s"%s>', scatter_id(var), open),
+    sprintf("<summary>%s %s</summary>", badge, ratio),
+    sprintf('<iframe src="%s" loading="lazy"></iframe>', scatter_paths[i]),
+    "</details>",
+    ""
   ))
 }
 ```
@@ -409,24 +354,20 @@ if (show_heatmap) heatmap
 #| echo: false
 #| results: asis
 if (show_heatmap) {
-  cat(paste0(
-    "::: {.callout-note}\n",
-    "Ratio used by the USM test: (RMSE - reference RMSE) / RMSE of the ",
-    "species over all its USMs. ",
+  writeLines(c(
+    "::: {.callout-note}",
     sprintf(
-      "Showing %d of the %d failed USM(s), sorted by the number of ",
-      length(usms), n_usms
+      paste(
+        "Ratio used by the USM test: (RMSE - reference RMSE) / RMSE of the",
+        "species over all its USMs. Showing %d of the %d failed USM(s),",
+        "sorted by the number of variables above the %s%% *degraded*",
+        "threshold. Colors are capped at +/-%s%% (the *critical* threshold);",
+        "hover a cell for the exact value. Grey cells have no observation for",
+        "that variable on that USM."
+      ),
+      length(usms), n_usms, degraded_threshold, ratio_threshold
     ),
-    sprintf(
-      "variables above the %s%% *degraded* threshold. Colors are capped ",
-      degraded_threshold
-    ),
-    sprintf(
-      "at +/-%s%% (the *critical* threshold); hover a cell for the exact ",
-      ratio_threshold
-    ),
-    "value. Grey cells have no observation for that variable on that USM.\n",
-    ":::\n\n"
+    ":::"
   ))
 }
 ```

@@ -24,52 +24,33 @@ global_rrmse_comparison <- read_csv_safe(
 if (is.null(global_rrmse_comparison)) {
   cat("::: {.callout-note}\nNo comparison done.\n:::\n\n")
 } else {
-  # `status` already accounts for the minimum number of observations
-  # (variables without enough of them are "Not tested").
-  by_status <- split(
-    global_rrmse_comparison$variable, global_rrmse_comparison$status
-  )
-  cat(sprintf(
-    "<p><strong>%d variable(s) critical</strong> (major rRMSE increase)<br>\n%s</p>\n", # nolint: line_length_linter
-    length(by_status[["Critical"]]),
-    tag_list(by_status[["Critical"]], "Critical")
-  ))
-  cat(sprintf(
-    "<p><strong>%d variable(s) warning</strong> (minor rRMSE increase)<br>\n%s</p>\n", # nolint: line_length_linter
-    length(by_status[["Warning"]]),
-    tag_list(by_status[["Warning"]], "Warning")
-  ))
-  cat(sprintf(
-    "<p><strong>%d variable(s) improved</strong> (rRMSE stable or improved)<br>\n%s</p>\n", # nolint: line_length_linter
-    length(by_status[["Improved"]]),
-    tag_list(by_status[["Improved"]], "Improved")
-  ))
-  if (length(by_status[["Not tested"]]) > 0) {
-    cat(sprintf(
-      "<p><strong>%d variable(s) not tested</strong> (fewer than %d observations)<br>\n%s</p>\n", # nolint: line_length_linter
-      length(by_status[["Not tested"]]), min_obs,
-      tag_list(by_status[["Not tested"]], "Not tested")
-    ))
-    cat(paste0(
-      "::: {.callout-note}\n",
+  n_not_tested <- status_summary(global_rrmse_comparison, min_obs)
+  if (n_not_tested > 0) {
+    writeLines(c(
+      "::: {.callout-note}",
       sprintf(
-        "A variable is only tested if it has at least %d observations ",
+        "A variable is only tested if it has at least %1$d observations (`n_obs >= %1$d`) over all the evaluated USMs.", # nolint: line_length_linter
         min_obs
       ),
-      sprintf("(`n_obs >= %d`) over all the evaluated USMs.\n", min_obs),
-      ":::\n\n"
+      ":::",
+      ""
     ))
   }
 }
+```
 
-comparison_path <- file.path("plots", "global_comparison.png")
-if (file.exists(comparison_path)) {
-  cat("### Comparison plot\n\n")
-  cat(sprintf(
-    '<img src="%s" style="max-width:100%%; border:1px solid #ddd;">\n\n', # nolint: line_length_linter
-    comparison_path
-  ))
-}
+```{r}
+#| echo: false
+#| results: asis
+#| eval: !expr file.exists(file.path("plots", "global_comparison.png"))
+writeLines(c(
+  "### Comparison plot",
+  "",
+  '![](plots/global_comparison.png){style="border:1px solid #ddd;"}',
+  "",
+  ""
+))
+
 ```
 
 ## Global statistics

@@ -184,10 +184,11 @@ get_species_list <- function(output_dir) {
 # relative `../plots/<species>/` path instead of a bare filename. Templates
 # are copied verbatim - the `species`/`output_dir` params they declare are
 # filled in at render time via `execute_params`, not by rewriting the file.
-# The pages also share `_common.R` (R helpers, sourced by each page) and
-# `styles.css` (declared in `_quarto.yml`), copied at the project root.
+# The pages also share `_common.R` (R helpers, sourced by each page),
+# `styles.css` (declared in `_quarto.yml`) and `scatter.js` (loaded by
+# species.qmd), copied at the project root.
 # Returns every path written for the caller to clean up after rendering,
-# except `styles.css`, which the rendered pages link to.
+# except `styles.css` and `scatter.js`, which the rendered pages link to.
 write_project_files <- function(output_dir, species_list) {
   quarto_dir <- system.file("quarto", package = "SticsREval")
 
@@ -206,6 +207,10 @@ write_project_files <- function(output_dir, species_list) {
   )
   file.copy(
     file.path(quarto_dir, "styles.css"), file.path(output_dir, "styles.css"),
+    overwrite = TRUE
+  )
+  file.copy(
+    file.path(quarto_dir, "scatter.js"), file.path(output_dir, "scatter.js"),
     overwrite = TRUE
   )
   written <- c(yml_path, index_path, global_path, common_path)
