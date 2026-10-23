@@ -60,7 +60,7 @@ evaluate(
 
 - output_dir:
 
-  directory where CSV exports and plots are written. If NULL (default),
+  directory where CSV and RDS exports are written. If NULL (default),
   results are not exported
 
 - report:

@@ -10,22 +10,19 @@ rRMSE comparison plot and global stats (`global_stats.csv`) from
 `output_dir/csv`, and one page per species
 (`output_dir/species/<species>.html`) with that species' statistics,
 degraded variables, deteriorated/failed USMs, rRMSE comparison plot and
-scatter plots - the plots themselves stay under
-`output_dir/plots/<species>/` (where
-[`evaluate`](https://sticsrpacks.github.io/SticsREval/reference/evaluate.md)
-wrote them), the species page just links to them. It's a single Quarto
+the scatter plots of its degraded variables (from
+`output_dir/data/<species>_degraded_vars.rds`). It's a single Quarto
 website project (a generated `_quarto.yml`), so every page shares the
 same navigation sidebar - but each species page is still rendered and
 loaded separately, so a browser only has to load one species' plots at a
-time, instead of every species' plots at once on a single page. Nothing
-is recomputed: only the files
+time, instead of every species' plots at once on a single page. No
+statistic is recomputed: only the files
 [`evaluate()`](https://sticsrpacks.github.io/SticsREval/reference/evaluate.md)
 already wrote are read.
 
-None of the pages are standalone files: they link to the HTML plots via
-relative paths (and Quarto writes its own JS/CSS assets to a shared
-`site_libs/` subfolder), so keep `output_dir` intact when sharing or
-moving results.
+None of the pages are standalone files: Quarto writes its own JS/CSS
+assets to a shared `site_libs/` subfolder, linked via relative paths, so
+keep the rendered site intact when sharing or moving results.
 
 Requires the Quarto CLI (<https://quarto.org>) to be installed, along
 with the quarto and DT R packages.

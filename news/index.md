@@ -19,6 +19,12 @@
   [`render_report()`](https://sticsrpacks.github.io/SticsREval/reference/render_report.md)
   has been refactored and cleaned up
   ([\#68](https://github.com/SticsRPacks/SticsREval/issues/68)).
+- [`evaluate()`](https://sticsrpacks.github.io/SticsREval/reference/evaluate.md)
+  no longer writes one HTML scatter plot per degraded variable under
+  `plots/<species>/`. It now saves, for each species with degraded
+  variables, their observations and simulations to
+  `data/<species>_degraded_vars.rds`, and the species pages of the
+  report draw the scatter plots from it.
 
 ## SticsREval 0.1.1
 

@@ -164,14 +164,17 @@ Print a summary of the species evaluation results.
 
 ### `SpeciesEvaluation$export()`
 
-Export the species evaluation results to CSV files and plots. This
+Export the species evaluation results to CSV files and RDS files. This
 method exports the statistics, rRMSE comparisons (including the
 species-level rRMSE ratio per variable, in
 `species_rrmse_comparison .csv`), and a per-species degradation status
 summary (`species_summary .csv`) to CSV files in the "csv" subdirectory.
-It also generates interactive per-variable scatter plots for each
-species, saved in their own subdirectory under "plots" (one per
-species). The rRMSE comparison can be plotted with
+For each species with degraded variables, it also saves their
+observations and their evaluated and reference simulations over the
+whole simulated period, for the USMs with observations of these
+variables (a list of `sim`, `obs`, `ref_sim` and the degraded `vars`),
+to `<species>_degraded_vars.rds` in the "data" subdirectory. The rRMSE
+comparison can be plotted with
 [`plot_rrmse_comparison()`](https://sticsrpacks.github.io/SticsREval/reference/plot_rrmse_comparison.md).
 
 #### Usage
