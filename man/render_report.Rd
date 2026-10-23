@@ -33,20 +33,18 @@ plot and global stats (\code{global_stats.csv}) from
 \code{output_dir/csv}, and one page per
 species (\code{output_dir/species/<species>.html}) with that species'
 statistics, degraded variables, deteriorated/failed USMs, rRMSE
-comparison plot and scatter plots - the plots themselves stay under
-\code{output_dir/plots/<species>/} (where \code{\link{evaluate}} wrote
-them), the species page just links to them. It's a single Quarto
+comparison plot and the scatter plots of its degraded variables (from
+\code{output_dir/data/<species>_degraded_vars.rds}). It's a single Quarto
 website project (a generated \code{_quarto.yml}), so every page shares
 the same navigation sidebar - but each species page is still rendered
 and loaded separately, so a browser only has to load one species' plots
 at a time, instead of every species' plots at once on a single page.
-Nothing is recomputed: only the files \code{evaluate()} already wrote are
-read.
+No statistic is recomputed: only the files \code{evaluate()} already wrote
+are read.
 
-None of the pages are standalone files: they link to the HTML plots
-via relative paths (and Quarto writes its own JS/CSS assets to a shared
-\code{site_libs/} subfolder), so keep \code{output_dir} intact when
-sharing or moving results.
+None of the pages are standalone files: Quarto writes its own JS/CSS
+assets to a shared \code{site_libs/} subfolder, linked via relative paths,
+so keep the rendered site intact when sharing or moving results.
 
 Requires the Quarto CLI (\url{https://quarto.org}) to be installed, along
 with the \pkg{quarto} and \pkg{DT} R packages.

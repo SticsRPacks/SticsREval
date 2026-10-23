@@ -355,31 +355,26 @@ SpeciesEvaluation <- R6::R6Class("SpeciesEvaluation", # nolint: object_name_lint
     },
 
     #' @description
-    #' Export the species evaluation results to CSV files and plots.
+    #' Export the species evaluation results to CSV files and RDS files.
     #' This method exports the statistics, rRMSE comparisons (including the
     #' species-level rRMSE ratio per variable, in `species_rrmse_comparison
     #' .csv`), and a per-species degradation status summary (`species_summary
-    #' .csv`) to CSV files in the "csv" subdirectory. It also generates
-    #' interactive per-variable scatter plots for each species, saved in
-    #' their own subdirectory under "plots" (one per species). The rRMSE
-    #' comparison can be plotted with [plot_rrmse_comparison()].
+    #' .csv`) to CSV files in the "csv" subdirectory. For each species with
+    #' degraded variables, it also saves their observations and the matching
+    #' evaluated and reference simulations (a list of `sim`, `obs`, `ref_sim`
+    #' and the degraded `vars`) to `<species>_degraded_vars.rds` in the
+    #' "data" subdirectory. The rRMSE comparison can be plotted with
+    #' [plot_rrmse_comparison()].
     export = function() {
       private$logger$info("Exporting species evaluation data")
-      plots_dir <- file.path(private$output_dir, "plots")
-      dir.create(
-        plots_dir,
-        recursive = TRUE,
-        showWarnings = FALSE
-      )
+      data_dir <- file.path(private$output_dir, "data")
+      dir.create(data_dir, recursive = TRUE, showWarnings = FALSE)
       private$backend$run(
         length(names(private$rrmse_comparisons)),
         function(i) {
           spec <- names(private$rrmse_comparisons)[i]
           comp <- private$rrmse_comparisons[[spec]]
           if (is.null(comp) || comp$is_empty) return()
-
-          spec_plots_dir <- file.path(plots_dir, spec)
-          dir.create(spec_plots_dir, recursive = TRUE, showWarnings = FALSE)
 
           deteriorated <- c(
             comp$critical_vars,
@@ -391,12 +386,16 @@ SpeciesEvaluation <- R6::R6Class("SpeciesEvaluation", # nolint: object_name_lint
               private$workspace, spec, usms = private$usms,
               var2exclude = private$var2exclude
             )
-            gen_scatter_plot(
-              spec_plots_dir,
+            degraded_data <- select_observed(
               eval_data$sim[spec_usms$situation],
               Filter(Negate(is.null), eval_data$obs[spec_usms$situation]),
               eval_data$ref_sim[spec_usms$situation],
               deteriorated
+            )
+            saveRDS(
+              degraded_data,
+              file.path(data_dir, paste0(spec, "_degraded_vars.rds")),
+              compress = "xz"
             )
           }
 

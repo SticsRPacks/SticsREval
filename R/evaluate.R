@@ -23,7 +23,7 @@
 #'  simulation results for the reference version. If NULL (default),
 #'  evaluation runs against observations only, without regression
 #'  comparison against a reference
-#' @param output_dir directory where CSV exports and plots are written. If
+#' @param output_dir directory where CSV and RDS exports are written. If
 #'  NULL (default), results are not exported
 #' @param report Boolean. If \code{TRUE} and \code{output_dir} is set,
 #'  renders an HTML dashboard (see \code{\link{render_report}}) summarizing

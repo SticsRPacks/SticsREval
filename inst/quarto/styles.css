@@ -26,5 +26,4 @@ a.tag-link .tag:hover { outline: 1px solid currentColor; }
 details.scatter { border-bottom: 1px solid #dee2e6; padding: 0.3em 0; }
 details.scatter > summary { cursor: pointer; }
 details.scatter > summary .scatter-ratio { color: #6c757d; font-size: 0.9em; }
-details.scatter > iframe { width: 100%; height: 450px; border: none; }
 .scatter-toggle { margin-bottom: 0.5em; }

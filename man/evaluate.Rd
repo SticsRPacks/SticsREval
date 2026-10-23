@@ -41,7 +41,7 @@ simulation results for the reference version. If NULL (default),
 evaluation runs against observations only, without regression
 comparison against a reference}
 
-\item{output_dir}{directory where CSV exports and plots are written. If
+\item{output_dir}{directory where CSV and RDS exports are written. If
 NULL (default), results are not exported}
 
 \item{report}{Boolean. If \code{TRUE} and \code{output_dir} is set,
