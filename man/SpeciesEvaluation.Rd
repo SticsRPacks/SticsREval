@@ -153,8 +153,8 @@ degraded variables, it also saves their observations and their
 evaluated and reference simulations over the whole simulated period,
 for the USMs with observations of these variables (a list of \code{sim},
 \code{obs}, \code{ref_sim} and the degraded \code{vars}), to
-\verb{<species>_degraded_vars.rds} in the "data" subdirectory. The rRMSE comparison can be plotted with
-\code{\link[=plot_rrmse_comparison]{plot_rrmse_comparison()}}.
+\verb{<species>_degraded_vars.rds} in the "data" subdirectory. The rRMSE
+comparison can be plotted with \code{\link[=plot_rrmse_comparison]{plot_rrmse_comparison()}}.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{SpeciesEvaluation$export()}

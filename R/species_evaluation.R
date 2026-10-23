@@ -364,8 +364,8 @@ SpeciesEvaluation <- R6::R6Class("SpeciesEvaluation", # nolint: object_name_lint
     #' evaluated and reference simulations over the whole simulated period,
     #' for the USMs with observations of these variables (a list of `sim`,
     #' `obs`, `ref_sim` and the degraded `vars`), to
-    #' `<species>_degraded_vars.rds` in the "data" subdirectory. The rRMSE comparison can be plotted with
-    #' [plot_rrmse_comparison()].
+    #' `<species>_degraded_vars.rds` in the "data" subdirectory. The rRMSE
+    #' comparison can be plotted with [plot_rrmse_comparison()].
     export = function() {
       private$logger$info("Exporting species evaluation data")
       data_dir <- file.path(private$output_dir, "data")
