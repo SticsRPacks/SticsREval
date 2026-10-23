@@ -139,7 +139,7 @@ evaluate(
 )
 ```
 
-Results (CSV files and interactive scatter plots) are written to
+Results (CSV files, and RDS files with the data of the degraded variables) are written to
 `output_dir`, and a summary is printed to the console. Without
 `ref_sim_rds`, the candidate version is evaluated against observations only.
 Set `stop_on_failure = TRUE` to make `evaluate()` throw an error when an
@@ -168,7 +168,7 @@ render_report("outputs/")
 ```
 
 It can also be triggered directly with `evaluate(..., report = TRUE)`. The
-site links to the plots through relative paths, so keep `output_dir` intact
+site links to its shared assets through relative paths, so keep it intact
 when moving or sharing it.
 
 To use the rRMSE comparison plot outside the report, build it from the

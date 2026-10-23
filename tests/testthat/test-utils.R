@@ -306,3 +306,67 @@ test_that("keep_common_situations leaves data without reference unchanged", {
   expect_named(data$sim, c("wheat_1", "wheat_2", "maize_1", "maize_2"))
   expect_named(data$obs, c("wheat_1", "wheat_2", "maize_1", "maize_2"))
 })
+
+# ---- select_observed ----
+
+test_that("select_observed keeps only the observed data of the variables", {
+  d <- make_eval_data()
+  d$sim$masec <- 1
+  d$ref_sim$masec <- 1
+  d$obs$masec <- 1
+  # Only 3 observed dates of lai on wheat_1, none on wheat_2.
+  d$obs$lai[d$obs$situation == "wheat_1"][-(1:3)] <- NA
+  d$obs$lai[d$obs$situation == "wheat_2"] <- NA
+  ws <- mock_data_workspace(d$sim, d$obs, d$ref_sim)
+  data <- read_split_eval_data(ws, "wheat")
+
+  trimmed <- select_observed(data$sim, data$obs, data$ref_sim, "lai")
+
+  expect_named(trimmed$obs, "wheat_1")
+  expect_named(trimmed$sim, "wheat_1")
+  expect_named(trimmed$ref_sim, "wheat_1")
+  expect_named(trimmed$sim$wheat_1, c("Date", "lai"))
+  expect_identical(nrow(trimmed$obs$wheat_1), 3L)
+  expect_identical(trimmed$sim$wheat_1$Date, data$sim$wheat_1$Date)
+  expect_identical(trimmed$ref_sim$wheat_1$Date, data$ref_sim$wheat_1$Date)
+  expect_s3_class(trimmed$sim, "cropr_simulation")
+  expect_s3_class(trimmed$ref_sim, "cropr_simulation")
+  expect_identical(trimmed$vars, "lai")
+})
+
+test_that("select_observed handles missing reference simulations", {
+  d <- make_eval_data()
+  ws <- mock_data_workspace(d$sim, d$obs)
+  data <- read_split_eval_data(ws, "maize")
+
+  trimmed <- select_observed(data$sim, data$obs, data$ref_sim, "lai")
+
+  expect_null(trimmed$ref_sim)
+  expect_named(trimmed$sim, c("maize_1", "maize_2"))
+})
+
+test_that("select_observed keeps the intercrop columns", {
+  d <- make_eval_data()
+  d$sim$Plant <- "plant_1"
+  d$sim$Dominance <- "Principal"
+  d$obs$Plant <- "plant_1"
+  ws <- mock_data_workspace(d$sim, d$obs)
+  data <- read_split_eval_data(ws, "maize")
+
+  trimmed <- select_observed(data$sim, data$obs, data$ref_sim, "lai")
+
+  expect_named(trimmed$sim$maize_1, c("Date", "Plant", "Dominance", "lai"))
+  expect_named(trimmed$obs$maize_1, c("Date", "Plant", "lai"))
+})
+
+test_that("select_observed drops everything without observations", {
+  d <- make_eval_data()
+  d$obs$lai <- NA
+  ws <- mock_data_workspace(d$sim, d$obs)
+  data <- read_split_eval_data(ws, "maize")
+
+  trimmed <- select_observed(data$sim, data$obs, data$ref_sim, "lai")
+
+  expect_length(trimmed$obs, 0)
+  expect_length(trimmed$sim, 0)
+})

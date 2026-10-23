@@ -11,15 +11,6 @@ params:
 
 sp <- params$species
 csv_dir <- file.path(params$output_dir, "csv")
-# This page is rendered to `output_dir/species/<species>.html`, while its
-# HTML plots were written by `evaluate()` to
-# `output_dir/plots/<species>/` - a sibling of `species/`, hence `..`.
-# `plots_dir` is only used as the link written into the page: files are
-# looked up under `plots_fs_dir` (absolute), since the page may be executed
-# from a throwaway project (parallel rendering) where `..` isn't
-# `output_dir`.
-plots_dir <- file.path("..", "plots", sp)
-plots_fs_dir <- file.path(params$output_dir, "plots", sp)
 
 # This page is rendered from `species/`, the shared helpers sit one level up.
 source(file.path("..", "_common.R")) # nolint: undesirable_function_linter.
@@ -45,16 +36,15 @@ sp_deteriorated <- if (!is.null(deteriorated_usm)) {
   deteriorated_usm[deteriorated_usm$species == sp, , drop = FALSE]
 }
 
-# Scatter plot files for this species live under `plots_dir`. Ordered from
-# most to least degraded using `sp_comp`'s rRMSE ratio (falls back to
-# filesystem order - alphabetical by variable - if that data isn't
-# available).
-scatter_files <- basename(
-  Sys.glob(file.path(plots_fs_dir, "*_scatter_plot.html"))
+# Data of the scatter plots of this species (one per degraded variable),
+# saved by `evaluate()`. Variables are ordered from most to least degraded
+# using `sp_comp`'s rRMSE ratio (falls back to the saved order if that data
+# isn't available).
+scatter_rds <- file.path(
+  params$output_dir, "data", paste0(sp, "_degraded_vars.rds")
 )
-scatter_paths <- file.path(plots_dir, scatter_files)
-scatter_vars <- tools::file_path_sans_ext(scatter_files)
-scatter_vars <- sub("_scatter_plot$", "", scatter_vars)
+scatter_data <- if (file.exists(scatter_rds)) readRDS(scatter_rds)
+scatter_vars <- as.character(scatter_data$vars)
 
 ratio <- rep(NA_real_, length(scatter_vars))
 has_ratio <- !is.null(sp_comp) && "rrmse_ratio" %in% names(sp_comp)
@@ -62,7 +52,6 @@ if (has_ratio) {
   ratio <- sp_comp$rrmse_ratio[match(scatter_vars, sp_comp$variable)]
 }
 ord <- order(-ifelse(is.na(ratio), -Inf, ratio))
-scatter_paths <- scatter_paths[ord]
 scatter_vars <- scatter_vars[ord]
 scatter_ratio <- ratio[ord]
 
@@ -118,7 +107,7 @@ below, and are not tested on the USMs of this species either.
 ```{r}
 #| echo: false
 #| results: asis
-#| eval: !expr length(scatter_paths) > 0
+#| eval: !expr length(scatter_vars) > 0
 button <- '<button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleScatters(%s)">%s</button>' # nolint: line_length_linter
 writeLines(c(
   "### Scatter plots",
@@ -128,22 +117,38 @@ writeLines(c(
   "</div>",
   ""
 ))
+```
 
-# One collapsible block per variable, critical ones open by default. The
-# iframes are lazy-loaded, so a plot is only loaded once its block is open
-# and scrolled into view, instead of all of them when the page opens.
+```{r}
+#| label: scatter-plots
+#| echo: false
+#| warning: false
+#| eval: !expr length(scatter_vars) > 0
+# `scatter_data` holds CroPlotR simulations: its namespace must be loaded for
+# `plot()` to dispatch to CroPlotR's method.
+invisible(loadNamespace("CroPlotR"))
+plots <- plot(
+  "New version" = scatter_data$sim,
+  "Ref version" = scatter_data$ref_sim,
+  obs = scatter_data$obs,
+  type = "scatter",
+  select_scat = "sim",
+  var = scatter_vars
+)
+
+# One collapsible block per variable, critical ones open by default.
 scatter_status <- rep(NA_character_, length(scatter_vars))
 if (!is.null(sp_comp)) {
   scatter_status <- sp_comp$status[match(scatter_vars, sp_comp$variable)]
 }
 
-for (i in seq_along(scatter_paths)) {
-  var <- scatter_vars[i]
+scatter_blocks <- lapply(seq_along(scatter_vars), function(i) {
+  variable <- scatter_vars[i]
   status <- scatter_status[i]
   badge <- if (status %in% names(tag_class)) {
-    tag_list(var, status)
+    tag_list(variable, status)
   } else {
-    sprintf("<strong>%s</strong>", var)
+    sprintf("<strong>%s</strong>", variable)
   }
   ratio <- if (is.na(scatter_ratio[i])) {
     ""
@@ -153,16 +158,20 @@ for (i in seq_along(scatter_paths)) {
       scatter_ratio[i]
     )
   }
-  open <- if (identical(status, "Critical")) " open" else ""
+  widget <- plotly::ggplotly(
+    CroPlotR::extract_plot(plots, var = variable)[[1]],
+    height = 450
+  )
 
-  writeLines(c(
-    sprintf('<details class="scatter" id="%s"%s>', scatter_id(var), open),
-    sprintf("<summary>%s %s</summary>", badge, ratio),
-    sprintf('<iframe src="%s" loading="lazy"></iframe>', scatter_paths[i]),
-    "</details>",
-    ""
-  ))
-}
+  htmltools::tags$details(
+    class = "scatter",
+    id = scatter_id(variable),
+    open = if (identical(status, "Critical")) NA,
+    htmltools::tags$summary(htmltools::HTML(paste(badge, ratio))),
+    widget
+  )
+})
+htmltools::tagList(scatter_blocks)
 ```
 
 {{< include ../_usm.qmd >}}

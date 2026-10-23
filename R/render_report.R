@@ -10,20 +10,18 @@
 #' \code{output_dir/csv}, and one page per
 #' species (\code{output_dir/species/<species>.html}) with that species'
 #' statistics, degraded variables, deteriorated/failed USMs, rRMSE
-#' comparison plot and scatter plots - the plots themselves stay under
-#' \code{output_dir/plots/<species>/} (where \code{\link{evaluate}} wrote
-#' them), the species page just links to them. It's a single Quarto
+#' comparison plot and the scatter plots of its degraded variables (from
+#' \code{output_dir/data/<species>_degraded_vars.rds}). It's a single Quarto
 #' website project (a generated \code{_quarto.yml}), so every page shares
 #' the same navigation sidebar - but each species page is still rendered
 #' and loaded separately, so a browser only has to load one species' plots
 #' at a time, instead of every species' plots at once on a single page.
-#' Nothing is recomputed: only the files \code{evaluate()} already wrote are
-#' read.
+#' No statistic is recomputed: only the files \code{evaluate()} already wrote
+#' are read.
 #'
-#' None of the pages are standalone files: they link to the HTML plots
-#' via relative paths (and Quarto writes its own JS/CSS assets to a shared
-#' \code{site_libs/} subfolder), so keep \code{output_dir} intact when
-#' sharing or moving results.
+#' None of the pages are standalone files: Quarto writes its own JS/CSS
+#' assets to a shared \code{site_libs/} subfolder, linked via relative paths,
+#' so keep the rendered site intact when sharing or moving results.
 #'
 #' Requires the Quarto CLI (\url{https://quarto.org}) to be installed, along
 #' with the \pkg{quarto} and \pkg{DT} R packages.
@@ -179,10 +177,7 @@ get_species_list <- function(output_dir) {
 # there pointing at whichever page it picks first), a copy of `global.qmd`
 # (degraded variables and global stats, kept off the homepage), and one
 # `species/<species>.qmd` per species (so it renders to
-# `species/<species>.html`) - kept separate from `plots/<species>/` (where
-# the species' own HTML plots were written by `evaluate()`) so report
-# pages and raw plot assets don't mix; species.qmd links to its plots via a
-# relative `../plots/<species>/` path instead of a bare filename. Templates
+# `species/<species>.html`). Templates
 # are copied verbatim - the `species`/`output_dir` params they declare are
 # filled in at render time via `execute_params`, not by rewriting the file.
 # The pages also share `_common.R` (R helpers, sourced by each page),

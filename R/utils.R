@@ -205,34 +205,29 @@ read_csv <- function(filepath, delimiter = ",") {
   csv_data
 }
 
-#' Generate one independent scatter plot HTML file per variable
-#'
-#' @description
-#' Unlike a single combined page, each variable in \code{vars} gets its own
-#' standalone HTML file, named \code{<var>_scatter_plot.html} in
-#' \code{output_dir}, so it can be viewed, shared or embedded independently
-#' of the others (e.g. one per tab/card in a dashboard).
-#'
-#' @keywords internal
-gen_scatter_plot <- function(output_dir, sim, obs, ref_sim, vars) {
-  plots <- plot(
-    "New version" = sim,
-    "Ref version" = ref_sim,
-    obs = obs,
-    type = "scatter",
-    select_scat = "sim",
-    var = vars
-  )
-  for (var in vars) {
-    widget <- suppressWarnings(
-      plotly::ggplotly(CroPlotR::extract_plot(plots, var = var)[[1]])
-    )
-    htmltools::save_html(
-      htmltools::tagList(widget),
-      file = file.path(output_dir, paste0(var, "_scatter_plot.html"))
-    )
+# Keeps only the observed data of `vars`, to keep the saved data small: the
+# situations with observations of `vars`, and the `Date` (plus the intercrop
+# `Plant`/`Dominance`) and `vars` columns. The simulations keep all their
+# dates, so they can still be plotted over time.
+select_observed <- function(sim, obs, ref_sim, vars) {
+  keep_cols <- function(df) {
+    cols <- intersect(c("Date", "Plant", "Dominance", vars), names(df))
+    df[, cols, drop = FALSE]
   }
-  invisible(NULL)
+  obs[] <- lapply(obs, function(df) {
+    df <- keep_cols(df)
+    obs_vars <- intersect(vars, names(df))
+    df[rowSums(!is.na(df[, obs_vars, drop = FALSE])) > 0, , drop = FALSE]
+  })
+  obs <- obs[vapply(obs, nrow, integer(1)) > 0]
+
+  trim_sim <- function(sim) {
+    if (is.null(sim)) return(NULL)
+    sim <- sim[intersect(names(sim), names(obs))]
+    sim[] <- lapply(sim, keep_cols)
+    sim
+  }
+  list(sim = trim_sim(sim), obs = obs, ref_sim = trim_sim(ref_sim), vars = vars)
 }
 
 prepare_output_dir <- function(output_dir) {
