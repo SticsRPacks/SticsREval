@@ -178,7 +178,6 @@ flagged;</li>
 <strong>per USM</strong>: USMs where one or more variables are
 locally degraded compared to the reference are flagged.</li>
 </ul>
-<p>Variables with fewer than 10 observations are not tested.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/evaluate.html">evaluate</a></span><span class="op">(</span></span>
 <span>  usms_workspace <span class="op">=</span> <span class="st">"workspace/"</span>,</span>
@@ -194,13 +193,68 @@ printed to the console. Without <code>ref_sim_rds</code>, the candidate
 version is evaluated against observations only. Set
 <code>stop_on_failure = TRUE</code> to make <code><a href="../reference/evaluate.html">evaluate()</a></code>
 throw an error when an evaluation fails, e.g. in a CI pipeline.</p>
+<div class="section level4">
+<h4 id="evaluation-criteria">Evaluation criteria<a class="anchor" aria-label="anchor" href="#evaluation-criteria"></a>
+</h4>
+<p>In the global and per-species evaluations, each variable gets a
+status from the ratio (in %) of the rRMSE increase of the candidate
+version over the reference version:</p>
+<table class="table">
+<thead><tr class="header">
+<th>Status</th>
+<th>Condition</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td>Critical</td>
+<td>ratio ≥ <code>percentage</code> %</td>
+</tr>
+<tr class="even">
+<td>Warning</td>
+<td>0 % &lt; ratio &lt; <code>percentage</code> %</td>
+</tr>
+<tr class="odd">
+<td>Improved</td>
+<td>ratio ≤ 0 %</td>
+</tr>
+<tr class="even">
+<td>Not tested</td>
+<td>fewer than 10 observations</td>
+</tr>
+</tbody>
+</table>
+<p>An evaluation fails if at least one variable is critical.</p>
+<p>In the per-USM evaluation, the following ratio is computed for each
+variable and USM:</p>
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mtext mathvariant="normal">ratio</mtext><mo>=</mo><mn>100</mn><mo>×</mo><mfrac><mrow><mi>R</mi><mi>M</mi><mi>S</mi><msub><mi>E</mi><mrow><mi>e</mi><mi>v</mi><mi>a</mi><mi>l</mi></mrow></msub><mo>−</mo><mi>R</mi><mi>M</mi><mi>S</mi><msub><mi>E</mi><mrow><mi>r</mi><mi>e</mi><mi>f</mi></mrow></msub></mrow><mrow><mi>R</mi><mi>M</mi><mi>S</mi><msub><mi>E</mi><mrow><mi>s</mi><mi>p</mi><mi>e</mi><mi>c</mi><mi>i</mi><mi>e</mi><mi>s</mi></mrow></msub></mrow></mfrac></mrow><annotation encoding="application/x-tex">
+\text{ratio} = 100 \times \frac{RMSE_{eval} - RMSE_{ref}}{RMSE_{species}}
+</annotation></semantics></math></p>
+<p>where
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>R</mi><mi>M</mi><mi>S</mi><msub><mi>E</mi><mrow><mi>e</mi><mi>v</mi><mi>a</mi><mi>l</mi></mrow></msub></mrow><annotation encoding="application/x-tex">RMSE_{eval}</annotation></semantics></math>
+and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>R</mi><mi>M</mi><mi>S</mi><msub><mi>E</mi><mrow><mi>r</mi><mi>e</mi><mi>f</mi></mrow></msub></mrow><annotation encoding="application/x-tex">RMSE_{ref}</annotation></semantics></math>
+are the RMSE of the candidate and reference versions on this USM, and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>R</mi><mi>M</mi><mi>S</mi><msub><mi>E</mi><mrow><mi>s</mi><mi>p</mi><mi>e</mi><mi>c</mi><mi>i</mi><mi>e</mi><mi>s</mi></mrow></msub></mrow><annotation encoding="application/x-tex">RMSE_{species}</annotation></semantics></math>
+is the RMSE of the candidate version over the whole species. A USM fails
+if one variable has a ratio above <code>ratio_threshold</code> (default
+50 %), or if more than <code>max_degraded_vars</code> (default 3)
+variables have a ratio above <code>degraded_threshold</code> (default 20
+%).</p>
+<p>The per-USM evaluation has no minimum number of observations: a
+variable is tested on a USM even with a single observation there. The
+only restriction comes from the species level: a variable that is not
+tested for a species (fewer than 10 observations over the whole species)
+is not tested on any USM of that species either.</p>
+</div>
 </div>
 <div class="section level3">
 <h3 id="balance-closure-test">Balance closure test<a class="anchor" aria-label="anchor" href="#balance-closure-test"></a>
 </h3>
-<p><code><a href="../reference/balance_closure_test.html">balance_closure_test()</a></code> checks that the initial and final
-water and nitrogen balances of each USM are equal, and stops with an
-error listing the USMs where they are not:</p>
+<p><code><a href="../reference/balance_closure_test.html">balance_closure_test()</a></code> checks, for each USM, that the
+initial and final values of the water, plant nitrogen, soil mineral
+nitrogen, soil organic nitrogen and soil organic carbon balances differ
+by at most 1. It stops with an error listing the USMs where they do
+not:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/balance_closure_test.html">balance_closure_test</a></span><span class="op">(</span></span>
 <span>  sim_rds    <span class="op">=</span> <span class="st">"outputs/simulations.rds"</span>,</span>

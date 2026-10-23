@@ -128,8 +128,6 @@ runs three evaluations of the candidate version:
 - **per USM**: USMs where one or more variables are locally degraded
   compared to the reference are flagged.
 
-Variables with fewer than 10 observations are not tested.
-
 ``` r
 
 evaluate(
@@ -149,12 +147,48 @@ against observations only. Set `stop_on_failure = TRUE` to make
 [`evaluate()`](https://sticsrpacks.github.io/SticsREval/reference/evaluate.md)
 throw an error when an evaluation fails, e.g. in a CI pipeline.
 
+#### Evaluation criteria
+
+In the global and per-species evaluations, each variable gets a status
+from the ratio (in %) of the rRMSE increase of the candidate version
+over the reference version:
+
+| Status     | Condition                      |
+|------------|--------------------------------|
+| Critical   | ratio ≥ `percentage` %         |
+| Warning    | 0 % \< ratio \< `percentage` % |
+| Improved   | ratio ≤ 0 %                    |
+| Not tested | fewer than 10 observations     |
+
+An evaluation fails if at least one variable is critical.
+
+In the per-USM evaluation, the following ratio is computed for each
+variable and USM:
+
+``` math
+\text{ratio} = 100 \times \frac{RMSE_{eval} - RMSE_{ref}}{RMSE_{species}}
+```
+
+where $`RMSE_{eval}`$ and $`RMSE_{ref}`$ are the RMSE of the candidate
+and reference versions on this USM, and $`RMSE_{species}`$ is the RMSE
+of the candidate version over the whole species. A USM fails if one
+variable has a ratio above `ratio_threshold` (default 50 %), or if more
+than `max_degraded_vars` (default 3) variables have a ratio above
+`degraded_threshold` (default 20 %).
+
+The per-USM evaluation has no minimum number of observations: a variable
+is tested on a USM even with a single observation there. The only
+restriction comes from the species level: a variable that is not tested
+for a species (fewer than 10 observations over the whole species) is not
+tested on any USM of that species either.
+
 ### Balance closure test
 
 [`balance_closure_test()`](https://sticsrpacks.github.io/SticsREval/reference/balance_closure_test.md)
-checks that the initial and final water and nitrogen balances of each
-USM are equal, and stops with an error listing the USMs where they are
-not:
+checks, for each USM, that the initial and final values of the water,
+plant nitrogen, soil mineral nitrogen, soil organic nitrogen and soil
+organic carbon balances differ by at most 1. It stops with an error
+listing the USMs where they do not:
 
 ``` r
 
