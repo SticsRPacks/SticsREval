@@ -360,10 +360,11 @@ SpeciesEvaluation <- R6::R6Class("SpeciesEvaluation", # nolint: object_name_lint
     #' species-level rRMSE ratio per variable, in `species_rrmse_comparison
     #' .csv`), and a per-species degradation status summary (`species_summary
     #' .csv`) to CSV files in the "csv" subdirectory. For each species with
-    #' degraded variables, it also saves their observations and the matching
-    #' evaluated and reference simulations (a list of `sim`, `obs`, `ref_sim`
-    #' and the degraded `vars`) to `<species>_degraded_vars.rds` in the
-    #' "data" subdirectory. The rRMSE comparison can be plotted with
+    #' degraded variables, it also saves their observations and their
+    #' evaluated and reference simulations over the whole simulated period,
+    #' for the USMs with observations of these variables (a list of `sim`,
+    #' `obs`, `ref_sim` and the degraded `vars`), to
+    #' `<species>_degraded_vars.rds` in the "data" subdirectory. The rRMSE comparison can be plotted with
     #' [plot_rrmse_comparison()].
     export = function() {
       private$logger$info("Exporting species evaluation data")

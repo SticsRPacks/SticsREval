@@ -149,10 +149,11 @@ workspace.
   Export the species evaluation results to CSV files and RDS files.
 This method exports the statistics, rRMSE comparisons (including the
 species-level rRMSE ratio per variable, in \verb{species_rrmse_comparison .csv}), and a per-species degradation status summary (\verb{species_summary .csv}) to CSV files in the "csv" subdirectory. For each species with
-degraded variables, it also saves their observations and the matching
-evaluated and reference simulations (a list of \code{sim}, \code{obs}, \code{ref_sim}
-and the degraded \code{vars}) to \verb{<species>_degraded_vars.rds} in the
-"data" subdirectory. The rRMSE comparison can be plotted with
+degraded variables, it also saves their observations and their
+evaluated and reference simulations over the whole simulated period,
+for the USMs with observations of these variables (a list of \code{sim},
+\code{obs}, \code{ref_sim} and the degraded \code{vars}), to
+\verb{<species>_degraded_vars.rds} in the "data" subdirectory. The rRMSE comparison can be plotted with
 \code{\link[=plot_rrmse_comparison]{plot_rrmse_comparison()}}.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}

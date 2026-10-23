@@ -259,7 +259,7 @@ Computes statistics (RMSE, nRMSE, bias, R², etc.) across **all species and USMs
 Computes statistics per species (RMSE, nRMSE, bias, R², etc.) against field observations and, when `ref_sim_rds` is provided, against the reference version. Flags variables and USMs where performance has deteriorated beyond the `percentage` threshold, for the species/USMs selected via `species` and `usms`. Considered successful if no species shows a critical deterioration. Writes, to `output_dir`:
 - `species_stats.csv` — statistical metrics per species
 - `species_rrmse_comparison.csv` — rRMSE comparison per species and variable, with each variable's status (used for the rRMSE comparison plot, see below)
-- `data/<species>_degraded_vars.rds` — observations of the deteriorated variables and the matching evaluated and reference simulations (used by the [dashboard](#dashboard) for its interactive scatter plots)
+- `data/<species>_degraded_vars.rds` — observations of the deteriorated variables and their evaluated and reference simulations over the whole simulated period, for the USMs with observations of these variables (used by the [dashboard](#dashboard) for its interactive scatter plots)
 
 ##### rRMSE comparison plot
 
