@@ -107,3 +107,53 @@ test_that("render_report renders species pages in parallel", {
   expect_true(file.exists(file.path(tmp, "species", "wheat.html")))
   expect_true(file.exists(file.path(tmp, "species", "maize.html")))
 })
+
+test_that("render_report draws the scatter plots of the degraded variables", {
+  testthat::skip_if_not_installed("quarto")
+  testthat::skip_if_not_installed("DT")
+  testthat::skip_if(
+    is.null(quarto::quarto_path()), "Quarto CLI not installed"
+  )
+
+  tmp <- withr::local_tempdir()
+  csv_dir <- file.path(tmp, "csv")
+  dir.create(csv_dir)
+  write.csv(
+    data.frame(variable = "lai", RMSE = 0.5, stringsAsFactors = FALSE),
+    file.path(csv_dir, "global_stats.csv"),
+    row.names = FALSE
+  )
+  write.csv(
+    data.frame(
+      species = "wheat", variable = "lai", RMSE = 0.5,
+      stringsAsFactors = FALSE
+    ),
+    file.path(csv_dir, "species_stats.csv"),
+    row.names = FALSE
+  )
+  write.csv(
+    data.frame(
+      species = "wheat", variable = "lai", n_obs = 24, rrmse_ref = 0.1,
+      rrmse_eval = 0.2, rrmse_ratio = 100, status = "Critical",
+      stringsAsFactors = FALSE
+    ),
+    file.path(csv_dir, "species_rrmse_comparison.csv"),
+    row.names = FALSE
+  )
+  d <- make_eval_data()
+  data <- read_split_eval_data(
+    mock_data_workspace(d$sim, d$obs, d$ref_sim), "wheat"
+  )
+  dir.create(file.path(tmp, "data"))
+  saveRDS(
+    select_observed(data$sim, data$obs, data$ref_sim, "lai"),
+    file.path(tmp, "data", "wheat_degraded_vars.rds")
+  )
+
+  render_report(tmp, open = FALSE)
+
+  html <- readLines(file.path(tmp, "species", "wheat.html"), warn = FALSE)
+  expect_true(any(grepl('<details class="scatter" id="scatter-lai" open', html, fixed = TRUE))) # nolint: line_length_linter
+  expect_true(any(grepl("plotly", html, fixed = TRUE)))
+  expect_false(any(grepl("namespace:CroPlotR", html, fixed = TRUE)))
+})

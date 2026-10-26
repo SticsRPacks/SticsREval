@@ -23,7 +23,7 @@
 #'  simulation results for the reference version. If NULL (default),
 #'  evaluation runs against observations only, without regression
 #'  comparison against a reference
-#' @param output_dir directory where CSV exports and plots are written. If
+#' @param output_dir directory where CSV and RDS exports are written. If
 #'  NULL (default), results are not exported
 #' @param report Boolean. If \code{TRUE} and \code{output_dir} is set,
 #'  renders an HTML dashboard (see \code{\link{render_report}}) summarizing
@@ -184,7 +184,7 @@ evaluate <- function(
   run_evaluations(evaluations)
 
   if (!is.null(output_dir)) {
-    export_evaluations(evaluations, output_dir)
+    export_evaluations(evaluations, output_dir, percentage)
     if (report) {
       render_report(output_dir, open = FALSE, parallel = parallel, cores = cores) # nolint: line_length_linter
     }
@@ -277,7 +277,7 @@ run_evaluations <- function(evaluations) {
 }
 
 
-export_evaluations <- function(evaluations, output_dir) {
+export_evaluations <- function(evaluations, output_dir, percentage) {
   prepare_output_dir(output_dir)
 
   lapply(evaluations, function(eval) eval$export())
@@ -295,6 +295,12 @@ export_evaluations <- function(evaluations, output_dir) {
       stringsAsFactors = FALSE
     ),
     csv_output_path(output_dir, "evaluation_status.csv")
+  )
+  # Thresholds shared by all evaluations, so that the dashboard can explain
+  # the results without hard-coding them.
+  safe_write_csv(
+    data.frame(min_obs = min_obs_threshold, percentage = percentage),
+    csv_output_path(output_dir, "thresholds.csv")
   )
 }
 

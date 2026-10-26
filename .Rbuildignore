@@ -9,3 +9,6 @@
 ^\.vscode$
 ^\.positai$
 ^\.claude$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$

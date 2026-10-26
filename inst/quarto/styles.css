@@ -1,0 +1,29 @@
+/* Styles shared by the dashboard pages (declared in _quarto.yml). */
+
+/* Status badges (see `tag_list()` in _common.R) */
+.tag {
+  display: inline-block; padding: 0.15em 0.7em; margin: 0.15em 0.25em 0.15em 0;
+  border-radius: 999px; font-size: 0.9em; font-weight: 600;
+}
+.tag-critical { background: #fdecea; color: #c0392b; }
+.tag-warning { background: #fef5e7; color: #b9770e; }
+.tag-ok { background: #eafaf1; color: #1e8449; }
+.tag-not-tested { background: #f2f3f4; color: #707b7c; }
+.tag-empty { color: #888; font-style: italic; }
+a.tag-link { text-decoration: none; }
+a.tag-link .tag:hover { outline: 1px solid currentColor; }
+
+/* Homepage */
+.summary-block { margin: 0.5em 0 1.5em; }
+.summary-block > p:first-child { margin-bottom: 0.3em; }
+.clickable-heatmap .nsewdrag { cursor: pointer !important; }
+.overview-scroll {
+  max-height: 600px; overflow-y: auto;
+  border: 1px solid #dee2e6; border-radius: 4px;
+}
+
+/* Species pages: collapsible scatter plots */
+details.scatter { border-bottom: 1px solid #dee2e6; padding: 0.3em 0; }
+details.scatter > summary { cursor: pointer; }
+details.scatter > summary .scatter-ratio { color: #6c757d; font-size: 0.9em; }
+.scatter-toggle { margin-bottom: 0.5em; }
