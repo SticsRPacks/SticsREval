@@ -1,3 +1,5 @@
+ROTATION_FILE_NAME <- "rotations.csv"
+
 auth <- function(url, username, password) {
   logger::log_info("Authenticating to IDestics API...")
   headers <- list("Content-type" = "application/json")
@@ -33,7 +35,13 @@ rotations <- function(url, token, usms) {
   resp <- httr2::resp_body_json(resp)
   resp |>
     dplyr::bind_rows() |>
-    dplyr::filter(wsp_statut == "actif")
+    dplyr::filter(wsp_statut == "actif") |>
+    dplyr::select(
+      "usm_id" = mus_id,
+      "usm" = mus_name,
+      "rotation" = rotation,
+      "rotation_order" = rotation_order
+    )
 }
 
 get_usms <- function(url, token, ids, output_dir) {
@@ -64,16 +72,20 @@ extract_idestics_data <- function(
   token <- auth(url, username, password)
   rotations_df <- rotations(url, token, usms)
 
-  ids <- unique(rotations_df$mus_id)
+  ids <- unique(rotations_df$usm_id)
+  # Extracting USMs data from IDEStics
   get_usms(url, token, ids, output_dir)
 
   stics_input_files_path <- file.path(stics_path, "input_files")
+
+  # Copy inputs files from STICS repository
   model_path <- file.path(
     stics_input_files_path,
     "model",
     c("prof.mod", "rap.mod", "param_gen.xml", "param_newform.xml")
   )
   file.copy(from = model_path, to = output_dir, overwrite = TRUE)
+  # Copy plant files from STICS repository
   plant_path <- list.files(
     file.path(stics_input_files_path, "plant"),
     full.names = TRUE
@@ -85,6 +97,11 @@ extract_idestics_data <- function(
     from = plant_path,
     to = file.path(output_dir, "plant"),
     overwrite = TRUE
+  )
+  # Write rotations to CSV
+  safe_write_csv(
+    rotations_df,
+    file.path(output_dir, ROTATION_FILE_NAME)
   )
 }
 
@@ -169,6 +186,11 @@ gen_workspace_from_idestics <- function(
     usm = usms,
     parallel = parallel,
     cores = cores
+  )
+  file.copy(
+    file.path(workspace_tmp_actual, ROTATION_FILE_NAME),
+    file.path(output_dir, ROTATION_FILE_NAME),
+    overwrite = TRUE
   )
   invisible(NULL)
 }
