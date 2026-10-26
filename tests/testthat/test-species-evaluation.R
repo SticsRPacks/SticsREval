@@ -92,7 +92,7 @@ test_that("export works when no comparison exists", {
 
   expect_no_error(eval$export())
 
-  expect_true(dir.exists(file.path(output_dir, "plots")))
+  expect_true(dir.exists(file.path(output_dir, "data")))
 })
 
 
@@ -156,6 +156,38 @@ test_that("run skips the comparison of species without reference data", {
     file.path(output_dir, "csv", "species_rrmse_comparison.csv")
   )
   expect_identical(unique(comparison$species), "wheat")
+})
+
+
+test_that("export saves the data of the degraded variables", {
+  d <- make_eval_data()
+  d$sim$masec <- 1
+  # The reference is close to the observations: lai is degraded on wheat.
+  d$ref_sim$lai <- d$obs$lai[d$obs$species == "wheat"] +
+    rnorm(nrow(d$ref_sim), 0, 0.05)
+  output_dir <- withr::local_tempdir()
+  eval <- SpeciesEvaluation$new(
+    percentage = 10,
+    output_dir = output_dir,
+    workspace = mock_data_workspace(d$sim, d$obs, d$ref_sim),
+    backend = ParallelBackend$new(FALSE, NA)
+  )
+  eval$run()
+  eval$export()
+
+  rds_path <- file.path(output_dir, "data", "wheat_degraded_vars.rds")
+  expect_true(file.exists(rds_path))
+  # Not compared (no reference data), so no degraded variable.
+  expect_false(
+    file.exists(file.path(output_dir, "data", "maize_degraded_vars.rds"))
+  )
+
+  data <- readRDS(rds_path)
+  expect_named(data, c("sim", "obs", "ref_sim", "vars"))
+  expect_identical(data$vars, "lai")
+  expect_named(data$sim, c("wheat_1", "wheat_2"))
+  expect_named(data$sim$wheat_1, c("Date", "lai"))
+  expect_s3_class(data$sim, "cropr_simulation")
 })
 
 

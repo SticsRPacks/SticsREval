@@ -146,12 +146,15 @@ workspace.
 \if{html}{\out{<a id="method-SpeciesEvaluation-export"></a>}}
 \if{latex}{\out{\hypertarget{method-SpeciesEvaluation-export}{}}}
 \subsection{\code{SpeciesEvaluation$export()}}{
-  Export the species evaluation results to CSV files and plots.
+  Export the species evaluation results to CSV files and RDS files.
 This method exports the statistics, rRMSE comparisons (including the
-species-level rRMSE ratio per variable, in \verb{species_rrmse_comparison .csv}), and a per-species degradation status summary (\verb{species_summary .csv}) to CSV files in the "csv" subdirectory. It also generates a
-static rRMSE comparison plot and interactive per-variable scatter
-plots for each species, saved in their own subdirectory under "plots"
-(one per species).
+species-level rRMSE ratio per variable, in \verb{species_rrmse_comparison .csv}), and a per-species degradation status summary (\verb{species_summary .csv}) to CSV files in the "csv" subdirectory. For each species with
+degraded variables, it also saves their observations and their
+evaluated and reference simulations over the whole simulated period,
+for the USMs with observations of these variables (a list of \code{sim},
+\code{obs}, \code{ref_sim} and the degraded \code{vars}), to
+\verb{<species>_degraded_vars.rds} in the "data" subdirectory. The rRMSE
+comparison can be plotted with \code{\link[=plot_rrmse_comparison]{plot_rrmse_comparison()}}.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{SpeciesEvaluation$export()}

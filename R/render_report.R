@@ -5,24 +5,23 @@
 #' \code{output_dir} by \code{\link{evaluate}} (called with \code{output_dir}
 #' set): a homepage (\code{index.html}) showing the evaluation summary
 #' (pass/fail status, and per-species status/USM counts), a global page
-#' (\code{global.html}) showing the degraded variables and global stats
-#' (\code{global_stats.csv}) from \code{output_dir/csv}, and one page per
+#' (\code{global.html}) showing the degraded variables, rRMSE comparison
+#' plot and global stats (\code{global_stats.csv}) from
+#' \code{output_dir/csv}, and one page per
 #' species (\code{output_dir/species/<species>.html}) with that species'
 #' statistics, degraded variables, deteriorated/failed USMs, rRMSE
-#' comparison plot and scatter plots - the plots themselves stay under
-#' \code{output_dir/plots/<species>/} (where \code{\link{evaluate}} wrote
-#' them), the species page just links to them. It's a single Quarto
+#' comparison plot and the scatter plots of its degraded variables (from
+#' \code{output_dir/data/<species>_degraded_vars.rds}). It's a single Quarto
 #' website project (a generated \code{_quarto.yml}), so every page shares
 #' the same navigation sidebar - but each species page is still rendered
 #' and loaded separately, so a browser only has to load one species' plots
 #' at a time, instead of every species' plots at once on a single page.
-#' Nothing is recomputed or replotted: only the files \code{evaluate()}
-#' already wrote are read.
+#' No statistic is recomputed: only the files \code{evaluate()} already wrote
+#' are read.
 #'
-#' None of the pages are standalone files: they link to the PNG/HTML plots
-#' via relative paths (and Quarto writes its own JS/CSS assets to a shared
-#' \code{site_libs/} subfolder), so keep \code{output_dir} intact when
-#' sharing or moving results.
+#' None of the pages are standalone files: Quarto writes its own JS/CSS
+#' assets to a shared \code{site_libs/} subfolder, linked via relative paths,
+#' so keep the rendered site intact when sharing or moving results.
 #'
 #' Requires the Quarto CLI (\url{https://quarto.org}) to be installed, along
 #' with the \pkg{quarto} and \pkg{DT} R packages.
@@ -178,13 +177,15 @@ get_species_list <- function(output_dir) {
 # there pointing at whichever page it picks first), a copy of `global.qmd`
 # (degraded variables and global stats, kept off the homepage), and one
 # `species/<species>.qmd` per species (so it renders to
-# `species/<species>.html`) - kept separate from `plots/<species>/` (where
-# the species' own PNG/HTML plots were written by `evaluate()`) so report
-# pages and raw plot assets don't mix; species.qmd links to its plots via a
-# relative `../plots/<species>/` path instead of a bare filename. Templates
+# `species/<species>.html`). Templates
 # are copied verbatim - the `species`/`output_dir` params they declare are
 # filled in at render time via `execute_params`, not by rewriting the file.
-# Returns every path written, for the caller to clean up after rendering.
+# The pages also share `_common.R` (R helpers, sourced by each page),
+# `_usm.qmd` (the USM section, included by species.qmd),
+# `styles.css` (declared in `_quarto.yml`) and `scatter.js` (loaded by
+# species.qmd), copied at the project root.
+# Returns every path written for the caller to clean up after rendering,
+# except `styles.css` and `scatter.js`, which the rendered pages link to.
 write_project_files <- function(output_dir, species_list) {
   quarto_dir <- system.file("quarto", package = "SticsREval")
 
@@ -197,7 +198,23 @@ write_project_files <- function(output_dir, species_list) {
   file.copy(
     file.path(quarto_dir, "global.qmd"), global_path, overwrite = TRUE
   )
-  written <- c(yml_path, index_path, global_path)
+  common_path <- file.path(output_dir, "_common.R")
+  file.copy(
+    file.path(quarto_dir, "_common.R"), common_path, overwrite = TRUE
+  )
+  usm_path <- file.path(output_dir, "_usm.qmd")
+  file.copy(
+    file.path(quarto_dir, "_usm.qmd"), usm_path, overwrite = TRUE
+  )
+  file.copy(
+    file.path(quarto_dir, "styles.css"), file.path(output_dir, "styles.css"),
+    overwrite = TRUE
+  )
+  file.copy(
+    file.path(quarto_dir, "scatter.js"), file.path(output_dir, "scatter.js"),
+    overwrite = TRUE
+  )
+  written <- c(yml_path, index_path, global_path, common_path, usm_path)
 
   if (length(species_list) > 0) {
     species_dir <- file.path(output_dir, "species")

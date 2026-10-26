@@ -1,0 +1,147 @@
+## USMs
+
+```{r}
+#| echo: false
+#| results: asis
+if (!is.null(failed_usms)) {
+  cat("### Failed USMs\n\n")
+  explanation <- if (!is.null(usm_thresholds)) {
+    sprintf(
+      paste(
+        "A USM (situation) is flagged as **failed** if at least one of",
+        "these holds, for at least one variable on that USM (among the",
+        "variables tested at the species level, i.e. with at least %d",
+        "observations over the whole species):\n\n",
+        "- its rRMSE ratio vs. the reference version exceeds",
+        "**%s%%** (the *critical* threshold), or\n",
+        "- **more than %s variables** on that USM individually exceed a",
+        "lower **%s%%** *degraded* threshold.\n"
+      ),
+      min_obs,
+      usm_thresholds$ratio_threshold, usm_thresholds$max_degraded_vars,
+      usm_thresholds$degraded_threshold
+    )
+  } else {
+    paste(
+      "A USM (situation) is flagged as **failed** if at least one",
+      "variable on that USM crosses a critical rRMSE ratio threshold, or",
+      "if too many variables individually cross a lower degradation",
+      "threshold.\n"
+    )
+  }
+  cat(sprintf("<p>%s</p>\n\n", tag_list(sp_failed_usms, "Critical")))
+  cat(paste0("::: {.callout-note}\n", explanation, ":::\n\n"))
+}
+```
+
+```{r}
+#| echo: false
+#| results: asis
+# Variables not tested at the species level aren't tested on its USMs
+# either (see `USMEvaluation`).
+sp_not_tested <- if (!is.null(sp_comp)) {
+  sp_comp$variable[sp_comp$status == "Not tested"]
+}
+if (length(sp_not_tested) > 0) {
+  cat("### Variables not tested\n\n")
+  cat(sprintf(
+    "<p>%s</p>\n\n", tag_list(sp_not_tested, "Not tested")
+  ))
+  cat(paste0(
+    "::: {.callout-note}\n",
+    sprintf(
+      "These variables have fewer than %d observations over the whole ",
+      min_obs
+    ),
+    "species, so they are not tested on the USMs of this species.\n",
+    ":::\n\n"
+  ))
+}
+```
+
+```{r}
+#| echo: false
+#| results: asis
+# Heatmap of the per-USM RMSE ratio used by the USM test (same formula as
+# `rmse_ratio` in `USMEvaluation`: (RMSE_eval - RMSE_ref) / RMSE_species,
+# restricted to the variables tested at the species level), drawn only for
+# the USMs that failed that test so it matches the "Failed USMs" list above.
+# Only the `max_usms` most degraded ones are shown to keep the plot readable.
+max_usms <- 50
+usm_ratio <- NULL
+
+if (length(sp_failed_usms) > 0 && !is.null(rrmse_per_usm) &&
+      !is.null(sp_comp) && !is.null(species_stats)) {
+  tested_vars <- sp_comp$variable[sp_comp$status != "Not tested"]
+
+  sp_usm <- rrmse_per_usm[
+    rrmse_per_usm$species == sp &
+      rrmse_per_usm$variable %in% tested_vars &
+      rrmse_per_usm$situation %in% sp_failed_usms, ,
+    drop = FALSE
+  ]
+  key <- c("situation", "variable")
+  ratio <- merge(
+    sp_usm[sp_usm$group == "evaluated", c(key, "RMSE"), drop = FALSE],
+    sp_usm[sp_usm$group == "reference", c(key, "RMSE", "n_obs"), drop = FALSE],
+    by = key, suffixes = c("_eval", "_ref")
+  )
+
+  sp_eval <- species_stats[
+    species_stats$species == sp & species_stats$group == "evaluated", ,
+    drop = FALSE
+  ]
+  ratio$RMSE_species <- sp_eval$RMSE[match(ratio$variable, sp_eval$variable)]
+  ratio$ratio <- round(
+    100 * (ratio$RMSE_eval - ratio$RMSE_ref) / ratio$RMSE_species, 2
+  )
+  ratio <- ratio[is.finite(ratio$ratio), , drop = FALSE]
+  if (nrow(ratio) > 0) usm_ratio <- ratio
+}
+
+if (!is.null(usm_ratio)) {
+  degraded_threshold <- rlang::`%||%`(usm_thresholds$degraded_threshold, 20)
+  ratio_threshold <- rlang::`%||%`(usm_thresholds$ratio_threshold, 50)
+  n_usms <- length(unique(usm_ratio$situation))
+
+  cat("### RMSE ratio of the failed USMs\n\n")
+  # Variables in the same order as the species-level comparison (most
+  # degraded first).
+  heatmap <- knitr::knit_print(SticsREval::usm_ratio_heatmap(
+    usm_ratio,
+    variables = intersect(
+      sp_comp$variable[order(-sp_comp$rrmse_ratio)], tested_vars
+    ),
+    degraded_threshold = degraded_threshold,
+    ratio_threshold = ratio_threshold,
+    max_usms = max_usms
+  ))
+  # `print()` or `cat()` on the widget itself would leave it out of the page:
+  # it's knit_printed as knitr does for a chunk's last value, and its JS
+  # dependencies (plotly.js) registered by hand.
+  knitr::knit_meta_add(attr(heatmap, "knit_meta"))
+  cat(heatmap, "\n\n")
+  cat(
+    "::: {.callout-note}\n",
+    sprintf(paste(
+      "Ratio used by the USM test: (RMSE - reference RMSE) / RMSE of the",
+      "species over all its USMs. Showing %d of the %d failed USM(s),",
+      "sorted by the number of variables above the %s%% *degraded*",
+      "threshold. Colors are capped at +/-%s%% (the *critical* threshold);",
+      "hover a cell for the exact value. Grey cells have no observation for",
+      "that variable on that USM."
+    ), min(n_usms, max_usms), n_usms, degraded_threshold, ratio_threshold),
+    "\n:::\n", sep = ""
+  )
+}
+```
+
+```{r}
+#| echo: false
+#| results: asis
+if (!is.null(sp_deteriorated) && nrow(sp_deteriorated) > 0) {
+  cat("### Deteriorated USMs\n\n")
+  print(htmltools::tagList(dt(sp_deteriorated)))
+  cat("\n\n")
+}
+```

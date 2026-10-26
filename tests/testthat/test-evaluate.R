@@ -23,12 +23,16 @@ test_that("export_evaluations writes the status and skip reason", {
     "USM evaluation" = fake_evaluation(FALSE)
   )
 
-  export_evaluations(evaluations, output_dir)
+  export_evaluations(evaluations, output_dir, percentage = 7)
 
   status <- read.csv(file.path(output_dir, "csv", "evaluation_status.csv"))
   expect_identical(status$status, c("not evaluated", "success", "failed"))
   expect_identical(status$reason, c("no reference data", NA, NA))
   expect_identical(status$success, c(NA, TRUE, FALSE))
+
+  thresholds <- read.csv(file.path(output_dir, "csv", "thresholds.csv"))
+  expect_identical(thresholds$min_obs, as.integer(min_obs_threshold))
+  expect_identical(thresholds$percentage, 7L)
 })
 
 test_that("report_evaluation_status shows the skip reason", {
