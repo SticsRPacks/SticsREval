@@ -40,7 +40,8 @@ rotations <- function(url, token, usms) {
       "usm_id" = mus_id,
       "usm" = mus_name,
       "rotation" = rotation,
-      "rotation_order" = rotation_order
+      "rotation_order" = rotation_order,
+      "workspace_id" = wsp_id
     )
 }
 
@@ -103,6 +104,7 @@ extract_idestics_data <- function(
     rotations_df,
     file.path(output_dir, ROTATION_FILE_NAME)
   )
+  rotations_df
 }
 
 gen_varmod_from_obs_idestics <- function(out_path) {
@@ -156,15 +158,15 @@ gen_workspace_from_idestics <- function(
   workspace_tmp_actual <- file.path(workspace_tmp, "workspace")
   dir.create(workspace_tmp_actual)
 
-  #on.exit(
-  #  {
-  #    unlink(workspace_tmp, recursive = TRUE)
-  #    logger::log_info("Temporary workspace ", workspace_tmp, " deleted.")
-  #  },
-  #  add = TRUE
-  #)
+  on.exit(
+    {
+      unlink(workspace_tmp, recursive = TRUE)
+      logger::log_info("Temporary workspace ", workspace_tmp, " deleted.")
+    },
+    add = TRUE
+  )
 
-  extract_idestics_data(
+  metadata <- extract_idestics_data(
     idestics_url, username, password, usms, stics_path, workspace_tmp_actual
   )
 
@@ -179,11 +181,13 @@ gen_workspace_from_idestics <- function(
     dir.create(output_dir, recursive = TRUE)
   }
 
+  idestics_usms <- paste0(metadata$workspace_id, "_", metadata$usm)
+
   SticsRFiles::gen_usms_xml2txt(
     workspace = workspace_tmp_actual,
     out_dir = output_dir,
     verbose = is_debug(),
-    usm = usms,
+    usm = idestics_usms,
     parallel = parallel,
     cores = cores
   )
