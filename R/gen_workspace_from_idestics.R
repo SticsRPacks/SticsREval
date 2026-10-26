@@ -1,12 +1,10 @@
-ROTATION_FILE_NAME <- "rotations.csv"
+rotation_file_name <- "rotations.csv"
 
 auth <- function(url, username, password) {
   logger::log_info("Authenticating to IDestics API...")
-  headers <- list("Content-type" = "application/json")
-
-  resp <- httr2::request(paste0(url, "/api/login")) |>
+  resp <- httr2::request(url) |>
+    httr2::req_url_path_append("api", "login") |>
     httr2::req_method("POST") |>
-    httr2::req_headers(!!!headers) |>
     httr2::req_body_json(list(username = username, password = password)) |>
     httr2::req_perform()
 
@@ -17,15 +15,10 @@ auth <- function(url, username, password) {
 
 rotations <- function(url, token, usms) {
   logger::log_info("Retrieving rotations from IDestics API...")
-  headers <- list(
-    Authorization = paste("Bearer", token),
-    "Content-Type" = "application/json"
-  )
-  resp <- httr2::request(
-    paste0(url, "/api/extraction/rotations")
-  ) |>
+  resp <- httr2::request(url) |>
+    httr2::req_url_path_append("api", "extraction", "rotations") |>
     httr2::req_method("POST") |>
-    httr2::req_headers(!!!headers) |>
+    httr2::req_auth_bearer_token(token) |>
     httr2::req_body_json(list(
       usm_list = usms,
       format = "json"
@@ -37,23 +30,20 @@ rotations <- function(url, token, usms) {
     dplyr::bind_rows() |>
     dplyr::filter(wsp_statut == "actif") |>
     dplyr::select(
-      "usm_id" = mus_id,
-      "usm" = mus_name,
-      "rotation" = rotation,
-      "rotation_order" = rotation_order,
-      "workspace_id" = wsp_id
+      usm_id = mus_id,
+      usm = mus_name,
+      rotation = rotation,
+      rotation_order = rotation_order,
+      workspace_id = wsp_id
     )
 }
 
 get_usms <- function(url, token, ids, output_dir) {
   logger::log_info("Retrieving USMs from IDestics API...")
-  headers <- list(
-    Authorization = paste("Bearer", token),
-    "Content-Type" = "application/json"
-  )
-  resp <- httr2::request(paste0(url, "/api/extraction/sync-usms")) |>
+  resp <- httr2::request(url) |>
+    httr2::req_url_path_append("api", "extraction", "sync-usms") |>
     httr2::req_method("POST") |>
-    httr2::req_headers(!!!headers) |>
+    httr2::req_auth_bearer_token(token) |>
     httr2::req_body_json(list(
       mus_ids = ids,
       format = "javastics",
@@ -102,7 +92,8 @@ extract_idestics_data <- function(
   # Write rotations to CSV
   safe_write_csv(
     rotations_df,
-    file.path(output_dir, ROTATION_FILE_NAME)
+    file.path(output_dir, rotation_file_name),
+    delimiter = ";"
   )
   rotations_df
 }
@@ -192,8 +183,8 @@ gen_workspace_from_idestics <- function(
     cores = cores
   )
   file.copy(
-    file.path(workspace_tmp_actual, ROTATION_FILE_NAME),
-    file.path(output_dir, ROTATION_FILE_NAME),
+    file.path(workspace_tmp_actual, rotation_file_name),
+    file.path(output_dir, rotation_file_name),
     overwrite = TRUE
   )
   invisible(NULL)
