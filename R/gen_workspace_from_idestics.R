@@ -28,13 +28,13 @@ rotations <- function(url, token, usms) {
   resp <- httr2::resp_body_json(resp)
   resp |>
     dplyr::bind_rows() |>
-    dplyr::filter(wsp_statut == "actif") |>
-    dplyr::select(
-      usm_id = mus_id,
-      usm = mus_name,
-      rotation = rotation,
-      rotation_order = rotation_order,
-      workspace_id = wsp_id
+    dplyr::filter(.data$wsp_statut == "actif") |>
+    dplyr::transmute(
+      usm_id = .data$mus_id,
+      usm = .data$mus_name,
+      rotation = .data$rotation,
+      rotation_order = .data$rotation_order,
+      idestics_usm = paste0(.data$wsp_id, "_", .data$mus_name)
     )
 }
 
@@ -57,6 +57,45 @@ get_usms <- function(url, token, ids, output_dir) {
   utils::unzip(zip_file, exdir = output_dir)
 }
 
+rename_idestics_usms <- function(workspace, rotations_df) {
+  if (anyDuplicated(rotations_df$usm)) {
+    stop(
+      "USM names are not unique across active IDEStics workspaces: ",
+      toString(unique(rotations_df$usm[duplicated(rotations_df$usm)])),
+      call. = FALSE
+    )
+  }
+  mapping <- stats::setNames(rotations_df$usm, rotations_df$idestics_usm)
+
+  usms_xml <- file.path(workspace, "usms.xml")
+  doc <- xml2::read_xml(usms_xml)
+  for (node in xml2::xml_find_all(doc, "//usm")) {
+    old <- xml2::xml_attr(node, "nom")
+    if (old %in% names(mapping)) {
+      xml2::xml_set_attr(node, "nom", mapping[[old]])
+      for (fobs in xml2::xml_find_all(node, ".//fobs")) {
+        xml2::xml_text(fobs) <- sub(old, mapping[[old]], xml2::xml_text(fobs),
+                                    fixed = TRUE)
+      }
+    }
+  }
+  xml2::write_xml(doc, usms_xml)
+
+  # Build the candidate obs file names explicitly rather than with a regex:
+  # USM names may contain regex metacharacters such as "+" or ".".
+  for (old in names(mapping)) {
+    suffixes <- c("", "a", "p")
+    obs <- file.path(workspace, paste0(old, suffixes, ".obs"))
+    obs_new_path <- file.path(
+      workspace,
+      paste0(mapping[[old]], suffixes, ".obs")
+    )
+    found <- file.exists(obs)
+    file.rename(obs[found], obs_new_path[found])
+  }
+}
+
+
 extract_idestics_data <- function(
   url, username, password, usms, stics_path, output_dir
 ) {
@@ -66,6 +105,7 @@ extract_idestics_data <- function(
   ids <- unique(rotations_df$usm_id)
   # Extracting USMs data from IDEStics
   get_usms(url, token, ids, output_dir)
+  rename_idestics_usms(output_dir, rotations_df)
 
   stics_input_files_path <- file.path(stics_path, "input_files")
 
@@ -149,13 +189,13 @@ gen_workspace_from_idestics <- function(
   workspace_tmp_actual <- file.path(workspace_tmp, "workspace")
   dir.create(workspace_tmp_actual)
 
-  on.exit(
-    {
-      unlink(workspace_tmp, recursive = TRUE)
-      logger::log_info("Temporary workspace ", workspace_tmp, " deleted.")
-    },
-    add = TRUE
-  )
+  #on.exit(
+  #  {
+  #    unlink(workspace_tmp, recursive = TRUE)
+  #    logger::log_info("Temporary workspace ", workspace_tmp, " deleted.")
+  #  },
+  #  add = TRUE
+  #)
 
   metadata <- extract_idestics_data(
     idestics_url, username, password, usms, stics_path, workspace_tmp_actual
@@ -172,13 +212,11 @@ gen_workspace_from_idestics <- function(
     dir.create(output_dir, recursive = TRUE)
   }
 
-  idestics_usms <- paste0(metadata$workspace_id, "_", metadata$usm)
-
   SticsRFiles::gen_usms_xml2txt(
     workspace = workspace_tmp_actual,
     out_dir = output_dir,
     verbose = is_debug(),
-    usm = idestics_usms,
+    usm = usms,
     parallel = parallel,
     cores = cores
   )
