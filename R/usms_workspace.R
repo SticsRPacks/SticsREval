@@ -177,8 +177,14 @@ USMSWorkspace <- R6::R6Class("USMSWorkspace", # nolint: object_name_linter
         }
       )
       if (res$error) {
+        messages <- unlist(res$messages, use.names = FALSE)
+        for (msg in unique(messages[nzchar(messages)])) {
+          logger::log_error(msg)
+        }
         stop(
-          "Error while running simulations. Set verbose = 2L for more details.",
+          "Error while running simulations for USMs: ",
+          toString(names(res$messages)),
+          ". Set verbose = 2L for more details.",
           call. = FALSE
         )
       }
@@ -192,12 +198,16 @@ USMSWorkspace <- R6::R6Class("USMSWorkspace", # nolint: object_name_linter
       if (!is.null(private$usms)) {
         missing_usms <- setdiff(private$usms, all_usms)
         if (length(missing_usms) > 0) {
-          stop(
-            "The following USMs are not found in the workspace: ",
-            toString(missing_usms), call. = FALSE
+          logger::log_warn(
+            "The following USMs are not found in the workspace and will be ",
+            "ignored: ", toString(missing_usms)
           )
         }
-        all_usms <- private$usms
+        all_usms <- intersect(private$usms, all_usms)
+        if (length(all_usms) == 0) {
+          stop("None of the requested USMs were found in the workspace",
+               call. = FALSE)
+        }
       }
       usms_species <- private$extract_species_from_usms(all_usms)
       private$workspace$save_species_usm(usms_species)
