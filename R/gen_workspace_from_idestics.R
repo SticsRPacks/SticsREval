@@ -32,7 +32,11 @@ rotations <- function(url, token, usms) {
     dplyr::transmute(
       usm_id = .data$mus_id,
       usm = .data$mus_name,
-      rotation = .data$rotation,
+      rotation = dplyr::if_else(
+        .data$rotation == "0",
+        "0",
+        paste0(.data$wsp_id, "_", .data$rotation)
+      ),
       rotation_order = .data$rotation_order,
       idestics_usm = paste0(.data$wsp_id, "_", .data$mus_name)
     )
