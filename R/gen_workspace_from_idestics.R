@@ -31,7 +31,9 @@ resolve_idestics_username <- function() {
 resolve_idestics_password <- function(username) {
   resolve_idestics_credential(
     "IDESTICS_PASSWORD", "password",
-    function() askpass::askpass(paste0("IDEStics password for ", username, ": "))
+    function() {
+      askpass::askpass(paste0("IDEStics password for ", username, ": "))
+    }
   )
 }
 
@@ -90,7 +92,8 @@ get_metadata <- function(url, token, usms) {
   resp <- idestics_request(
     url,
     c("api", "extraction", "rotations"),
-    list(usm_list = usms, format = "json"),
+    # as.list() keeps a single USM as a JSON array instead of a scalar
+    list(usm_list = as.list(usms), format = "json"),
     token = token
   ) |>
     httr2::req_perform()
@@ -124,15 +127,16 @@ get_usms <- function(url, token, ids, output_dir) {
   resp <- idestics_request(
     url,
     c("api", "extraction", "sync-usms"),
-    list(mus_ids = ids, format = "javastics", mode = "strict"),
+    list(mus_ids = as.list(ids), format = "javastics", mode = "strict"),
     token = token
   ) |>
     httr2::req_perform()
 
   # A ZIP archive starts with the "PK" signature: anything else (e.g. an HTML
   # error page from a proxy) can't be extracted
-  body <- httr2::resp_body_raw(resp)
-  if (length(body) < 2 || !identical(body[1:2], charToRaw("PK"))) {
+  zip_content <- httr2::resp_body_raw(resp)
+  if (length(zip_content) < 2 ||
+        !identical(zip_content[1:2], charToRaw("PK"))) {
     stop(
       "IDEStics API returned no ZIP archive for the USMs extraction ",
       "(content type: ", httr2::resp_content_type(resp), ").",
@@ -142,7 +146,7 @@ get_usms <- function(url, token, ids, output_dir) {
 
   # Save the response body to a temporary ZIP file
   zip_file <- tempfile(fileext = ".zip")
-  writeBin(body, zip_file)
+  writeBin(zip_content, zip_file)
   utils::unzip(zip_file, exdir = output_dir)
 }
 
