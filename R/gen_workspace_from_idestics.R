@@ -1,11 +1,8 @@
 rotation_file_name <- "rotations.csv"
 
-# Resolve an IDEStics credential without requiring it in the call, so it never
-# ends up in a script: explicit value, then environment variable, then prompt.
-resolve_idestics_credential <- function(value, env_var, label, prompt_fun) {
-  if (!is.null(value)) {
-    return(value)
-  }
+# Resolve an IDEStics credential without it ever being written in a script:
+# environment variable first, then interactive prompt.
+resolve_idestics_credential <- function(env_var, label, prompt_fun) {
   value <- Sys.getenv(env_var)
   if (nzchar(value)) {
     return(value)
@@ -24,16 +21,16 @@ resolve_idestics_credential <- function(value, env_var, label, prompt_fun) {
   value
 }
 
-resolve_idestics_username <- function(username = NULL) {
+resolve_idestics_username <- function() {
   resolve_idestics_credential(
-    username, "IDESTICS_USERNAME", "username",
+    "IDESTICS_USERNAME", "username",
     function() trimws(readline("IDEStics username: "))
   )
 }
 
-resolve_idestics_password <- function(username, password = NULL) {
+resolve_idestics_password <- function(username) {
   resolve_idestics_credential(
-    password, "IDESTICS_PASSWORD", "password",
+    "IDESTICS_PASSWORD", "password",
     function() askpass::askpass(paste0("IDEStics password for ", username, ": "))
   )
 }
@@ -203,8 +200,6 @@ gen_varmod_from_obs_idestics <- function(out_path) {
 #' @export
 gen_workspace_from_idestics <- function(
   idestics_url,
-  username = NULL,
-  password = NULL,
   stics_path,
   output_dir,
   usms,
@@ -225,8 +220,8 @@ gen_workspace_from_idestics <- function(
   logger::log_info("Selected ", length(usms), " USMs")
 
   # Ask for the credentials before any long-running step
-  username <- resolve_idestics_username(username)
-  password <- resolve_idestics_password(username, password)
+  username <- resolve_idestics_username()
+  password <- resolve_idestics_password(username)
 
   workspace_tmp <- tempfile()
   dir.create(workspace_tmp)
