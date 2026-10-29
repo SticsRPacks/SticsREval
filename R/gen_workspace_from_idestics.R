@@ -230,13 +230,13 @@ gen_workspace_from_idestics <- function(
   workspace_tmp_actual <- file.path(workspace_tmp, "workspace")
   dir.create(workspace_tmp_actual)
 
-  #on.exit(
-  #  {
-  #    unlink(workspace_tmp, recursive = TRUE)
-  #    logger::log_info("Temporary workspace ", workspace_tmp, " deleted.")
-  #  },
-  #  add = TRUE
-  #)
+  on.exit(
+    {
+      unlink(workspace_tmp, recursive = TRUE)
+      logger::log_info("Temporary workspace ", workspace_tmp, " deleted.")
+    },
+    add = TRUE
+  )
 
   metadata <- extract_idestics_data(
     idestics_url, username, password, usms, stics_path, workspace_tmp_actual
