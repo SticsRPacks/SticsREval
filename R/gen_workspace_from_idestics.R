@@ -35,34 +35,71 @@ resolve_idestics_password <- function(username) {
   )
 }
 
+# Append the "error" field of the API JSON response to httr2 HTTP errors
+idestics_error_body <- function(resp) {
+  msg <- tryCatch(
+    httr2::resp_body_json(resp)$error,
+    error = function(e) NULL
+  )
+  if (is.character(msg) && length(msg) == 1 && nzchar(msg)) {
+    paste0("IDEStics API: ", msg)
+  } else {
+    character()
+  }
+}
+
+# Build a POST request to the IDEStics API. Transient failures (network
+# errors, 429 and 503 responses) are retried.
+idestics_request <- function(url, path, body, token = NULL) {
+  req <- httr2::request(url) |>
+    httr2::req_url_path_append(path) |>
+    httr2::req_method("POST") |>
+    httr2::req_body_json(body) |>
+    httr2::req_retry(max_tries = 3) |>
+    httr2::req_error(body = idestics_error_body)
+  if (!is.null(token)) {
+    req <- httr2::req_auth_bearer_token(req, token)
+  }
+  req
+}
+
 auth <- function(url, username, password) {
   logger::log_info("Authenticating to IDestics API...")
-  resp <- httr2::request(url) |>
-    httr2::req_url_path_append("api", "login") |>
-    httr2::req_method("POST") |>
-    httr2::req_body_json(list(username = username, password = password)) |>
-    httr2::req_perform()
+  resp <- tryCatch(
+    idestics_request(
+      url,
+      c("api", "login"),
+      list(username = username, password = password)
+    ) |>
+      httr2::req_perform(),
+    httr2_http_401 = function(e) {
+      stop("Invalid IDEStics username or password.", call. = FALSE)
+    }
+  )
 
-  resp <- httr2::resp_body_json(resp)
-
-  resp$token
+  token <- httr2::resp_body_json(resp)$token
+  if (!is.character(token) || length(token) != 1 || !nzchar(token)) {
+    stop("IDEStics API login response contains no token.", call. = FALSE)
+  }
+  token
 }
 
 get_metadata <- function(url, token, usms) {
   logger::log_info("Retrieving metadata from IDestics API...")
   logger::log_debug("Retrieving rotations and USMs ids from IDEstics API...")
-  resp <- httr2::request(url) |>
-    httr2::req_url_path_append("api", "extraction", "rotations") |>
-    httr2::req_method("POST") |>
-    httr2::req_auth_bearer_token(token) |>
-    httr2::req_body_json(list(
-      usm_list = usms,
-      format = "json"
-    )) |>
+  resp <- idestics_request(
+    url,
+    c("api", "extraction", "rotations"),
+    list(usm_list = usms, format = "json"),
+    token = token
+  ) |>
     httr2::req_perform()
 
   resp <- httr2::resp_body_json(resp)
-  resp |>
+  if (length(resp) == 0) {
+    stop("None of the requested USMs are found in IDEStics.", call. = FALSE)
+  }
+  metadata <- resp |>
     dplyr::bind_rows() |>
     dplyr::filter(.data$wsp_statut == "actif") |>
     dplyr::transmute(
@@ -76,24 +113,36 @@ get_metadata <- function(url, token, usms) {
       idestics_usm_id = .data$mus_id,
       idestics_usm_name = paste0(.data$wsp_id, "_", .data$mus_name)
     )
+  # Warn about the requested USMs missing from active workspaces, and stop if
+  # none of them are found
+  select_available_usms(metadata$usm, usms, "active IDEStics workspaces")
+  metadata
 }
 
 get_usms <- function(url, token, ids, output_dir) {
   logger::log_info("Retrieving USMs from IDestics API...")
-  resp <- httr2::request(url) |>
-    httr2::req_url_path_append("api", "extraction", "sync-usms") |>
-    httr2::req_method("POST") |>
-    httr2::req_auth_bearer_token(token) |>
-    httr2::req_body_json(list(
-      mus_ids = ids,
-      format = "javastics",
-      mode = "strict"
-    )) |>
+  resp <- idestics_request(
+    url,
+    c("api", "extraction", "sync-usms"),
+    list(mus_ids = ids, format = "javastics", mode = "strict"),
+    token = token
+  ) |>
     httr2::req_perform()
+
+  # A ZIP archive starts with the "PK" signature: anything else (e.g. an HTML
+  # error page from a proxy) can't be extracted
+  body <- httr2::resp_body_raw(resp)
+  if (length(body) < 2 || !identical(body[1:2], charToRaw("PK"))) {
+    stop(
+      "IDEStics API returned no ZIP archive for the USMs extraction ",
+      "(content type: ", httr2::resp_content_type(resp), ").",
+      call. = FALSE
+    )
+  }
 
   # Save the response body to a temporary ZIP file
   zip_file <- tempfile(fileext = ".zip")
-  writeBin(httr2::resp_body_raw(resp), zip_file)
+  writeBin(body, zip_file)
   utils::unzip(zip_file, exdir = output_dir)
 }
 

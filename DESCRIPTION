@@ -29,6 +29,7 @@ Imports:
     ggrepel,
     htmltools,
     htmlwidgets,
+    httr2,
     lifecycle,
     logger,
     methods,
@@ -37,7 +38,8 @@ Imports:
     SticsRFiles,
     R6,
     readr,
-    rlang
+    rlang,
+    xml2
 Remotes:
     github::SticsRPacks/CroPlotR,
     github::SticsRPacks/SticsOnR,
