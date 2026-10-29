@@ -196,6 +196,34 @@ gen_varmod_from_obs_idestics <- function(out_path) {
   cat(var_names, file = out_file, sep = "\n")
 }
 
+#' Generate a Stics workspace from IDEStics data, for evaluation.
+#'
+#' @description
+#' Retrieves the rotations and USMs data from the IDEStics API, completes them
+#' with the model and plant files of the Stics repository, and generates the
+#' corresponding text workspace. The rotations are written to
+#' \code{rotations.csv} in \code{output_dir}.
+#'
+#' The IDEStics credentials are read from the \code{IDESTICS_USERNAME} and
+#' \code{IDESTICS_PASSWORD} environment variables if they are set (e.g. in the
+#' user-level \code{~/.Renviron}). Otherwise, they are prompted for in an
+#' interactive session, the password being masked.
+#'
+#' @param idestics_url URL of the IDEStics server
+#' @param stics_path path to Stics repository
+#' @param output_dir path to the Stics workspace to generate
+#' @param usms character vector of USM names to generate. Use
+#'  \code{\link{read_usms_files}} to read them from USM list files.
+#' @param parallel Boolean. Is the computation to be done in parallel ?
+#' @param cores Number of cores to use for parallel computation
+#' @param force_code_shape Boolean. Currently unused, kept for consistency
+#'  with \code{\link{gen_workspace_from_sms}}.
+#' @param verbose Integer. Logging verbosity level: 0 = warnings and errors
+#'  only, 1 = info, 2 = debug
+#' @param usms_files Deprecated. Use
+#'  \code{usms = read_usms_files(usms_files)} instead.
+#'
+#' @returns NULL (invisibly)
 #'
 #' @export
 gen_workspace_from_idestics <- function(
