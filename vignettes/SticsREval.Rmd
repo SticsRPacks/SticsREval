@@ -78,7 +78,8 @@ gen_workspace_from_sms(
 
 `gen_workspace_from_idestics()` builds the same kind of workspace from data
 retrieved from the IDEStics API. The USMs to generate must be given, and the
-rotations they belong to are written to `rotations.csv` in `output_dir`:
+rotations they belong to are written to `metadata.csv` in `output_dir`. This
+file can then be passed as `metadata_file` to `run_simulations()`:
 
 ```{r}
 gen_workspace_from_idestics(

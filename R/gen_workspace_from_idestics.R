@@ -1,4 +1,4 @@
-rotation_file_name <- "rotations.csv"
+metadata_file_name <- "metadata.csv"
 
 # Resolve an IDEStics credential without it ever being written in a script:
 # environment variable first, then interactive prompt.
@@ -48,8 +48,9 @@ auth <- function(url, username, password) {
   resp$token
 }
 
-rotations <- function(url, token, usms) {
-  logger::log_info("Retrieving rotations from IDestics API...")
+get_metadata <- function(url, token, usms) {
+  logger::log_info("Retrieving metadata from IDestics API...")
+  logger::log_debug("Retrieving rotations and USMs ids from IDEstics API...")
   resp <- httr2::request(url) |>
     httr2::req_url_path_append("api", "extraction", "rotations") |>
     httr2::req_method("POST") |>
@@ -65,7 +66,6 @@ rotations <- function(url, token, usms) {
     dplyr::bind_rows() |>
     dplyr::filter(.data$wsp_statut == "actif") |>
     dplyr::transmute(
-      usm_id = .data$mus_id,
       usm = .data$mus_name,
       rotation = dplyr::if_else(
         .data$rotation == "0",
@@ -73,7 +73,8 @@ rotations <- function(url, token, usms) {
         paste0(.data$wsp_id, "_", .data$rotation)
       ),
       rotation_order = .data$rotation_order,
-      idestics_usm = paste0(.data$wsp_id, "_", .data$mus_name)
+      idestics_usm_id = .data$mus_id,
+      idestics_usm_name = paste0(.data$wsp_id, "_", .data$mus_name)
     )
 }
 
@@ -96,15 +97,15 @@ get_usms <- function(url, token, ids, output_dir) {
   utils::unzip(zip_file, exdir = output_dir)
 }
 
-rename_idestics_usms <- function(workspace, rotations_df) {
-  if (anyDuplicated(rotations_df$usm)) {
+rename_idestics_usms <- function(workspace, metadata) {
+  if (anyDuplicated(metadata$usm)) {
     stop(
       "USM names are not unique across active IDEStics workspaces: ",
-      toString(unique(rotations_df$usm[duplicated(rotations_df$usm)])),
+      toString(unique(metadata$usm[duplicated(metadata$usm)])),
       call. = FALSE
     )
   }
-  mapping <- stats::setNames(rotations_df$usm, rotations_df$idestics_usm)
+  mapping <- stats::setNames(metadata$usm, metadata$idestics_usm_name)
 
   usms_xml <- file.path(workspace, "usms.xml")
   doc <- xml2::read_xml(usms_xml)
@@ -139,12 +140,12 @@ extract_idestics_data <- function(
   url, username, password, usms, stics_path, output_dir
 ) {
   token <- auth(url, username, password)
-  rotations_df <- rotations(url, token, usms)
+  metadata <- get_metadata(url, token, usms)
 
-  ids <- unique(rotations_df$usm_id)
+  ids <- unique(metadata$idestics_usm_id)
   # Extracting USMs data from IDEStics
   get_usms(url, token, ids, output_dir)
-  rename_idestics_usms(output_dir, rotations_df)
+  rename_idestics_usms(output_dir, metadata)
 
   stics_input_files_path <- file.path(stics_path, "input_files")
 
@@ -168,13 +169,12 @@ extract_idestics_data <- function(
     to = file.path(output_dir, "plant"),
     overwrite = TRUE
   )
-  # Write rotations to CSV
+  # Write metadata to CSV
   safe_write_csv(
-    rotations_df,
-    file.path(output_dir, rotation_file_name),
+    metadata,
+    file.path(output_dir, metadata_file_name),
     delimiter = ";"
   )
-  rotations_df
 }
 
 gen_varmod_from_obs_idestics <- function(out_path) {
@@ -202,7 +202,7 @@ gen_varmod_from_obs_idestics <- function(out_path) {
 #' Retrieves the rotations and USMs data from the IDEStics API, completes them
 #' with the model and plant files of the Stics repository, and generates the
 #' corresponding text workspace. The rotations are written to
-#' \code{rotations.csv} in \code{output_dir}.
+#' \code{metadata.csv} in \code{output_dir}.
 #'
 #' The IDEStics credentials are read from the \code{IDESTICS_USERNAME} and
 #' \code{IDESTICS_PASSWORD} environment variables if they are set (e.g. in the
@@ -266,7 +266,7 @@ gen_workspace_from_idestics <- function(
     add = TRUE
   )
 
-  metadata <- extract_idestics_data(
+  extract_idestics_data(
     idestics_url, username, password, usms, stics_path, workspace_tmp_actual
   )
 
@@ -290,8 +290,8 @@ gen_workspace_from_idestics <- function(
     cores = cores
   )
   file.copy(
-    file.path(workspace_tmp_actual, rotation_file_name),
-    file.path(output_dir, rotation_file_name),
+    file.path(workspace_tmp_actual, metadata_file_name),
+    file.path(output_dir, metadata_file_name),
     overwrite = TRUE
   )
   invisible(NULL)

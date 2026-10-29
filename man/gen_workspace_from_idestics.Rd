@@ -46,7 +46,7 @@ NULL (invisibly)
 Retrieves the rotations and USMs data from the IDEStics API, completes them
 with the model and plant files of the Stics repository, and generates the
 corresponding text workspace. The rotations are written to
-\code{rotations.csv} in \code{output_dir}.
+\code{metadata.csv} in \code{output_dir}.
 
 The IDEStics credentials are read from the \code{IDESTICS_USERNAME} and
 \code{IDESTICS_PASSWORD} environment variables if they are set (e.g. in the
