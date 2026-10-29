@@ -7,10 +7,11 @@ reference:
 
   - title: "Prepare data"
     desc: >
-      Build a STICS workspace from SMS data and run the simulations of a STICS
-      version on it.
+      Build a STICS workspace from SMS or IDEStics data and run the simulations
+      of a STICS version on it.
     contents:
       - gen_workspace_from_sms
+      - gen_workspace_from_idestics
       - read_usms_files
       - get_var_from_obs
       - run_simulations

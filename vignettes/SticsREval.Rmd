@@ -74,6 +74,26 @@ gen_workspace_from_sms(
 )
 ```
 
+### Build the workspace from IDEStics
+
+`gen_workspace_from_idestics()` builds the same kind of workspace from data
+retrieved from the IDEStics API. The USMs to generate must be given, and the
+rotations they belong to are written to `rotations.csv` in `output_dir`:
+
+```{r}
+gen_workspace_from_idestics(
+  idestics_url = "https://idestics.example.org",
+  stics_path   = "/path/to/stics_distribution",
+  output_dir   = "workspace/",
+  usms         = usms
+)
+```
+
+The IDEStics username and password are read from the `IDESTICS_USERNAME` and
+`IDESTICS_PASSWORD` environment variables if they are set, for instance in
+your user-level `~/.Renviron`. Otherwise, they are prompted for in an
+interactive session.
+
 ### Run the simulations
 
 Run the reference version once. `run_simulations()` writes
