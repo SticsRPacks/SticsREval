@@ -46,6 +46,7 @@ Remotes:
     github::SticsRPacks/SticsRFiles
 Suggests:
     DT,
+    jsonlite,
     knitr,
     mockery,
     quarto,

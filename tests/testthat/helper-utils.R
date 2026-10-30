@@ -7,8 +7,8 @@ replace_private <- function(obj, name, fn) {
 # Evaluate `expr` without printing its console report (cli messages and
 # printed tables)
 quietly <- function(expr) {
-  utils::capture.output(res <- suppressMessages(expr))
-  invisible(res)
+  utils::capture.output(suppressMessages(expr))
+  invisible(expr)
 }
 
 silence_logs <- function() {

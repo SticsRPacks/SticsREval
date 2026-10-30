@@ -1,5 +1,6 @@
 linters: all_linters(implicit_integer_linter = NULL, object_usage_linter = NULL)
 exclusions: list(
+    "tests/testthat/_problems",
     "vignettes" = list(
       absolute_path_linter = Inf,
       nonportable_path_linter = Inf,
