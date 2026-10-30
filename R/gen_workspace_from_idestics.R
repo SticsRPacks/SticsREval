@@ -131,19 +131,23 @@ get_metadata <- function(url, token, usms) {
 
 get_usms <- function(url, token, ids, output_dir) {
   logger::log_info("Retrieving USMs from IDestics API...")
+  # The archive is streamed to disk rather than held in memory
+  zip_file <- tempfile(fileext = ".zip")
+  on.exit(unlink(zip_file), add = TRUE)
   resp <- idestics_request(
     url,
     c("api", "extraction", "sync-usms"),
     list(mus_ids = as.list(ids), format = "javastics", mode = "strict"),
     token = token
   ) |>
-    httr2::req_perform()
+    httr2::req_perform(path = zip_file)
 
   # A ZIP archive starts with the "PK" signature: anything else (e.g. an HTML
   # error page from a proxy) can't be extracted
-  zip_content <- httr2::resp_body_raw(resp)
-  if (length(zip_content) < 2 ||
-        !identical(zip_content[1:2], charToRaw("PK"))) {
+  zip_signature <- if (file.exists(zip_file)) {
+    readBin(zip_file, "raw", n = 2L)
+  }
+  if (!identical(zip_signature, charToRaw("PK"))) {
     stop(
       "IDEStics API returned no ZIP archive for the USMs extraction ",
       "(content type: ", httr2::resp_content_type(resp), ").",
@@ -151,9 +155,6 @@ get_usms <- function(url, token, ids, output_dir) {
     )
   }
 
-  # Save the response body to a temporary ZIP file
-  zip_file <- tempfile(fileext = ".zip")
-  writeBin(zip_content, zip_file)
   utils::unzip(zip_file, exdir = output_dir)
 }
 

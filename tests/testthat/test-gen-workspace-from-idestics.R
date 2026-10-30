@@ -14,6 +14,19 @@ req_json_body <- function(req) {
   ))
 }
 
+# Stub of httr2::req_perform() for requests performed with a `path`:
+# httr2 mocked responses ignore it, so the response body would never be
+# written to disk. Copies `body_file` to `path` and records the request.
+mock_download <- function(body_file, content_type, seen = new.env()) {
+  function(req, path) {
+    seen$url <- req$url
+    seen$body <- req_json_body(req)
+    seen$path <- path
+    file.copy(body_file, path)
+    httr2::response(200L, headers = list(`Content-Type` = content_type))
+  }
+}
+
 rotation_row <- function(mus_name, mus_id = 1L, wsp_id = 7L, rotation = "0",
                          rotation_order = 1L, wsp_statut = "actif") {
   list(
@@ -319,20 +332,17 @@ test_that("get_usms extracts the ZIP archive returned by the API", {
   withr::with_dir(src, utils::zip(zip_file, "usms.xml", flags = "-q"))
 
   seen <- new.env()
-  httr2::local_mocked_responses(function(req) {
-    seen$url <- req$url
-    seen$body <- req_json_body(req)
-    httr2::response(
-      200L,
-      headers = list(`Content-Type` = "application/zip"), # nolint: nonportable_path_linter
-      body = readBin(zip_file, "raw", file.size(zip_file))
-    )
-  })
+  mockery::stub(
+    get_usms, "httr2::req_perform",
+    mock_download(zip_file, "application/zip", seen) # nolint: nonportable_path_linter
+  )
 
   output_dir <- withr::local_tempdir()
   get_usms(idestics_url, "tok", 1L, output_dir)
 
   expect_true(file.exists(file.path(output_dir, "usms.xml")))
+  # The downloaded archive is removed after extraction
+  expect_false(file.exists(seen$path))
   expect_identical(seen$url, "https://idestics.test/api/extraction/sync-usms")
   expect_identical(
     seen$body,
@@ -341,17 +351,31 @@ test_that("get_usms extracts the ZIP archive returned by the API", {
 })
 
 test_that("get_usms errors when the API returns no ZIP archive", {
-  httr2::local_mocked_responses(function(req) {
-    httr2::response(
-      200L,
-      headers = list(`Content-Type` = "text/html"), # nolint: nonportable_path_linter
-      body = charToRaw("<html></html>")
-    )
-  })
+  html_file <- withr::local_tempfile(lines = "<html></html>")
+  seen <- new.env()
+  mockery::stub(
+    get_usms, "httr2::req_perform",
+    mock_download(html_file, "text/html", seen) # nolint: nonportable_path_linter
+  )
 
   expect_error(
     get_usms(idestics_url, "tok", 1L, withr::local_tempdir()),
     "returned no ZIP archive .*content type: text/html"
+  )
+  expect_false(file.exists(seen$path))
+})
+
+test_that("get_usms errors on an empty response", {
+  empty_file <- withr::local_tempfile()
+  file.create(empty_file)
+  mockery::stub(
+    get_usms, "httr2::req_perform",
+    mock_download(empty_file, "application/zip") # nolint: nonportable_path_linter
+  )
+
+  expect_error(
+    get_usms(idestics_url, "tok", 1L, withr::local_tempdir()),
+    "returned no ZIP archive"
   )
 })
 
