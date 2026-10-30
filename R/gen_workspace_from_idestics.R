@@ -228,6 +228,7 @@ extract_idestics_data <- function(
     file.path(output_dir, metadata_file_name),
     delimiter = ";"
   )
+  metadata
 }
 
 gen_varmod_from_obs_idestics <- function(out_path) {
@@ -319,9 +320,11 @@ gen_workspace_from_idestics <- function(
     add = TRUE
   )
 
-  extract_idestics_data(
+  metadata <- extract_idestics_data(
     idestics_url, username, password, usms, stics_path, workspace_tmp_actual
   )
+  # Only convert the USMs found in active IDEStics workspaces
+  usms <- intersect(usms, metadata$usm)
 
   gen_varmod_from_obs_idestics(workspace_tmp_actual)
   logger::log_info(

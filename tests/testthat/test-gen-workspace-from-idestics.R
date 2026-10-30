@@ -429,6 +429,35 @@ test_that("extract_idestics_data retrieves the USMs and completes them", {
   expect_identical(written$usm, "usm1")
 })
 
+test_that("extract_idestics_data returns the metadata", {
+  stics_path <- withr::local_tempdir()
+  write_stics_fixture(stics_path)
+  output_dir <- withr::local_tempdir()
+
+  metadata <- data.frame(
+    usm = "usm1",
+    rotation = "0",
+    rotation_order = 1L,
+    idestics_usm_id = 1L,
+    idestics_usm_name = "7_usm1",
+    stringsAsFactors = FALSE
+  )
+  mockery::stub(extract_idestics_data, "auth", function(...) "tok")
+  mockery::stub(extract_idestics_data, "get_metadata", function(...) metadata)
+  mockery::stub(extract_idestics_data, "get_usms", function(...) NULL)
+  mockery::stub(
+    extract_idestics_data, "rename_idestics_usms",
+    function(...) NULL
+  )
+
+  expect_identical(
+    extract_idestics_data(
+      idestics_url, "user", "secret", "usm1", stics_path, output_dir
+    ),
+    metadata
+  )
+})
+
 # ---- gen_varmod_from_obs_idestics ----
 
 test_that("gen_varmod_from_obs_idestics writes unique vars from obs files", {
@@ -462,6 +491,7 @@ test_that("gen_workspace_from_idestics generates a text workspace", {
       seen$credentials <- c(username, password)
       writeLines("ian;mo;jo;jul;LAI", file.path(output_dir, "usm1.obs"))
       writeLines("usm;rotation", file.path(output_dir, "metadata.csv"))
+      data.frame(usm = "usm1", stringsAsFactors = FALSE)
     }
   )
   mockery::stub(
@@ -480,6 +510,37 @@ test_that("gen_workspace_from_idestics generates a text workspace", {
   expect_identical(seen$usm, "usm1")
   expect_identical(seen$var_mod, "LAI")
   expect_true(file.exists(file.path(output_dir, "metadata.csv")))
+})
+
+test_that("gen_workspace_from_idestics only converts the USMs found", {
+  withr::local_envvar(
+    IDESTICS_USERNAME = "user",
+    IDESTICS_PASSWORD = "secret"
+  )
+  output_dir <- file.path(withr::local_tempdir(), "workspace")
+
+  seen <- new.env()
+  mockery::stub(
+    gen_workspace_from_idestics, "extract_idestics_data",
+    function(url, username, password, usms, stics_path, output_dir) {
+      writeLines("usm;rotation", file.path(output_dir, "metadata.csv"))
+      data.frame(usm = c("usm3", "usm1"), stringsAsFactors = FALSE)
+    }
+  )
+  mockery::stub(
+    gen_workspace_from_idestics, "SticsRFiles::gen_usms_xml2txt",
+    function(workspace, out_dir, verbose, usm, parallel, cores) {
+      seen$usm <- usm
+    }
+  )
+
+  gen_workspace_from_idestics(
+    idestics_url, withr::local_tempdir(), output_dir,
+    usms = c("usm1", "usm2", "usm3"), verbose = 0L
+  )
+
+  # Requested order kept, missing usm2 dropped
+  expect_identical(seen$usm, c("usm1", "usm3"))
 })
 
 test_that("gen_workspace_from_idestics errors on a missing stics_path", {
