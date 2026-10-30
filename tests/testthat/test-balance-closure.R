@@ -13,12 +13,11 @@ test_that("BalanceClosureTest handles no USMs to test", {
 
   init_logger(1L)
   log_env <- make_log_capture()
-  on.exit(logger::log_appender(logger::appender_console), add = TRUE)
 
-  BalanceClosureTest$new(
+  quietly(BalanceClosureTest$new(
     sim_rds = write_sim_rds(list(usm1 = sim_data)),
     usms = "nonexistent_usm"
-  )$run()
+  )$run())
 
   expect_match(
     log_env$logs,
@@ -35,14 +34,13 @@ test_that("BalanceClosureTest logs balance closure issues", {
 
   init_logger(1L)
   log_env <- make_log_capture()
-  on.exit(logger::log_appender(logger::appender_console), add = TRUE)
 
   bc_test <- BalanceClosureTest$new(
     sim_rds = write_sim_rds(list(usm1 = sim_data))
   )
 
   expect_error(
-    bc_test$run(),
+    quietly(bc_test$run()),
     "Balance closure test failed for some USMs. Check logs for details."
   )
 
@@ -64,12 +62,11 @@ test_that("BalanceClosureTest handles USMs with missing or NA fields", {
   )
 
   log_env <- make_log_capture()
-  on.exit(logger::log_appender(logger::appender_console), add = TRUE)
 
   bc_test <- BalanceClosureTest$new(
     sim_rds = write_sim_rds(list(usm1 = sim_data))
   )
-  expect_no_error(bc_test$run())
+  expect_no_error(quietly(bc_test$run()))
 })
 
 test_that("BalanceClosureTest runs without errors when all USMs pass", {
@@ -82,7 +79,7 @@ test_that("BalanceClosureTest runs without errors when all USMs pass", {
   bc_test <- BalanceClosureTest$new(
     sim_rds = write_sim_rds(list(usm1 = sim_data))
   )
-  expect_no_error(bc_test$run())
+  expect_no_error(quietly(bc_test$run()))
 })
 
 test_that("BalanceClosureTest restricts to USMs listed in usms", {
@@ -101,7 +98,7 @@ test_that("BalanceClosureTest restricts to USMs listed in usms", {
     sim_rds = write_sim_rds(list(usm1 = sim_data_ok, usm2 = sim_data_bad)),
     usms = "usm1"
   )
-  expect_no_error(bc_test$run())
+  expect_no_error(quietly(bc_test$run()))
 })
 
 test_that("BalanceClosureTest exports balance error details to output_dir", {
@@ -116,7 +113,7 @@ test_that("BalanceClosureTest exports balance error details to output_dir", {
     sim_rds = write_sim_rds(list(usm1 = sim_data)),
     output_dir = output_dir
   )
-  expect_error(bc_test$run())
+  expect_error(quietly(bc_test$run()))
 
   expect_true(file.exists(file.path(output_dir, "balance_errors_details.csv")))
 })
@@ -128,12 +125,12 @@ test_that("balance_closure_test() runs the balance closure test end to end", {
     final_H2O_balance = c(100, 100)
   )
 
-  expect_no_error(
+  expect_no_error(quietly(
     balance_closure_test(
       sim_rds = write_sim_rds(list(usm1 = sim_data)),
       usms = "usm1"
     )
-  )
+  ))
 })
 
 test_that("balance_closure_test() validates its arguments", {

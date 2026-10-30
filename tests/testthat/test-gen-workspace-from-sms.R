@@ -224,7 +224,6 @@ test_that("filter_usms_by_list keeps wanted USMs, warns about missing ones", {
   logger::log_threshold(logger::WARN)
   on.exit(logger::log_threshold(logger::FATAL), add = TRUE)
   log_env <- make_log_capture()
-  on.exit(logger::log_appender(logger::appender_console), add = TRUE)
 
   result <- filter_usms_by_list(usm_df, c("usm1", "usm4"))
 

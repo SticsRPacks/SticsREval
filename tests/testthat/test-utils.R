@@ -220,7 +220,6 @@ test_that("select_available_usms warns about missing USMs", {
   logger::log_threshold(logger::WARN)
   on.exit(logger::log_threshold(logger::FATAL), add = TRUE)
   log_env <- make_log_capture()
-  on.exit(logger::log_appender(logger::appender_console), add = TRUE)
 
   result <- select_available_usms("usm1", c("usm1", "usm3"), "ws")
 

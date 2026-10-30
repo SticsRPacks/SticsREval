@@ -4,7 +4,23 @@ replace_private <- function(obj, name, fn) {
   env[[name]] <- fn
 }
 
-make_log_capture <- function() {
+# Evaluate `expr` without printing its console report (cli messages and
+# printed tables)
+quietly <- function(expr) {
+  utils::capture.output(res <- suppressMessages(expr))
+  invisible(res)
+}
+
+silence_logs <- function() {
+  logger::log_appender(
+    logger::appender_void,
+    namespace = logger::log_namespaces()
+  )
+}
+
+# Capture the log lines until the end of the calling test, then silence the
+# logs again
+make_log_capture <- function(.local_envir = parent.frame()) {
   env <- new.env(parent = emptyenv())
   env$logs <- character(0)
 
@@ -12,6 +28,7 @@ make_log_capture <- function() {
     function(lines, ...) env$logs <- c(env$logs, lines),
     namespace = logger::log_namespaces()
   )
+  withr::defer(silence_logs(), envir = .local_envir)
 
   env
 }

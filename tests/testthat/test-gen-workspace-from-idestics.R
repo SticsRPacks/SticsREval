@@ -274,7 +274,6 @@ test_that("get_metadata warns about the USMs missing from IDEStics", {
   logger::log_threshold(logger::WARN)
   on.exit(logger::log_threshold(logger::FATAL), add = TRUE)
   log_env <- make_log_capture()
-  on.exit(logger::log_appender(logger::appender_console), add = TRUE)
 
   metadata <- get_metadata(idestics_url, "tok", c("usm1", "usm2"))
 

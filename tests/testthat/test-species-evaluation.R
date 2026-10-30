@@ -42,7 +42,7 @@ test_that("summary works when no comparison was generated", {
     backend = mock()
   )
 
-  expect_no_error(eval$summary())
+  expect_no_error(quietly(eval$summary()))
 })
 
 
@@ -141,7 +141,7 @@ test_that("run skips the comparison of species without reference data", {
   expect_no_error(eval$run())
   expect_false(is.null(eval$get_species_stats("maize")$stats))
   expect_false(is.null(eval$get_species_stats("wheat")$stats))
-  expect_no_error(eval$summary())
+  expect_no_error(quietly(eval$summary()))
 
   output_dir <- withr::local_tempdir()
   eval_out <- SpeciesEvaluation$new(
