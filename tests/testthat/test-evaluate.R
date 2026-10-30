@@ -40,9 +40,10 @@ test_that("report_evaluation_status shows the skip reason", {
     "Global evaluation" = fake_evaluation(FALSE, "no reference data")
   )
 
-  expect_message(
-    report_evaluation_status(evaluations),
+  expect_match(
+    capture_messages(report_evaluation_status(evaluations)),
     "not evaluated (no reference data)",
-    fixed = TRUE
+    fixed = TRUE,
+    all = FALSE
   )
 })
