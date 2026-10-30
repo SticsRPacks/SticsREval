@@ -281,6 +281,34 @@ test_that("get_metadata warns about the USMs missing from IDEStics", {
   expect_match(log_env$logs, "usm2", all = FALSE)
 })
 
+test_that("get_metadata errors on duplicated USM names", {
+  httr2::local_mocked_responses(function(req) {
+    json_response(list(
+      rotation_row("usm1", mus_id = 1L, wsp_id = 7L),
+      rotation_row("usm1", mus_id = 2L, wsp_id = 8L),
+      rotation_row("usm2", mus_id = 3L, wsp_id = 8L)
+    ))
+  })
+
+  expect_error(
+    get_metadata(idestics_url, "tok", c("usm1", "usm2")),
+    "USM names are not unique across active IDEStics workspaces: usm1"
+  )
+})
+
+test_that("get_metadata ignores duplicated names of inactive workspaces", {
+  httr2::local_mocked_responses(function(req) {
+    json_response(list(
+      rotation_row("usm1", mus_id = 1L, wsp_id = 7L),
+      rotation_row("usm1", mus_id = 2L, wsp_id = 8L, wsp_statut = "inactif")
+    ))
+  })
+
+  metadata <- get_metadata(idestics_url, "tok", "usm1")
+
+  expect_identical(metadata$idestics_usm_id, 1L)
+})
+
 # ---- get_usms ----
 
 test_that("get_usms extracts the ZIP archive returned by the API", {
@@ -354,19 +382,6 @@ test_that("rename_idestics_usms renames the USMs and their obs files", {
   expect_setequal(
     list.files(ws, pattern = "\\.obs$"),
     c("usm+1.obs", "usm+1a.obs", "other.obs")
-  )
-})
-
-test_that("rename_idestics_usms errors on duplicated USM names", {
-  metadata <- data.frame(
-    usm = c("usm1", "usm1"),
-    idestics_usm_name = c("7_usm1", "8_usm1"),
-    stringsAsFactors = FALSE
-  )
-
-  expect_error(
-    rename_idestics_usms(withr::local_tempdir(), metadata),
-    "USM names are not unique across active IDEStics workspaces: usm1"
   )
 })
 

@@ -119,6 +119,13 @@ get_metadata <- function(url, token, usms) {
   # Warn about the requested USMs missing from active workspaces, and stop if
   # none of them are found
   select_available_usms(metadata$usm, usms, "active IDEStics workspaces")
+  if (anyDuplicated(metadata$usm)) {
+    stop(
+      "USM names are not unique across active IDEStics workspaces: ",
+      toString(unique(metadata$usm[duplicated(metadata$usm)])),
+      call. = FALSE
+    )
+  }
   metadata
 }
 
@@ -151,13 +158,6 @@ get_usms <- function(url, token, ids, output_dir) {
 }
 
 rename_idestics_usms <- function(workspace, metadata) {
-  if (anyDuplicated(metadata$usm)) {
-    stop(
-      "USM names are not unique across active IDEStics workspaces: ",
-      toString(unique(metadata$usm[duplicated(metadata$usm)])),
-      call. = FALSE
-    )
-  }
   mapping <- stats::setNames(metadata$usm, metadata$idestics_usm_name)
 
   usms_xml <- file.path(workspace, "usms.xml")
