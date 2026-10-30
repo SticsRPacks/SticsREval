@@ -47,13 +47,15 @@ gen_varmod_from_obs <- function(sms_path, out_path) {
 #' @importFrom rlang .data
 get_sms_usms_list <- function(sms_path) {
   filter_file_path <- file.path(sms_path, "typo_usms.csv")
-  filter_file <- try(read.csv(filter_file_path, sep = ";"), TRUE)
-  if (is(filter_file, "try-error")) {
-    stop(
-      "Filter file could not be loaded: ", filter_file_path,
-      call. = FALSE
-    )
-  }
+  filter_file <- tryCatch(
+    read_csv(filter_file_path, delimiter = ";"),
+    error = function(e) {
+      stop(
+        "Filter file could not be loaded: ", filter_file_path,
+        call. = FALSE
+      )
+    }
+  )
   dplyr::filter(filter_file, .data$source == "sms")
 }
 
