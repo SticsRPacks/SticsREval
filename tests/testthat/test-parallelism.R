@@ -26,3 +26,10 @@ test_that("ParallelBackend uses injected runner", {
   expect_true(called$flag)
   expect_identical(result, list(1L, 2L))
 })
+
+test_that("ParallelBackend returns an empty list when there are no tasks", {
+
+  backend <- ParallelBackend$new(parallel = TRUE, cores = 2)
+
+  expect_identical(backend$run(0, function(i) i), list())
+})
