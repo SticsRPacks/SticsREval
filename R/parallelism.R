@@ -43,6 +43,8 @@ ParallelBackend <- R6::R6Class("ParallelBackend", # nolint: object_name_linter
 
     default_runner = function(n_tasks, fun, private) {
 
+      if (n_tasks == 0) return(list())
+
       if (!private$.parallel) {
         return(lapply(seq_len(n_tasks), fun))
       }
