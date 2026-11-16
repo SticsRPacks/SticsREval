@@ -1,6 +1,6 @@
 # Changelog
 
-## SticsREval (development version)
+## SticsREval 0.2.0
 
 - New
   [`plot_rrmse_comparison()`](https://sticsrpacks.github.io/SticsREval/reference/plot_rrmse_comparison.md)

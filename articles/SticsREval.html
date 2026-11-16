@@ -19,7 +19,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">SticsREval</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -274,18 +274,59 @@ global page and one page per species:</p>
 <code>evaluate(..., report = TRUE)</code>. The site links to its shared
 assets through relative paths, so keep it intact when moving or sharing
 it.</p>
-<p>To use the rRMSE comparison plot outside the report, build it from
-the exported CSV files with <code><a href="../reference/plot_rrmse_comparison.html">plot_rrmse_comparison()</a></code>:</p>
+<div class="section level3">
+<h3 id="plots-outside-the-report">Plots outside the report<a class="anchor" aria-label="anchor" href="#plots-outside-the-report"></a>
+</h3>
+<p>The plots of the report can also be built from the CSV files exported
+by <code><a href="../reference/evaluate.html">evaluate()</a></code>, to explore the results interactively or
+include them in another document.</p>
+<p><code><a href="../reference/plot_rrmse_comparison.html">plot_rrmse_comparison()</a></code> plots the rRMSE of the candidate
+version against the reference version, one point per variable, coloured
+by status:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">comparison</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="st">"outputs/csv/global_rrmse_comparison.csv"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/plot_rrmse_comparison.html">plot_rrmse_comparison</a></span><span class="op">(</span><span class="va">comparison</span>, percentage <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span></code></pre></div>
+<p><code><a href="../reference/overview_heatmap.html">overview_heatmap()</a></code> shows the status of every variable
+for every species in a single heatmap, as on the report’s homepage:</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">species_comparison</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="st">"outputs/csv/species_rrmse_comparison.csv"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/overview_heatmap.html">overview_heatmap</a></span><span class="op">(</span><span class="va">species_comparison</span><span class="op">)</span></span></code></pre></div>
+<p><code><a href="../reference/usm_ratio_heatmap.html">usm_ratio_heatmap()</a></code> shows, for one species, the ratio
+used by the USM test for each USM and variable: (RMSE - reference RMSE)
+/ RMSE of the species over all its USMs, in %. Cells are coloured
+according to the <code>degraded_threshold</code> and
+<code>ratio_threshold</code> arguments of <code><a href="../reference/evaluate.html">evaluate()</a></code>:</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">per_usm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="st">"outputs/csv/rRMSE_per_usm.csv"</span><span class="op">)</span></span>
+<span><span class="va">species_stats</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="st">"outputs/csv/species_stats.csv"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">sp</span> <span class="op">&lt;-</span> <span class="st">"wheat"</span></span>
+<span><span class="va">sp_usm</span> <span class="op">&lt;-</span> <span class="va">per_usm</span><span class="op">[</span><span class="va">per_usm</span><span class="op">$</span><span class="va">species</span> <span class="op">==</span> <span class="va">sp</span>, <span class="op">]</span></span>
+<span><span class="va">key</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"situation"</span>, <span class="st">"variable"</span><span class="op">)</span></span>
+<span><span class="va">usm_ratio</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/merge.html" class="external-link">merge</a></span><span class="op">(</span></span>
+<span>  <span class="va">sp_usm</span><span class="op">[</span><span class="va">sp_usm</span><span class="op">$</span><span class="va">group</span> <span class="op">==</span> <span class="st">"evaluated"</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">key</span>, <span class="st">"RMSE"</span><span class="op">)</span><span class="op">]</span>,</span>
+<span>  <span class="va">sp_usm</span><span class="op">[</span><span class="va">sp_usm</span><span class="op">$</span><span class="va">group</span> <span class="op">==</span> <span class="st">"reference"</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">key</span>, <span class="st">"RMSE"</span>, <span class="st">"n_obs"</span><span class="op">)</span><span class="op">]</span>,</span>
+<span>  by <span class="op">=</span> <span class="va">key</span>, suffixes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"_eval"</span>, <span class="st">"_ref"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">sp_eval</span> <span class="op">&lt;-</span> <span class="va">species_stats</span><span class="op">[</span></span>
+<span>  <span class="va">species_stats</span><span class="op">$</span><span class="va">species</span> <span class="op">==</span> <span class="va">sp</span> <span class="op">&amp;</span> <span class="va">species_stats</span><span class="op">$</span><span class="va">group</span> <span class="op">==</span> <span class="st">"evaluated"</span>,</span>
+<span><span class="op">]</span></span>
+<span><span class="va">usm_ratio</span><span class="op">$</span><span class="va">RMSE_species</span> <span class="op">&lt;-</span> <span class="va">sp_eval</span><span class="op">$</span><span class="va">RMSE</span><span class="op">[</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/match.html" class="external-link">match</a></span><span class="op">(</span><span class="va">usm_ratio</span><span class="op">$</span><span class="va">variable</span>, <span class="va">sp_eval</span><span class="op">$</span><span class="va">variable</span><span class="op">)</span></span>
+<span><span class="op">]</span></span>
+<span><span class="va">usm_ratio</span><span class="op">$</span><span class="va">ratio</span> <span class="op">&lt;-</span> <span class="fl">100</span> <span class="op">*</span> <span class="op">(</span><span class="va">usm_ratio</span><span class="op">$</span><span class="va">RMSE_eval</span> <span class="op">-</span> <span class="va">usm_ratio</span><span class="op">$</span><span class="va">RMSE_ref</span><span class="op">)</span> <span class="op">/</span></span>
+<span>  <span class="va">usm_ratio</span><span class="op">$</span><span class="va">RMSE_species</span></span>
+<span><span class="va">usm_ratio</span> <span class="op">&lt;-</span> <span class="va">usm_ratio</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/is.finite.html" class="external-link">is.finite</a></span><span class="op">(</span><span class="va">usm_ratio</span><span class="op">$</span><span class="va">ratio</span><span class="op">)</span>, <span class="op">]</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/usm_ratio_heatmap.html">usm_ratio_heatmap</a></span><span class="op">(</span><span class="va">usm_ratio</span>, degraded_threshold <span class="op">=</span> <span class="fl">20</span>, ratio_threshold <span class="op">=</span> <span class="fl">50</span><span class="op">)</span></span></code></pre></div>
+</div>
 </div>
 <div class="section level2">
 <h2 id="parallel-execution">Parallel execution<a class="anchor" aria-label="anchor" href="#parallel-execution"></a>
 </h2>
 <p>All workflow functions accept <code>parallel</code> and
 <code>cores</code> arguments:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/evaluate.html">evaluate</a></span><span class="op">(</span></span>
 <span>  usms_workspace <span class="op">=</span> <span class="st">"workspace/"</span>,</span>
 <span>  sim_rds        <span class="op">=</span> <span class="st">"outputs/simulations.rds"</span>,</span>
