@@ -12,19 +12,18 @@ RUN apt-get update -y && \
 
 WORKDIR /stics-r-eval
 
-ENV R_REPOSITORIES=https://cloud.r-project.org
 ENV RENV_CONFIG_CACHE_SYMLINKS=FALSE
 
 COPY renv.lock renv.lock
 COPY renv/ renv/
 
-RUN R -e "install.packages('renv', repos='https://cloud.r-project.org')"
+RUN R -e "install.packages('renv')"
 
 RUN --mount=type=secret,id=GITHUB_TOKEN,required=false \
     if [ -f /run/secrets/GITHUB_TOKEN ]; then \
       export GITHUB_PAT=$(cat /run/secrets/GITHUB_TOKEN); \
     fi && \
-    R -e "options(repos = c(CRAN='https://cloud.r-project.org')); renv::restore(prompt = FALSE)"
+    R -e "renv::restore(repos = getOption('repos'), prompt = FALSE)"
 
 COPY . .
 RUN R CMD INSTALL .
