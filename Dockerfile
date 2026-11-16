@@ -42,7 +42,7 @@ ARG QUARTO_VERSION=1.10.18
 RUN apt-get update -y && \
     apt-get install -y --no-install-recommends \
       curl ca-certificates gdebi-core \
-      libcurl4 libssl3 libxml2 libxslt1.1 \
+      libcurl4t64 libssl3t64 libxml2-16 libxslt1.1 \
       libx11-6 pandoc \
     && curl -Lo /tmp/quarto.deb \
       "https://github.com/quarto-dev/quarto-cli/releases/download/v${QUARTO_VERSION}/quarto-${QUARTO_VERSION}-linux-$(dpkg --print-architecture).deb" \
