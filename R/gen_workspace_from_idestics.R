@@ -137,7 +137,11 @@ get_usms <- function(url, token, ids, output_dir) {
   resp <- idestics_request(
     url,
     c("api", "extraction", "sync-usms"),
-    list(mus_ids = as.list(ids), format = "javastics", mode = "strict"),
+    list(
+      mus_ids = as.list(ids),
+      format = "javastics",
+      mode = "strict"
+      ),
     token = token
   ) |>
     httr2::req_perform(path = zip_file)
