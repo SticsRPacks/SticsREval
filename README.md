@@ -80,16 +80,16 @@ A pre-built image, including the Quarto CLI, is available on the GitHub
 Container Registry:
 
 ```bash
-docker pull ghcr.io/sticsrpacks/stics-r-eval:v0.1.1
+docker pull ghcr.io/sticsrpacks/stics-r-eval:v0.2.0
 
 # Interactive R session
 docker run --rm -it -v /path/to/your/workspace:/workspace \
-  ghcr.io/sticsrpacks/stics-r-eval:v0.1.1 R
+  ghcr.io/sticsrpacks/stics-r-eval:v0.2.0 R
 
 # Non-interactive script
 docker run --rm -v /path/to/your/workspace:/workspace \
   -v /path/to/your/script.R:/script.R \
-  ghcr.io/sticsrpacks/stics-r-eval:v0.1.1 Rscript /script.R
+  ghcr.io/sticsrpacks/stics-r-eval:v0.2.0 Rscript /script.R
 ```
 
 To build it locally (a GitHub token is needed to install private SticsRPacks
@@ -112,6 +112,4 @@ docker build --secret id=GITHUB_TOKEN,src=<(echo $GITHUB_PAT) -t stics-r-eval .
 
 To cite `SticsREval`, run `citation("SticsREval")`. Contributions are welcome
 through [issues](https://github.com/SticsRPacks/SticsREval/issues) and pull
-requests. Please note that this project is released with a
-[Contributor Code of Conduct](CODE_OF_CONDUCT.md); by contributing, you agree
-to abide by its terms.
+requests.
