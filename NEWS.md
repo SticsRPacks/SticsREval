@@ -1,4 +1,4 @@
-# SticsREval (development version)
+# SticsREval 0.2.0
 
 * New `plot_rrmse_comparison()` function to plot the rRMSE of the evaluated
   version against the reference version, one point per variable, coloured by
