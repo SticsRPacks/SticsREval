@@ -1,9 +1,12 @@
-# SticsREval 0.2.0
+# SticsREval (development version)
 
 * New `gen_workspace_from_idestics()` function to build a STICS text workspace
   from data retrieved from the IDEStics API. The IDEStics credentials are read
   from the `IDESTICS_USERNAME` and `IDESTICS_PASSWORD` environment variables,
   or prompted for in an interactive session.
+
+
+# SticsREval 0.2.0
 
 * New `plot_rrmse_comparison()` function to plot the rRMSE of the evaluated
   version against the reference version, one point per variable, coloured by
