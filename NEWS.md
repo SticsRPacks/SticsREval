@@ -1,4 +1,4 @@
-# SticsREval (development version)
+# SticsREval 0.2.0
 
 * New `gen_workspace_from_idestics()` function to build a STICS text workspace
   from data retrieved from the IDEStics API. The IDEStics credentials are read

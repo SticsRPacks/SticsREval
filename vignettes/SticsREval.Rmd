@@ -226,12 +226,56 @@ It can also be triggered directly with `evaluate(..., report = TRUE)`. The
 site links to its shared assets through relative paths, so keep it intact
 when moving or sharing it.
 
-To use the rRMSE comparison plot outside the report, build it from the
-exported CSV files with `plot_rrmse_comparison()`:
+### Plots outside the report
+
+The plots of the report can also be built from the CSV files exported by
+`evaluate()`, to explore the results interactively or include them in another
+document.
+
+`plot_rrmse_comparison()` plots the rRMSE of the candidate version against the
+reference version, one point per variable, coloured by status:
 
 ```{r}
 comparison <- read.csv("outputs/csv/global_rrmse_comparison.csv")
 plot_rrmse_comparison(comparison, percentage = 5)
+```
+
+`overview_heatmap()` shows the status of every variable for every species in a
+single heatmap, as on the report's homepage:
+
+```{r}
+species_comparison <- read.csv("outputs/csv/species_rrmse_comparison.csv")
+overview_heatmap(species_comparison)
+```
+
+`usm_ratio_heatmap()` shows, for one species, the ratio used by the USM test
+for each USM and variable: (RMSE - reference RMSE) / RMSE of the species over
+all its USMs, in %. Cells are coloured according to the `degraded_threshold`
+and `ratio_threshold` arguments of `evaluate()`:
+
+```{r}
+per_usm <- read.csv("outputs/csv/rRMSE_per_usm.csv")
+species_stats <- read.csv("outputs/csv/species_stats.csv")
+
+sp <- "wheat"
+sp_usm <- per_usm[per_usm$species == sp, ]
+key <- c("situation", "variable")
+usm_ratio <- merge(
+  sp_usm[sp_usm$group == "evaluated", c(key, "RMSE")],
+  sp_usm[sp_usm$group == "reference", c(key, "RMSE", "n_obs")],
+  by = key, suffixes = c("_eval", "_ref")
+)
+sp_eval <- species_stats[
+  species_stats$species == sp & species_stats$group == "evaluated",
+]
+usm_ratio$RMSE_species <- sp_eval$RMSE[
+  match(usm_ratio$variable, sp_eval$variable)
+]
+usm_ratio$ratio <- 100 * (usm_ratio$RMSE_eval - usm_ratio$RMSE_ref) /
+  usm_ratio$RMSE_species
+usm_ratio <- usm_ratio[is.finite(usm_ratio$ratio), ]
+
+usm_ratio_heatmap(usm_ratio, degraded_threshold = 20, ratio_threshold = 50)
 ```
 
 ## Parallel execution
