@@ -194,8 +194,8 @@ merge_usms_workspaces <- function(batch_dirs, output_dir) {
 
 # Retrieve the USMs from the IDEStics API. The USMs are requested by batches
 # of `batch_size`, at most `max_active` requests being performed in parallel.
-get_usms <- function(url, token, ids, simulator_id, output_dir, batch_size = Inf,
-                     max_active = 10L) {
+get_usms <- function(url, token, ids, simulator_id, output_dir,
+                     batch_size = Inf, max_active = 10L) {
   start_time <- Sys.time()
   batches <- split(ids, ceiling(seq_along(ids) / batch_size))
   logger::log_info(
@@ -278,11 +278,13 @@ get_simulator_version_id <- function(url, token, stics_version) {
   resp <- httr2::resp_body_json(resp)
   simulator_version <- resp |>
     dplyr::bind_rows() |>
-    dplyr::filter(.data$version == stics_version, .data$active == TRUE)
+    dplyr::filter(.data$version == stics_version, .data$active)
   logger::log_debug(simulator_version)
-  if (nrow(simulator_version) == 0 || !is.integer(simulator_version$siv_id[[1]])) {
+  if (nrow(simulator_version) == 0 ||
+        !is.integer(simulator_version$siv_id[[1]])) {
     stop(
-      "IDEStics API returned no simulator version ID for STICS version ", stics_version, ".",
+      "IDEStics API returned no simulator version ID for STICS version ",
+      stics_version, ".",
       call. = FALSE
     )
   }
@@ -291,8 +293,8 @@ get_simulator_version_id <- function(url, token, stics_version) {
 
 
 extract_idestics_data <- function(
-  url, username, password, stics_version, usms, stics_path, output_dir, batch_size = Inf,
-  max_active = 10L
+  url, username, password, stics_version, usms, stics_path, output_dir,
+  batch_size = Inf, max_active = 10L
 ) {
   token <- auth(url, username, password)
   metadata <- get_metadata(url, token, usms)
@@ -371,6 +373,8 @@ gen_varmod_from_obs_idestics <- function(out_path) {
 #' @param idestics_url URL of the IDEStics server
 #' @param stics_path path to Stics repository
 #' @param output_dir path to the Stics workspace to generate
+#' @param stics_version Stics version of the USMs to retrieve, as listed by
+#'  the IDEStics API (e.g. \code{"10.2.0"})
 #' @param usms character vector of USM names to generate. Use
 #'  \code{\link{read_usms_files}} to read them from USM list files.
 #' @param parallel Boolean. Is the computation to be done in parallel ?
@@ -433,8 +437,8 @@ gen_workspace_from_idestics <- function(
   )
 
   metadata <- extract_idestics_data(
-    idestics_url, username, password, stics_version, usms, stics_path, workspace_tmp_actual,
-    batch_size, max_active
+    idestics_url, username, password, stics_version, usms, stics_path,
+    workspace_tmp_actual, batch_size, max_active
   )
   # Only convert the USMs found in active IDEStics workspaces
   usms <- intersect(usms, metadata$usm)

@@ -1,9 +1,11 @@
 # SticsREval (development version)
 
 * New `gen_workspace_from_idestics()` function to build a STICS text workspace
-  from data retrieved from the IDEStics API. The IDEStics credentials are read
-  from the `IDESTICS_USERNAME` and `IDESTICS_PASSWORD` environment variables,
-  or prompted for in an interactive session.
+  from data retrieved from the IDEStics API, for a given STICS version
+  (`stics_version`). The USMs are requested by batches (`batch_size`), several
+  requests being performed in parallel (`max_active`). The IDEStics
+  credentials are read from the `IDESTICS_USERNAME` and `IDESTICS_PASSWORD`
+  environment variables, or prompted for in an interactive session.
 
 
 # SticsREval 0.2.0

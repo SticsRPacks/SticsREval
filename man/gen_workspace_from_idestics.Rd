@@ -26,6 +26,9 @@ gen_workspace_from_idestics(
 
 \item{output_dir}{path to the Stics workspace to generate}
 
+\item{stics_version}{Stics version of the USMs to retrieve, as listed by
+the IDEStics API (e.g. \code{"10.2.0"})}
+
 \item{usms}{character vector of USM names to generate. Use
 \code{\link{read_usms_files}} to read them from USM list files.}
 
