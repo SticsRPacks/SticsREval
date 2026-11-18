@@ -57,7 +57,7 @@ idestics_request <- function(url, path, body, token = NULL) {
     httr2::req_url_path_append(path) |>
     httr2::req_method("POST") |>
     httr2::req_body_json(body) |>
-    httr2::req_retry(max_tries = 3) |>
+    httr2::req_retry(max_tries = 3, retry_on_failure = TRUE) |>
     httr2::req_error(body = idestics_error_body)
   if (!is.null(token)) {
     req <- httr2::req_auth_bearer_token(req, token)
@@ -129,12 +129,8 @@ get_metadata <- function(url, token, usms) {
   metadata
 }
 
-get_usms <- function(url, token, ids, output_dir) {
-  logger::log_info("Retrieving USMs from IDestics API...")
-  # The archive is streamed to disk rather than held in memory
-  zip_file <- tempfile(fileext = ".zip")
-  on.exit(unlink(zip_file), add = TRUE)
-  resp <- idestics_request(
+usms_request <- function(url, token, ids) {
+  idestics_request(
     url,
     c("api", "extraction", "sync-usms"),
     list(
@@ -143,11 +139,12 @@ get_usms <- function(url, token, ids, output_dir) {
       mode = "strict"
     ),
     token = token
-  ) |>
-    httr2::req_perform(path = zip_file)
+  )
+}
 
-  # A ZIP archive starts with the "PK" signature: anything else (e.g. an HTML
-  # error page from a proxy) can't be extracted
+# A ZIP archive starts with the "PK" signature: anything else (e.g. an HTML
+# error page from a proxy) can't be extracted
+check_usms_zip <- function(zip_file, resp) {
   zip_signature <- if (file.exists(zip_file)) {
     readBin(zip_file, "raw", n = 2L)
   }
@@ -158,8 +155,82 @@ get_usms <- function(url, token, ids, output_dir) {
       call. = FALSE
     )
   }
+}
 
-  utils::unzip(zip_file, exdir = output_dir)
+# Append to the root of the `dest` XML file the children of the root of the
+# `src` XML file whose "nom" attribute is not already in `dest`
+merge_xml_children <- function(dest, src) {
+  doc <- xml2::read_xml(dest)
+  root <- xml2::xml_root(doc)
+  existing <- xml2::xml_attr(xml2::xml_children(root), "nom")
+  for (node in xml2::xml_children(xml2::read_xml(src))) {
+    if (!xml2::xml_attr(node, "nom") %in% existing) {
+      xml2::xml_add_child(root, node)
+    }
+  }
+  xml2::write_xml(doc, dest)
+}
+
+# Merge the workspaces extracted from each batch into `output_dir`. The USMs
+# and soils collections are merged, the other files (one per USM, soil,
+# station, plant...) are moved, the first copy being kept on duplicates.
+merge_usms_workspaces <- function(batch_dirs, output_dir) {
+  merged_files <- c("usms.xml", "sols.xml")
+  for (batch_dir in batch_dirs) {
+    files <- list.files(batch_dir, recursive = TRUE, all.files = TRUE)
+    for (file in files) {
+      src <- file.path(batch_dir, file)
+      dest <- file.path(output_dir, file)
+      if (!file.exists(dest)) {
+        dir.create(dirname(dest), recursive = TRUE, showWarnings = FALSE)
+        file.rename(src, dest)
+      } else if (file %in% merged_files) {
+        merge_xml_children(dest, src)
+      }
+    }
+  }
+}
+
+# Retrieve the USMs from the IDEStics API. The USMs are requested by batches
+# of `batch_size`, at most `max_active` requests being performed in parallel.
+get_usms <- function(url, token, ids, output_dir, batch_size = Inf,
+                     max_active = 10L) {
+  start_time <- Sys.time()
+  batches <- split(ids, ceiling(seq_along(ids) / batch_size))
+  logger::log_info(
+    "Retrieving ", length(ids), " USMs from IDestics API in ",
+    length(batches), " batch(es)..."
+  )
+
+  batches_dir <- tempfile()
+  dir.create(batches_dir)
+  on.exit(unlink(batches_dir, recursive = TRUE), add = TRUE)
+  # The archives are streamed to disk rather than held in memory
+  zip_files <- file.path(batches_dir, paste0(seq_along(batches), ".zip"))
+  reqs <- lapply(unname(batches), function(batch) {
+    usms_request(url, token, batch)
+  })
+  resps <- httr2::req_perform_parallel(
+    reqs,
+    paths = zip_files,
+    on_error = "stop",
+    progress = interactive(),
+    max_active = max_active
+  )
+  logger::log_info(
+    "USMs downloaded in ", format(round(difftime(Sys.time(), start_time), 1))
+  )
+
+  batch_dirs <- file.path(batches_dir, seq_along(batches))
+  for (i in seq_along(batches)) {
+    check_usms_zip(zip_files[[i]], resps[[i]])
+    utils::unzip(zip_files[[i]], exdir = batch_dirs[[i]])
+    unlink(zip_files[[i]])
+  }
+  merge_usms_workspaces(batch_dirs, output_dir)
+  logger::log_info(
+    "USMs retrieved in ", format(round(difftime(Sys.time(), start_time), 1))
+  )
 }
 
 rename_idestics_usms <- function(workspace, metadata) {
@@ -195,14 +266,15 @@ rename_idestics_usms <- function(workspace, metadata) {
 
 
 extract_idestics_data <- function(
-  url, username, password, usms, stics_path, output_dir
+  url, username, password, usms, stics_path, output_dir, batch_size = Inf,
+  max_active = 10L
 ) {
   token <- auth(url, username, password)
   metadata <- get_metadata(url, token, usms)
 
   ids <- unique(metadata$idestics_usm_id)
   # Extracting USMs data from IDEStics
-  get_usms(url, token, ids, output_dir)
+  get_usms(url, token, ids, output_dir, batch_size, max_active)
   rename_idestics_usms(output_dir, metadata)
 
   stics_input_files_path <- file.path(stics_path, "input_files")
@@ -279,6 +351,10 @@ gen_varmod_from_obs_idestics <- function(out_path) {
 #'  with \code{\link{gen_workspace_from_sms}}.
 #' @param verbose Integer. Logging verbosity level: 0 = warnings and errors
 #'  only, 1 = info, 2 = debug
+#' @param batch_size Number of USMs requested to the IDEStics API per
+#'  request. \code{Inf} requests all the USMs at once.
+#' @param max_active Maximum number of requests to the IDEStics API performed
+#'  in parallel.
 #' @param usms_files Deprecated. Use
 #'  \code{usms = read_usms_files(usms_files)} instead.
 #'
@@ -294,6 +370,8 @@ gen_workspace_from_idestics <- function(
   cores = NA,
   force_code_shape = TRUE,
   verbose = 1L,
+  batch_size = 300L,
+  max_active = 10L,
   usms_files = lifecycle::deprecated()
 ) {
   init_logger(verbose)
@@ -326,7 +404,8 @@ gen_workspace_from_idestics <- function(
   )
 
   metadata <- extract_idestics_data(
-    idestics_url, username, password, usms, stics_path, workspace_tmp_actual
+    idestics_url, username, password, usms, stics_path, workspace_tmp_actual,
+    batch_size, max_active
   )
   # Only convert the USMs found in active IDEStics workspaces
   usms <- intersect(usms, metadata$usm)

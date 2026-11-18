@@ -13,6 +13,8 @@ gen_workspace_from_idestics(
   cores = NA,
   force_code_shape = TRUE,
   verbose = 1L,
+  batch_size = 300L,
+  max_active = 10L,
   usms_files = lifecycle::deprecated()
 )
 }
@@ -35,6 +37,12 @@ with \code{\link{gen_workspace_from_sms}}.}
 
 \item{verbose}{Integer. Logging verbosity level: 0 = warnings and errors
 only, 1 = info, 2 = debug}
+
+\item{batch_size}{Number of USMs requested to the IDEStics API per
+request. \code{Inf} requests all the USMs at once.}
+
+\item{max_active}{Maximum number of requests to the IDEStics API performed
+in parallel.}
 
 \item{usms_files}{Deprecated. Use
 \code{usms = read_usms_files(usms_files)} instead.}

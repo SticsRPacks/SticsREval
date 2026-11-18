@@ -29,7 +29,7 @@ Imports:
     ggrepel,
     htmltools,
     htmlwidgets,
-    httr2,
+    httr2 (>= 1.1.0),
     lifecycle,
     logger,
     methods,
