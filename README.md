@@ -49,6 +49,17 @@ gen_workspace_from_sms(
   output_dir = "workspace/"
 )
 
+# ... or from the IDEStics API, for the given USMs. The rotations are written
+# to workspace/metadata.csv, which can then be passed as `metadata_file` to
+# run_simulations().
+gen_workspace_from_idestics(
+  idestics_url  = "https://idestics.example.org",
+  stics_path    = "/path/to/stics_distribution",
+  output_dir    = "workspace/",
+  stics_version = "11.0.0",
+  usms          = read_usms_files("usms.txt")
+)
+
 # Run the reference and candidate versions
 run_simulations(
   stics_exe      = "/path/to/stics_reference",
@@ -74,6 +85,11 @@ evaluate(
 )
 ```
 
+`gen_workspace_from_idestics()` reads the IDEStics credentials from the
+`IDESTICS_USERNAME` and `IDESTICS_PASSWORD` environment variables, for
+instance set in your user-level `~/.Renviron`. Otherwise, they are prompted
+for in an interactive session, the password being masked.
+
 ## Docker
 
 A pre-built image, including the Quarto CLI, is available on the GitHub
@@ -91,6 +107,10 @@ docker run --rm -v /path/to/your/workspace:/workspace \
   -v /path/to/your/script.R:/script.R \
   ghcr.io/sticsrpacks/stics-r-eval:v0.2.0 Rscript /script.R
 ```
+
+A non-interactive script can't prompt for the IDEStics credentials: pass them
+from your environment with
+`-e IDESTICS_USERNAME -e IDESTICS_PASSWORD`.
 
 To build it locally (a GitHub token is needed to install private SticsRPacks
 dependencies):

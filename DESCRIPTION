@@ -19,6 +19,7 @@ Depends:
     R (>= 4.1.0)
 Imports:
     arrow,
+    askpass,
     cli,
     CroPlotR,
     dplyr,
@@ -28,6 +29,7 @@ Imports:
     ggrepel,
     htmltools,
     htmlwidgets,
+    httr2 (>= 1.1.0),
     lifecycle,
     logger,
     methods,
@@ -36,13 +38,15 @@ Imports:
     SticsRFiles,
     R6,
     readr,
-    rlang
+    rlang,
+    xml2
 Remotes:
     github::SticsRPacks/CroPlotR,
     github::SticsRPacks/SticsOnR,
     github::SticsRPacks/SticsRFiles
 Suggests:
     DT,
+    jsonlite,
     knitr,
     mockery,
     quarto,
@@ -61,6 +65,7 @@ Collate:
     'schema.R'
     'eval_workspace.R'
     'evaluate.R'
+    'gen_workspace_from_idestics.R'
     'gen_workspace_from_sms.R'
     'global_evaluation.R'
     'logger.R'

@@ -1,0 +1,538 @@
+metadata_file_name <- "metadata.csv"
+
+# Resolve an IDEStics credential without it ever being written in a script:
+# environment variable first, then interactive prompt.
+resolve_idestics_credential <- function(env_var, label, prompt_fun) {
+  value <- Sys.getenv(env_var)
+  if (nzchar(value)) {
+    return(value)
+  }
+  if (!interactive()) {
+    stop(
+      "No IDEStics ", label, " provided: set the ", env_var, " environment ",
+      "variable or run in an interactive session.",
+      call. = FALSE
+    )
+  }
+  value <- prompt_fun()
+  if (is.null(value) || !nzchar(value)) {
+    stop("No IDEStics ", label, " entered.", call. = FALSE)
+  }
+  value
+}
+
+resolve_idestics_username <- function() {
+  resolve_idestics_credential(
+    "IDESTICS_USERNAME", "username",
+    function() trimws(readline("IDEStics username: "))
+  )
+}
+
+resolve_idestics_password <- function(username) {
+  resolve_idestics_credential(
+    "IDESTICS_PASSWORD", "password",
+    function() {
+      askpass::askpass(paste0("IDEStics password for ", username, ": "))
+    }
+  )
+}
+
+# Append the "error" field of the API JSON response to httr2 HTTP errors
+idestics_error_body <- function(resp) {
+  msg <- tryCatch(
+    httr2::resp_body_json(resp)$error,
+    error = function(e) NULL
+  )
+  if (is.character(msg) && length(msg) == 1 && nzchar(msg)) {
+    paste0("IDEStics API: ", msg)
+  } else {
+    character()
+  }
+}
+
+# Build a request to the IDEStics API, with a JSON body unless `body` is NULL.
+# Transient failures (network errors, 429 and 503 responses) are retried.
+idestics_request <- function(url, path, body = NULL, method = "POST",
+                             token = NULL) {
+  req <- httr2::request(url) |>
+    httr2::req_url_path_append(path) |>
+    httr2::req_method(method) |>
+    httr2::req_retry(max_tries = 3, retry_on_failure = TRUE) |>
+    httr2::req_error(body = idestics_error_body)
+  if (!is.null(body)) {
+    req <- httr2::req_body_json(req, body)
+  }
+  if (!is.null(token)) {
+    req <- httr2::req_auth_bearer_token(req, token)
+  }
+  req
+}
+
+auth <- function(url, username, password) {
+  logger::log_info("Authenticating to IDEStics API...")
+  resp <- tryCatch(
+    idestics_request(
+      url,
+      c("api", "login"),
+      list(username = username, password = password)
+    ) |>
+      httr2::req_perform(),
+    httr2_http_401 = function(e) {
+      stop("Invalid IDEStics username or password.", call. = FALSE)
+    }
+  )
+
+  token <- httr2::resp_body_json(resp)$token
+  if (!is.character(token) || length(token) != 1 || !nzchar(token)) {
+    stop("IDEStics API login response contains no token.", call. = FALSE)
+  }
+  token
+}
+
+get_metadata <- function(url, token, usms) {
+  logger::log_info("Retrieving metadata from IDEStics API...")
+  logger::log_debug("Retrieving rotations and USMs ids from IDEStics API...")
+  resp <- idestics_request(
+    url,
+    c("api", "extraction", "rotations"),
+    # as.list() keeps a single USM as a JSON array instead of a scalar
+    list(usm_list = as.list(usms), format = "json"),
+    token = token
+  ) |>
+    httr2::req_perform()
+
+  resp <- httr2::resp_body_json(resp)
+  if (length(resp) == 0) {
+    stop("None of the requested USMs are found in IDEStics.", call. = FALSE)
+  }
+  metadata <- resp |>
+    dplyr::bind_rows() |>
+    dplyr::filter(.data$wsp_statut == "actif") |>
+    dplyr::transmute(
+      usm = .data$mus_name,
+      rotation = dplyr::if_else(
+        .data$rotation == "0",
+        "0",
+        paste0(.data$wsp_id, "_", .data$rotation)
+      ),
+      rotation_order = .data$rotation_order,
+      idestics_usm_id = .data$mus_id,
+      idestics_usm_name = paste0(.data$wsp_id, "_", .data$mus_name)
+    )
+  # Warn about the requested USMs missing from active workspaces, and stop if
+  # none of them are found
+  select_available_usms(metadata$usm, usms, "active IDEStics workspaces")
+  if (anyDuplicated(metadata$usm)) {
+    stop(
+      "USM names are not unique across active IDEStics workspaces: ",
+      toString(unique(metadata$usm[duplicated(metadata$usm)])),
+      call. = FALSE
+    )
+  }
+  metadata
+}
+
+usms_request <- function(url, token, ids, simulator_id) {
+  idestics_request(
+    url,
+    c("api", "extraction", "sync-usms"),
+    list(
+      mus_ids = as.list(ids),
+      format = "javastics",
+      mode = "strict",
+      siv_id = simulator_id
+    ),
+    token = token
+  )
+}
+
+# A ZIP archive starts with the "PK" signature: anything else (e.g. an HTML
+# error page from a proxy) can't be extracted
+check_usms_zip <- function(zip_file, resp) {
+  zip_signature <- if (file.exists(zip_file)) {
+    readBin(zip_file, "raw", n = 2L)
+  }
+  if (!identical(zip_signature, charToRaw("PK"))) {
+    stop(
+      "IDEStics API returned no ZIP archive for the USMs extraction ",
+      "(content type: ", httr2::resp_content_type(resp), ").",
+      call. = FALSE
+    )
+  }
+}
+
+# Append to the root of the `dest` XML file the children of the root of the
+# `src` XML file whose "nom" attribute is not already in `dest`
+merge_xml_children <- function(dest, src) {
+  doc <- xml2::read_xml(dest)
+  root <- xml2::xml_root(doc)
+  existing <- xml2::xml_attr(xml2::xml_children(root), "nom")
+  for (node in xml2::xml_children(xml2::read_xml(src))) {
+    if (!xml2::xml_attr(node, "nom") %in% existing) {
+      xml2::xml_add_child(root, node)
+    }
+  }
+  xml2::write_xml(doc, dest)
+}
+
+# Merge the workspaces extracted from each batch into `output_dir`. The USMs
+# and soils collections are merged, the other files (one per USM, soil,
+# station, plant...) are moved, the first copy being kept on duplicates.
+merge_usms_workspaces <- function(batch_dirs, output_dir) {
+  merged_files <- c("usms.xml", "sols.xml")
+  for (batch_dir in batch_dirs) {
+    files <- list.files(batch_dir, recursive = TRUE, all.files = TRUE)
+    for (file in files) {
+      src <- file.path(batch_dir, file)
+      dest <- file.path(output_dir, file)
+      if (!file.exists(dest)) {
+        dir.create(dirname(dest), recursive = TRUE, showWarnings = FALSE)
+        file.rename(src, dest)
+      } else if (file %in% merged_files) {
+        merge_xml_children(dest, src)
+      }
+    }
+  }
+}
+
+# Retrieve the USMs from the IDEStics API. The USMs are requested by batches
+# of `batch_size`, at most `max_active` requests being performed in parallel.
+get_usms <- function(url, token, ids, simulator_id, output_dir,
+                     batch_size = Inf, max_active = 10L) {
+  start_time <- Sys.time()
+  batches <- split(ids, ceiling(seq_along(ids) / batch_size))
+  logger::log_info(
+    "Retrieving ", length(ids), " USMs from IDEStics API in ",
+    length(batches), " batch(es)..."
+  )
+
+  batches_dir <- tempfile()
+  dir.create(batches_dir)
+  on.exit(unlink(batches_dir, recursive = TRUE), add = TRUE)
+  # The archives are streamed to disk rather than held in memory
+  zip_files <- file.path(batches_dir, paste0(seq_along(batches), ".zip"))
+  reqs <- lapply(unname(batches), function(batch) {
+    usms_request(url, token, batch, simulator_id)
+  })
+  resps <- httr2::req_perform_parallel(
+    reqs,
+    paths = zip_files,
+    on_error = "stop",
+    progress = interactive(),
+    max_active = max_active
+  )
+  logger::log_info(
+    "USMs downloaded in ", format(round(difftime(Sys.time(), start_time), 1))
+  )
+
+  batch_dirs <- file.path(batches_dir, seq_along(batches))
+  for (i in seq_along(batches)) {
+    check_usms_zip(zip_files[[i]], resps[[i]])
+    utils::unzip(zip_files[[i]], exdir = batch_dirs[[i]])
+    unlink(zip_files[[i]])
+  }
+  merge_usms_workspaces(batch_dirs, output_dir)
+  logger::log_info(
+    "USMs retrieved in ", format(round(difftime(Sys.time(), start_time), 1))
+  )
+}
+
+rename_idestics_usms <- function(workspace, metadata) {
+  mapping <- stats::setNames(metadata$usm, metadata$idestics_usm_name)
+
+  usms_xml <- file.path(workspace, "usms.xml")
+  doc <- xml2::read_xml(usms_xml)
+  for (node in xml2::xml_find_all(doc, "//usm")) {
+    old <- xml2::xml_attr(node, "nom")
+    if (old %in% names(mapping)) {
+      xml2::xml_set_attr(node, "nom", mapping[[old]])
+      for (fobs in xml2::xml_find_all(node, ".//fobs")) {
+        xml2::xml_text(fobs) <- sub(old, mapping[[old]], xml2::xml_text(fobs),
+                                    fixed = TRUE)
+      }
+    }
+  }
+  xml2::write_xml(doc, usms_xml)
+
+  # Build the candidate obs file names explicitly rather than with a regex:
+  # USM names may contain regex metacharacters such as "+" or ".".
+  for (old in names(mapping)) {
+    suffixes <- c("", "a", "p")
+    obs <- file.path(workspace, paste0(old, suffixes, ".obs"))
+    obs_new_path <- file.path(
+      workspace,
+      paste0(mapping[[old]], suffixes, ".obs")
+    )
+    found <- file.exists(obs)
+    file.rename(obs[found], obs_new_path[found])
+  }
+}
+
+get_simulator_version_id <- function(url, token, stics_version) {
+  logger::log_info("Retrieving simulator version ID from IDEStics API...")
+  resp <- idestics_request(
+    url,
+    c("api", "simulator-versions"),
+    method = "GET",
+    token = token
+  ) |>
+    httr2::req_perform()
+  resp <- httr2::resp_body_json(resp)
+  simulator_version <- resp |>
+    dplyr::bind_rows() |>
+    dplyr::filter(.data$version == stics_version, .data$active)
+  if (nrow(simulator_version) == 0 ||
+        !is.integer(simulator_version$siv_id[[1]])) {
+    stop(
+      "IDEStics API returned no simulator version ID for STICS version ",
+      stics_version, ".",
+      call. = FALSE
+    )
+  }
+  if (nrow(simulator_version) > 1) {
+    stop(
+      "IDEStics API returned several active simulator versions for STICS ",
+      "version ", stics_version, ": ", toString(simulator_version$siv_id),
+      call. = FALSE
+    )
+  }
+  siv_id <- simulator_version$siv_id[[1]]
+  logger::log_debug(
+    "Simulator version ID for STICS version ", stics_version, ": ", siv_id
+  )
+  siv_id
+}
+
+
+extract_idestics_data <- function(
+  url, username, password, stics_version, usms, stics_path, output_dir,
+  batch_size = Inf, max_active = 10L
+) {
+  token <- auth(url, username, password)
+  metadata <- get_metadata(url, token, usms)
+
+  ids <- unique(metadata$idestics_usm_id)
+
+  simulator_id <- get_simulator_version_id(url, token, stics_version)
+
+  # Extracting USMs data from IDEStics
+  get_usms(url, token, ids, simulator_id, output_dir, batch_size, max_active)
+  rename_idestics_usms(output_dir, metadata)
+
+  stics_input_files_path <- file.path(stics_path, "input_files")
+
+  # Copy inputs files from STICS repository
+  model_path <- file.path(
+    stics_input_files_path,
+    "model",
+    c("prof.mod", "rap.mod", "param_gen.xml", "param_newform.xml")
+  )
+  file.copy(from = model_path, to = output_dir, overwrite = TRUE)
+  # Copy plant files from STICS repository
+  plant_path <- list.files(
+    file.path(stics_input_files_path, "plant"),
+    full.names = TRUE
+  )
+  if (!dir.exists(file.path(output_dir, "plant"))) {
+    dir.create(file.path(output_dir, "plant"))
+  }
+  file.copy(
+    from = plant_path,
+    to = file.path(output_dir, "plant"),
+    overwrite = TRUE
+  )
+  # Write metadata to CSV
+  safe_write_csv(
+    metadata,
+    file.path(output_dir, metadata_file_name),
+    delimiter = ";"
+  )
+  metadata
+}
+
+# Read from the usms.xml file of `workspace` the plant file of the second
+# plant of each USM (NA if there is none), for set_intercrop_code_shape()
+get_usms_plantfile2 <- function(workspace) {
+  doc <- xml2::read_xml(file.path(workspace, "usms.xml"))
+  usm_nodes <- xml2::xml_find_all(doc, "//usm")
+  xpath <- "./plante[@dominance='2']/fplt" # nolint: nonportable_path_linter
+  plantfile2 <- vapply(usm_nodes, function(node) {
+    fplt <- xml2::xml_find_first(node, xpath)
+    if (inherits(fplt, "xml_missing")) NA_character_ else xml2::xml_text(fplt)
+  }, character(1))
+  data.frame(
+    usm = xml2::xml_attr(usm_nodes, "nom"),
+    plantfile2 = plantfile2,
+    stringsAsFactors = FALSE
+  )
+}
+
+is_single_string <- function(x) {
+  is.character(x) && length(x) == 1 && !is.na(x) && nzchar(x)
+}
+
+# TRUE if `x` is a single whole number >= 1, Inf being accepted if `allow_inf`
+is_positive_count <- function(x, allow_inf = FALSE) {
+  if (!is.numeric(x) || length(x) != 1 || is.na(x) || x < 1) {
+    return(FALSE)
+  }
+  if (is.infinite(x)) allow_inf else x == round(x)
+}
+
+# Check the arguments of gen_workspace_from_idestics() before any request
+check_idestics_args <- function(stics_version, batch_size, max_active) {
+  if (!is_single_string(stics_version)) {
+    stop("`stics_version` must be a single non-empty string.", call. = FALSE)
+  }
+  if (!is_positive_count(batch_size, allow_inf = TRUE)) {
+    stop(
+      "`batch_size` must be a positive whole number or Inf.",
+      call. = FALSE
+    )
+  }
+  if (!is_positive_count(max_active)) {
+    stop("`max_active` must be a positive whole number.", call. = FALSE)
+  }
+}
+
+gen_varmod_from_obs_idestics <- function(out_path) {
+  out_file <- file.path(out_path, "var.mod")
+  if (file.exists(out_file)) invisible(file.remove(out_file))
+
+  # Getting obs files list
+  obs_files <- list.files(
+    out_path,
+    pattern = "\\.obs$",
+    full.names = TRUE
+  )
+
+  # Generating var.mod file
+  # Added a temporary hack to filter INN from beeing written to var.mod
+  var_filt <- c("ian", "mo", "jo", "jul", "INN")
+  all_vars <- unique(unlist(lapply(obs_files, get_header_fields)))
+  var_names <- setdiff(all_vars, var_filt)
+  cat(var_names, file = out_file, sep = "\n")
+}
+
+#' Generate a Stics workspace from IDEStics data, for evaluation.
+#'
+#' @description
+#' Retrieves the rotations and USMs data from the IDEStics API, completes them
+#' with the model and plant files of the Stics repository, and generates the
+#' corresponding text workspace. The rotations are written to
+#' \code{metadata.csv} in \code{output_dir}.
+#'
+#' The IDEStics credentials are read from the \code{IDESTICS_USERNAME} and
+#' \code{IDESTICS_PASSWORD} environment variables if they are set (e.g. in the
+#' user-level \code{~/.Renviron}). Otherwise, they are prompted for in an
+#' interactive session, the password being masked.
+#'
+#' @param idestics_url URL of the IDEStics server
+#' @param stics_path path to Stics repository
+#' @param output_dir path to the Stics workspace to generate
+#' @param stics_version Stics version of the USMs to retrieve, as listed by
+#'  the IDEStics API (e.g. \code{"11.0.0"})
+#' @param usms character vector of USM names to generate. Use
+#'  \code{\link{read_usms_files}} to read them from USM list files.
+#' @param parallel Boolean. Is the computation to be done in parallel ?
+#' @param cores Number of cores to use for parallel computation
+#' @param force_code_shape Boolean. Should the code_shape parameter be forced
+#'  to 2 for intercrop plant files (see \code{set_intercrop_code_shape}) ?
+#'  Default TRUE.
+#' @param verbose Integer. Logging verbosity level: 0 = warnings and errors
+#'  only, 1 = info, 2 = debug
+#' @param batch_size Number of USMs requested to the IDEStics API per
+#'  request. \code{Inf} requests all the USMs at once.
+#' @param max_active Maximum number of requests to the IDEStics API performed
+#'  in parallel.
+#' @param usms_files Deprecated. Use
+#'  \code{usms = read_usms_files(usms_files)} instead.
+#'
+#' @returns NULL (invisibly)
+#'
+#' @export
+gen_workspace_from_idestics <- function(
+  idestics_url,
+  stics_path,
+  output_dir,
+  stics_version,
+  usms,
+  parallel = FALSE,
+  cores = NA,
+  force_code_shape = TRUE,
+  verbose = 1L,
+  batch_size = 300L,
+  max_active = 10L,
+  usms_files = lifecycle::deprecated()
+) {
+  init_logger(verbose)
+  usms <- resolve_usms_files(usms, usms_files, "gen_workspace_from_idestics")
+  logger::log_info("Generating IDEStics workspace...")
+
+  if (!dir.exists(stics_path)) {
+    stop(stics_path, ": no such directory", call. = FALSE)
+  }
+  check_idestics_args(stics_version, batch_size, max_active)
+
+  logger::log_info("Selected ", length(usms), " USMs")
+
+  # Ask for the credentials before any long-running step
+  username <- resolve_idestics_username()
+  password <- resolve_idestics_password(username)
+
+  workspace_tmp <- tempfile()
+  dir.create(workspace_tmp)
+
+  # Create subdirectory for the temporary extracted XML workspace
+  workspace_tmp_actual <- file.path(workspace_tmp, "workspace")
+  dir.create(workspace_tmp_actual)
+
+  on.exit(
+    {
+      unlink(workspace_tmp, recursive = TRUE)
+      logger::log_info("Temporary workspace ", workspace_tmp, " deleted.")
+    },
+    add = TRUE
+  )
+
+  metadata <- extract_idestics_data(
+    idestics_url, username, password, stics_version, usms, stics_path,
+    workspace_tmp_actual, batch_size, max_active
+  )
+  # Only convert the USMs found in active IDEStics workspaces
+  usms <- intersect(usms, metadata$usm)
+
+  gen_varmod_from_obs_idestics(workspace_tmp_actual)
+  logger::log_info(
+    "Generating text workspace using ",
+    workspace_tmp_actual,
+    " files"
+  )
+
+  if (!dir.exists(output_dir)) {
+    dir.create(output_dir, recursive = TRUE)
+  }
+
+  SticsRFiles::gen_usms_xml2txt(
+    workspace = workspace_tmp_actual,
+    out_dir = output_dir,
+    verbose = is_debug(),
+    usm = usms,
+    parallel = parallel,
+    cores = cores
+  )
+
+  if (force_code_shape) {
+    set_intercrop_code_shape(
+      output_dir,
+      get_usms_plantfile2(workspace_tmp_actual)
+    )
+  }
+
+  file.copy(
+    file.path(workspace_tmp_actual, metadata_file_name),
+    file.path(output_dir, metadata_file_name),
+    overwrite = TRUE
+  )
+  invisible(NULL)
+}
