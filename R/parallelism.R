@@ -13,7 +13,7 @@ ParallelBackend <- R6::R6Class("ParallelBackend", # nolint: object_name_linter
     get_cores_nb = function(required_nb = NA) {
       if (!private$.parallel) return(1)
 
-      cores_nb <- future::availableCores()
+      cores_nb <- parallelly::availableCores()
 
       if (cores_nb >= 2) cores_nb <- cores_nb - 1
 
