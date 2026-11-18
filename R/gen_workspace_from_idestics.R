@@ -52,10 +52,10 @@ idestics_error_body <- function(resp) {
 
 # Build a POST request to the IDEStics API. Transient failures (network
 # errors, 429 and 503 responses) are retried.
-idestics_request <- function(url, path, body, token = NULL) {
+idestics_request <- function(url, path, body, method = "POST", token = NULL) {
   req <- httr2::request(url) |>
     httr2::req_url_path_append(path) |>
-    httr2::req_method("POST") |>
+    httr2::req_method(method) |>
     httr2::req_body_json(body) |>
     httr2::req_retry(max_tries = 3, retry_on_failure = TRUE) |>
     httr2::req_error(body = idestics_error_body)
@@ -129,14 +129,15 @@ get_metadata <- function(url, token, usms) {
   metadata
 }
 
-usms_request <- function(url, token, ids) {
+usms_request <- function(url, token, ids, simulator_id) {
   idestics_request(
     url,
     c("api", "extraction", "sync-usms"),
     list(
       mus_ids = as.list(ids),
       format = "javastics",
-      mode = "strict"
+      mode = "strict",
+      siv_id = simulator_id
     ),
     token = token
   )
@@ -193,7 +194,7 @@ merge_usms_workspaces <- function(batch_dirs, output_dir) {
 
 # Retrieve the USMs from the IDEStics API. The USMs are requested by batches
 # of `batch_size`, at most `max_active` requests being performed in parallel.
-get_usms <- function(url, token, ids, output_dir, batch_size = Inf,
+get_usms <- function(url, token, ids, simulator_id, output_dir, batch_size = Inf,
                      max_active = 10L) {
   start_time <- Sys.time()
   batches <- split(ids, ceiling(seq_along(ids) / batch_size))
@@ -208,7 +209,7 @@ get_usms <- function(url, token, ids, output_dir, batch_size = Inf,
   # The archives are streamed to disk rather than held in memory
   zip_files <- file.path(batches_dir, paste0(seq_along(batches), ".zip"))
   reqs <- lapply(unname(batches), function(batch) {
-    usms_request(url, token, batch)
+    usms_request(url, token, batch, simulator_id)
   })
   resps <- httr2::req_perform_parallel(
     reqs,
@@ -264,17 +265,44 @@ rename_idestics_usms <- function(workspace, metadata) {
   }
 }
 
+get_simulator_version_id <- function(url, token, stics_version) {
+  logger::log_info("Retrieving simulator version ID from IDestics API...")
+  resp <- idestics_request(
+    url,
+    c("api", "simulator-versions"),
+    list(),
+    method = "GET",
+    token = token
+  ) |>
+    httr2::req_perform()
+  resp <- httr2::resp_body_json(resp)
+  simulator_version <- resp |>
+    dplyr::bind_rows() |>
+    dplyr::filter(.data$version == stics_version, .data$active == TRUE)
+  logger::log_debug(simulator_version)
+  if (nrow(simulator_version) == 0 || !is.integer(simulator_version$siv_id[[1]])) {
+    stop(
+      "IDEStics API returned no simulator version ID for STICS version ", stics_version, ".",
+      call. = FALSE
+    )
+  }
+  simulator_version$siv_id[[1]]
+}
+
 
 extract_idestics_data <- function(
-  url, username, password, usms, stics_path, output_dir, batch_size = Inf,
+  url, username, password, stics_version, usms, stics_path, output_dir, batch_size = Inf,
   max_active = 10L
 ) {
   token <- auth(url, username, password)
   metadata <- get_metadata(url, token, usms)
 
   ids <- unique(metadata$idestics_usm_id)
+
+  simulator_id <- get_simulator_version_id(url, token, stics_version)
+
   # Extracting USMs data from IDEStics
-  get_usms(url, token, ids, output_dir, batch_size, max_active)
+  get_usms(url, token, ids, simulator_id, output_dir, batch_size, max_active)
   rename_idestics_usms(output_dir, metadata)
 
   stics_input_files_path <- file.path(stics_path, "input_files")
@@ -365,6 +393,7 @@ gen_workspace_from_idestics <- function(
   idestics_url,
   stics_path,
   output_dir,
+  stics_version,
   usms,
   parallel = FALSE,
   cores = NA,
@@ -404,7 +433,7 @@ gen_workspace_from_idestics <- function(
   )
 
   metadata <- extract_idestics_data(
-    idestics_url, username, password, usms, stics_path, workspace_tmp_actual,
+    idestics_url, username, password, stics_version, usms, stics_path, workspace_tmp_actual,
     batch_size, max_active
   )
   # Only convert the USMs found in active IDEStics workspaces

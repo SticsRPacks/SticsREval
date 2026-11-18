@@ -8,6 +8,7 @@ gen_workspace_from_idestics(
   idestics_url,
   stics_path,
   output_dir,
+  stics_version,
   usms,
   parallel = FALSE,
   cores = NA,
