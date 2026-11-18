@@ -50,15 +50,18 @@ idestics_error_body <- function(resp) {
   }
 }
 
-# Build a POST request to the IDEStics API. Transient failures (network
-# errors, 429 and 503 responses) are retried.
-idestics_request <- function(url, path, body, method = "POST", token = NULL) {
+# Build a request to the IDEStics API, with a JSON body unless `body` is NULL.
+# Transient failures (network errors, 429 and 503 responses) are retried.
+idestics_request <- function(url, path, body = NULL, method = "POST",
+                             token = NULL) {
   req <- httr2::request(url) |>
     httr2::req_url_path_append(path) |>
     httr2::req_method(method) |>
-    httr2::req_body_json(body) |>
     httr2::req_retry(max_tries = 3, retry_on_failure = TRUE) |>
     httr2::req_error(body = idestics_error_body)
+  if (!is.null(body)) {
+    req <- httr2::req_body_json(req, body)
+  }
   if (!is.null(token)) {
     req <- httr2::req_auth_bearer_token(req, token)
   }
@@ -66,7 +69,7 @@ idestics_request <- function(url, path, body, method = "POST", token = NULL) {
 }
 
 auth <- function(url, username, password) {
-  logger::log_info("Authenticating to IDestics API...")
+  logger::log_info("Authenticating to IDEStics API...")
   resp <- tryCatch(
     idestics_request(
       url,
@@ -87,8 +90,8 @@ auth <- function(url, username, password) {
 }
 
 get_metadata <- function(url, token, usms) {
-  logger::log_info("Retrieving metadata from IDestics API...")
-  logger::log_debug("Retrieving rotations and USMs ids from IDEstics API...")
+  logger::log_info("Retrieving metadata from IDEStics API...")
+  logger::log_debug("Retrieving rotations and USMs ids from IDEStics API...")
   resp <- idestics_request(
     url,
     c("api", "extraction", "rotations"),
@@ -199,7 +202,7 @@ get_usms <- function(url, token, ids, simulator_id, output_dir,
   start_time <- Sys.time()
   batches <- split(ids, ceiling(seq_along(ids) / batch_size))
   logger::log_info(
-    "Retrieving ", length(ids), " USMs from IDestics API in ",
+    "Retrieving ", length(ids), " USMs from IDEStics API in ",
     length(batches), " batch(es)..."
   )
 
@@ -266,11 +269,10 @@ rename_idestics_usms <- function(workspace, metadata) {
 }
 
 get_simulator_version_id <- function(url, token, stics_version) {
-  logger::log_info("Retrieving simulator version ID from IDestics API...")
+  logger::log_info("Retrieving simulator version ID from IDEStics API...")
   resp <- idestics_request(
     url,
     c("api", "simulator-versions"),
-    list(),
     method = "GET",
     token = token
   ) |>
@@ -279,7 +281,6 @@ get_simulator_version_id <- function(url, token, stics_version) {
   simulator_version <- resp |>
     dplyr::bind_rows() |>
     dplyr::filter(.data$version == stics_version, .data$active)
-  logger::log_debug(simulator_version)
   if (nrow(simulator_version) == 0 ||
         !is.integer(simulator_version$siv_id[[1]])) {
     stop(
@@ -288,7 +289,18 @@ get_simulator_version_id <- function(url, token, stics_version) {
       call. = FALSE
     )
   }
-  simulator_version$siv_id[[1]]
+  if (nrow(simulator_version) > 1) {
+    stop(
+      "IDEStics API returned several active simulator versions for STICS ",
+      "version ", stics_version, ": ", toString(simulator_version$siv_id),
+      call. = FALSE
+    )
+  }
+  siv_id <- simulator_version$siv_id[[1]]
+  logger::log_debug(
+    "Simulator version ID for STICS version ", stics_version, ": ", siv_id
+  )
+  siv_id
 }
 
 
@@ -338,6 +350,51 @@ extract_idestics_data <- function(
   metadata
 }
 
+# Read from the usms.xml file of `workspace` the plant file of the second
+# plant of each USM (NA if there is none), for set_intercrop_code_shape()
+get_usms_plantfile2 <- function(workspace) {
+  doc <- xml2::read_xml(file.path(workspace, "usms.xml"))
+  usm_nodes <- xml2::xml_find_all(doc, "//usm")
+  xpath <- "./plante[@dominance='2']/fplt" # nolint: nonportable_path_linter
+  plantfile2 <- vapply(usm_nodes, function(node) {
+    fplt <- xml2::xml_find_first(node, xpath)
+    if (inherits(fplt, "xml_missing")) NA_character_ else xml2::xml_text(fplt)
+  }, character(1))
+  data.frame(
+    usm = xml2::xml_attr(usm_nodes, "nom"),
+    plantfile2 = plantfile2,
+    stringsAsFactors = FALSE
+  )
+}
+
+is_single_string <- function(x) {
+  is.character(x) && length(x) == 1 && !is.na(x) && nzchar(x)
+}
+
+# TRUE if `x` is a single whole number >= 1, Inf being accepted if `allow_inf`
+is_positive_count <- function(x, allow_inf = FALSE) {
+  if (!is.numeric(x) || length(x) != 1 || is.na(x) || x < 1) {
+    return(FALSE)
+  }
+  if (is.infinite(x)) allow_inf else x == round(x)
+}
+
+# Check the arguments of gen_workspace_from_idestics() before any request
+check_idestics_args <- function(stics_version, batch_size, max_active) {
+  if (!is_single_string(stics_version)) {
+    stop("`stics_version` must be a single non-empty string.", call. = FALSE)
+  }
+  if (!is_positive_count(batch_size, allow_inf = TRUE)) {
+    stop(
+      "`batch_size` must be a positive whole number or Inf.",
+      call. = FALSE
+    )
+  }
+  if (!is_positive_count(max_active)) {
+    stop("`max_active` must be a positive whole number.", call. = FALSE)
+  }
+}
+
 gen_varmod_from_obs_idestics <- function(out_path) {
   out_file <- file.path(out_path, "var.mod")
   if (file.exists(out_file)) invisible(file.remove(out_file))
@@ -374,13 +431,14 @@ gen_varmod_from_obs_idestics <- function(out_path) {
 #' @param stics_path path to Stics repository
 #' @param output_dir path to the Stics workspace to generate
 #' @param stics_version Stics version of the USMs to retrieve, as listed by
-#'  the IDEStics API (e.g. \code{"10.2.0"})
+#'  the IDEStics API (e.g. \code{"11.0.0"})
 #' @param usms character vector of USM names to generate. Use
 #'  \code{\link{read_usms_files}} to read them from USM list files.
 #' @param parallel Boolean. Is the computation to be done in parallel ?
 #' @param cores Number of cores to use for parallel computation
-#' @param force_code_shape Boolean. Currently unused, kept for consistency
-#'  with \code{\link{gen_workspace_from_sms}}.
+#' @param force_code_shape Boolean. Should the code_shape parameter be forced
+#'  to 2 for intercrop plant files (see \code{set_intercrop_code_shape}) ?
+#'  Default TRUE.
 #' @param verbose Integer. Logging verbosity level: 0 = warnings and errors
 #'  only, 1 = info, 2 = debug
 #' @param batch_size Number of USMs requested to the IDEStics API per
@@ -409,11 +467,12 @@ gen_workspace_from_idestics <- function(
 ) {
   init_logger(verbose)
   usms <- resolve_usms_files(usms, usms_files, "gen_workspace_from_idestics")
-  logger::log_info("Generating IDestics workspace...")
+  logger::log_info("Generating IDEStics workspace...")
 
   if (!dir.exists(stics_path)) {
     stop(stics_path, ": no such directory", call. = FALSE)
   }
+  check_idestics_args(stics_version, batch_size, max_active)
 
   logger::log_info("Selected ", length(usms), " USMs")
 
@@ -462,6 +521,14 @@ gen_workspace_from_idestics <- function(
     parallel = parallel,
     cores = cores
   )
+
+  if (force_code_shape) {
+    set_intercrop_code_shape(
+      output_dir,
+      get_usms_plantfile2(workspace_tmp_actual)
+    )
+  }
+
   file.copy(
     file.path(workspace_tmp_actual, metadata_file_name),
     file.path(output_dir, metadata_file_name),

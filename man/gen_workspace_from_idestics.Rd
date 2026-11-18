@@ -27,7 +27,7 @@ gen_workspace_from_idestics(
 \item{output_dir}{path to the Stics workspace to generate}
 
 \item{stics_version}{Stics version of the USMs to retrieve, as listed by
-the IDEStics API (e.g. \code{"10.2.0"})}
+the IDEStics API (e.g. \code{"11.0.0"})}
 
 \item{usms}{character vector of USM names to generate. Use
 \code{\link{read_usms_files}} to read them from USM list files.}
@@ -36,8 +36,9 @@ the IDEStics API (e.g. \code{"10.2.0"})}
 
 \item{cores}{Number of cores to use for parallel computation}
 
-\item{force_code_shape}{Boolean. Currently unused, kept for consistency
-with \code{\link{gen_workspace_from_sms}}.}
+\item{force_code_shape}{Boolean. Should the code_shape parameter be forced
+to 2 for intercrop plant files (see \code{set_intercrop_code_shape}) ?
+Default TRUE.}
 
 \item{verbose}{Integer. Logging verbosity level: 0 = warnings and errors
 only, 1 = info, 2 = debug}

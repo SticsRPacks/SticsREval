@@ -159,6 +159,13 @@ test_that("idestics_request builds a JSON POST request on the API path", {
   expect_null(httr2::req_get_headers(req)$Authorization)
 })
 
+test_that("idestics_request sends no body when none is given", {
+  req <- idestics_request(idestics_url, "api", method = "GET")
+
+  expect_identical(req$method, "GET")
+  expect_null(req$body)
+})
+
 test_that("idestics_request retries on network failures", {
   req <- idestics_request(idestics_url, "api", list())
 
@@ -482,6 +489,7 @@ test_that("get_simulator_version_id returns the ID of the active version", {
   httr2::local_mocked_responses(function(req) {
     seen$url <- req$url
     seen$method <- req$method
+    seen$body <- req$body
     json_response(list(
       simulator_version_row(41L, "10.2.0", active = FALSE),
       simulator_version_row(42L, "10.2.0"),
@@ -495,6 +503,21 @@ test_that("get_simulator_version_id returns the ID of the active version", {
   )
   expect_identical(seen$url, "https://idestics.test/api/simulator-versions")
   expect_identical(seen$method, "GET")
+  expect_null(seen$body)
+})
+
+test_that("get_simulator_version_id errors on several active versions", {
+  httr2::local_mocked_responses(function(req) {
+    json_response(list(
+      simulator_version_row(41L, "10.2.0"),
+      simulator_version_row(42L, "10.2.0")
+    ))
+  })
+
+  expect_error(
+    get_simulator_version_id(idestics_url, "tok", "10.2.0"),
+    "several active simulator versions for STICS version 10.2.0: 41, 42"
+  )
 })
 
 test_that("get_simulator_version_id errors on an unknown version", {
@@ -614,6 +637,69 @@ test_that("extract_idestics_data returns the metadata", {
   )
 })
 
+# ---- get_usms_plantfile2 ----
+
+test_that("get_usms_plantfile2 reads the plant file of the second plant", {
+  ws <- withr::local_tempdir()
+  writeLines(
+    c(
+      "<usms>",
+      '<usm nom="sole"><plante dominance="1"><fplt>wheat_plt.xml</fplt>',
+      '</plante><plante dominance="2"><fplt>null</fplt></plante></usm>',
+      '<usm nom="inter"><plante dominance="1"><fplt>wheat_plt.xml</fplt>',
+      '</plante><plante dominance="2"><fplt>pea_plt.xml</fplt></plante></usm>',
+      '<usm nom="single"><plante dominance="1"><fplt>wheat_plt.xml</fplt>',
+      "</plante></usm>",
+      "</usms>"
+    ),
+    file.path(ws, "usms.xml")
+  )
+
+  expect_identical(
+    get_usms_plantfile2(ws),
+    data.frame(
+      usm = c("sole", "inter", "single"),
+      plantfile2 = c("null", "pea_plt.xml", NA),
+      stringsAsFactors = FALSE
+    )
+  )
+})
+
+# ---- check_idestics_args ----
+
+test_that("check_idestics_args accepts valid arguments", {
+  expect_no_error(check_idestics_args("11.0.0", 300L, 10L))
+  expect_no_error(check_idestics_args("11.0.0", Inf, 1))
+})
+
+test_that("check_idestics_args rejects an invalid stics_version", {
+  for (stics_version in list(NULL, NA_character_, "", c("10.2.0", "11.0.0"),
+                             11)) {
+    expect_error(
+      check_idestics_args(stics_version, 300L, 10L),
+      "`stics_version` must be a single non-empty string"
+    )
+  }
+})
+
+test_that("check_idestics_args rejects an invalid batch_size", {
+  for (batch_size in list(0L, -1L, 2.5, NA_real_, "300", c(1L, 2L))) {
+    expect_error(
+      check_idestics_args("11.0.0", batch_size, 10L),
+      "`batch_size` must be a positive whole number or Inf"
+    )
+  }
+})
+
+test_that("check_idestics_args rejects an invalid max_active", {
+  for (max_active in list(0L, 2.5, Inf, NA_real_, "10")) {
+    expect_error(
+      check_idestics_args("11.0.0", 300L, max_active),
+      "`max_active` must be a positive whole number"
+    )
+  }
+})
+
 # ---- gen_varmod_from_obs_idestics ----
 
 test_that("gen_varmod_from_obs_idestics writes unique vars from obs files", {
@@ -647,6 +733,7 @@ test_that("gen_workspace_from_idestics generates a text workspace", {
              output_dir, ...) {
       seen$credentials <- c(username, password)
       seen$stics_version <- stics_version
+      write_usms_xml(output_dir, "usm1")
       writeLines("ian;mo;jo;jul;LAI", file.path(output_dir, "usm1.obs"))
       writeLines("usm;rotation", file.path(output_dir, "metadata.csv"))
       data.frame(usm = "usm1", stringsAsFactors = FALSE)
@@ -684,6 +771,7 @@ test_that("gen_workspace_from_idestics only converts the USMs found", {
     gen_workspace_from_idestics, "extract_idestics_data",
     function(url, username, password, stics_version, usms, stics_path,
              output_dir, ...) {
+      write_usms_xml(output_dir, c("usm3", "usm1"))
       writeLines("usm;rotation", file.path(output_dir, "metadata.csv"))
       data.frame(usm = c("usm3", "usm1"), stringsAsFactors = FALSE)
     }
@@ -704,6 +792,83 @@ test_that("gen_workspace_from_idestics only converts the USMs found", {
   expect_identical(seen$usm, c("usm1", "usm3"))
 })
 
+test_that("gen_workspace_from_idestics forces the intercrop code_shape", {
+  withr::local_envvar(
+    IDESTICS_USERNAME = "user",
+    IDESTICS_PASSWORD = "secret"
+  )
+  output_dir <- file.path(withr::local_tempdir(), "workspace")
+  plantfile2 <- data.frame(
+    usm = "usm1", plantfile2 = "pea_plt.xml", stringsAsFactors = FALSE
+  )
+
+  seen <- new.env()
+  mockery::stub(
+    gen_workspace_from_idestics, "extract_idestics_data",
+    function(...) data.frame(usm = "usm1", stringsAsFactors = FALSE)
+  )
+  mockery::stub(
+    gen_workspace_from_idestics, "gen_varmod_from_obs_idestics",
+    function(...) NULL
+  )
+  mockery::stub(
+    gen_workspace_from_idestics, "SticsRFiles::gen_usms_xml2txt",
+    function(...) NULL
+  )
+  mockery::stub(
+    gen_workspace_from_idestics, "get_usms_plantfile2",
+    function(workspace) plantfile2
+  )
+  mockery::stub(
+    gen_workspace_from_idestics, "set_intercrop_code_shape",
+    function(workspace, usm_df) {
+      seen$workspace <- workspace
+      seen$usm_df <- usm_df
+    }
+  )
+
+  gen_workspace_from_idestics(
+    idestics_url, withr::local_tempdir(), output_dir, "10.2.0",
+    usms = "usm1", verbose = 0L
+  )
+
+  expect_identical(seen$workspace, output_dir)
+  expect_identical(seen$usm_df, plantfile2)
+})
+
+test_that("gen_workspace_from_idestics can skip forcing code_shape", {
+  withr::local_envvar(
+    IDESTICS_USERNAME = "user",
+    IDESTICS_PASSWORD = "secret"
+  )
+  called <- new.env()
+  called$flag <- FALSE
+  mockery::stub(
+    gen_workspace_from_idestics, "extract_idestics_data",
+    function(...) data.frame(usm = "usm1", stringsAsFactors = FALSE)
+  )
+  mockery::stub(
+    gen_workspace_from_idestics, "gen_varmod_from_obs_idestics",
+    function(...) NULL
+  )
+  mockery::stub(
+    gen_workspace_from_idestics, "SticsRFiles::gen_usms_xml2txt",
+    function(...) NULL
+  )
+  mockery::stub(
+    gen_workspace_from_idestics, "set_intercrop_code_shape",
+    function(...) called$flag <- TRUE
+  )
+
+  gen_workspace_from_idestics(
+    idestics_url, withr::local_tempdir(),
+    file.path(withr::local_tempdir(), "workspace"), "10.2.0",
+    usms = "usm1", force_code_shape = FALSE, verbose = 0L
+  )
+
+  expect_false(called$flag)
+})
+
 test_that("gen_workspace_from_idestics errors on a missing stics_path", {
   stics_path <- file.path(withr::local_tempdir(), "missing")
 
@@ -714,6 +879,24 @@ test_that("gen_workspace_from_idestics errors on a missing stics_path", {
     ),
     "no such directory"
   )
+})
+
+test_that("gen_workspace_from_idestics checks its arguments first", {
+  called <- new.env()
+  called$flag <- FALSE
+  mockery::stub(
+    gen_workspace_from_idestics, "resolve_idestics_username",
+    function() called$flag <- TRUE
+  )
+
+  expect_error(
+    gen_workspace_from_idestics(
+      idestics_url, withr::local_tempdir(), withr::local_tempdir(), "11.0.0",
+      usms = "usm1", batch_size = 0L, verbose = 0L
+    ),
+    "`batch_size` must be a positive whole number"
+  )
+  expect_false(called$flag)
 })
 
 test_that("gen_workspace_from_idestics asks credentials before extracting", {
