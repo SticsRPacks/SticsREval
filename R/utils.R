@@ -165,12 +165,12 @@ format_species <- function(x) {
   toString(x)
 }
 
-safe_write_csv <- function(data, path) {
+safe_write_csv <- function(data, path, delimiter = ",") {
   tryCatch({
     readr::write_delim(
       data,
       path,
-      delim = ",",
+      delim = delimiter,
       na = "NA"
     )
   },

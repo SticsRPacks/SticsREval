@@ -136,6 +136,14 @@ test_that("safe_write_csv encodes NA values as 'NA' string", {
   unlink(tmp)
 })
 
+test_that("safe_write_csv uses the given delimiter", {
+  tmp  <- tempfile(fileext = ".csv")
+  data <- data.frame(x = 1:2, y = c("a", "b"), stringsAsFactors = FALSE)
+  safe_write_csv(data, tmp, delimiter = ";")
+  expect_identical(readLines(tmp), c("x;y", "1;a", "2;b"))
+  unlink(tmp)
+})
+
 test_that("safe_write_csv stops with a clear error when path is invalid", {
   data <- data.frame(x = 1)
   expect_error(
