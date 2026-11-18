@@ -411,5 +411,5 @@ test_that("skip_reason reports missing reference data", {
 
   expect_identical(eval$skip_reason, "no reference data")
   expect_identical(evaluation_status(eval), "not evaluated")
-  expect_no_error(eval$summary())
+  expect_no_error(quietly(eval$summary()))
 })

@@ -101,6 +101,9 @@ test_that("render_report renders species pages in parallel", {
     row.names = FALSE
   )
 
+  # The workers get the log threshold but not the silenced appender (see
+  # setup.R), and earlier tests' init_logger() calls raised it back to INFO
+  logger::log_threshold(logger::FATAL)
   html_path <- render_report(tmp, open = FALSE, parallel = TRUE, cores = 2)
 
   expect_true(file.exists(html_path))

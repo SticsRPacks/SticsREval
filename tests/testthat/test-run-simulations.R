@@ -24,7 +24,6 @@ test_that("get_usms_to_simulate warns and skips missing wanted USMs", {
   logger::log_threshold(logger::WARN)
   on.exit(logger::log_threshold(logger::FATAL), add = TRUE)
   log_env <- make_log_capture()
-  on.exit(logger::log_appender(logger::appender_console), add = TRUE)
 
   expect_identical(get_usms_to_simulate(ws_dir, c("usm1", "usm2")), "usm1")
   expect_match(log_env$logs, "not found in .*: usm2", all = FALSE)

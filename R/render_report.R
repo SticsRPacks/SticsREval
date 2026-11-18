@@ -99,21 +99,26 @@ render_report <- function(
   )
 
   abs_output_dir <- normalizePath(output_dir)
+  # Parallel workers are fresh R sessions with the default logger
+  # settings: give them the caller's log threshold
+  log_threshold <- logger::log_threshold()
+  quiet <- !is_debug()
   backend <- ParallelBackend$new(parallel, cores)
   backend$run(
     length(species_list),
     function(i) {
+      logger::log_threshold(log_threshold)
       sp <- species_list[i]
       logger::log_info("Rendering evaluation page for species {sp}...")
       if (parallel) {
         render_species_page_isolated(
-          output_dir, abs_output_dir, sp, species_list, quiet = !is_debug()
+          output_dir, abs_output_dir, sp, species_list, quiet = quiet
         )
       } else {
         quarto::quarto_render(
           input = file.path(output_dir, "species", paste0(sp, ".qmd")),
           execute_params = list(species = sp, output_dir = abs_output_dir),
-          quiet = !is_debug()
+          quiet = quiet
         )
       }
     }

@@ -39,7 +39,7 @@ test_that("summary works when no comparison exists", {
     workspace = mock()
   )
 
-  expect_no_error(eval$summary())
+  expect_no_error(quietly(eval$summary()))
 })
 
 
@@ -114,7 +114,7 @@ test_that("run skips the comparison when there is no reference data", {
   )
 
   expect_no_error(eval$run())
-  expect_no_error(eval$summary())
+  expect_no_error(quietly(eval$summary()))
 })
 
 test_that("run compares only USMs having reference data", {
