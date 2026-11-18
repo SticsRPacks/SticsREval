@@ -1,5 +1,19 @@
 # Changelog
 
+## SticsREval (development version)
+
+- New
+  [`gen_workspace_from_idestics()`](https://sticsrpacks.github.io/SticsREval/reference/gen_workspace_from_idestics.md)
+  function to build a STICS text workspace from data retrieved from the
+  IDEStics API, for a given STICS version (`stics_version`). The USMs
+  are requested by batches (`batch_size`), several requests being
+  performed in parallel (`max_active`). As in
+  [`gen_workspace_from_sms()`](https://sticsrpacks.github.io/SticsREval/reference/gen_workspace_from_sms.md),
+  the `code_shape` parameter of intercrop plant files is forced to 2
+  (`force_code_shape`). The IDEStics credentials are read from the
+  `IDESTICS_USERNAME` and `IDESTICS_PASSWORD` environment variables, or
+  prompted for in an interactive session.
+
 ## SticsREval 0.2.0
 
 - New

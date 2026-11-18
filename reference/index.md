@@ -2,12 +2,14 @@
 
 ## Prepare data
 
-Build a STICS workspace from SMS data and run the simulations of a STICS
-version on it.
+Build a STICS workspace from SMS or IDEStics data and run the
+simulations of a STICS version on it.
 
 - [`gen_workspace_from_sms()`](https://sticsrpacks.github.io/SticsREval/reference/gen_workspace_from_sms.md)
   : Generate a Stics workspace from SMS data, for evaluation and
   calibration.
+- [`gen_workspace_from_idestics()`](https://sticsrpacks.github.io/SticsREval/reference/gen_workspace_from_idestics.md)
+  : Generate a Stics workspace from IDEStics data, for evaluation.
 - [`read_usms_files()`](https://sticsrpacks.github.io/SticsREval/reference/read_usms_files.md)
   : Read one or more USM list files.
 - [`get_var_from_obs()`](https://sticsrpacks.github.io/SticsREval/reference/get_var_from_obs.md)

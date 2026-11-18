@@ -83,6 +83,17 @@
 <span>  output_dir <span class="op">=</span> <span class="st">"workspace/"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
+<span><span class="co"># ... or from the IDEStics API, for the given USMs. The rotations are written</span></span>
+<span><span class="co"># to workspace/metadata.csv, which can then be passed as `metadata_file` to</span></span>
+<span><span class="co"># run_simulations().</span></span>
+<span><span class="fu"><a href="reference/gen_workspace_from_idestics.html">gen_workspace_from_idestics</a></span><span class="op">(</span></span>
+<span>  idestics_url  <span class="op">=</span> <span class="st">"https://idestics.example.org"</span>,</span>
+<span>  stics_path    <span class="op">=</span> <span class="st">"/path/to/stics_distribution"</span>,</span>
+<span>  output_dir    <span class="op">=</span> <span class="st">"workspace/"</span>,</span>
+<span>  stics_version <span class="op">=</span> <span class="st">"11.0.0"</span>,</span>
+<span>  usms          <span class="op">=</span> <span class="fu"><a href="reference/read_usms_files.html">read_usms_files</a></span><span class="op">(</span><span class="st">"usms.txt"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
 <span><span class="co"># Run the reference and candidate versions</span></span>
 <span><span class="fu"><a href="reference/run_simulations.html">run_simulations</a></span><span class="op">(</span></span>
 <span>  stics_exe      <span class="op">=</span> <span class="st">"/path/to/stics_reference"</span>,</span>
@@ -106,6 +117,7 @@
 <span>  output_dir     <span class="op">=</span> <span class="st">"outputs/"</span>,</span>
 <span>  report         <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
+<p><code><a href="reference/gen_workspace_from_idestics.html">gen_workspace_from_idestics()</a></code> reads the IDEStics credentials from the <code>IDESTICS_USERNAME</code> and <code>IDESTICS_PASSWORD</code> environment variables, for instance set in your user-level <code>~/.Renviron</code>. Otherwise, they are prompted for in an interactive session, the password being masked.</p>
 </div>
 <div class="section level2">
 <h2 id="docker">Docker<a class="anchor" aria-label="anchor" href="#docker"></a>
@@ -121,6 +133,7 @@
 <span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">--rm</span> <span class="at">-v</span> /path/to/your/workspace:/workspace <span class="dt">\</span></span>
 <span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a>  <span class="at">-v</span> /path/to/your/script.R:/script.R <span class="dt">\</span></span>
 <span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a>  ghcr.io/sticsrpacks/stics-r-eval:v0.2.0 Rscript /script.R</span></code></pre></div>
+<p>A non-interactive script can’t prompt for the IDEStics credentials: pass them from your environment with <code>-e IDESTICS_USERNAME -e IDESTICS_PASSWORD</code>.</p>
 <p>To build it locally (a GitHub token is needed to install private SticsRPacks dependencies):</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="ex">docker</span> build <span class="at">--secret</span> id=GITHUB_TOKEN,src=<span class="op">&lt;(</span><span class="bu">echo</span> <span class="va">$GITHUB_PAT</span><span class="op">)</span> <span class="at">-t</span> stics-r-eval .</span></code></pre></div>
 </div>
