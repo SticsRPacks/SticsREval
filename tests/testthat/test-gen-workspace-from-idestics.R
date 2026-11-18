@@ -348,7 +348,7 @@ test_that("get_usms extracts the ZIP archive returned by the API", {
   )
 
   output_dir <- withr::local_tempdir()
-  get_usms(idestics_url, "tok", 1L, output_dir)
+  get_usms(idestics_url, "tok", 1L, 42L, output_dir)
 
   expect_true(file.exists(file.path(output_dir, "usms.xml")))
   # The downloaded archive is removed after extraction
@@ -356,7 +356,7 @@ test_that("get_usms extracts the ZIP archive returned by the API", {
   expect_identical(seen$urls, "https://idestics.test/api/extraction/sync-usms")
   expect_identical(
     seen$bodies,
-    '{"mus_ids":[1],"format":"javastics","mode":"strict"}'
+    '{"mus_ids":[1],"format":"javastics","mode":"strict","siv_id":42}'
   )
 })
 
@@ -388,13 +388,13 @@ test_that("get_usms requests the USMs by batches and merges the workspaces", {
   )
 
   output_dir <- withr::local_tempdir()
-  get_usms(idestics_url, "tok", 1:3, output_dir, batch_size = 2L)
+  get_usms(idestics_url, "tok", 1:3, 42L, output_dir, batch_size = 2L)
 
   expect_identical(
     seen$bodies,
     c(
-      '{"mus_ids":[1,2],"format":"javastics","mode":"strict"}',
-      '{"mus_ids":[3],"format":"javastics","mode":"strict"}'
+      '{"mus_ids":[1,2],"format":"javastics","mode":"strict","siv_id":42}',
+      '{"mus_ids":[3],"format":"javastics","mode":"strict","siv_id":42}'
     )
   )
   usms_doc <- xml2::read_xml(file.path(output_dir, "usms.xml"))
@@ -421,7 +421,7 @@ test_that("get_usms errors when the API returns no ZIP archive", {
   )
 
   expect_error(
-    get_usms(idestics_url, "tok", 1L, withr::local_tempdir()),
+    get_usms(idestics_url, "tok", 1L, 42L, withr::local_tempdir()),
     "returned no ZIP archive .*content type: text/html"
   )
   expect_false(file.exists(seen$paths))
@@ -436,7 +436,7 @@ test_that("get_usms errors on an empty response", {
   )
 
   expect_error(
-    get_usms(idestics_url, "tok", 1L, withr::local_tempdir()),
+    get_usms(idestics_url, "tok", 1L, 42L, withr::local_tempdir()),
     "returned no ZIP archive"
   )
 })
@@ -471,6 +471,46 @@ test_that("rename_idestics_usms renames the USMs and their obs files", {
   )
 })
 
+# ---- get_simulator_version_id ----
+
+simulator_version_row <- function(siv_id, version, active = TRUE) {
+  list(siv_id = siv_id, version = version, active = active)
+}
+
+test_that("get_simulator_version_id returns the ID of the active version", {
+  seen <- new.env()
+  httr2::local_mocked_responses(function(req) {
+    seen$url <- req$url
+    seen$method <- req$method
+    json_response(list(
+      simulator_version_row(41L, "10.2.0", active = FALSE),
+      simulator_version_row(42L, "10.2.0"),
+      simulator_version_row(43L, "11.0.0")
+    ))
+  })
+
+  expect_identical(
+    get_simulator_version_id(idestics_url, "tok", "10.2.0"),
+    42L
+  )
+  expect_identical(seen$url, "https://idestics.test/api/simulator-versions")
+  expect_identical(seen$method, "GET")
+})
+
+test_that("get_simulator_version_id errors on an unknown version", {
+  httr2::local_mocked_responses(function(req) {
+    json_response(list(
+      simulator_version_row(41L, "10.2.0", active = FALSE),
+      simulator_version_row(43L, "11.0.0")
+    ))
+  })
+
+  expect_error(
+    get_simulator_version_id(idestics_url, "tok", "10.2.0"),
+    "no simulator version ID for STICS version 10.2.0"
+  )
+})
+
 # ---- extract_idestics_data ----
 
 test_that("extract_idestics_data retrieves the USMs and completes them", {
@@ -502,10 +542,18 @@ test_that("extract_idestics_data retrieves the USMs and completes them", {
     }
   )
   mockery::stub(
+    extract_idestics_data, "get_simulator_version_id",
+    function(url, token, stics_version) {
+      seen$stics_version <- stics_version
+      42L
+    }
+  )
+  mockery::stub(
     extract_idestics_data, "get_usms",
-    function(url, token, ids, output_dir, ...) {
+    function(url, token, ids, simulator_id, output_dir, ...) {
       seen$token <- token
       seen$ids <- ids
+      seen$simulator_id <- simulator_id
     }
   )
   mockery::stub(
@@ -514,13 +562,15 @@ test_that("extract_idestics_data retrieves the USMs and completes them", {
   )
 
   extract_idestics_data(
-    idestics_url, "user", "secret", "usm1", stics_path, output_dir
+    idestics_url, "user", "secret", "10.2.0", "usm1", stics_path, output_dir
   )
 
   expect_identical(seen$credentials, c("user", "secret"))
   expect_identical(seen$usms, "usm1")
   expect_identical(seen$token, "tok")
+  expect_identical(seen$stics_version, "10.2.0")
   expect_identical(seen$ids, 1L)
+  expect_identical(seen$simulator_id, 42L)
   expect_true(all(file.exists(file.path(
     output_dir,
     c("prof.mod", "rap.mod", "param_gen.xml", "param_newform.xml")
@@ -545,6 +595,10 @@ test_that("extract_idestics_data returns the metadata", {
   )
   mockery::stub(extract_idestics_data, "auth", function(...) "tok")
   mockery::stub(extract_idestics_data, "get_metadata", function(...) metadata)
+  mockery::stub(
+    extract_idestics_data, "get_simulator_version_id",
+    function(...) 42L
+  )
   mockery::stub(extract_idestics_data, "get_usms", function(...) NULL)
   mockery::stub(
     extract_idestics_data, "rename_idestics_usms",
@@ -553,7 +607,8 @@ test_that("extract_idestics_data returns the metadata", {
 
   expect_identical(
     extract_idestics_data(
-      idestics_url, "user", "secret", "usm1", stics_path, output_dir
+      idestics_url, "user", "secret", "10.2.0", "usm1", stics_path,
+      output_dir
     ),
     metadata
   )
@@ -588,8 +643,10 @@ test_that("gen_workspace_from_idestics generates a text workspace", {
   seen <- new.env()
   mockery::stub(
     gen_workspace_from_idestics, "extract_idestics_data",
-    function(url, username, password, usms, stics_path, output_dir, ...) {
+    function(url, username, password, stics_version, usms, stics_path,
+             output_dir, ...) {
       seen$credentials <- c(username, password)
+      seen$stics_version <- stics_version
       writeLines("ian;mo;jo;jul;LAI", file.path(output_dir, "usm1.obs"))
       writeLines("usm;rotation", file.path(output_dir, "metadata.csv"))
       data.frame(usm = "usm1", stringsAsFactors = FALSE)
@@ -604,10 +661,12 @@ test_that("gen_workspace_from_idestics generates a text workspace", {
   )
 
   gen_workspace_from_idestics(
-    idestics_url, stics_path, output_dir, usms = "usm1", verbose = 0L
+    idestics_url, stics_path, output_dir, "10.2.0",
+    usms = "usm1", verbose = 0L
   )
 
   expect_identical(seen$credentials, c("user", "secret"))
+  expect_identical(seen$stics_version, "10.2.0")
   expect_identical(seen$usm, "usm1")
   expect_identical(seen$var_mod, "LAI")
   expect_true(file.exists(file.path(output_dir, "metadata.csv")))
@@ -623,7 +682,8 @@ test_that("gen_workspace_from_idestics only converts the USMs found", {
   seen <- new.env()
   mockery::stub(
     gen_workspace_from_idestics, "extract_idestics_data",
-    function(url, username, password, usms, stics_path, output_dir, ...) {
+    function(url, username, password, stics_version, usms, stics_path,
+             output_dir, ...) {
       writeLines("usm;rotation", file.path(output_dir, "metadata.csv"))
       data.frame(usm = c("usm3", "usm1"), stringsAsFactors = FALSE)
     }
@@ -636,7 +696,7 @@ test_that("gen_workspace_from_idestics only converts the USMs found", {
   )
 
   gen_workspace_from_idestics(
-    idestics_url, withr::local_tempdir(), output_dir,
+    idestics_url, withr::local_tempdir(), output_dir, "10.2.0",
     usms = c("usm1", "usm2", "usm3"), verbose = 0L
   )
 
@@ -649,7 +709,7 @@ test_that("gen_workspace_from_idestics errors on a missing stics_path", {
 
   expect_error(
     gen_workspace_from_idestics(
-      idestics_url, stics_path, withr::local_tempdir(),
+      idestics_url, stics_path, withr::local_tempdir(), "10.2.0",
       usms = "usm1", verbose = 0L
     ),
     "no such directory"
@@ -670,7 +730,7 @@ test_that("gen_workspace_from_idestics asks credentials before extracting", {
 
   expect_error(
     gen_workspace_from_idestics(
-      idestics_url, withr::local_tempdir(), withr::local_tempdir(),
+      idestics_url, withr::local_tempdir(), withr::local_tempdir(), "10.2.0",
       usms = "usm1", verbose = 0L
     ),
     "No IDEStics username provided"
