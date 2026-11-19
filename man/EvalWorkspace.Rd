@@ -23,8 +23,6 @@ internally by \code{\link{evaluate}}.
     \item \href{#method-EvalWorkspace-get_obs}{\code{EvalWorkspace$get_obs()}}
     \item \href{#method-EvalWorkspace-get_ref_sim}{\code{EvalWorkspace$get_ref_sim()}}
     \item \href{#method-EvalWorkspace-remove_init_obs}{\code{EvalWorkspace$remove_init_obs()}}
-    \item \href{#method-EvalWorkspace-remove_all_sim}{\code{EvalWorkspace$remove_all_sim()}}
-    \item \href{#method-EvalWorkspace-remove_all_obs}{\code{EvalWorkspace$remove_all_obs()}}
     \item \href{#method-EvalWorkspace-clone}{\code{EvalWorkspace$clone()}}
   }
 }
@@ -42,8 +40,6 @@ internally by \code{\link{evaluate}}.
     \if{html}{\out{<div class="arguments">}}
     \describe{
       \item{\code{data_dir}}{Path to the evaluation workspace}
-      \item{\code{version}}{Optional, the version of STICS to use for the data
-extraction. If not defined the last evaluated version will be used.}
     }
     \if{html}{\out{</div>}}
   }
@@ -120,7 +116,8 @@ extraction. If not defined the last evaluated version will be used.}
     \if{html}{\out{</div>}}
   }
   \subsection{Returns}{
-    a list of species as character list
+    a character vector of species sorted alphabetically (case
+insensitive), or \code{NULL} if the species/USM dataset doesn't exist
   }
 }
 
@@ -143,7 +140,8 @@ extraction. If not defined the last evaluated version will be used.}
     \if{html}{\out{</div>}}
   }
   \subsection{Returns}{
-    a list of USMs as a character list
+    a data frame with two columns, \code{species} and \code{situation}, or
+\code{NULL} if the dataset doesn't exist or no USM matches
   }
 }
 
@@ -198,7 +196,8 @@ otherwise the lazy arrow data object will be returned}
     \if{html}{\out{</div>}}
   }
   \subsection{Returns}{
-    a dataframe if collect is \code{TRUE}, a lazy arrow data object
+    a data frame if \code{collect} is \code{TRUE}, a lazy arrow data object
+otherwise, or \code{NULL} if the dataset doesn't exist or no row matches
   }
 }
 
@@ -232,7 +231,8 @@ otherwise the lazy arrow data object will be returned}
     \if{html}{\out{</div>}}
   }
   \subsection{Returns}{
-    a dataframe if collect is \code{TRUE}, a lazy arrow data object
+    a data frame if \code{collect} is \code{TRUE}, a lazy arrow data object
+otherwise, or \code{NULL} if the dataset doesn't exist or no row matches
   }
 }
 
@@ -265,6 +265,10 @@ otherwise the lazy arrow data object will be returned}
     }
     \if{html}{\out{</div>}}
   }
+  \subsection{Returns}{
+    a data frame if \code{collect} is \code{TRUE}, a lazy arrow data object
+otherwise, or \code{NULL} if the dataset doesn't exist or no row matches
+  }
 }
 
 \if{html}{\out{<hr>}}
@@ -285,29 +289,9 @@ This function will replace the initial observations by NA in the dataset.
     \preformatted{EvalWorkspace$remove_init_obs()}
     \if{html}{\out{</div>}}
   }
-}
-
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-EvalWorkspace-remove_all_sim"></a>}}
-\if{latex}{\out{\hypertarget{method-EvalWorkspace-remove_all_sim}{}}}
-\subsection{\code{EvalWorkspace$remove_all_sim()}}{
-  Remove all the simulations from the evaluation workspace
-  \subsection{Usage}{
-    \if{html}{\out{<div class="r">}}
-    \preformatted{EvalWorkspace$remove_all_sim()}
-    \if{html}{\out{</div>}}
-  }
-}
-
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-EvalWorkspace-remove_all_obs"></a>}}
-\if{latex}{\out{\hypertarget{method-EvalWorkspace-remove_all_obs}{}}}
-\subsection{\code{EvalWorkspace$remove_all_obs()}}{
-  Remove all the observations from the evaluation workspace
-  \subsection{Usage}{
-    \if{html}{\out{<div class="r">}}
-    \preformatted{EvalWorkspace$remove_all_obs()}
-    \if{html}{\out{</div>}}
+  \subsection{Returns}{
+    \code{NULL}, invisibly. Called for its side effect of rewriting the
+observations dataset.
   }
 }
 

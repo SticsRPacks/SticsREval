@@ -1,109 +1,69 @@
-EvalDataReader <- R6::R6Class("EvalDataReader", # nolint: object_name_linter
-  private = list(
-    .data_dir = NULL,
+filter_eval_dataset <- function(
+  ds, version = NULL, species = NULL, usms = NULL, var2exclude = NULL
+) {
+  if (!is.null(version)) {
+    ds <- dplyr::filter(ds, .data$version == !!version)
+  }
 
-    open_ds = function(path, warn_msg) {
-      if (!file.exists(path) && !dir.exists(path)) {
-        if (warn_msg != "") {
-          logger::log_warn(warn_msg)
-        }
-        return(NULL)
-      }
-      arrow::open_dataset(path)
-    },
+  if (!is.null(species)) {
+    ds <- dplyr::filter(ds, .data$species %in% !!species)
+  }
 
-    apply_filters = function(
-      ds, version = NULL, species = NULL, usms = NULL, var2exclude = NULL
-    ) {
+  if (!is.null(usms)) {
+    ds <- dplyr::filter(ds, .data$situation %in% !!usms)
+  }
 
-      if (!is.null(version)) {
-        ds <- dplyr::filter(ds, .data$version == !!version)
-      }
+  if (!is.null(var2exclude)) {
+    ds <- dplyr::select(ds, -dplyr::any_of(var2exclude))
+  }
 
-      if (!is.null(species)) {
-        ds <- dplyr::filter(ds, .data$species %in% !!species)
-      }
+  ds
+}
 
-      if (!is.null(usms)) {
-        ds <- dplyr::filter(ds, .data$situation %in% !!usms)
-      }
+read_eval_dataset <- function(
+  path,
+  version = NULL,
+  species = NULL,
+  usms = NULL,
+  var2exclude = NULL,
+  collect = FALSE,
+  warn_msg = ""
+) {
+  warn <- function() if (warn_msg != "") logger::log_warn(warn_msg)
 
-      if (!is.null(var2exclude)) {
-        ds <- dplyr::select(ds, -dplyr::any_of(var2exclude))
-      }
+  logger::log_debug("Reading dataset from", path, "...")
+  if (!file.exists(path) && !dir.exists(path)) {
+    warn()
+    return(NULL)
+  }
+  ds <- arrow::open_dataset(path)
 
-      ds
-    },
+  logger::log_debug("Applying species, USMs and variable filters...")
+  ds <- filter_eval_dataset(ds, version, species, usms, var2exclude)
 
-    post_process = function(ds, collect) {
-      if (is.null(ds)) return(NULL)
-      if (collect) dplyr::collect(ds) else ds # nolint: coalesce_linter
+  if (!is.null(species)) {
+    n <- ds |>
+      dplyr::summarise(n = dplyr::n()) |>
+      dplyr::collect() |>
+      dplyr::pull(n)
+    if (n == 0) {
+      warn()
+      return(NULL)
     }
-  ),
+  }
 
-  public = list(
-    initialize = function(data_dir) {
-      private$.data_dir <- data_dir
-    },
+  if (collect) dplyr::collect(ds) else ds # nolint: coalesce_linter
+}
 
-    read = function(
-      path,
-      version = NULL,
-      species = NULL,
-      usms = NULL,
-      var2exclude = NULL,
-      collect = FALSE,
-      warn_msg = ""
-    ) {
-      logger::log_debug("Reading dataset from", path, "...")
-      ds <- private$open_ds(path, warn_msg)
-      logger::log_debug("Dataset opened, applying filters...")
-      if (is.null(ds)) return(NULL)
-      logger::log_debug("Applying species, USMs and variable filters...")
-      ds <- private$apply_filters(ds, version, species, usms, var2exclude)
-
-      if (!is.null(species)) {
-        n <- ds |>
-          dplyr::summarise(n = dplyr::n()) |>
-          dplyr::collect() |>
-          dplyr::pull(n)
-        if (n == 0) {
-          if (warn_msg != "") {
-            logger::log_warn(warn_msg)
-          }
-          return(NULL)
-        }
-      }
-
-      logger::log_debug("Filters applied, post processing dataset...")
-      ds <- private$post_process(ds, collect)
-      logger::log_debug("Dataset ready.")
-      ds
-    }
+write_eval_dataset <- function(data, path, partitioning) {
+  arrow::write_dataset(
+    data,
+    path = path,
+    format = "parquet",
+    partitioning = partitioning,
+    existing_data_behavior = "delete_matching"
   )
-)
-
-EvalDataWriter <- R6::R6Class("EvalDataWriter", # nolint: object_name_linter
-  private = list(
-    .data_dir = NULL
-  ),
-
-  public = list(
-    initialize = function(data_dir) {
-      private$.data_dir <- data_dir
-    },
-
-    write_dataset = function(data, path, partitioning) {
-      arrow::write_dataset(
-        data,
-        path = path,
-        format = "parquet",
-        partitioning = partitioning,
-        existing_data_behavior = "delete_matching"
-      )
-    }
-  )
-)
+}
 
 #' EvalWorkspace class
 #'
@@ -114,22 +74,14 @@ EvalDataWriter <- R6::R6Class("EvalDataWriter", # nolint: object_name_linter
 #' @keywords internal
 EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
   private = list(
-    .data_dir = NULL,
-    .reader = NULL,
-    .writer = NULL
+    .data_dir = NULL
   ),
   public = list(
     #' @description Create an evaluation workspace manager
     #'
     #' @param data_dir Path to the evaluation workspace
-    #' @param version Optional, the version of STICS to use for the data
-    #' extraction. If not defined the last evaluated version will be used.
     initialize = function(data_dir) {
       private$.data_dir <- data_dir
-
-      private$.reader <- EvalDataReader$new(data_dir)
-      private$.writer <- EvalDataWriter$new(data_dir)
-
     },
 
     #' @description
@@ -141,7 +93,7 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
         dplyr::inner_join(usms_species, by = "situation") |>
         dplyr::mutate(version = "evaluated")
 
-      private$.writer$write_dataset(
+      write_eval_dataset(
         sim_data,
         sim_ds_path(private$.data_dir),
         partitioning = c("version", "species")
@@ -155,7 +107,7 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
       obs_data <- CroPlotR::bind_rows(obs, .id = "situation") |>
         dplyr::inner_join(usms_species, by = "situation")
 
-      private$.writer$write_dataset(
+      write_eval_dataset(
         obs_data,
         obs_ds_path(private$.data_dir),
         partitioning = "species"
@@ -171,7 +123,7 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
         dplyr::inner_join(usms_species, by = "situation") |>
         dplyr::mutate(version = "reference")
 
-      private$.writer$write_dataset(
+      write_eval_dataset(
         ref_sim_data,
         sim_ds_path(private$.data_dir),
         partitioning = c("version", "species")
@@ -179,9 +131,10 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
     },
     #' @description
     #' Returns the list of species
-    #' @returns a list of species as character list
+    #' @returns a character vector of species sorted alphabetically (case
+    #'  insensitive), or `NULL` if the species/USM dataset doesn't exist
     get_species = function() {
-      res <- private$.reader$read(
+      res <- read_eval_dataset(
         path = species_usm_ds_path(private$.data_dir),
         collect = TRUE
       )
@@ -196,10 +149,10 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
     #' Returns the list of USMs of a species
     #' @param species the species to search for
     #' @param usms Optional, filter the USMs returned by the function
-
-    #' @returns a list of USMs as a character list
+    #' @returns a data frame with two columns, `species` and `situation`, or
+    #'  `NULL` if the dataset doesn't exist or no USM matches
     get_species_situations = function(species, usms = NULL) {
-      res <- private$.reader$read(
+      res <- read_eval_dataset(
         path = species_usm_ds_path(private$.data_dir),
         species = species,
         usms = usms,
@@ -215,7 +168,7 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
     #' the situation column should contain the USM and the species column should
     #' contain the associated species
     save_species_usm = function(species_usms) {
-      private$.writer$write_dataset(
+      write_eval_dataset(
         species_usms,
         path = species_usm_ds_path(private$.data_dir),
         partitioning = "species"
@@ -232,11 +185,12 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
     #' @param collect Optional, if `TRUE` a dataframe will be returned,
     #'  otherwise the lazy arrow data object will be returned
     #'
-    #' @returns a dataframe if collect is `TRUE`, a lazy arrow data object
+    #' @returns a data frame if `collect` is `TRUE`, a lazy arrow data object
+    #'  otherwise, or `NULL` if the dataset doesn't exist or no row matches
     get_sim = function(
       species = NULL, usms = NULL, var2exclude = NULL, collect = TRUE
     ) {
-      private$.reader$read(
+      read_eval_dataset(
         path = sim_ds_path(private$.data_dir),
         version = "evaluated",
         species = species,
@@ -258,11 +212,12 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
     #' @param collect Optional, if `TRUE` a dataframe will be returned,
     #'  otherwise the lazy arrow data object will be returned
     #'
-    #' @returns a dataframe if collect is `TRUE`, a lazy arrow data object
+    #' @returns a data frame if `collect` is `TRUE`, a lazy arrow data object
+    #'  otherwise, or `NULL` if the dataset doesn't exist or no row matches
     get_obs = function(
       species = NULL, usms = NULL, var2exclude = NULL, collect = TRUE
     ) {
-      private$.reader$read(
+      read_eval_dataset(
         path = obs_ds_path(private$.data_dir),
         species = species,
         usms = usms,
@@ -283,10 +238,13 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
     #'  the returned reference simulations
     #' @param collect Optional, if `TRUE` a dataframe will be returned,
     #'  otherwise the lazy arrow data object will be returned
+    #'
+    #' @returns a data frame if `collect` is `TRUE`, a lazy arrow data object
+    #'  otherwise, or `NULL` if the dataset doesn't exist or no row matches
     get_ref_sim = function(
       species = NULL, usms = NULL, var2exclude = NULL, collect = TRUE
     ) {
-      private$.reader$read(
+      read_eval_dataset(
         path = sim_ds_path(private$.data_dir),
         version = "reference",
         species = species,
@@ -307,15 +265,20 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
     #' date of each situation (USM) for the variables HR_1 to HR_5
     #' and AZnit_1 to AZnit_5, resmes and azomes.
     #' This function will replace the initial observations by NA in the dataset.
+    #' @returns `NULL`, invisibly. Called for its side effect of rewriting the
+    #'  observations dataset.
     remove_init_obs = function() {
-      sim <- private$.reader$read(
+      sim <- read_eval_dataset(
         path = sim_ds_path(private$.data_dir),
         collect = FALSE
       )
 
-      obs <- private$.reader$read(
+      # Collected in memory: the result is written back to the same path,
+      # and writing to a dataset while it is still being streamed from
+      # can overwrite files before they are fully read.
+      obs <- read_eval_dataset(
         path = obs_ds_path(private$.data_dir),
-        collect = FALSE
+        collect = TRUE
       )
       if (is.null(sim) || is.null(obs)) {
         logger::log_warn(
@@ -326,7 +289,8 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
 
       init_dates <- sim |>
         dplyr::group_by(.data$situation) |>
-        dplyr::summarise(init_date = min(.data$Date, na.rm = TRUE))
+        dplyr::summarise(init_date = min(.data$Date, na.rm = TRUE)) |>
+        dplyr::collect()
 
       include_cols <- intersect(
         c(
@@ -337,35 +301,21 @@ EvalWorkspace <- R6::R6Class("EvalWorkspace", # nolint: object_name_linter
         names(obs)
       )
 
-      obs |>
+      obs <- obs |>
         dplyr::left_join(init_dates, by = "situation") |>
         dplyr::mutate(
           dplyr::across(
             dplyr::all_of(include_cols),
-            ~ dplyr::if_else(.data$Date == .data$init_date, NA_real_, .x)
+            ~ dplyr::if_else(.data$Date == .data$init_date, NA, .x)
           )
         ) |>
-        dplyr::select(-"init_date") |>
-        arrow::write_dataset(
-          obs_ds_path(private$.data_dir),
-          format = "parquet",
-          partitioning = "species"
-        )
-    },
-    #' @description
-    #' Remove all the simulations from the evaluation workspace
-    remove_all_sim = function() {
-      if (dir.exists(sim_ds_path(private$.data_dir))) {
-        unlink(sim_ds_path(private$.data_dir), recursive = TRUE)
-      }
-      invisible(NULL)
-    },
-    #' @description
-    #' Remove all the observations from the evaluation workspace
-    remove_all_obs = function() {
-      if (dir.exists(obs_ds_path(private$.data_dir))) {
-        unlink(obs_ds_path(private$.data_dir), recursive = TRUE)
-      }
+        dplyr::select(-"init_date")
+
+      write_eval_dataset(
+        obs,
+        obs_ds_path(private$.data_dir),
+        partitioning = "species"
+      )
       invisible(NULL)
     }
   )
