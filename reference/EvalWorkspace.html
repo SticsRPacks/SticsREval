@@ -61,8 +61,6 @@ internally by <code><a href="evaluate.html">evaluate</a></code>.</p>
 <li><p><a href="#method-EvalWorkspace-get_obs"><code>EvalWorkspace$get_obs()</code></a></p></li>
 <li><p><a href="#method-EvalWorkspace-get_ref_sim"><code>EvalWorkspace$get_ref_sim()</code></a></p></li>
 <li><p><a href="#method-EvalWorkspace-remove_init_obs"><code>EvalWorkspace$remove_init_obs()</code></a></p></li>
-<li><p><a href="#method-EvalWorkspace-remove_all_sim"><code>EvalWorkspace$remove_all_sim()</code></a></p></li>
-<li><p><a href="#method-EvalWorkspace-remove_all_obs"><code>EvalWorkspace$remove_all_obs()</code></a></p></li>
 <li><p><a href="#method-EvalWorkspace-clone"><code>EvalWorkspace$clone()</code></a></p></li>
 </ul></div><p></p><hr><a id="method-EvalWorkspace-initialize"></a><div class="section">
 <h3 id="evalworkspace-new-"><code>EvalWorkspace$new()</code><a class="anchor" aria-label="anchor" href="#evalworkspace-new-"></a></h3>
@@ -73,10 +71,6 @@ internally by <code><a href="evaluate.html">evaluate</a></code>.</p>
 <h4 id="arguments">Arguments<a class="anchor" aria-label="anchor" href="#arguments"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>data_dir</code></dt>
 <dd><p>Path to the evaluation workspace</p></dd>
-
-      <dt><code>version</code></dt>
-<dd><p>Optional, the version of STICS to use for the data
-extraction. If not defined the last evaluated version will be used.</p></dd>
 
 
 </dl><p></p></div>
@@ -148,7 +142,8 @@ extraction. If not defined the last evaluated version will be used.</p></dd>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">EvalWorkspace</span><span class="op">$</span><span class="fu">get_species</span><span class="op">(</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div><p></p><div class="section">
 <h4 id="returns">Returns<a class="anchor" aria-label="anchor" href="#returns"></a></h4>
-<p>a list of species as character list</p>
+<p>a character vector of species sorted alphabetically (case
+insensitive), or <code>NULL</code> if the species/USM dataset doesn't exist</p>
 </div>
 
 </div>
@@ -170,7 +165,8 @@ extraction. If not defined the last evaluated version will be used.</p></dd>
 </dl><p></p></div>
 </div><p></p><div class="section">
 <h4 id="returns-1">Returns<a class="anchor" aria-label="anchor" href="#returns-1"></a></h4>
-<p>a list of USMs as a character list</p>
+<p>a data frame with two columns, <code>species</code> and <code>situation</code>, or
+<code>NULL</code> if the dataset doesn't exist or no USM matches</p>
 </div>
 
 </div>
@@ -225,7 +221,8 @@ otherwise the lazy arrow data object will be returned</p></dd>
 </dl><p></p></div>
 </div><p></p><div class="section">
 <h4 id="returns-2">Returns<a class="anchor" aria-label="anchor" href="#returns-2"></a></h4>
-<p>a dataframe if collect is <code>TRUE</code>, a lazy arrow data object</p>
+<p>a data frame if <code>collect</code> is <code>TRUE</code>, a lazy arrow data object
+otherwise, or <code>NULL</code> if the dataset doesn't exist or no row matches</p>
 </div>
 
 </div>
@@ -262,7 +259,8 @@ otherwise the lazy arrow data object will be returned</p></dd>
 </dl><p></p></div>
 </div><p></p><div class="section">
 <h4 id="returns-3">Returns<a class="anchor" aria-label="anchor" href="#returns-3"></a></h4>
-<p>a dataframe if collect is <code>TRUE</code>, a lazy arrow data object</p>
+<p>a data frame if <code>collect</code> is <code>TRUE</code>, a lazy arrow data object
+otherwise, or <code>NULL</code> if the dataset doesn't exist or no row matches</p>
 </div>
 
 </div>
@@ -297,6 +295,10 @@ otherwise the lazy arrow data object will be returned</p></dd>
 
 
 </dl><p></p></div>
+</div><p></p><div class="section">
+<h4 id="returns-4">Returns<a class="anchor" aria-label="anchor" href="#returns-4"></a></h4>
+<p>a data frame if <code>collect</code> is <code>TRUE</code>, a lazy arrow data object
+otherwise, or <code>NULL</code> if the dataset doesn't exist or no row matches</p>
 </div>
 
 </div>
@@ -314,24 +316,10 @@ and AZnit_1 to AZnit_5, resmes and azomes.
 This function will replace the initial observations by NA in the dataset.</p><div class="section">
 <h4 id="usage-10">Usage<a class="anchor" aria-label="anchor" href="#usage-10"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">EvalWorkspace</span><span class="op">$</span><span class="fu">remove_init_obs</span><span class="op">(</span><span class="op">)</span></span></code></pre></div><p></p></div>
-</div>
-
-</div>
-
-<p></p><hr><a id="method-EvalWorkspace-remove_all_sim"></a><div class="section">
-<h3 id="evalworkspace-remove-all-sim-"><code>EvalWorkspace$remove_all_sim()</code><a class="anchor" aria-label="anchor" href="#evalworkspace-remove-all-sim-"></a></h3>
-<p>Remove all the simulations from the evaluation workspace</p><div class="section">
-<h4 id="usage-11">Usage<a class="anchor" aria-label="anchor" href="#usage-11"></a></h4>
-<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">EvalWorkspace</span><span class="op">$</span><span class="fu">remove_all_sim</span><span class="op">(</span><span class="op">)</span></span></code></pre></div><p></p></div>
-</div>
-
-</div>
-
-<p></p><hr><a id="method-EvalWorkspace-remove_all_obs"></a><div class="section">
-<h3 id="evalworkspace-remove-all-obs-"><code>EvalWorkspace$remove_all_obs()</code><a class="anchor" aria-label="anchor" href="#evalworkspace-remove-all-obs-"></a></h3>
-<p>Remove all the observations from the evaluation workspace</p><div class="section">
-<h4 id="usage-12">Usage<a class="anchor" aria-label="anchor" href="#usage-12"></a></h4>
-<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">EvalWorkspace</span><span class="op">$</span><span class="fu">remove_all_obs</span><span class="op">(</span><span class="op">)</span></span></code></pre></div><p></p></div>
+</div><p></p><div class="section">
+<h4 id="returns-5">Returns<a class="anchor" aria-label="anchor" href="#returns-5"></a></h4>
+<p><code>NULL</code>, invisibly. Called for its side effect of rewriting the
+observations dataset.</p>
 </div>
 
 </div>
@@ -339,7 +327,7 @@ This function will replace the initial observations by NA in the dataset.</p><di
 <p></p><hr><a id="method-EvalWorkspace-clone"></a><div class="section">
 <h3 id="evalworkspace-clone-"><code>EvalWorkspace$clone()</code><a class="anchor" aria-label="anchor" href="#evalworkspace-clone-"></a></h3>
 <p>The objects of this class are cloneable with this method.</p><div class="section">
-<h4 id="usage-13">Usage<a class="anchor" aria-label="anchor" href="#usage-13"></a></h4>
+<h4 id="usage-11">Usage<a class="anchor" aria-label="anchor" href="#usage-11"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">EvalWorkspace</span><span class="op">$</span><span class="fu">clone</span><span class="op">(</span>deep <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div><p></p><div class="section">
 <h4 id="arguments-9">Arguments<a class="anchor" aria-label="anchor" href="#arguments-9"></a></h4>

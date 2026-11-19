@@ -31,10 +31,6 @@ by
 
 - [`EvalWorkspace$remove_init_obs()`](#method-EvalWorkspace-remove_init_obs)
 
-- [`EvalWorkspace$remove_all_sim()`](#method-EvalWorkspace-remove_all_sim)
-
-- [`EvalWorkspace$remove_all_obs()`](#method-EvalWorkspace-remove_all_obs)
-
 - [`EvalWorkspace$clone()`](#method-EvalWorkspace-clone)
 
 ------------------------------------------------------------------------
@@ -52,11 +48,6 @@ Create an evaluation workspace manager
 - `data_dir`:
 
   Path to the evaluation workspace
-
-- `version`:
-
-  Optional, the version of STICS to use for the data extraction. If not
-  defined the last evaluated version will be used.
 
 ------------------------------------------------------------------------
 
@@ -130,7 +121,8 @@ Returns the list of species
 
 #### Returns
 
-a list of species as character list
+a character vector of species sorted alphabetically (case insensitive),
+or `NULL` if the species/USM dataset doesn't exist
 
 ------------------------------------------------------------------------
 
@@ -154,7 +146,8 @@ Returns the list of USMs of a species
 
 #### Returns
 
-a list of USMs as a character list
+a data frame with two columns, `species` and `situation`, or `NULL` if
+the dataset doesn't exist or no USM matches
 
 ------------------------------------------------------------------------
 
@@ -211,7 +204,8 @@ Return the simulation
 
 #### Returns
 
-a dataframe if collect is `TRUE`, a lazy arrow data object
+a data frame if `collect` is `TRUE`, a lazy arrow data object otherwise,
+or `NULL` if the dataset doesn't exist or no row matches
 
 ------------------------------------------------------------------------
 
@@ -250,7 +244,8 @@ Return the observation
 
 #### Returns
 
-a dataframe if collect is `TRUE`, a lazy arrow data object
+a data frame if `collect` is `TRUE`, a lazy arrow data object otherwise,
+or `NULL` if the dataset doesn't exist or no row matches
 
 ------------------------------------------------------------------------
 
@@ -288,6 +283,11 @@ Return the reference simulation
   Optional, if `TRUE` a dataframe will be returned, otherwise the lazy
   arrow data object will be returned
 
+#### Returns
+
+a data frame if `collect` is `TRUE`, a lazy arrow data object otherwise,
+or `NULL` if the dataset doesn't exist or no row matches
+
 ------------------------------------------------------------------------
 
 ### `EvalWorkspace$remove_init_obs()`
@@ -305,25 +305,10 @@ by NA in the dataset.
 
     EvalWorkspace$remove_init_obs()
 
-------------------------------------------------------------------------
+#### Returns
 
-### `EvalWorkspace$remove_all_sim()`
-
-Remove all the simulations from the evaluation workspace
-
-#### Usage
-
-    EvalWorkspace$remove_all_sim()
-
-------------------------------------------------------------------------
-
-### `EvalWorkspace$remove_all_obs()`
-
-Remove all the observations from the evaluation workspace
-
-#### Usage
-
-    EvalWorkspace$remove_all_obs()
+`NULL`, invisibly. Called for its side effect of rewriting the
+observations dataset.
 
 ------------------------------------------------------------------------
 
