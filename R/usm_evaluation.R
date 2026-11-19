@@ -32,8 +32,8 @@
 #'
 #' There is no minimum number of observations per USM. However, a variable
 #' that is not tested at the species level (fewer than 10 observations over
-#' the whole species, see \code{RRmseComparison}) is not tested on the USMs of
-#' that species either.
+#' the whole species, see \code{rrmse_comparison()}) is not tested on the
+#' USMs of that species either.
 #'
 #' The class can be used in two ways:
 #' \itemize{
@@ -103,7 +103,7 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
     },
     # Keeps only the per-USM stats of variables tested at the species level,
     # i.e. with enough observations over the whole species. Uses the
-    # reference group's n_obs, like RRmseComparison.
+    # reference group's n_obs, like rrmse_comparison().
     filter_species_tested_vars = function(stats_usm, stats_species) {
       group <- if ("reference" %in% stats_species$group) {
         "reference"
@@ -272,7 +272,7 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
               spec, stats_usm, stats$stats_species
             )
           }
-          deteriorated_usm <- DeterioratedUSMComparison$new(
+          deteriorated_usm <- deteriorated_usm_comparison(
             species = spec,
             stats = stats_usm,
             percentage = private$percentage
@@ -293,8 +293,7 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
           next
         }
         private$data[[res$species]] <- res$data
-        deteriorated_data <- res$deteriorated_usm$get_data()
-        if (!is.null(deteriorated_data) && nrow(deteriorated_data) > 0) {
+        if (nrow(res$deteriorated_usm) > 0) {
           private$deteriorated_usm[[res$species]] <- res$deteriorated_usm
           private$logger$info(
             "Deteriorated USM for species ", res$species, " generated"
@@ -594,9 +593,7 @@ USMEvaluation <- R6::R6Class("USMEvaluation", # nolint: object_name_linter
         }
       }
 
-      deteriorated_data <- do.call(rbind, lapply(private$deteriorated_usm, function(x) { # nolint
-        if (!is.null(x$get_data())) x$get_data()
-      }))
+      deteriorated_data <- do.call(rbind, private$deteriorated_usm)
 
       if (is.null(deteriorated_data)) {
         private$logger$info("No deteriorated USM data to export")
