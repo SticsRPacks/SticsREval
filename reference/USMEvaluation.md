@@ -34,8 +34,8 @@ variable:
 
 There is no minimum number of observations per USM. However, a variable
 that is not tested at the species level (fewer than 10 observations over
-the whole species, see `RRmseComparison`) is not tested on the USMs of
-that species either.
+the whole species, see `rrmse_comparison()`) is not tested on the USMs
+of that species either.
 
 The class can be used in two ways:
 

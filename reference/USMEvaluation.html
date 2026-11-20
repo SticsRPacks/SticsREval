@@ -65,8 +65,8 @@ variable:</p><ul><li><p><code>RMSE_ratio &gt; ratio_threshold</code> (default 50
 <code>RMSE_ratio &gt; degraded_threshold</code> (default 20%) on that USM.</p></li>
 </ul><p>There is no minimum number of observations per USM. However, a variable
 that is not tested at the species level (fewer than 10 observations over
-the whole species, see <code>RRmseComparison</code>) is not tested on the USMs of
-that species either.</p>
+the whole species, see <code>rrmse_comparison()</code>) is not tested on the
+USMs of that species either.</p>
 <p>The class can be used in two ways:</p><ul><li><p>Driven by <code>eval_workspace</code>/<code>workspace</code>, like
 <code>SpeciesEvaluation</code>: create with <code>eval_workspace</code> (or a
 pre-built <code>workspace</code>), then call <code>run()</code>.</p></li>
