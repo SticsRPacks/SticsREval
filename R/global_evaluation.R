@@ -61,7 +61,7 @@ GlobalEvaluation <- R6::R6Class("GlobalEvaluation", # nolint: object_name_linter
         return(invisible(NULL))
       }
       private$logger$info("Comparing global rRMSE")
-      private$rrmse_comparison <- RRmseComparison$new(
+      private$rrmse_comparison <- rrmse_comparison(
         stats = private$stats,
         percentage = private$percentage
       )
@@ -82,7 +82,7 @@ GlobalEvaluation <- R6::R6Class("GlobalEvaluation", # nolint: object_name_linter
     #' comparison.
     success = function() {
       !is.null(private$rrmse_comparison) &&
-        length(private$rrmse_comparison$critical_vars) == 0
+        length(rrmse_status_vars(private$rrmse_comparison, "Critical")) == 0
     },
 
     #' @field skip_reason
@@ -161,7 +161,7 @@ GlobalEvaluation <- R6::R6Class("GlobalEvaluation", # nolint: object_name_linter
         cli::cli_alert_warning("No comparison done ({self$skip_reason}).")
         return(invisible(self))
       }
-      private$rrmse_comparison$log()
+      log_rrmse_comparison(private$rrmse_comparison, private$percentage)
 
       cli::cli_rule()
     },
@@ -186,9 +186,9 @@ GlobalEvaluation <- R6::R6Class("GlobalEvaluation", # nolint: object_name_linter
       )
 
       if (!is.null(private$rrmse_comparison) &&
-            !private$rrmse_comparison$is_empty) {
+            nrow(private$rrmse_comparison) > 0) {
         safe_write_csv(
-          private$rrmse_comparison$get_data(),
+          private$rrmse_comparison,
           csv_output_path(private$output_dir, "global_rrmse_comparison.csv")
         )
       }

@@ -66,12 +66,11 @@ SpeciesEvaluation <- R6::R6Class("SpeciesEvaluation", # nolint: object_name_lint
           next
         }
         private$logger$info("Comparing rRMSE for species ", spec)
-        comparison <- RRmseComparison$new(
+        private$rrmse_comparisons[[spec]] <- rrmse_comparison(
           species = spec,
           stats = stats$stats,
           percentage = private$percentage
         )
-        private$rrmse_comparisons[[spec]] <- comparison
         private$logger$info(
           "Species comparison for species ", spec, " generated"
         )
@@ -149,16 +148,19 @@ SpeciesEvaluation <- R6::R6Class("SpeciesEvaluation", # nolint: object_name_lint
         ))
       }
 
+      has_status <- function(c, status) {
+        length(rrmse_status_vars(c, status)) > 0
+      }
       all_crit <- unique(unlist(lapply(comparisons, function(c) {
-        if (length(c$critical_vars) > 0) c$get_data()$species[1]
+        if (has_status(c, "Critical")) c$species[1]
       })))
       all_warn <- unique(unlist(lapply(comparisons, function(c) {
-        if (length(c$warning_vars) > 0) c$get_data()$species[1]
+        if (has_status(c, "Warning")) c$species[1]
       })))
       all_warn <- setdiff(all_warn, all_crit)
       all_ok <- unique(unlist(lapply(comparisons, function(c) {
-        if (length(c$critical_vars) == 0 && length(c$warning_vars) == 0) {
-          c$get_data()$species[1]
+        if (!has_status(c, "Critical") && !has_status(c, "Warning")) {
+          c$species[1]
         }
       })))
 
@@ -182,10 +184,9 @@ SpeciesEvaluation <- R6::R6Class("SpeciesEvaluation", # nolint: object_name_lint
     #' comparisons.
     success = function() {
       comparisons <- Filter(Negate(is.null), private$rrmse_comparisons)
-      all_crit <- unique(unlist(lapply(comparisons, function(c) {
-        if (length(c$critical_vars) > 0) c$get_data()$species[1]
-      })))
-      length(all_crit) == 0
+      !any(vapply(comparisons, function(c) {
+        length(rrmse_status_vars(c, "Critical")) > 0
+      }, logical(1)))
     },
 
     #' @field skip_reason
@@ -315,7 +316,7 @@ SpeciesEvaluation <- R6::R6Class("SpeciesEvaluation", # nolint: object_name_lint
       all_warn <- status$species[status$status == "Warning"]
       all_ok <- status$species[status$status == "OK"]
 
-      for (comp in comparisons) comp$log()
+      for (comp in comparisons) log_rrmse_comparison(comp, private$percentage)
 
       cli::cli_h2("Summary")
       cli::cli_text("The following species show at least one variable with:")
@@ -375,11 +376,11 @@ SpeciesEvaluation <- R6::R6Class("SpeciesEvaluation", # nolint: object_name_lint
         function(i) {
           spec <- names(private$rrmse_comparisons)[i]
           comp <- private$rrmse_comparisons[[spec]]
-          if (is.null(comp) || comp$is_empty) return()
+          if (is.null(comp) || nrow(comp) == 0) return()
 
           deteriorated <- c(
-            comp$critical_vars,
-            comp$warning_vars
+            rrmse_status_vars(comp, "Critical"),
+            rrmse_status_vars(comp, "Warning")
           )
           if (length(deteriorated) > 0) {
             spec_usms <- private$workspace$get_species_situations(spec)
@@ -411,9 +412,7 @@ SpeciesEvaluation <- R6::R6Class("SpeciesEvaluation", # nolint: object_name_lint
         csv_output_path(private$output_dir, "rRMSE_per_usm.csv")
       )
       safe_write_csv(
-        dplyr::bind_rows(
-          lapply(private$rrmse_comparisons, function(comp) comp$get_data())
-        ),
+        dplyr::bind_rows(private$rrmse_comparisons),
         csv_output_path(private$output_dir, "species_rrmse_comparison.csv")
       )
       safe_write_csv(
