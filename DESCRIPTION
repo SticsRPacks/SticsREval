@@ -33,6 +33,7 @@ Imports:
     lifecycle,
     logger,
     methods,
+    parallelly,
     plotly,
     SticsOnR,
     SticsRFiles,
