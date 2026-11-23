@@ -31,9 +31,11 @@ mock_downloads <- function(body_files, content_type, seen = new.env()) {
 }
 
 rotation_row <- function(mus_name, mus_id = 1L, wsp_id = 7L, rotation = "0",
-                         rotation_order = 1L, wsp_statut = "actif") {
+                         rotation_order = 1L, wsp_statut = "actif",
+                         wsp_name = paste0("wsp", wsp_id)) {
   list(
     wsp_statut = wsp_statut,
+    wsp_name = wsp_name,
     mus_id = mus_id,
     mus_name = mus_name,
     rotation = rotation,
@@ -339,6 +341,87 @@ test_that("get_metadata ignores duplicated names of inactive workspaces", {
   expect_identical(metadata$idestics_usm_id, 1L)
 })
 
+test_that("get_metadata keeps only the USMs of the selected workspaces", {
+  httr2::local_mocked_responses(function(req) {
+    json_response(list(
+      rotation_row("usm1", mus_id = 1L, wsp_id = 7L),
+      rotation_row("usm2", mus_id = 2L, wsp_id = 8L),
+      rotation_row("usm3", mus_id = 3L, wsp_id = 9L)
+    ))
+  })
+
+  metadata <- get_metadata(
+    idestics_url, "tok", c("usm1", "usm2", "usm3"),
+    workspaces = c("wsp7", "wsp9")
+  )
+
+  expect_identical(metadata$usm, c("usm1", "usm3"))
+})
+
+test_that("get_metadata keeps all the active workspaces when NULL", {
+  httr2::local_mocked_responses(function(req) {
+    json_response(list(
+      rotation_row("usm1", mus_id = 1L, wsp_id = 7L),
+      rotation_row("usm2", mus_id = 2L, wsp_id = 8L)
+    ))
+  })
+
+  metadata <- get_metadata(
+    idestics_url, "tok", c("usm1", "usm2"),
+    workspaces = NULL
+  )
+
+  expect_identical(metadata$usm, c("usm1", "usm2"))
+})
+
+test_that("get_metadata resolves duplicated USM names with workspaces", {
+  httr2::local_mocked_responses(function(req) {
+    json_response(list(
+      rotation_row("usm1", mus_id = 1L, wsp_id = 7L),
+      rotation_row("usm1", mus_id = 2L, wsp_id = 8L)
+    ))
+  })
+
+  metadata <- get_metadata(idestics_url, "tok", "usm1", workspaces = "wsp8")
+
+  expect_identical(metadata$idestics_usm_id, 2L)
+  expect_identical(metadata$idestics_usm_name, "8_usm1")
+})
+
+test_that("get_metadata ignores the inactive selected workspaces", {
+  httr2::local_mocked_responses(function(req) {
+    json_response(list(
+      rotation_row("usm1", wsp_id = 7L, wsp_statut = "inactif")
+    ))
+  })
+
+  expect_error(
+    get_metadata(idestics_url, "tok", "usm1", workspaces = "wsp7"),
+    "found in active IDEStics workspaces (wsp7)",
+    fixed = TRUE
+  )
+})
+
+test_that("get_metadata warns about the USMs outside the workspaces", {
+  httr2::local_mocked_responses(function(req) {
+    json_response(list(
+      rotation_row("usm1", mus_id = 1L, wsp_id = 7L),
+      rotation_row("usm2", mus_id = 2L, wsp_id = 8L)
+    ))
+  })
+  logger::log_threshold(logger::WARN)
+  on.exit(logger::log_threshold(logger::FATAL), add = TRUE)
+  log_env <- make_log_capture()
+
+  metadata <- get_metadata(
+    idestics_url, "tok", c("usm1", "usm2"),
+    workspaces = "wsp7"
+  )
+
+  expect_identical(metadata$usm, "usm1")
+  expect_match(log_env$logs, "usm2", all = FALSE)
+})
+
 # ---- get_usms ----
 
 test_that("get_usms extracts the ZIP archive returned by the API", {
@@ -559,8 +642,9 @@ test_that("extract_idestics_data retrieves the USMs and completes them", {
   )
   mockery::stub(
     extract_idestics_data, "get_metadata",
-    function(url, token, usms) {
+    function(url, token, usms, workspaces) {
       seen$usms <- usms
+      seen$workspaces <- workspaces
       metadata
     }
   )
@@ -585,11 +669,13 @@ test_that("extract_idestics_data retrieves the USMs and completes them", {
   )
 
   extract_idestics_data(
-    idestics_url, "user", "secret", "10.2.0", "usm1", stics_path, output_dir
+    idestics_url, "user", "secret", "10.2.0", "usm1", stics_path, output_dir,
+    workspaces = "wsp7"
   )
 
   expect_identical(seen$credentials, c("user", "secret"))
   expect_identical(seen$usms, "usm1")
+  expect_identical(seen$workspaces, "wsp7")
   expect_identical(seen$token, "tok")
   expect_identical(seen$stics_version, "10.2.0")
   expect_identical(seen$ids, 1L)
@@ -700,6 +786,20 @@ test_that("check_idestics_args rejects an invalid max_active", {
   }
 })
 
+test_that("check_idestics_args accepts valid workspaces", {
+  expect_no_error(check_idestics_args("11.0.0", 300L, 10L, NULL))
+  expect_no_error(check_idestics_args("11.0.0", 300L, 10L, c("wsp1", "wsp2")))
+})
+
+test_that("check_idestics_args rejects invalid workspaces", {
+  for (workspaces in list(character(0), NA_character_, 1L, list("wsp1"))) {
+    expect_error(
+      check_idestics_args("11.0.0", 300L, 10L, workspaces),
+      "`workspaces` must be NULL or a non-empty character vector"
+    )
+  }
+})
+
 # ---- gen_varmod_from_obs_idestics ----
 
 test_that("gen_varmod_from_obs_idestics writes unique vars from obs files", {
@@ -757,6 +857,36 @@ test_that("gen_workspace_from_idestics generates a text workspace", {
   expect_identical(seen$usm, "usm1")
   expect_identical(seen$var_mod, "LAI")
   expect_true(file.exists(file.path(output_dir, "metadata.csv")))
+})
+
+test_that("gen_workspace_from_idestics passes the workspaces", {
+  withr::local_envvar(
+    IDESTICS_USERNAME = "user",
+    IDESTICS_PASSWORD = "secret"
+  )
+  output_dir <- file.path(withr::local_tempdir(), "workspace")
+
+  seen <- new.env()
+  mockery::stub(
+    gen_workspace_from_idestics, "extract_idestics_data",
+    function(..., output_dir, workspaces) {
+      seen$workspaces <- workspaces
+      write_usms_xml(output_dir, "usm1")
+      writeLines("usm;rotation", file.path(output_dir, "metadata.csv"))
+      data.frame(usm = "usm1", stringsAsFactors = FALSE)
+    }
+  )
+  mockery::stub(
+    gen_workspace_from_idestics, "SticsRFiles::gen_usms_xml2txt",
+    function(...) NULL
+  )
+
+  gen_workspace_from_idestics(
+    idestics_url, withr::local_tempdir(), output_dir, "10.2.0",
+    usms = "usm1", workspaces = c("wsp7", "wsp8"), verbose = 0L
+  )
+
+  expect_identical(seen$workspaces, c("wsp7", "wsp8"))
 })
 
 test_that("gen_workspace_from_idestics only converts the USMs found", {
