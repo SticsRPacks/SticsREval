@@ -98,14 +98,15 @@ run_simulations <- function(
   obs <- get_obs_files(usms_workspace, usms, parallel, cores)
   sim_vars <- vars %||% get_var_from_obs(obs)
 
-  workspace <- USMSWorkspace$new(
+  sim <- run_stics_simulations(
     usms_workspace = usms_workspace,
     stics_exe = stics_exe,
     metadata_file = metadata_file,
+    usms = usms,
+    var = sim_vars,
     parallel = parallel,
     cores = cores
   )
-  sim <- workspace$run_simulations(usms, var = sim_vars)
 
   logger::log_info(
     "Simulations done. Exporting sim and obs data to {output_dir}..."
@@ -116,6 +117,103 @@ run_simulations <- function(
   save_rds(obs, output_dir, "observations.rds")
 
   invisible(list(sim = sim, obs = obs))
+}
+
+
+get_rotation_list <- function(metadata_file, usm_names = NULL) {
+  if (!file.exists(metadata_file)) {
+    stop(
+      "Metadata file not found: ",
+      metadata_file,
+      call. = FALSE
+    )
+  }
+  rotations_data <- read_csv(metadata_file, delimiter = ";")
+  required_cols  <- c("usm", "rotation", "rotation_order")
+  missing_cols <- setdiff(required_cols, names(rotations_data))
+
+  if (length(missing_cols) > 0) {
+    stop(
+      "Missing columns in metadata file: ", toString(missing_cols),
+      call. = FALSE
+    )
+  }
+  if (nrow(rotations_data) == 0) return(list())
+
+  rotation_order <- suppressWarnings(as.numeric(rotations_data$rotation_order))
+  invalid <- !is.na(rotations_data$rotation_order) & is.na(rotation_order)
+  if (any(invalid)) {
+    stop(
+      "Column must be numeric: rotation_order (invalid values for USMs ",
+      toString(rotations_data$usm[invalid]), ")",
+      call. = FALSE
+    )
+  }
+
+  rotations <- rotations_data |>
+    dplyr::mutate(
+      rotation_order = rotation_order,
+      rotation = as.character(.data$rotation)
+    ) |>
+    dplyr::filter(!is.na(.data$rotation), .data$rotation != "0") |>
+    dplyr::arrange(.data$rotation, .data$rotation_order) |>
+    dplyr::group_by(.data$rotation) |>
+    dplyr::summarise(usm_vec = list(.data$usm)) |>
+    dplyr::pull("usm_vec")
+
+  if (!is.null(usm_names)) {
+    # Only keep rotations whose USMs are all part of the current run: a
+    # rotation chains successive USMs together, so a partially available
+    # chain cannot be simulated anyway.
+    rotations <- Filter(function(usms) all(usms %in% usm_names), rotations)
+  }
+
+  logger::log_debug("Found ", length(rotations), " rotations")
+  rotations
+}
+
+
+run_stics_simulations <- function(
+  usms_workspace, stics_exe, metadata_file, usms, var, parallel, cores
+) {
+  rotations <- get_rotation_list(metadata_file, unique(usms))
+  wrapper_options <- SticsOnR::stics_wrapper_options(
+    stics_exe = stics_exe,
+    workspace = usms_workspace,
+    parallel = parallel,
+    cores = cores,
+    successive = rotations,
+    verbose = is_debug(),
+    time_display = is_debug()
+  )
+  res <- tryCatch(
+    SticsOnR::stics_wrapper(
+      wrapper_options, situation = unique(usms), var = var
+    ),
+    error = function(e) {
+      logger::log_error(
+        "Stics wrapper failed while running simulations: ",
+        conditionMessage(e)
+      )
+      stop(
+        "Error while running simulations: ", conditionMessage(e),
+        call. = FALSE
+      )
+    }
+  )
+  if (res$error) {
+    messages <- unlist(res$messages, use.names = FALSE)
+    for (msg in unique(messages[nzchar(messages)])) {
+      logger::log_error(msg)
+    }
+    stop(
+      "Error while running simulations for USMs: ",
+      toString(names(res$messages)),
+      ". Set verbose = 2L for more details.",
+      call. = FALSE
+    )
+  }
+  res$sim_list
 }
 
 

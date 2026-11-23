@@ -117,17 +117,13 @@ test_that("run_simulations runs simulations and saves sim and obs as RDS", {
   )
 
   seen <- new.env()
-  fake_workspace <- list(
-    run_simulations = function(usms, var) {
+  mockery::stub(
+    run_simulations, "run_stics_simulations",
+    function(usms, var, ...) {
       seen$usms <- usms
       seen$var <- var
       sim_data
     }
-  )
-
-  mockery::stub(
-    run_simulations, "USMSWorkspace$new",
-    function(...) fake_workspace
   )
   mockery::stub(
     run_simulations, "get_obs_files",
@@ -173,16 +169,12 @@ test_that(
 
     seen <- new.env()
     seen$get_var_from_obs_called <- FALSE
-    fake_workspace <- list(
-      run_simulations = function(usms, var) {
+    mockery::stub(
+      run_simulations, "run_stics_simulations",
+      function(usms, var, ...) {
         seen$var <- var
         sim_data
       }
-    )
-
-    mockery::stub(
-      run_simulations, "USMSWorkspace$new",
-      function(...) fake_workspace
     )
     mockery::stub(
       run_simulations, "get_obs_files",
@@ -210,15 +202,12 @@ test_that(
 )
 
 stub_restricted_run <- function(seen) {
-  fake_workspace <- list(
-    run_simulations = function(usms, var) {
+  mockery::stub(
+    run_simulations, "run_stics_simulations",
+    function(usms, ...) {
       seen$usms <- usms
       list(usm1 = data.frame(Date = as.Date("2024-01-01"), LAI = 1))
     }
-  )
-  mockery::stub(
-    run_simulations, "USMSWorkspace$new",
-    function(...) fake_workspace
   )
   mockery::stub(
     run_simulations, "get_obs_files",
@@ -298,4 +287,142 @@ test_that("run_simulations errors when stics_exe does not exist on disk", {
     ),
     "stics_exe not found"
   )
+})
+
+# ---- get_rotation_list ----
+
+write_metadata <- function(content, .local_envir = parent.frame()) {
+  path <- withr::local_tempfile(fileext = ".csv", .local_envir = .local_envir)
+  writeLines(content, path)
+  path
+}
+
+test_that("get_rotation_list errors when metadata file does not exist", {
+  expect_error(
+    get_rotation_list(file.path("nonexistent", "path.csv")),
+    "Metadata file not found"
+  )
+})
+
+test_that("get_rotation_list errors on missing required columns", {
+  path <- write_metadata("usm;other_col\nusm1;val")
+  expect_error(get_rotation_list(path), "Missing columns in metadata file")
+})
+
+test_that("get_rotation_list errors when rotation_order is non-numeric", {
+  path <- write_metadata(c(
+    "usm;rotation;rotation_order",
+    "usm1;rot1;1",
+    "usm2;rot1;abc",
+    "usm3;rot2;"
+  ))
+  expect_error(
+    get_rotation_list(path),
+    "Column must be numeric: rotation_order \\(invalid values for USMs usm2\\)"
+  )
+})
+
+test_that("get_rotation_list returns empty list when no rows", {
+  path <- write_metadata("usm;rotation;rotation_order")
+  expect_identical(get_rotation_list(path), list())
+})
+
+test_that("get_rotation_list excludes rows where rotation is NA or '0'", {
+  path <- write_metadata(c(
+    "usm;rotation;rotation_order",
+    "usm1;rot1;1",
+    "usm2;0;2",
+    "usm3;;3"
+  ))
+
+  usms_in_rotations <- unlist(get_rotation_list(path))
+  expect_false("usm2" %in% usms_in_rotations)
+  expect_false("usm3" %in% usms_in_rotations)
+})
+
+test_that("get_rotation_list groups USMs by rotation in order", {
+  path <- write_metadata(c(
+    "usm;rotation;rotation_order",
+    "usm2;rot1;2",
+    "usm1;rot1;1",
+    "usm3;rot2;1"
+  ))
+
+  result <- get_rotation_list(path)
+  expect_length(result, 2)
+  expect_identical(result[[1]], c("usm1", "usm2"))
+  expect_identical(result[[2]], "usm3")
+})
+
+test_that("get_rotation_list handles single-USM rotations", {
+  path <- write_metadata(c(
+    "usm;rotation;rotation_order",
+    "usm1;rot1;1"
+  ))
+  expect_identical(get_rotation_list(path), list("usm1"))
+})
+
+test_that("get_rotation_list keeps only rotations fully in usm_names", {
+  path <- write_metadata(c(
+    "usm;rotation;rotation_order",
+    "usm1;rot1;1",
+    "usm2;rot1;2",
+    "usm3;rot2;1"
+  ))
+  expect_identical(
+    get_rotation_list(path, usm_names = c("usm1", "usm3")),
+    list("usm3")
+  )
+})
+
+# ---- run_stics_simulations ----
+
+run_stics_sims <- function(usms = "usm1", var = "LAI") {
+  run_stics_simulations(
+    usms_workspace = "ws", stics_exe = "stics", metadata_file = "meta.csv",
+    usms = usms, var = var, parallel = FALSE, cores = NA
+  )
+}
+
+test_that("run_stics_simulations returns sim_list from the Stics wrapper", {
+  fake_sim <- list(usm1 = data.frame(Date = 1, LAI = 1))
+  seen <- new.env()
+  local_mocked_bindings(get_rotation_list = function(...) list("usm1"))
+  local_mocked_bindings(
+    stics_wrapper_options = function(...) {
+      seen$options <- list(...)
+      list()
+    },
+    stics_wrapper = function(...) list(error = FALSE, sim_list = fake_sim),
+    .package = "SticsOnR"
+  )
+
+  expect_identical(run_stics_sims(), fake_sim)
+  expect_identical(seen$options$successive, list("usm1"))
+})
+
+test_that("run_stics_simulations catches and rethrows Stics wrapper errors", {
+  local_mocked_bindings(get_rotation_list = function(...) list())
+  local_mocked_bindings(
+    stics_wrapper_options = function(...) list(),
+    stics_wrapper = function(...) stop("boom", call. = FALSE),
+    .package = "SticsOnR"
+  )
+  logger::log_threshold(logger::ERROR)
+  on.exit(logger::log_threshold(logger::FATAL), add = TRUE)
+  logs <- make_log_capture()
+
+  expect_error(run_stics_sims(), "Error while running simulations: boom")
+  expect_true(any(grepl("Stics wrapper failed.*boom", logs$logs)))
+})
+
+test_that("run_stics_simulations errors when the wrapper reports an error", {
+  local_mocked_bindings(get_rotation_list = function(...) list())
+  local_mocked_bindings(
+    stics_wrapper_options = function(...) list(),
+    stics_wrapper = function(...) list(error = TRUE, sim_list = list()),
+    .package = "SticsOnR"
+  )
+
+  expect_error(run_stics_sims(), "Error while running simulations")
 })

@@ -1,8 +1,6 @@
 USMSWorkspace <- R6::R6Class("USMSWorkspace", # nolint: object_name_linter
   private = list(
     usms_workspace = NULL,
-    stics_exe = NULL,
-    metadata_file = NULL,
     sim_rds = NULL,
     obs_rds = NULL,
     ref_sim_rds = NULL,
@@ -25,55 +23,6 @@ USMSWorkspace <- R6::R6Class("USMSWorkspace", # nolint: object_name_linter
       sorted <- dplyr::bind_rows(result)
       logger::log_debug("Found ", length(unique(sorted$species)), " species")
       sorted
-    },
-
-    get_rotation_list = function(usm_names = NULL) {
-      if (!file.exists(private$metadata_file)) {
-        stop(
-          "Metadata file not found: ",
-          private$metadata_file,
-          call. = FALSE
-        )
-      }
-      rotations_data <- read_csv(private$metadata_file, delimiter = ";")
-      required_cols  <- c("usm", "rotation", "rotation_order")
-      missing_cols <- setdiff(required_cols, names(rotations_data))
-
-      if (length(missing_cols) > 0) {
-        stop(
-          "Missing columns in metadata file: ", toString(missing_cols),
-          call. = FALSE
-        )
-      }
-      if (nrow(rotations_data) == 0) return(list())
-
-      original_order <- rotations_data[["rotation_order"]]
-      rotations_data <- rotations_data |>
-        dplyr::mutate(
-          rotation_order = suppressWarnings(as.numeric(.data$rotation_order)),
-          rotation = as.character(.data$rotation)
-        )
-
-      if (sum(is.na(rotations_data[["rotation_order"]])) > sum(is.na(original_order))) { # nolint: line_length_linter
-        stop("Column must be numeric: rotation_order", call. = FALSE)
-      }
-
-      rotations <- rotations_data |>
-        dplyr::filter(!is.na(.data$rotation), .data$rotation != "0") |>
-        dplyr::arrange(.data$rotation, .data$rotation_order) |>
-        dplyr::group_by(.data$rotation) |>
-        dplyr::summarise(usm_vec = list(.data$usm)) |>
-        dplyr::pull("usm_vec")
-
-      if (!is.null(usm_names)) {
-        # Only keep rotations whose USMs are all part of the current run: a
-        # rotation chains successive USMs together, so a partially available
-        # chain cannot be simulated anyway.
-        rotations <- Filter(function(usms) all(usms %in% usm_names), rotations)
-      }
-
-      logger::log_debug("Found ", length(rotations), " rotations")
-      rotations
     },
 
     load_sim = function() {
@@ -120,15 +69,12 @@ USMSWorkspace <- R6::R6Class("USMSWorkspace", # nolint: object_name_linter
 
   public = list(
     # usms_workspace: path to the Stics text workspace.
-    # stics_exe, metadata_file: only needed to call run_simulations().
-    # sim_rds, obs_rds, ref_sim_rds, eval_workspace, usms: only needed to
-    # call load() (eval_workspace only when `workspace` isn't supplied).
+    # sim_rds, obs_rds, ref_sim_rds, usms: data to load into the evaluation
+    # workspace. eval_workspace: only used when `workspace` isn't supplied.
     # parallel, cores: used to build a default `backend` when one isn't
     # supplied. workspace, backend: dependency injection.
     initialize = function(
       usms_workspace,
-      stics_exe = NULL,
-      metadata_file = NULL,
       sim_rds = NULL,
       obs_rds = NULL,
       ref_sim_rds = NULL,
@@ -140,55 +86,12 @@ USMSWorkspace <- R6::R6Class("USMSWorkspace", # nolint: object_name_linter
       backend = NULL
     ) {
       private$usms_workspace <- usms_workspace
-      private$stics_exe <- stics_exe
-      private$metadata_file <- metadata_file
       private$sim_rds <- sim_rds
       private$obs_rds <- obs_rds
       private$ref_sim_rds <- ref_sim_rds
       private$usms <- usms
       private$backend <- backend %||% ParallelBackend$new(parallel, cores)
       private$workspace <- workspace %||% EvalWorkspace$new(eval_workspace)
-    },
-
-    run_simulations = function(usms, var) {
-      rotations <- private$get_rotation_list(unique(usms))
-      wrapper_options <- SticsOnR::stics_wrapper_options(
-        stics_exe = private$stics_exe,
-        workspace = private$usms_workspace,
-        parallel = private$backend$parallel,
-        cores = private$backend$cores,
-        successive = rotations,
-        verbose = is_debug(),
-        time_display = is_debug()
-      )
-      res <- tryCatch(
-        SticsOnR::stics_wrapper(
-          wrapper_options, situation = unique(usms), var = var
-        ),
-        error = function(e) {
-          logger::log_error(
-            "Stics wrapper failed while running simulations: ",
-            conditionMessage(e)
-          )
-          stop(
-            "Error while running simulations: ", conditionMessage(e),
-            call. = FALSE
-          )
-        }
-      )
-      if (res$error) {
-        messages <- unlist(res$messages, use.names = FALSE)
-        for (msg in unique(messages[nzchar(messages)])) {
-          logger::log_error(msg)
-        }
-        stop(
-          "Error while running simulations for USMs: ",
-          toString(names(res$messages)),
-          ". Set verbose = 2L for more details.",
-          call. = FALSE
-        )
-      }
-      res$sim_list
     },
 
     load = function() {

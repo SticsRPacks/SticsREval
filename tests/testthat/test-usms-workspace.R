@@ -34,120 +34,15 @@ make_loader <- function(
   workspace = make_fake_workspace(),
   backend = make_fake_backend(),
   usms_workspace = "usms_ws",
-  metadata_file = NULL,
   ...
 ) {
   USMSWorkspace$new(
     usms_workspace = usms_workspace,
-    metadata_file = metadata_file,
     workspace = workspace,
     backend = backend,
     ...
   )
 }
-
-write_metadata <- function(path, content) {
-  writeLines(content, path)
-}
-
-access_private <- function(loader, name) {
-  loader$.__enclos_env__$private[[name]]
-}
-
-call_private <- function(loader, name, ...) {
-  loader$.__enclos_env__$private[[name]](...)
-}
-
-# ---- get_rotation_list ----
-
-test_that("get_rotation_list errors when metadata file does not exist", {
-  loader <- make_loader(
-    metadata_file = file.path("nonexistent", "path.csv")
-  )
-  expect_error(
-    call_private(loader, "get_rotation_list"),
-    "Metadata file not found"
-  )
-})
-
-test_that("get_rotation_list errors on missing required columns", {
-  path <- withr::local_tempfile(fileext = ".csv")
-  write_metadata(path, "usm;other_col\nusm1;val")
-
-  loader <- make_loader(metadata_file = path)
-  expect_error(
-    call_private(loader, "get_rotation_list"),
-    "Missing columns in metadata file"
-  )
-})
-
-test_that("get_rotation_list errors when rotation_order is non-numeric", {
-  path <- withr::local_tempfile(fileext = ".csv")
-  write_metadata(path, "usm;rotation;rotation_order\nusm1;rot1;abc")
-
-  loader <- make_loader(metadata_file = path)
-  expect_error(
-    call_private(loader, "get_rotation_list"),
-    "Column must be numeric: rotation_order"
-  )
-})
-
-test_that("get_rotation_list returns empty list when no rows", {
-  path <- withr::local_tempfile(fileext = ".csv")
-  write_metadata(path, "usm;rotation;rotation_order")
-
-  loader <- make_loader(metadata_file = path)
-  result <- call_private(loader, "get_rotation_list")
-  expect_identical(result, list())
-})
-
-test_that("get_rotation_list excludes rows where rotation is NA or '0'", {
-  path <- withr::local_tempfile(fileext = ".csv")
-  write_metadata(path, c(
-    "usm;rotation;rotation_order",
-    "usm1;rot1;1",
-    "usm2;0;2",
-    "usm3;;3"
-  ))
-
-  loader <- make_loader(metadata_file = path)
-  result <- call_private(loader, "get_rotation_list")
-
-  usms_in_rotations <- unlist(result)
-  expect_false("usm2" %in% usms_in_rotations)
-  expect_false("usm3" %in% usms_in_rotations)
-})
-
-test_that("get_rotation_list groups USMs by rotation in order", {
-  path <- withr::local_tempfile(fileext = ".csv")
-  write_metadata(path, c(
-    "usm;rotation;rotation_order",
-    "usm2;rot1;2",
-    "usm1;rot1;1",
-    "usm3;rot2;1"
-  ))
-
-  loader <- make_loader(metadata_file = path)
-  result <- call_private(loader, "get_rotation_list")
-
-  expect_length(result, 2)
-  expect_identical(result[[1]], c("usm1", "usm2"))
-  expect_identical(result[[2]], "usm3")
-})
-
-test_that("get_rotation_list handles single-USM rotations", {
-  path <- withr::local_tempfile(fileext = ".csv")
-  write_metadata(path, c(
-    "usm;rotation;rotation_order",
-    "usm1;rot1;1"
-  ))
-
-  loader <- make_loader(metadata_file = path)
-  result <- call_private(loader, "get_rotation_list")
-
-  expect_length(result, 1)
-  expect_identical(result[[1]], "usm1")
-})
 
 # ---- load ----
 
@@ -156,14 +51,10 @@ test_that("load discovers USMs from usms_workspace subdirectories", {
   dir.create(file.path(ws_dir, "usm1"))
   dir.create(file.path(ws_dir, "usm2"))
 
-  meta_path <- withr::local_tempfile(fileext = ".csv")
-  write_metadata(meta_path, "usm;rotation;rotation_order")
-
   workspace <- make_fake_workspace()
   workspace$remove_init_obs <- function() {}
   loader <- make_loader(
     usms_workspace = ws_dir,
-    metadata_file = meta_path,
     workspace = workspace
   )
 
@@ -182,54 +73,4 @@ test_that("load discovers USMs from usms_workspace subdirectories", {
   loader$load()
 
   expect_setequal(seen_usms$value, c("usm1", "usm2"))
-})
-
-# ---- run_simulations ----
-
-make_sim_loader <- function() {
-  loader <- make_loader(stics_exe = "stics")
-  replace_private(loader, "get_rotation_list", function(usms) list())
-  loader
-}
-
-test_that("run_simulations returns sim_list from the Stics wrapper", {
-  loader <- make_sim_loader()
-  fake_sim <- list(usm1 = data.frame(Date = 1, LAI = 1))
-  local_mocked_bindings(
-    stics_wrapper_options = function(...) list(),
-    stics_wrapper = function(...) list(error = FALSE, sim_list = fake_sim),
-    .package = "SticsOnR"
-  )
-
-  expect_identical(loader$run_simulations("usm1", "LAI"), fake_sim)
-})
-
-test_that("run_simulations catches and rethrows Stics wrapper errors", {
-  loader <- make_sim_loader()
-  local_mocked_bindings(
-    stics_wrapper_options = function(...) list(),
-    stics_wrapper = function(...) stop("boom", call. = FALSE),
-    .package = "SticsOnR"
-  )
-  logs <- make_log_capture()
-
-  expect_error(
-    loader$run_simulations("usm1", "LAI"),
-    "Error while running simulations: boom"
-  )
-  expect_true(any(grepl("Stics wrapper failed.*boom", logs$logs)))
-})
-
-test_that("run_simulations errors when the Stics wrapper reports an error", {
-  loader <- make_sim_loader()
-  local_mocked_bindings(
-    stics_wrapper_options = function(...) list(),
-    stics_wrapper = function(...) list(error = TRUE, sim_list = list()),
-    .package = "SticsOnR"
-  )
-
-  expect_error(
-    loader$run_simulations("usm1", "LAI"),
-    "Error while running simulations"
-  )
 })
