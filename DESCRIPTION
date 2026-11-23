@@ -69,6 +69,7 @@ Collate:
     'gen_workspace_from_idestics.R'
     'gen_workspace_from_sms.R'
     'global_evaluation.R'
+    'load_eval_workspace.R'
     'logger.R'
     'parallelism.R'
     'plots.R'
@@ -77,5 +78,4 @@ Collate:
     'run_simulations.R'
     'species_evaluation.R'
     'usm_evaluation.R'
-    'usms_workspace.R'
     'utils.R'

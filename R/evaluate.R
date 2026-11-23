@@ -218,16 +218,15 @@ initialize_eval_workspace <- function(
     stop("Can't create evaluation workspace", call. = FALSE)
   }
 
-  USMSWorkspace$new(
+  load_eval_workspace(
     usms_workspace = usms_workspace,
     sim_rds = sim_rds,
     obs_rds = obs_rds,
     ref_sim_rds = ref_sim_rds,
-    eval_workspace = eval_workspace,
     usms = usms,
-    parallel = parallel,
-    cores = cores
-  )$load()
+    workspace = EvalWorkspace$new(eval_workspace),
+    backend = ParallelBackend$new(parallel, cores)
+  )
 }
 
 
