@@ -16,6 +16,8 @@ gen_workspace_from_idestics(
   verbose = 1L,
   batch_size = 300L,
   max_active = 10L,
+  workspaces = NULL,
+  repositories = NULL,
   usms_files = lifecycle::deprecated()
 )
 }
@@ -48,6 +50,16 @@ request. \code{Inf} requests all the USMs at once.}
 
 \item{max_active}{Maximum number of requests to the IDEStics API performed
 in parallel.}
+
+\item{workspaces}{character vector of the names of the IDEStics workspaces
+to retrieve the USMs from, e.g. to choose between USMs of the same name
+found in several workspaces. Only active workspaces are considered.
+\code{NULL} (default) retrieves the USMs from all the active workspaces.}
+
+\item{repositories}{character vector of the names of the IDEStics
+repositories to retrieve the USMs from. Combined with
+\code{workspaces}, only the USMs matching both filters are kept.
+\code{NULL} (default) does not filter on the repositories.}
 
 \item{usms_files}{Deprecated. Use
 \code{usms = read_usms_files(usms_files)} instead.}

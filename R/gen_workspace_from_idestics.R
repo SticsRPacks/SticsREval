@@ -89,7 +89,8 @@ auth <- function(url, username, password) {
   token
 }
 
-get_metadata <- function(url, token, usms) {
+get_metadata <- function(url, token, usms, workspaces = NULL,
+                         repositories = NULL) {
   logger::log_info("Retrieving metadata from IDEStics API...")
   logger::log_debug("Retrieving rotations and USMs ids from IDEStics API...")
   resp <- idestics_request(
@@ -107,7 +108,23 @@ get_metadata <- function(url, token, usms) {
   }
   metadata <- resp |>
     dplyr::bind_rows() |>
-    dplyr::filter(.data$wsp_statut == "actif") |>
+    dplyr::filter(.data$wsp_statut == "actif")
+  # NULL `workspaces` and `repositories` keep the USMs of all the active
+  # workspaces
+  filters <- character(0)
+  if (!is.null(workspaces)) {
+    metadata <- dplyr::filter(metadata, .data$wsp_name %in% workspaces)
+    filters <- c(filters, paste0("workspaces: ", toString(workspaces)))
+  }
+  if (!is.null(repositories)) {
+    metadata <- dplyr::filter(metadata, .data$dpo_name %in% repositories)
+    filters <- c(filters, paste0("repositories: ", toString(repositories)))
+  }
+  location <- "active IDEStics workspaces"
+  if (length(filters) > 0) {
+    location <- paste0(location, " (", paste(filters, collapse = "; "), ")")
+  }
+  metadata <- metadata |>
     dplyr::transmute(
       usm = .data$mus_name,
       rotation = dplyr::if_else(
@@ -119,12 +136,12 @@ get_metadata <- function(url, token, usms) {
       idestics_usm_id = .data$mus_id,
       idestics_usm_name = paste0(.data$wsp_id, "_", .data$mus_name)
     )
-  # Warn about the requested USMs missing from active workspaces, and stop if
-  # none of them are found
-  select_available_usms(metadata$usm, usms, "active IDEStics workspaces")
+  # Warn about the requested USMs missing from the selected workspaces, and
+  # stop if none of them are found
+  select_available_usms(metadata$usm, usms, location)
   if (anyDuplicated(metadata$usm)) {
     stop(
-      "USM names are not unique across active IDEStics workspaces: ",
+      "USM names are not unique across ", location, ": ",
       toString(unique(metadata$usm[duplicated(metadata$usm)])),
       call. = FALSE
     )
@@ -306,10 +323,10 @@ get_simulator_version_id <- function(url, token, stics_version) {
 
 extract_idestics_data <- function(
   url, username, password, stics_version, usms, stics_path, output_dir,
-  batch_size = Inf, max_active = 10L
+  workspaces = NULL, repositories = NULL, batch_size = Inf, max_active = 10L
 ) {
   token <- auth(url, username, password)
-  metadata <- get_metadata(url, token, usms)
+  metadata <- get_metadata(url, token, usms, workspaces, repositories)
 
   ids <- unique(metadata$idestics_usm_id)
 
@@ -379,11 +396,24 @@ is_positive_count <- function(x, allow_inf = FALSE) {
   if (is.infinite(x)) allow_inf else x == round(x)
 }
 
+# Stop if `x` is neither NULL nor a non-empty character vector without NA
+check_names_filter <- function(x, arg) {
+  if (!is.null(x) && (!is.character(x) || length(x) == 0 || anyNA(x))) {
+    stop(
+      "`", arg, "` must be NULL or a non-empty character vector.",
+      call. = FALSE
+    )
+  }
+}
+
 # Check the arguments of gen_workspace_from_idestics() before any request
-check_idestics_args <- function(stics_version, batch_size, max_active) {
+check_idestics_args <- function(stics_version, batch_size, max_active,
+                                workspaces = NULL, repositories = NULL) {
   if (!is_single_string(stics_version)) {
     stop("`stics_version` must be a single non-empty string.", call. = FALSE)
   }
+  check_names_filter(workspaces, "workspaces")
+  check_names_filter(repositories, "repositories")
   if (!is_positive_count(batch_size, allow_inf = TRUE)) {
     stop(
       "`batch_size` must be a positive whole number or Inf.",
@@ -445,6 +475,14 @@ gen_varmod_from_obs_idestics <- function(out_path) {
 #'  request. \code{Inf} requests all the USMs at once.
 #' @param max_active Maximum number of requests to the IDEStics API performed
 #'  in parallel.
+#' @param workspaces character vector of the names of the IDEStics workspaces
+#'  to retrieve the USMs from, e.g. to choose between USMs of the same name
+#'  found in several workspaces. Only active workspaces are considered.
+#'  \code{NULL} (default) retrieves the USMs from all the active workspaces.
+#' @param repositories character vector of the names of the IDEStics
+#'  repositories to retrieve the USMs from. Combined with
+#'  \code{workspaces}, only the USMs matching both filters are kept.
+#'  \code{NULL} (default) does not filter on the repositories.
 #' @param usms_files Deprecated. Use
 #'  \code{usms = read_usms_files(usms_files)} instead.
 #'
@@ -463,6 +501,8 @@ gen_workspace_from_idestics <- function(
   verbose = 1L,
   batch_size = 300L,
   max_active = 10L,
+  workspaces = NULL,
+  repositories = NULL,
   usms_files = lifecycle::deprecated()
 ) {
   init_logger(verbose)
@@ -472,7 +512,9 @@ gen_workspace_from_idestics <- function(
   if (!dir.exists(stics_path)) {
     stop(stics_path, ": no such directory", call. = FALSE)
   }
-  check_idestics_args(stics_version, batch_size, max_active)
+  check_idestics_args(
+    stics_version, batch_size, max_active, workspaces, repositories
+  )
 
   logger::log_info("Selected ", length(usms), " USMs")
 
@@ -496,10 +538,13 @@ gen_workspace_from_idestics <- function(
   )
 
   metadata <- extract_idestics_data(
-    idestics_url, username, password, stics_version, usms, stics_path,
-    workspace_tmp_actual, batch_size, max_active
+    url = idestics_url, username = username, password = password,
+    stics_version = stics_version, usms = usms, stics_path = stics_path,
+    output_dir = workspace_tmp_actual, workspaces = workspaces,
+    repositories = repositories, batch_size = batch_size,
+    max_active = max_active
   )
-  # Only convert the USMs found in active IDEStics workspaces
+  # Only convert the USMs found in the selected active IDEStics workspaces
   usms <- intersect(usms, metadata$usm)
 
   gen_varmod_from_obs_idestics(workspace_tmp_actual)
