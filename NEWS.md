@@ -6,8 +6,9 @@
   requests being performed in parallel (`max_active`). As in
   `gen_workspace_from_sms()`, the `code_shape` parameter of intercrop plant
   files is forced to 2 (`force_code_shape`). The USMs can be restricted to
-  some IDEStics workspaces (`workspaces`), e.g. to choose between USMs of the
-  same name found in several workspaces. The IDEStics credentials are read
+  some IDEStics workspaces (`workspaces`) and/or repositories
+  (`repositories`), e.g. to choose between USMs of the same name found in
+  several workspaces. The IDEStics credentials are read
   from the `IDESTICS_USERNAME` and `IDESTICS_PASSWORD` environment variables,
   or prompted for in an interactive session.
 

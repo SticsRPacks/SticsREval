@@ -89,7 +89,8 @@ auth <- function(url, username, password) {
   token
 }
 
-get_metadata <- function(url, token, usms, workspaces = NULL) {
+get_metadata <- function(url, token, usms, workspaces = NULL,
+                         repositories = NULL) {
   logger::log_info("Retrieving metadata from IDEStics API...")
   logger::log_debug("Retrieving rotations and USMs ids from IDEStics API...")
   resp <- idestics_request(
@@ -108,11 +109,20 @@ get_metadata <- function(url, token, usms, workspaces = NULL) {
   metadata <- resp |>
     dplyr::bind_rows() |>
     dplyr::filter(.data$wsp_statut == "actif")
-  location <- "active IDEStics workspaces"
-  # NULL `workspaces` keeps the USMs of all the active workspaces
+  # NULL `workspaces` and `repositories` keep the USMs of all the active
+  # workspaces
+  filters <- character(0)
   if (!is.null(workspaces)) {
     metadata <- dplyr::filter(metadata, .data$wsp_name %in% workspaces)
-    location <- paste0(location, " (", toString(workspaces), ")")
+    filters <- c(filters, paste0("workspaces: ", toString(workspaces)))
+  }
+  if (!is.null(repositories)) {
+    metadata <- dplyr::filter(metadata, .data$dpo_name %in% repositories)
+    filters <- c(filters, paste0("repositories: ", toString(repositories)))
+  }
+  location <- "active IDEStics workspaces"
+  if (length(filters) > 0) {
+    location <- paste0(location, " (", paste(filters, collapse = "; "), ")")
   }
   metadata <- metadata |>
     dplyr::transmute(
@@ -313,10 +323,10 @@ get_simulator_version_id <- function(url, token, stics_version) {
 
 extract_idestics_data <- function(
   url, username, password, stics_version, usms, stics_path, output_dir,
-  workspaces = NULL, batch_size = Inf, max_active = 10L
+  workspaces = NULL, repositories = NULL, batch_size = Inf, max_active = 10L
 ) {
   token <- auth(url, username, password)
-  metadata <- get_metadata(url, token, usms, workspaces)
+  metadata <- get_metadata(url, token, usms, workspaces, repositories)
 
   ids <- unique(metadata$idestics_usm_id)
 
@@ -386,20 +396,24 @@ is_positive_count <- function(x, allow_inf = FALSE) {
   if (is.infinite(x)) allow_inf else x == round(x)
 }
 
-# Check the arguments of gen_workspace_from_idestics() before any request
-check_idestics_args <- function(stics_version, batch_size, max_active,
-                                workspaces = NULL) {
-  if (!is_single_string(stics_version)) {
-    stop("`stics_version` must be a single non-empty string.", call. = FALSE)
-  }
-  if (!is.null(workspaces) &&
-        (!is.character(workspaces) || length(workspaces) == 0 ||
-           anyNA(workspaces))) {
+# Stop if `x` is neither NULL nor a non-empty character vector without NA
+check_names_filter <- function(x, arg) {
+  if (!is.null(x) && (!is.character(x) || length(x) == 0 || anyNA(x))) {
     stop(
-      "`workspaces` must be NULL or a non-empty character vector.",
+      "`", arg, "` must be NULL or a non-empty character vector.",
       call. = FALSE
     )
   }
+}
+
+# Check the arguments of gen_workspace_from_idestics() before any request
+check_idestics_args <- function(stics_version, batch_size, max_active,
+                                workspaces = NULL, repositories = NULL) {
+  if (!is_single_string(stics_version)) {
+    stop("`stics_version` must be a single non-empty string.", call. = FALSE)
+  }
+  check_names_filter(workspaces, "workspaces")
+  check_names_filter(repositories, "repositories")
   if (!is_positive_count(batch_size, allow_inf = TRUE)) {
     stop(
       "`batch_size` must be a positive whole number or Inf.",
@@ -465,6 +479,10 @@ gen_varmod_from_obs_idestics <- function(out_path) {
 #'  to retrieve the USMs from, e.g. to choose between USMs of the same name
 #'  found in several workspaces. Only active workspaces are considered.
 #'  \code{NULL} (default) retrieves the USMs from all the active workspaces.
+#' @param repositories character vector of the names of the IDEStics
+#'  repositories to retrieve the USMs from. Combined with
+#'  \code{workspaces}, only the USMs matching both filters are kept.
+#'  \code{NULL} (default) does not filter on the repositories.
 #' @param usms_files Deprecated. Use
 #'  \code{usms = read_usms_files(usms_files)} instead.
 #'
@@ -484,6 +502,7 @@ gen_workspace_from_idestics <- function(
   batch_size = 300L,
   max_active = 10L,
   workspaces = NULL,
+  repositories = NULL,
   usms_files = lifecycle::deprecated()
 ) {
   init_logger(verbose)
@@ -493,7 +512,9 @@ gen_workspace_from_idestics <- function(
   if (!dir.exists(stics_path)) {
     stop(stics_path, ": no such directory", call. = FALSE)
   }
-  check_idestics_args(stics_version, batch_size, max_active, workspaces)
+  check_idestics_args(
+    stics_version, batch_size, max_active, workspaces, repositories
+  )
 
   logger::log_info("Selected ", length(usms), " USMs")
 
@@ -520,7 +541,8 @@ gen_workspace_from_idestics <- function(
     url = idestics_url, username = username, password = password,
     stics_version = stics_version, usms = usms, stics_path = stics_path,
     output_dir = workspace_tmp_actual, workspaces = workspaces,
-    batch_size = batch_size, max_active = max_active
+    repositories = repositories, batch_size = batch_size,
+    max_active = max_active
   )
   # Only convert the USMs found in the selected active IDEStics workspaces
   usms <- intersect(usms, metadata$usm)

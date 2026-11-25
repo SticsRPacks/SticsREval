@@ -32,10 +32,12 @@ mock_downloads <- function(body_files, content_type, seen = new.env()) {
 
 rotation_row <- function(mus_name, mus_id = 1L, wsp_id = 7L, rotation = "0",
                          rotation_order = 1L, wsp_statut = "actif",
-                         wsp_name = paste0("wsp", wsp_id)) {
+                         wsp_name = paste0("wsp", wsp_id),
+                         dpo_name = "dpo1") {
   list(
     wsp_statut = wsp_statut,
     wsp_name = wsp_name,
+    dpo_name = dpo_name,
     mus_id = mus_id,
     mus_name = mus_name,
     rotation = rotation,
@@ -397,7 +399,71 @@ test_that("get_metadata ignores the inactive selected workspaces", {
 
   expect_error(
     get_metadata(idestics_url, "tok", "usm1", workspaces = "wsp7"),
-    "found in active IDEStics workspaces (wsp7)",
+    "found in active IDEStics workspaces (workspaces: wsp7)",
+    fixed = TRUE
+  )
+})
+
+test_that("get_metadata keeps only the USMs of the selected repositories", {
+  httr2::local_mocked_responses(function(req) {
+    json_response(list(
+      rotation_row("usm1", mus_id = 1L, wsp_id = 7L, dpo_name = "dpo1"),
+      rotation_row("usm2", mus_id = 2L, wsp_id = 8L, dpo_name = "dpo2"),
+      rotation_row("usm3", mus_id = 3L, wsp_id = 9L, dpo_name = "dpo3")
+    ))
+  })
+
+  metadata <- get_metadata(
+    idestics_url, "tok", c("usm1", "usm2", "usm3"),
+    repositories = c("dpo1", "dpo3")
+  )
+
+  expect_identical(metadata$usm, c("usm1", "usm3"))
+})
+
+test_that("get_metadata resolves duplicated USM names with repositories", {
+  httr2::local_mocked_responses(function(req) {
+    json_response(list(
+      rotation_row("usm1", mus_id = 1L, wsp_id = 7L, dpo_name = "dpo1"),
+      rotation_row("usm1", mus_id = 2L, wsp_id = 8L, dpo_name = "dpo2")
+    ))
+  })
+
+  metadata <- get_metadata(idestics_url, "tok", "usm1", repositories = "dpo2")
+
+  expect_identical(metadata$idestics_usm_id, 2L)
+})
+
+test_that("get_metadata combines the workspaces and repositories filters", {
+  httr2::local_mocked_responses(function(req) {
+    json_response(list(
+      rotation_row("usm1", mus_id = 1L, wsp_id = 7L, dpo_name = "dpo1"),
+      rotation_row("usm2", mus_id = 2L, wsp_id = 7L, dpo_name = "dpo2"),
+      rotation_row("usm3", mus_id = 3L, wsp_id = 8L, dpo_name = "dpo1")
+    ))
+  })
+
+  metadata <- get_metadata(
+    idestics_url, "tok", c("usm1", "usm2", "usm3"),
+    workspaces = "wsp7", repositories = "dpo1"
+  )
+
+  expect_identical(metadata$usm, "usm1")
+})
+
+test_that("get_metadata names both filters in its errors", {
+  httr2::local_mocked_responses(function(req) {
+    json_response(list(
+      rotation_row("usm1", wsp_id = 7L, dpo_name = "dpo1")
+    ))
+  })
+
+  expect_error(
+    get_metadata(
+      idestics_url, "tok", "usm1",
+      workspaces = "wsp7", repositories = "dpo2"
+    ),
+    "active IDEStics workspaces (workspaces: wsp7; repositories: dpo2)",
     fixed = TRUE
   )
 })
@@ -642,9 +708,10 @@ test_that("extract_idestics_data retrieves the USMs and completes them", {
   )
   mockery::stub(
     extract_idestics_data, "get_metadata",
-    function(url, token, usms, workspaces) {
+    function(url, token, usms, workspaces, repositories) {
       seen$usms <- usms
       seen$workspaces <- workspaces
+      seen$repositories <- repositories
       metadata
     }
   )
@@ -670,12 +737,13 @@ test_that("extract_idestics_data retrieves the USMs and completes them", {
 
   extract_idestics_data(
     idestics_url, "user", "secret", "10.2.0", "usm1", stics_path, output_dir,
-    workspaces = "wsp7"
+    workspaces = "wsp7", repositories = "dpo1"
   )
 
   expect_identical(seen$credentials, c("user", "secret"))
   expect_identical(seen$usms, "usm1")
   expect_identical(seen$workspaces, "wsp7")
+  expect_identical(seen$repositories, "dpo1")
   expect_identical(seen$token, "tok")
   expect_identical(seen$stics_version, "10.2.0")
   expect_identical(seen$ids, 1L)
@@ -800,6 +868,24 @@ test_that("check_idestics_args rejects invalid workspaces", {
   }
 })
 
+test_that("check_idestics_args accepts valid repositories", {
+  expect_no_error(
+    check_idestics_args("11.0.0", 300L, 10L, repositories = NULL)
+  )
+  expect_no_error(
+    check_idestics_args("11.0.0", 300L, 10L, repositories = c("dpo1", "dpo2"))
+  )
+})
+
+test_that("check_idestics_args rejects invalid repositories", {
+  for (repositories in list(character(0), NA_character_, 1L, list("dpo1"))) {
+    expect_error(
+      check_idestics_args("11.0.0", 300L, 10L, repositories = repositories),
+      "`repositories` must be NULL or a non-empty character vector"
+    )
+  }
+})
+
 # ---- gen_varmod_from_obs_idestics ----
 
 test_that("gen_varmod_from_obs_idestics writes unique vars from obs files", {
@@ -859,7 +945,7 @@ test_that("gen_workspace_from_idestics generates a text workspace", {
   expect_true(file.exists(file.path(output_dir, "metadata.csv")))
 })
 
-test_that("gen_workspace_from_idestics passes the workspaces", {
+test_that("gen_workspace_from_idestics passes the USM filters", {
   withr::local_envvar(
     IDESTICS_USERNAME = "user",
     IDESTICS_PASSWORD = "secret"
@@ -869,8 +955,9 @@ test_that("gen_workspace_from_idestics passes the workspaces", {
   seen <- new.env()
   mockery::stub(
     gen_workspace_from_idestics, "extract_idestics_data",
-    function(..., output_dir, workspaces) {
+    function(..., output_dir, workspaces, repositories) {
       seen$workspaces <- workspaces
+      seen$repositories <- repositories
       write_usms_xml(output_dir, "usm1")
       writeLines("usm;rotation", file.path(output_dir, "metadata.csv"))
       data.frame(usm = "usm1", stringsAsFactors = FALSE)
@@ -883,10 +970,12 @@ test_that("gen_workspace_from_idestics passes the workspaces", {
 
   gen_workspace_from_idestics(
     idestics_url, withr::local_tempdir(), output_dir, "10.2.0",
-    usms = "usm1", workspaces = c("wsp7", "wsp8"), verbose = 0L
+    usms = "usm1", workspaces = c("wsp7", "wsp8"), repositories = "dpo1",
+    verbose = 0L
   )
 
   expect_identical(seen$workspaces, c("wsp7", "wsp8"))
+  expect_identical(seen$repositories, "dpo1")
 })
 
 test_that("gen_workspace_from_idestics only converts the USMs found", {
