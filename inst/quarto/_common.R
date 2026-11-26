@@ -48,6 +48,23 @@ tag_class <- c(
   Failed = "tag-critical", Passed = "tag-ok"
 )
 
+# Escapes `text` for HTML written straight into the page's markdown (e.g.
+# `cat()` in a `results: asis` chunk): beyond `htmltools::htmlEscape()`, the
+# characters Pandoc reads as markdown syntax are turned into numeric
+# entities. Otherwise some names (e.g. of USMs) are parsed as potential
+# emphasis delimiters, and a few dozen of them across badges make
+# Pandoc's parsing time explode exponentially (hours, tens of GB of RAM).
+html_text <- function(text) {
+  text <- htmltools::htmlEscape(as.character(text))
+  # No "#": the entities written here contain it (and it's only markdown
+  # syntax at the start of a line, which a badge never is).
+  special <- c("_", "*", "`", "~", "^", "[", "]", "$", "\\", "@", "|")
+  for (char in special) {
+    text <- gsub(char, sprintf("&#%d;", utf8ToInt(char)), text, fixed = TRUE)
+  }
+  text
+}
+
 # Renders `items` (e.g. species or variable names) as colored pill badges,
 # echoing the colored lists `cli` prints to the console for the same
 # groupings, styled for HTML instead. If `href` is given, it maps `items`
@@ -56,7 +73,9 @@ tag_list <- function(items, status, href = NULL) {
   if (length(items) == 0) {
     return('<span class="tag-empty">None</span>')
   }
-  tags <- sprintf('<span class="tag %s">%s</span>', tag_class[[status]], items)
+  tags <- sprintf(
+    '<span class="tag %s">%s</span>', tag_class[[status]], html_text(items)
+  )
   if (!is.null(href)) {
     links <- href(items)
     tags <- ifelse(
