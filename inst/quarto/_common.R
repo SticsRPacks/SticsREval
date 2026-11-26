@@ -51,8 +51,8 @@ tag_class <- c(
 # Escapes `text` for HTML written straight into the page's markdown (e.g.
 # `cat()` in a `results: asis` chunk): beyond `htmltools::htmlEscape()`, the
 # characters Pandoc reads as markdown syntax are turned into numeric
-# entities. Otherwise names such as USM "Mis_L_N-_2010" are parsed as
-# potential emphasis delimiters, and a few dozen of them across badges make
+# entities. Otherwise some names (e.g. of USMs) are parsed as potential
+# emphasis delimiters, and a few dozen of them across badges make
 # Pandoc's parsing time explode exponentially (hours, tens of GB of RAM).
 html_text <- function(text) {
   text <- htmltools::htmlEscape(as.character(text))

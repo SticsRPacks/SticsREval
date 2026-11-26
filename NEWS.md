@@ -11,6 +11,10 @@
   several workspaces. The IDEStics credentials are read
   from the `IDESTICS_USERNAME` and `IDESTICS_PASSWORD` environment variables,
   or prompted for in an interactive session.
+* `render_report()` no longer hangs on species with many failed USMs. Some USM
+  names were read by Pandoc as possible emphasis markers, so its parsing time grew exponentially with the number of badges
+  on a page (hours and tens of GB of RAM for a few dozen badges). Badge
+  labels are now escaped.
 
 
 # SticsREval 0.2.0
