@@ -1,4 +1,4 @@
-# SticsREval (development version)
+# SticsREval 0.3.0
 
 * New `gen_workspace_from_idestics()` function to build a STICS text workspace from data retrieved from the IDEStics API, for a given STICS version (`stics_version`). The USMs are requested by batches (`batch_size`), several requests being performed in parallel (`max_active`). As in `gen_workspace_from_sms()`, the `code_shape` parameter of intercrop plant files is forced to 2 (`force_code_shape`). The USMs can be restricted to some IDEStics workspaces (`workspaces`) and/or repositories (`repositories`), e.g. to choose between USMs of the same name found in several workspaces. The IDEStics credentials are read from the `IDESTICS_USERNAME` and `IDESTICS_PASSWORD` environment variables, or prompted for in an interactive session.
 * `render_report()` no longer hangs on species with many failed USMs. Some USM names were read by Pandoc as possible emphasis markers, so its parsing time grew exponentially with the number of badges on a page (hours and tens of GB of RAM for a few dozen badges). Badge labels are now escaped.
