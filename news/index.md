@@ -1,6 +1,6 @@
 # Changelog
 
-## SticsREval (development version)
+## SticsREval 0.3.0
 
 - New
   [`gen_workspace_from_idestics()`](https://sticsrpacks.github.io/SticsREval/reference/gen_workspace_from_idestics.md)

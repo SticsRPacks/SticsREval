@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">SticsREval</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -34,7 +34,7 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="development version" id="sticsreval-development-version">SticsREval (development version)<a class="anchor" aria-label="anchor" href="#sticsreval-development-version"></a></h2>
+<h2 class="pkg-version" data-toc-text="0.3.0" id="sticsreval-030">SticsREval 0.3.0<a class="anchor" aria-label="anchor" href="#sticsreval-030"></a></h2>
 <ul><li>New <code><a href="../reference/gen_workspace_from_idestics.html">gen_workspace_from_idestics()</a></code> function to build a STICS text workspace from data retrieved from the IDEStics API, for a given STICS version (<code>stics_version</code>). The USMs are requested by batches (<code>batch_size</code>), several requests being performed in parallel (<code>max_active</code>). As in <code><a href="../reference/gen_workspace_from_sms.html">gen_workspace_from_sms()</a></code>, the <code>code_shape</code> parameter of intercrop plant files is forced to 2 (<code>force_code_shape</code>). The USMs can be restricted to some IDEStics workspaces (<code>workspaces</code>) and/or repositories (<code>repositories</code>), e.g. to choose between USMs of the same name found in several workspaces. The IDEStics credentials are read from the <code>IDESTICS_USERNAME</code> and <code>IDESTICS_PASSWORD</code> environment variables, or prompted for in an interactive session.</li>
 <li>
 <code><a href="../reference/render_report.html">render_report()</a></code> no longer hangs on species with many failed USMs. Some USM names were read by Pandoc as possible emphasis markers, so its parsing time grew exponentially with the number of badges on a page (hours and tens of GB of RAM for a few dozen badges). Badge labels are now escaped.</li>

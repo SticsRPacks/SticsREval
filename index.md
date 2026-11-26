@@ -98,16 +98,16 @@ A pre-built image, including the Quarto CLI, is available on the GitHub
 Container Registry:
 
 ``` bash
-docker pull ghcr.io/sticsrpacks/stics-r-eval:v0.2.0
+docker pull ghcr.io/sticsrpacks/stics-r-eval:v0.3.0
 
 # Interactive R session
 docker run --rm -it -v /path/to/your/workspace:/workspace \
-  ghcr.io/sticsrpacks/stics-r-eval:v0.2.0 R
+  ghcr.io/sticsrpacks/stics-r-eval:v0.3.0 R
 
 # Non-interactive script
 docker run --rm -v /path/to/your/workspace:/workspace \
   -v /path/to/your/script.R:/script.R \
-  ghcr.io/sticsrpacks/stics-r-eval:v0.2.0 Rscript /script.R
+  ghcr.io/sticsrpacks/stics-r-eval:v0.3.0 Rscript /script.R
 ```
 
 A non-interactive script can’t prompt for the IDEStics credentials: pass

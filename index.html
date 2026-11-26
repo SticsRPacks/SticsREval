@@ -21,7 +21,7 @@
 
     <a class="navbar-brand me-2" href="index.html">SticsREval</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -123,16 +123,16 @@
 <h2 id="docker">Docker<a class="anchor" aria-label="anchor" href="#docker"></a>
 </h2>
 <p>A pre-built image, including the Quarto CLI, is available on the GitHub Container Registry:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="ex">docker</span> pull ghcr.io/sticsrpacks/stics-r-eval:v0.2.0</span>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="ex">docker</span> pull ghcr.io/sticsrpacks/stics-r-eval:v0.3.0</span>
 <span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a></span>
 <span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="co"># Interactive R session</span></span>
 <span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">--rm</span> <span class="at">-it</span> <span class="at">-v</span> /path/to/your/workspace:/workspace <span class="dt">\</span></span>
-<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>  ghcr.io/sticsrpacks/stics-r-eval:v0.2.0 R</span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>  ghcr.io/sticsrpacks/stics-r-eval:v0.3.0 R</span>
 <span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a></span>
 <span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a><span class="co"># Non-interactive script</span></span>
 <span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">--rm</span> <span class="at">-v</span> /path/to/your/workspace:/workspace <span class="dt">\</span></span>
 <span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a>  <span class="at">-v</span> /path/to/your/script.R:/script.R <span class="dt">\</span></span>
-<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a>  ghcr.io/sticsrpacks/stics-r-eval:v0.2.0 Rscript /script.R</span></code></pre></div>
+<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a>  ghcr.io/sticsrpacks/stics-r-eval:v0.3.0 Rscript /script.R</span></code></pre></div>
 <p>A non-interactive script can’t prompt for the IDEStics credentials: pass them from your environment with <code>-e IDESTICS_USERNAME -e IDESTICS_PASSWORD</code>.</p>
 <p>To build it locally (a GitHub token is needed to install private SticsRPacks dependencies):</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="ex">docker</span> build <span class="at">--secret</span> id=GITHUB_TOKEN,src=<span class="op">&lt;(</span><span class="bu">echo</span> <span class="va">$GITHUB_PAT</span><span class="op">)</span> <span class="at">-t</span> stics-r-eval .</span></code></pre></div>
