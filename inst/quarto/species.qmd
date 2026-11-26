@@ -148,7 +148,7 @@ scatter_blocks <- lapply(seq_along(scatter_vars), function(i) {
   badge <- if (status %in% names(tag_class)) {
     tag_list(variable, status)
   } else {
-    sprintf("<strong>%s</strong>", variable)
+    sprintf("<strong>%s</strong>", html_text(variable))
   }
   ratio <- if (is.na(scatter_ratio[i])) {
     ""

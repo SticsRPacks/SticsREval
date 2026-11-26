@@ -51,10 +51,10 @@ state <- rep("fail", nrow(evaluation_status))
 state[which(evaluation_status$success)] <- "pass"
 state[not_eval] <- "skip"
 
-label <- htmltools::htmlEscape(evaluation_status$evaluation)
+label <- html_text(evaluation_status$evaluation)
 label[not_eval] <- sprintf(
   "%s (not evaluated: %s)",
-  label[not_eval], htmltools::htmlEscape(evaluation_status$reason[not_eval])
+  label[not_eval], html_text(evaluation_status$reason[not_eval])
 )
 
 cat(paste(icons[state], label, collapse = "&emsp;"), "\n\n")
