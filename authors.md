@@ -7,7 +7,7 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/SticsRPacks/SticsREval/blob/main/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/SticsRPacks/SticsREval/blob/v0.3.0/DESCRIPTION)
 
 Rahier V (2026). *SticsREval: Evaluate and Compare STICS Crop Model
 Versions*. R package version 0.3.0,
